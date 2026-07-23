@@ -1,0 +1,45 @@
+name: Codex Issue Triage
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  codex:
+    if: github.event.label.name == 'codex-triage' && vars.ENABLE_CODEX_TRIAGE == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      final_message: ${{ steps.run_codex.outputs.final-message }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: openai/codex-action@v1
+        id: run_codex
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          sandbox: read-only
+          prompt: |
+            Read REQUIREMENTS.md and AGENTS.md.
+            Refine the current issue into: problem, scope, out-of-scope,
+            architecture constraints, acceptance criteria, risks, and suggested module.
+            Do not propose implementation outside MVP scope.
+
+  comment:
+    needs: codex
+    if: needs.codex.outputs.final_message != ''
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/github-script@v8
+        env:
+          TRIAGE: ${{ needs.codex.outputs.final_message }}
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.payload.issue.number,
+              body: `## Codex refinement\n\n${process.env.TRIAGE}`,
+            });

@@ -1,0 +1,39 @@
+repository:
+  name: generative-ui-platform
+  description: Framework-neutral Generative UI compiler and multi-agent interaction gateway
+  private: true
+  has_issues: true
+  has_projects: true
+  has_wiki: false
+  default_branch: main
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: false
+  delete_branch_on_merge: true
+
+labels:
+  - name: "area: compiler-core"
+    color: "1d76db"
+  - name: "area: compiler-agent"
+    color: "5319e7"
+  - name: "area: gateway"
+    color: "0052cc"
+  - name: "area: contracts"
+    color: "006b75"
+  - name: "ci"
+    color: "0e8a16"
+  - name: "codex-review"
+    color: "7057ff"
+  - name: "codex-triage"
+    color: "7057ff"
+
+branches:
+  - name: main
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: true
+      required_conversation_resolution: true
+      enforce_admins: false
+      restrictions: null

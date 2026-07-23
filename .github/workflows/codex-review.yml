@@ -1,0 +1,54 @@
+name: Codex PR Review
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  codex:
+    if: github.event.label.name == 'codex-review' && vars.ENABLE_CODEX_REVIEW == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      final_message: ${{ steps.run_codex.outputs.final-message }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          persist-credentials: false
+      - name: Fetch PR refs safely
+        env:
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: git fetch --no-tags origin "$PR_BASE_REF" "+refs/pull/$PR_NUMBER/head"
+      - name: Run Codex review
+        id: run_codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          sandbox: read-only
+          prompt: |
+            Review only the changes in this pull request.
+            Read AGENTS.md and REQUIREMENTS.md first.
+            Focus on architecture boundaries, contract compatibility, security,
+            fallback behavior, test coverage, and documentation consistency.
+            Return concise, actionable findings ordered by severity.
+
+  comment:
+    needs: codex
+    if: needs.codex.outputs.final_message != ''
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@v8
+        env:
+          REVIEW: ${{ needs.codex.outputs.final_message }}
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `## Codex review\n\n${process.env.REVIEW}`,
+            });

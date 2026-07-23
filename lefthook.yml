@@ -1,0 +1,13 @@
+pre-commit:
+  parallel: true
+  commands:
+    biome:
+      glob: "*.{ts,tsx,js,json,yml,yaml}"
+      run: pnpm biome check {staged_files}
+    markdown:
+      glob: "*.md"
+      run: pnpm markdownlint-cli2 {staged_files}
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm commitlint --edit {1}

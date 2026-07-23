@@ -1,0 +1,19 @@
+"area: compiler-core":
+  - changed-files:
+      - any-glob-to-any-file: "packages/ui-compiler-core/**"
+"area: compiler-agent":
+  - changed-files:
+      - any-glob-to-any-file: "apps/ui-compiler-agent/**"
+"area: gateway":
+  - changed-files:
+      - any-glob-to-any-file: "apps/interaction-gateway/**"
+"area: contracts":
+  - changed-files:
+      - any-glob-to-any-file: "packages/*-contract/**"
+      - any-glob-to-any-file: "packages/component-catalog-schema/**"
+"documentation":
+  - changed-files:
+      - any-glob-to-any-file: "**/*.md"
+"ci":
+  - changed-files:
+      - any-glob-to-any-file: ".github/workflows/**"

@@ -1,0 +1,21 @@
+{
+  "name": "@generative-ui/interaction-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsup src/main.ts --format esm --clean",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@generative-ui/ag-ui-adapter": "workspace:*",
+    "@generative-ui/component-catalog-schema": "workspace:*",
+    "@generative-ui/compiler-contract": "workspace:*",
+    "@generative-ui/gateway-contract": "workspace:*",
+    "@generative-ui/presentation-contract": "workspace:*",
+    "@generative-ui/ui-compiler-core": "workspace:*"
+  }
+}

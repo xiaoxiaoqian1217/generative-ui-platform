@@ -1,0 +1,27 @@
+{
+  "name": "@generative-ui/compiler-contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "@generative-ui/presentation-contract": "workspace:*",
+    "zod": "3.25.76"
+  }
+}

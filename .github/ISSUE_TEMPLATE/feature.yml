@@ -1,0 +1,32 @@
+name: Feature request
+description: Propose a scoped capability
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope / out of scope
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Architecture checks
+      options:
+        - label: This does not move frontend, Copilot Runtime, or real business agents into MVP scope.
+          required: true
+        - label: This respects the dependency rules in REQUIREMENTS.md.
+          required: true

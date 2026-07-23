@@ -1,0 +1,41 @@
+# Repository Instructions for Coding Agents
+
+## Source of truth
+
+1. Read `REQUIREMENTS.md` before modifying architecture or public contracts.
+2. Read `docs/ARCHITECTURE.md` and relevant ADRs before adding dependencies.
+3. Do not expand MVP scope without an issue or ADR.
+
+## Architecture rules
+
+- `packages/ui-compiler-core` MUST remain framework-, transport-, and vendor-neutral.
+- Apps may depend on packages; packages MUST NOT depend on apps.
+- `apps/ui-compiler-agent` and `apps/interaction-gateway` MUST NOT import one another.
+- Shared contracts belong in the matching contract package; do not duplicate types.
+- External systems (frontend, Copilot Runtime, real business agents) are out of scope; use mocks.
+
+## Commands
+
+```bash
+pnpm install
+pnpm validate
+pnpm test
+pnpm build
+pnpm docs:check
+```
+
+Run `pnpm validate` after all changes. Documentation-only changes must run `pnpm docs:check`.
+
+## Coding standards
+
+- TypeScript strict mode.
+- ESM only.
+- Prefer pure functions and explicit interfaces.
+- Validate all external input at boundaries.
+- Use stable error codes; do not rely on error text.
+- Do not execute model-generated code.
+- Do not log secrets or raw sensitive payloads.
+
+## Pull requests
+
+PR descriptions must include: scope, rationale, architecture impact, validation, risks, and documentation changes.

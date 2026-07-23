@@ -1,0 +1,23 @@
+name: Architecture decision
+description: Propose an ADR-backed architecture change
+title: "architecture: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and problem
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options considered
+    validations:
+      required: true
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommended decision and consequences
+    validations:
+      required: true
