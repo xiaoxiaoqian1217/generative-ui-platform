@@ -14,8 +14,14 @@
 - [架构说明](./docs/ARCHITECTURE.md)
 - [数据契约](./docs/CONTRACTS.md)
 - [AI 编码 Agent 使用说明](./AGENTS.md)
-- [GitHub 仓库设置](./docs/operations/REPOSITORY_SETUP.md)
-- [Codex / Claude 自动化设置](./docs/operations/AI_AUTOMATION_SETUP.md)
+
+## GitHub 协作约定
+
+- 当前不配置 GitHub Actions。
+- Issue 和 Pull Request 由维护者按需手动创建和管理。
+- 不启用自动创建 Issue、自动分派、自动打标签或自动合并。
+- 项目代码正式纳入版本控制后，再按实际需要评估是否添加最小 CI。
+- 新增任何仓库自动化前，应确认它不会限制手动工作流或阻碍后续服务接入。
 
 ## 快速开始
 

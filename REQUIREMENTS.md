@@ -16,7 +16,7 @@
 
 ## 架构方向
 
-```
+```text
 Frontend
    |
 AG-UI / Interaction Protocol
