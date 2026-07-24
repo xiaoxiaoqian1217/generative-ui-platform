@@ -49,7 +49,7 @@
 
 ### 2.2 背景
 
-真实业务 Agent 通常只稳定返回 Markdown。
+业务 Agent 的输出契约只有 Markdown。
 业务 Agent 不会稳定输出 Compiler 专用的展示模式、展示意图、结构化数据或 UI Plan。
 如果每个前端应用都自行完成展示判断、结果解析、组件选择和界面生成，将产生：
 
@@ -241,11 +241,8 @@ MVP 交付内容包括：
 
 * `ui-compiler-core`；
 * `ui-compiler-service`；
-* Presentation Request、Decision、Result 和 UI Plan 契约；
-* Presentation Request 和 Presentation Result；
-* Presentation Router；
-* 可替换 Model Adapter；
-* UI Plan 和编译输入输出契约；
+* Presentation Request、Decision、Result、UI Plan 和编译输入输出契约；
+* Presentation Router 和可替换 Model Adapter；
 * Component Catalog Schema；
 * UI IR；
 * Markdown Sanitizer；
@@ -1679,7 +1676,7 @@ Frontend Runtime 和真实组件渲染不属于阶段五验收范围，可以通
 | TD-019 | Presentation Router 位于 Core 之前，负责 Markdown 或 generative UI 决策 |
 | TD-020 | 一次模型调用应该同时返回展示决策和可选 UI Plan |
 | TD-021 | Core 不依赖模型供应商，也不决定是否生成 UI |
-| TD-019 | 业务 Agent、Frontend Runtime、Component Registry 和 Interaction Gateway 均为外部系统 |
+| TD-022 | 业务 Agent、Frontend Runtime、Component Registry 和 Interaction Gateway 均为外部系统 |
 
 ---
 

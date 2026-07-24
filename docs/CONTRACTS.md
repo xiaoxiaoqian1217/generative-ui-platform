@@ -3,8 +3,8 @@
 ## Contract Boundaries
 
 The MVP uses separate contracts for presentation routing and UI compilation.
-A Business Agent is only required to return Markdown.
-It is not required to construct compiler-specific metadata.
+The Business Agent output contract contains only Markdown.
+Compiler-specific metadata is not part of that contract.
 
 ```text
 Agent Markdown
@@ -110,6 +110,7 @@ export interface UICompileRequest {
       width: number;
       height: number;
     };
+    userPreferences?: Record<string, unknown>;
   };
 }
 ```
@@ -173,7 +174,7 @@ The serialized request byte limit is enforced by the application Adapter before 
 
 The target package ownership is:
 
-- `presentation-contract` owns `PresentationRequest`, `PresentationDecision`, `PresentationResult`, and `UIPlan`.
+- `presentation-contract` owns `PresentationRequest`, `PresentationDecision`, `PresentationResult`, `UIPlan`, and `ActionIntent`.
 - `compiler-contract` owns `UICompileRequest`, `UICompileResult`, UI IR, compile diagnostics, and compile stages.
 - `component-catalog-schema` owns Catalog, component, Props, Action, and structure Schemas.
 - `ag-ui-adapter` owns protocol event mapping and does not own routing or compilation logic.

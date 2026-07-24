@@ -14,7 +14,7 @@
 
 ## Problem
 
-真实业务 Agent 通常只返回 Markdown。
+业务 Agent 的输出契约只有 Markdown。
 它们不会稳定提供 `presentationMode`、`presentationIntent`、结构化业务数据或 UI Plan。
 
 系统需要解决两个不同问题：

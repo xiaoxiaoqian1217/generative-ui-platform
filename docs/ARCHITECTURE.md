@@ -3,7 +3,8 @@
 ## 1. Product Architecture
 
 Generative UI Compiler is an Agent presentation infrastructure layer.
-Business Agents are only required to return Markdown and are not required to provide a presentation mode, presentation intent, structured data, or a UI plan.
+The Business Agent output contract contains only Markdown.
+Presentation mode, presentation intent, structured data, and UI plans are not part of that contract.
 
 The system first decides whether the Markdown should remain Markdown or become a controlled generative UI.
 Only content selected for generative UI enters UI Compiler Core.
@@ -153,7 +154,8 @@ PresentationDecision
 ```
 
 `PresentationRequest` describes raw Markdown plus optional user and rendering context.
-`PresentationDecision` is internal model output and is never trusted without validation.
+`PresentationDecision` is the validated output of Presentation Router.
+A Model Adapter may produce an untrusted candidate decision, but that candidate is not a `PresentationDecision` until it passes Schema validation.
 `UICompileRequest` describes an already selected and validated generative UI plan.
 `PresentationResult` is the public service result and distinguishes Markdown from generative UI.
 
