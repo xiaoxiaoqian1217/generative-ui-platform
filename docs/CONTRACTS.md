@@ -3,11 +3,11 @@
 ## Contract Boundaries
 
 The MVP uses separate contracts for presentation routing and UI compilation.
-The Business Agent output contract contains only Markdown.
+The Business Agent content contract accepts Markdown or JSON structured data.
 Compiler-specific metadata is not part of that contract.
 
 ```text
-Agent Markdown
+Agent Markdown / JSON
     |
     v
 PresentationRequest
@@ -31,11 +31,30 @@ PresentationDecision
 `PresentationRequest` is the public input to UI Compiler Service.
 
 ```ts
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+export type AgentContent =
+  | {
+      contentType: "markdown";
+      markdown: string;
+    }
+  | {
+      contentType: "structured-data";
+      data: JsonValue;
+      fallbackMarkdown?: string;
+    };
+
 export interface PresentationRequest {
   requestId: string;
   threadId?: string;
   runId?: string;
-  markdown: string;
+  content: AgentContent;
   context?: {
     userMessage?: string;
     locale?: string;
@@ -53,9 +72,11 @@ export interface PresentationRequest {
 }
 ```
 
-`markdown` must be present and non-empty.
+Markdown content must be present and non-empty.
+Structured data must be JSON serializable and remain within configured depth and item limits.
+When structured data does not include `fallbackMarkdown`, the service must be able to produce a deterministic and safe Markdown serialization without silently truncating data.
 `userMessage` is optional because some callers only have the Agent response.
-The service must not require a Business Agent to provide presentation mode, presentation intent, structured data, or a UI plan.
+The service must not require a Business Agent to provide presentation mode, presentation intent, or a UI plan.
 
 ## Presentation Decision
 
@@ -77,7 +98,7 @@ export type PresentationDecision =
 
 The Model Adapter may produce a candidate decision.
 The service validates the candidate against its Schema before using it.
-An invalid decision degrades to sanitized Markdown.
+An invalid decision degrades to sanitized Markdown or a deterministic Markdown serialization of structured data.
 
 ## UI Plan
 
@@ -117,6 +138,7 @@ export interface UICompileRequest {
 
 Core assumes that the caller has already selected generative UI.
 Core must not use this request to decide between Markdown and generative UI.
+For structured Agent content, UI Compiler Service supplies `fallbackMarkdown` from the request or from deterministic serialization.
 
 ## Compile Result
 
@@ -174,7 +196,7 @@ The serialized request byte limit is enforced by the application Adapter before 
 
 The target package ownership is:
 
-- `presentation-contract` owns `PresentationRequest`, `PresentationDecision`, `PresentationResult`, `UIPlan`, and `ActionIntent`.
+- `presentation-contract` owns `AgentContent`, `PresentationRequest`, `PresentationDecision`, `PresentationResult`, `UIPlan`, and `ActionIntent`.
 - `compiler-contract` owns `UICompileRequest`, `UICompileResult`, UI IR, compile diagnostics, and compile stages.
 - `component-catalog-schema` owns Catalog, component, Props, Action, and structure Schemas.
 - `ag-ui-adapter` owns protocol event mapping and does not own routing or compilation logic.

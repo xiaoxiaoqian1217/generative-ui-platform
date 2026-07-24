@@ -3,6 +3,11 @@
 - **Status:** Accepted
 - **Date:** 2026-07-24
 
+## Input scope update
+
+ADR-0006 supersedes the Markdown-only input assumption in this ADR.
+The presentation routing, Model Adapter, Core, validation, and fallback decisions remain accepted for both Markdown and JSON structured data.
+
 ## Context
 
 真实业务 Agent 只保证返回 Markdown。

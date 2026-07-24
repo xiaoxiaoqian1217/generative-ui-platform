@@ -23,8 +23,8 @@
 4. 不得让 `ui-compiler-core` 依赖网络服务、前端框架、具体 Agent 框架或模型供应商。
 5. 不得生成或执行任意前端代码。
 6. 不得将 UI Compiler Service 实现为承担业务推理、工具调用或 Agent 路由的业务 Agent。
-7. 不得要求业务 Agent 输出 `presentationMode`、`presentationIntent`、结构化数据或 UI Plan。
-8. 不得让 UI Compiler Core 判断 Markdown 应该直接展示还是生成 UI。
+7. 不得要求业务 Agent 输出 `presentationMode`、`presentationIntent` 或 UI Plan。
+8. 不得让 UI Compiler Core 判断 Agent 内容应该直接展示还是生成 UI。
 9. 出现需求冲突时，以“系统边界”和“关键技术决策”章节为准。
 10. 未明确的技术细节应选择简单、可测试、可替换的实现。
 
@@ -38,8 +38,8 @@
 |---|---|---|
 | Generative UI Platform | 仓库名称和长期产品载体 | 承载当前 Compiler MVP，并允许未来增加独立扩展能力 |
 | Generative UI Compiler | 当前 MVP 产品 | 本文的需求、开发和验收对象 |
-| UI Compiler Service | Markdown 展示路由和 UI 编译服务 | 当前 MVP 模块，不是业务 Agent |
-| Presentation Router | Markdown 展示模式决策能力 | Service 内部模块，可使用模型 Adapter |
+| UI Compiler Service | Agent 内容展示路由和 UI 编译服务 | 当前 MVP 模块，不是业务 Agent |
+| Presentation Router | Markdown 或结构化数据展示模式决策能力 | Service 内部模块，可使用模型 Adapter |
 | UI Compiler Core | UI Plan 的确定性编译能力 | 当前 MVP 模块，可脱离网络服务独立使用 |
 | Interaction Gateway | 未来可选的 Agent 协作问题空间 | 不属于当前 MVP，未来产品关系待决策 |
 
@@ -49,8 +49,8 @@
 
 ### 2.2 背景
 
-业务 Agent 的输出契约只有 Markdown。
-业务 Agent 不会稳定输出 Compiler 专用的展示模式、展示意图、结构化数据或 UI Plan。
+业务 Agent 的内容输出契约支持 Markdown 和 JSON 结构化数据。
+业务 Agent 不会稳定输出 Compiler 专用的展示模式、展示意图或 UI Plan。
 如果每个前端应用都自行完成展示判断、结果解析、组件选择和界面生成，将产生：
 
 * UI 转换逻辑重复建设；
@@ -62,8 +62,10 @@
 * UI 生成能力无法被其他 Agent 或系统复用。
 
 本项目建设独立的生成式 UI 展示和编译基础设施。
-系统先判断 Markdown 应该直接展示还是生成结构化 UI。
-普通 Markdown 经过安全清理后直接返回前端，只有生成式 UI 请求进入 UI Compiler Core。
+系统先判断 Agent 内容应该使用简单 Markdown 表示还是生成结构化 UI。
+普通 Markdown 经过安全清理后直接返回前端。
+不生成 UI 的结构化数据经过确定性安全序列化后返回 Markdown。
+只有生成式 UI 请求进入 UI Compiler Core。
 
 ### 2.3 产品定位
 
@@ -73,7 +75,7 @@
 
 Generative UI Compiler 负责解决：
 
-> Agent Markdown 应该如何安全展示，以及需要生成 UI 时如何转换为受控的声明式 UI。
+> Agent 的 Markdown 或结构化数据应该如何安全展示，以及需要生成 UI 时如何转换为受控的声明式 UI。
 
 它不解决：
 
@@ -88,9 +90,10 @@ Generative UI Compiler 负责解决：
 Generative UI Compiler MVP 包含两个产品模块和一个可替换 Adapter：
 
 1. **UI Compiler Service**
-   * 接收业务 Agent 返回的 Markdown；
-   * 通过 Presentation Router 判断 Markdown 直出或生成式 UI；
+   * 接收业务 Agent 返回的 Markdown 或 JSON 结构化数据；
+   * 通过 Presentation Router 判断简单 Markdown 表示或生成式 UI；
    * 对普通 Markdown 执行安全清理并直接返回；
+   * 对不生成 UI 的结构化数据执行确定性安全序列化；
    * 组装具体 Model Adapter；
    * 调用 UI Compiler Core；
    * 负责网络协议、请求生命周期、错误映射和可观测性；
@@ -112,7 +115,7 @@ Generative UI Compiler MVP 包含两个产品模块和一个可替换 Adapter：
 ### 2.5 统一术语链路
 
 ```text
-Agent Markdown
+Agent Markdown / JSON
     ↓
 PresentationRequest（Service 外部输入契约）
     ↓
@@ -133,7 +136,7 @@ Frontend Markdown Renderer / A2UI Renderer
 
 术语约束：
 
-* **Presentation Request**：描述业务 Agent 返回的 Markdown 和调用方可选提供的上下文。
+* **Presentation Request**：描述业务 Agent 返回的 Markdown 或结构化数据，以及调用方可选提供的上下文。
 * **Presentation Decision**：Presentation Router 输出的 Markdown 或 generative UI 判别联合。
 * **UI Plan**：模型提出的框架无关生成式 UI 计划，必须经过验证。
 * **Presentation Result**：Service 返回的 Markdown 或 generative UI 判别联合。
@@ -153,14 +156,14 @@ MVP 运行链路：
 ```text
 业务 Agent / 测试工具 / 其他调用方
                 │
-                │ Markdown + optional context
+                │ Markdown / JSON + optional context
                 ▼
         UI Compiler Service
                 │
                 ▼
         Presentation Router
                 │
-                ├── Markdown Result
+                ├── Safe Markdown Representation
                 │
                 └── Validated UI Plan
                             │
@@ -185,10 +188,10 @@ MVP 运行链路：
 
 系统必须实现：
 
-1. 接收业务 Agent 的 Markdown 输入。
+1. 接收业务 Agent 的 Markdown 或 JSON 结构化数据输入。
 2. 接收调用方可选提供的原始用户消息和展示上下文。
-3. 判断 Markdown 应直接展示还是生成结构化 UI。
-4. 对普通 Markdown 执行安全清理并直接返回。
+3. 判断 Agent 内容应使用简单 Markdown 表示还是生成结构化 UI。
+4. 对普通 Markdown 执行安全清理，对结构化数据执行确定性安全序列化。
 5. 需要生成 UI 时产生经过 Schema 校验的 UI Plan。
 6. 将 UI Plan 转换为内部 UI IR。
 7. 将 UI IR 编译为 A2UI。
@@ -246,6 +249,7 @@ MVP 交付内容包括：
 * Component Catalog Schema；
 * UI IR；
 * Markdown Sanitizer；
+* Structured Data Validator 和 Serializer；
 * 展示模式决策和 UI 规划；
 * 组件选择；
 * A2UI 编译；
@@ -287,10 +291,10 @@ MVP 交付内容包括：
 * 业务规则；
 * 权威业务状态；
 * 工作流和 Checkpoint；
-* 输出 Markdown 业务结果。
+* 输出 Markdown 或 JSON 结构化业务结果。
 
-业务 Agent 不需要输出 `presentationMode`、`presentationIntent`、结构化业务数据或 UI Plan。
-本项目不判断 Markdown 中的业务结果是否正确，只校验展示决策、UI Plan 和编译结果是否合法。
+业务 Agent 不需要输出 `presentationMode`、`presentationIntent` 或 UI Plan。
+本项目不判断 Agent 内容中的业务结果是否正确，只校验输入结构、展示决策、UI Plan 和编译结果是否合法。
 
 #### 4.2.3 Copilot Runtime
 
@@ -330,6 +334,7 @@ Gateway 与 Generative UI Compiler 的未来产品和架构关系必须由新的
 │ AG-UI Endpoint                  │
 │ Request Validator               │
 │ Markdown Sanitizer              │
+│ Structured Data Serializer      │
 │ Presentation Router             │
 │ Model Adapter                   │
 │ Output Adapter                  │
@@ -337,7 +342,7 @@ Gateway 与 Generative UI Compiler 的未来产品和架构关系必须由新的
 │ Observability                   │
 └───────────┬─────────────────────┘
             │
-            ├── Sanitized Markdown
+            ├── Safe Markdown Representation
             │
             └── Validated UI Plan
                          │
@@ -368,7 +373,7 @@ Gateway 与 Generative UI Compiler 的未来产品和架构关系必须由新的
 负责“业务结果是什么”
 
 Presentation Router
-负责“Markdown 应直接展示还是生成 UI，以及生成什么 UI Plan”
+负责“Agent 内容应使用简单 Markdown 表示还是生成 UI，以及生成什么 UI Plan”
 
 UI Compiler Core
 负责“已经选择的 UI Plan 如何转换为受控的声明式 UI”
@@ -476,6 +481,7 @@ apps/ui-compiler-service/
 │  │  └─ compile-use-case.ts
 │  ├─ presentation-router/
 │  ├─ markdown-sanitizer/
+│  ├─ structured-data/
 │  ├─ model-adapter/
 │  ├─ config/
 │  ├─ observability/
@@ -513,6 +519,7 @@ packages/ui-compiler-core/
 负责：
 
 * `PresentationRequest`；
+* `AgentContent`；
 * `PresentationDecision`；
 * `PresentationResult`；
 * `UIPlan`；
@@ -649,9 +656,9 @@ UI Compiler Service 必须负责：
 
 1. 暴露 HTTP 展示接口。
 2. 暴露 AG-UI 展示接口。
-3. 接收 Markdown 和可选展示上下文。
+3. 接收 Markdown、JSON 结构化数据和可选展示上下文。
 4. 校验网络层请求。
-5. 清理需要直出的 Markdown。
+5. 清理需要直出的 Markdown，并安全序列化不生成 UI 的结构化数据。
 6. 调用 Presentation Router。
 7. 创建并注入具体 Model Adapter。
 8. 校验 Presentation Decision 和 UI Plan。
@@ -680,11 +687,12 @@ UI Compiler Service 禁止负责：
 
 Presentation Router 必须负责：
 
-1. 根据 Markdown 和可用上下文判断 Markdown 直出或生成式 UI。
+1. 根据 Markdown、结构化数据和可用上下文判断简单 Markdown 表示或生成式 UI。
 2. 在需要模型语义分析时调用可替换 Model Adapter。
 3. 返回符合 Schema 的 `PresentationDecision`。
 4. 在 generative UI 分支同时返回 `UIPlan`。
 5. 路由或模型失败时选择安全 Markdown 降级。
+6. 为结构化数据生成确定性、可审计且不静默截断的 Markdown 表示。
 
 Model Adapter 必须负责：
 
@@ -706,11 +714,30 @@ Model Adapter 必须负责：
 ### 10.1 Presentation Request
 
 ```ts
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+export type AgentContent =
+  | {
+      contentType: "markdown";
+      markdown: string;
+    }
+  | {
+      contentType: "structured-data";
+      data: JsonValue;
+      fallbackMarkdown?: string;
+    };
+
 export interface PresentationRequest {
   requestId: string;
   threadId?: string;
   runId?: string;
-  markdown: string;
+  content: AgentContent;
   context?: {
     userMessage?: string;
     locale?: string;
@@ -730,10 +757,12 @@ export interface PresentationRequest {
 
 约束：
 
-1. `markdown` 必须存在且非空。
-2. `userMessage` 是调用方能够提供时使用的可选上下文。
-3. Service 不得要求业务 Agent 提供 `presentationMode`、`presentationIntent`、结构化数据或 UI Plan。
-4. UI Compiler 不校验 Markdown 中的业务结果是否真实。
+1. Markdown 内容必须存在且非空。
+2. 结构化数据必须是合法 JSON，并满足数据深度和数据项数量限制。
+3. 结构化数据未提供 `fallbackMarkdown` 时，Service 必须能够生成确定性、安全且不静默截断的 Markdown 表示。
+4. `userMessage` 是调用方能够提供时使用的可选上下文。
+5. Service 不得要求业务 Agent 提供 `presentationMode`、`presentationIntent` 或 UI Plan。
+6. UI Compiler 不校验 Agent 内容中的业务结果是否真实。
 
 ### 10.2 Presentation Decision 和 UI Plan
 
@@ -872,19 +901,11 @@ export interface PresentationError {
 ```
 
 前端必须根据 `mode` 把结果发送给 Markdown Renderer 或 A2UI Renderer。
-只要原始 Markdown 有效，路由、模型、UI Plan 或编译失败都应优先返回 `status = "degraded"` 的 Markdown 结果。
+只要原始 Agent 内容有效，路由、模型、UI Plan 或编译失败都应优先返回 `status = "degraded"` 的安全 Markdown 表示。
 
 ### 10.6 编译结果
 
 ```ts
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue };
-
 export interface UICompileMetadata {
   catalogId: string;
   catalogVersion: string;
@@ -1351,7 +1372,8 @@ Presentation Router 必须返回 `mode = "markdown"` 或 `mode = "generative-ui"
 
 #### SERVICE-014
 
-`mode = "markdown"` 时，Service 必须清理危险 HTML、内联 JavaScript、危险 URL 和不支持结构，然后直接返回 Markdown 结果。
+`mode = "markdown"` 且输入为 Markdown 时，Service 必须清理危险 HTML、内联 JavaScript、危险 URL 和不支持结构，然后直接返回 Markdown 结果。
+`mode = "markdown"` 且输入为结构化数据时，Service 必须使用调用方提供的 `fallbackMarkdown`，或生成确定性、安全且不静默截断的 Markdown 表示。
 该路径不得调用 UI Compiler Core。
 
 #### SERVICE-015
@@ -1360,8 +1382,8 @@ Presentation Router 必须返回 `mode = "markdown"` 或 `mode = "generative-ui"
 
 #### SERVICE-016
 
-调用方提供 `context.userMessage` 时，Presentation Router 应结合原始用户意图和 Agent Markdown 做展示决策。
-只有 Markdown 时仍必须支持路由，但系统不得宣称其判断与包含用户上下文时同等可靠。
+调用方提供 `context.userMessage` 时，Presentation Router 应结合原始用户意图和 Agent 内容做展示决策。
+只有 Agent 内容时仍必须支持路由，但系统不得宣称其判断与包含用户上下文时同等可靠。
 
 #### SERVICE-017
 
@@ -1375,7 +1397,16 @@ Presentation Router 必须返回 `mode = "markdown"` 或 `mode = "generative-ui"
 
 #### SERVICE-019
 
-路由、模型、UI Plan 或编译失败时，只要原始 Markdown 有效，Service 必须返回经过安全清理的降级 Markdown。
+路由、模型、UI Plan 或编译失败时，只要原始 Agent 内容有效，Service 必须返回经过安全清理或确定性序列化的降级 Markdown。
+
+#### SERVICE-020
+
+结构化数据必须在进入 Presentation Router 或 Model Adapter 之前通过 JSON、数据深度和数据项数量校验。
+
+#### SERVICE-021
+
+Structured Data Serializer 必须使用稳定、可测试的确定性序列化。
+Serializer 不得执行输入内容，不得静默截断或摘要业务数据。
 
 ---
 
@@ -1465,8 +1496,8 @@ MVP 必须提供：
 | 错误代码 | 触发条件 | 责任模块 |
 |---|---|---|
 | `REQUEST_BODY_TOO_LARGE` | 请求体超过限制 | UI Compiler Service |
-| `DATA_DEPTH_EXCEEDED` | 数据嵌套深度超过限制 | UI Compiler Core |
-| `DATA_ITEMS_EXCEEDED` | 数据项数量超过限制 | UI Compiler Core |
+| `DATA_DEPTH_EXCEEDED` | Agent 内容或 UI Plan 数据嵌套深度超过限制 | UI Compiler Service / UI Compiler Core |
+| `DATA_ITEMS_EXCEEDED` | Agent 内容或 UI Plan 数据项数量超过限制 | UI Compiler Service / UI Compiler Core |
 | `COMPILE_TIMEOUT` | 编译执行超时 | UI Compiler Service |
 | `MODEL_TIMEOUT` | 模型调用超时 | Model Adapter |
 | `MODEL_RETRY_EXHAUSTED` | 模型重试耗尽 | Model Adapter |
@@ -1500,13 +1531,14 @@ MVP 必须提供：
 
 ### 17.1 单元测试
 
-必须覆盖 Input Validator、Markdown Sanitizer、Presentation Router、Model Adapter、UI Plan Validator、Catalog Loader、Component Selector、UI IR Builder、A2UI Compiler、Schema Validator、Fallback Generator 和 Error Mapper。
+必须覆盖 Input Validator、Markdown Sanitizer、Structured Data Validator、Structured Data Serializer、Presentation Router、Model Adapter、UI Plan Validator、Catalog Loader、Component Selector、UI IR Builder、A2UI Compiler、Schema Validator、Fallback Generator 和 Error Mapper。
 
 ### 17.2 契约测试
 
 必须覆盖：
 
 * `PresentationRequest`；
+* `AgentContent`；
 * `PresentationDecision`；
 * `PresentationResult`；
 * `UIPlan`；
@@ -1522,16 +1554,18 @@ MVP 必须提供：
 必须验证：
 
 1. 普通 Markdown → Sanitizer → Markdown Result。
-2. Markdown → Presentation Router → UI Plan → Core → A2UI。
-3. 模型路由失败 → Sanitized Markdown。
-4. 非法 UI Plan → Sanitized Markdown。
-5. HTTP → Presentation Result。
-6. AG-UI → Markdown 或 A2UI Events。
-7. Catalog 不兼容降级。
-8. 非法组件、Props、Action 和嵌套降级。
-9. 模型超时、编译超时和请求取消。
-10. Catalog 中领域组件的合法选择。
-11. 未声明领域组件被拦截。
+2. 结构化数据 → Serializer → Markdown Result。
+3. Markdown → Presentation Router → UI Plan → Core → A2UI。
+4. 结构化数据 → Presentation Router → UI Plan → Core → A2UI。
+5. 模型路由失败 → Safe Markdown Representation。
+6. 非法 UI Plan → Safe Markdown Representation。
+7. HTTP → Presentation Result。
+8. AG-UI → Markdown 或 A2UI Events。
+9. Catalog 不兼容降级。
+10. 非法组件、Props、Action 和嵌套降级。
+11. 模型超时、编译超时和请求取消。
+12. Catalog 中领域组件的合法选择。
+13. 未声明领域组件被拦截。
 
 ### 17.4 Fixture
 
@@ -1541,6 +1575,7 @@ MVP 必须提供：
 * 至少一个领域 Component Catalog 示例；
 * 适合 Markdown 直出的示例；
 * 适合生成状态、比较、时间线、确认和表单 UI 的 Markdown；
+* 适合简单序列化和生成式 UI 的结构化数据；
 * 对应的 UI Plan；
 * 非法 Catalog；
 * 非法 Props；
@@ -1577,6 +1612,7 @@ MVP 必须提供：
 
 * 普通 Markdown 可以不调用 Core 直接返回。
 * 适合生成 UI 的 Markdown 可以生成经过验证的 A2UI。
+* 结构化数据可以安全序列化为 Markdown 或生成经过验证的 A2UI。
 * HTTP 可以完成一次展示路由和可选编译。
 * AG-UI 可以完成一次展示 Run。
 * AG-UI Run 有明确开始和结束事件。
@@ -1613,8 +1649,8 @@ A2UI / Fallback
 
 ### 阶段三：展示路由和模型分析
 
-增加 Presentation Router、Markdown Sanitizer 和可替换 Model Adapter。
-Model Adapter 用于判断 Markdown 直出或生成式 UI，并在 generative UI 分支生成 UI Plan。
+增加 Presentation Router、Markdown Sanitizer、Structured Data Validator、Structured Data Serializer 和可替换 Model Adapter。
+Model Adapter 用于判断简单 Markdown 表示或生成式 UI，并在 generative UI 分支生成 UI Plan。
 
 模型输出仍必须转换为 UI IR 并通过 Schema 校验。
 
@@ -1662,8 +1698,8 @@ Frontend Runtime 和真实组件渲染不属于阶段五验收范围，可以通
 | TD-005 | UI Compiler Service 是展示路由和编译应用服务，不是业务 Agent |
 | TD-006 | 项目采用 Monorepo，共享包可以独立发布 |
 | TD-007 | Core 不依赖网络协议、前端框架和具体 Agent 框架 |
-| TD-008 | PresentationRequest 是 Service 外部输入契约，业务 Agent 只需要提供 Markdown |
-| TD-009 | 普通 Markdown 直接返回，只有 generative UI 决策进入 UI Compiler Core |
+| TD-008 | PresentationRequest 是 Service 外部输入契约，支持 Markdown 和 JSON 结构化数据 |
+| TD-009 | 简单内容返回安全 Markdown 表示，只有 generative UI 决策进入 UI Compiler Core |
 | TD-010 | UI IR 当前默认编译为 A2UI |
 | TD-011 | 组件只能来自 Component Catalog |
 | TD-012 | Component Catalog 属于 Compiler 契约，Component Registry 属于外部 Frontend Runtime |
@@ -1673,7 +1709,7 @@ Frontend Runtime 和真实组件渲染不属于阶段五验收范围，可以通
 | TD-016 | Action MVP 只生成描述，不实现完整业务回传 |
 | TD-017 | MVP 支持一次性 A2UI，预留增量输出 |
 | TD-018 | 所有失败必须返回明确错误或降级结果 |
-| TD-019 | Presentation Router 位于 Core 之前，负责 Markdown 或 generative UI 决策 |
+| TD-019 | Presentation Router 位于 Core 之前，负责安全 Markdown 表示或 generative UI 决策 |
 | TD-020 | 一次模型调用应该同时返回展示决策和可选 UI Plan |
 | TD-021 | Core 不依赖模型供应商，也不决定是否生成 UI |
 | TD-022 | 业务 Agent、Frontend Runtime、Component Registry 和 Interaction Gateway 均为外部系统 |

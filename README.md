@@ -14,8 +14,8 @@
 
 ## Problem
 
-业务 Agent 的输出契约只有 Markdown。
-它们不会稳定提供 `presentationMode`、`presentationIntent`、结构化业务数据或 UI Plan。
+业务 Agent 的内容输出可以是 Markdown 或 JSON 结构化数据。
+它们不会稳定提供 `presentationMode`、`presentationIntent` 或 UI Plan。
 
 系统需要解决两个不同问题：
 
@@ -28,7 +28,7 @@
 
 ```text
 Business Agent / LLM Agent
-只返回 Markdown
+返回 Markdown / JSON
               |
               v
       UI Compiler Service
@@ -54,16 +54,17 @@ Business Agent / LLM Agent
 ```
 
 Presentation Router 可以通过可替换的 Model Adapter 调用大模型。
-一次模型调用应同时返回 Markdown 直出决策或受 Schema 约束的 UI Plan，避免分类和规划分别调用模型。
+一次模型调用应同时返回简单 Markdown 表示决策或受 Schema 约束的 UI Plan，避免分类和规划分别调用模型。
 
 普通 Markdown 经过安全清理后直接返回前端，不进入 UI Compiler Core。
+结构化数据可以通过确定性规则或模型生成 UI Plan，也可以安全序列化为 Markdown 结果。
 只有已经选择生成式 UI 的请求才进入 Core。
 
 ## 模块职责
 
 ### UI Compiler Service
 
-- 接收业务 Agent 返回的 Markdown。
+- 接收业务 Agent 返回的 Markdown 或 JSON 结构化数据。
 - 接收调用方能够提供的原始用户消息和展示上下文。
 - 调用 Presentation Router。
 - 组装具体 Model Adapter。
@@ -73,6 +74,7 @@ Presentation Router 可以通过可替换的 Model Adapter 调用大模型。
 ### Presentation Router
 
 - 判断 Markdown 应直接展示还是生成 UI。
+- 判断结构化数据应生成 UI 还是安全序列化为 Markdown。
 - 在需要语义分析时调用 Model Adapter。
 - 返回受约束的 `PresentationDecision`。
 - 模型或路由失败时安全降级为 Markdown。
@@ -114,6 +116,7 @@ Core 不决定是否生成 UI，也不直接依赖模型 SDK 或具体模型供�
 - [数据契约](./docs/CONTRACTS.md)
 - [领域词汇](./CONTEXT.md)
 - [ADR-0005](./docs/adr/0005-route-markdown-before-ui-compilation.md)
+- [ADR-0006](./docs/adr/0006-support-structured-agent-content.md)
 - [AI 编码 Agent 使用说明](./AGENTS.md)
 
 ## 快速开始

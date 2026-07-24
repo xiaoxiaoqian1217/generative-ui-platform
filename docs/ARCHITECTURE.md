@@ -3,15 +3,15 @@
 ## 1. Product Architecture
 
 Generative UI Compiler is an Agent presentation infrastructure layer.
-The Business Agent output contract contains only Markdown.
-Presentation mode, presentation intent, structured data, and UI plans are not part of that contract.
+The Business Agent content contract accepts Markdown or JSON structured data.
+Presentation mode, presentation intent, and UI plans are not part of that contract.
 
-The system first decides whether the Markdown should remain Markdown or become a controlled generative UI.
+The system first decides whether the content should use a simple Markdown representation or become a controlled generative UI.
 Only content selected for generative UI enters UI Compiler Core.
 
 ```text
 Business Agent / LLM Agent
-returns Markdown
+returns Markdown / JSON
 
         |
         v
@@ -22,7 +22,7 @@ UI Compiler Service
 
 Presentation Router
         |
-        +---- markdown ----> Markdown Sanitizer ----> Markdown Result
+        +---- markdown ----> Safe Markdown Representation
         |
         +---- generative-ui
                     |
@@ -50,9 +50,10 @@ The service does not manage business Agent execution, Agent routing, workflow st
 Responsibilities:
 
 - Provide HTTP and AG-UI interfaces.
-- Receive Markdown produced by an external Business Agent.
+- Receive Markdown or JSON structured data produced by an external Business Agent.
 - Accept the original user message and presentation context when the caller can provide them.
 - Sanitize Markdown before returning it to a frontend.
+- Serialize structured data to a safe Markdown representation when generative UI is not selected.
 - Invoke Presentation Router.
 - Return ordinary content as a Markdown result without invoking UI Compiler Core.
 - Pass a validated UI plan to UI Compiler Core when generative UI is selected.
@@ -64,7 +65,7 @@ It is not a Business Agent and does not perform business reasoning, business too
 
 ### Presentation Router
 
-Presentation Router decides how an Agent response should be presented.
+Presentation Router decides how Markdown or structured Agent content should be presented.
 Its result is a discriminated union:
 
 ```ts
@@ -85,9 +86,9 @@ When semantic analysis is required, it uses a replaceable Model Adapter.
 One model call should produce both the presentation decision and the UI plan so the system does not pay for separate classification and planning calls.
 
 The decision should consider the original user message when it is available.
-Markdown alone is accepted, but the system must treat a decision made without user context as lower confidence.
+Content without the original user message is accepted, but the system must treat the decision as lower confidence.
 
-If routing or model analysis fails, the safe default is sanitized Markdown.
+If routing or model analysis fails, the safe default is sanitized Markdown or a deterministic Markdown serialization of structured data.
 
 ### Model Adapter
 
@@ -134,7 +135,7 @@ It sends a Markdown result to its Markdown Renderer and a generative UI result t
 ## 3. Contract Flow
 
 ```text
-Agent Markdown
+Agent Markdown / JSON
         |
         v
 PresentationRequest
@@ -153,11 +154,11 @@ PresentationDecision
                          PresentationResult.generative-ui
 ```
 
-`PresentationRequest` describes raw Markdown plus optional user and rendering context.
+`PresentationRequest` contains Markdown or JSON structured data plus optional user and rendering context.
 `PresentationDecision` is the validated output of Presentation Router.
 A Model Adapter may produce an untrusted candidate decision, but that candidate is not a `PresentationDecision` until it passes Schema validation.
 `UICompileRequest` describes an already selected and validated generative UI plan.
-`PresentationResult` is the public service result and distinguishes Markdown from generative UI.
+`PresentationResult` is the public service result and distinguishes a simple Markdown representation from generative UI.
 
 ## 4. Component Extension Model
 
@@ -198,6 +199,8 @@ ui-compiler-service
         +---- model-adapter
         |
         +---- markdown-sanitizer
+        |
+        +---- structured-data-serializer
         |
         +---- ui-compiler-core
                     |
