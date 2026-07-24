@@ -1,21 +1,20 @@
 # ADR-0001: Monorepo and module boundaries
 
-- **Status:** Accepted, partially superseded by ADR-0003
+- **Status:** Accepted
 - **Date:** 2026-07-23
 
 ## Supersession
 
-ADR-0003 supersedes this ADR's decision to include Interaction Gateway in the MVP.
+ADR-0003 supersedes the original decision to include Interaction Gateway in the MVP.
 The monorepo and framework-neutral compiler core decisions remain accepted.
 
 ## Decision
 
-Use a pnpm/Turborepo Monorepo with two deployable apps and a framework-neutral compiler core.
+Use a pnpm/Turborepo monorepo with an independently deployable UI Compiler Agent and a framework-neutral compiler core.
 
 ## Consequences
 
 - Shared contracts stay synchronized.
-- Apps can be built and deployed independently.
-- Gateway uses Core directly in MVP.
-- A later deployment may call UI Compiler Agent over HTTP without changing Core.
+- UI Compiler Agent can be built and deployed independently.
+- UI Compiler Core remains independent of application and transport concerns.
 - Dependency rules are enforced in review and CI.

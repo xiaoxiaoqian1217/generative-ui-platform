@@ -1,6 +1,6 @@
 # Generative UI Platform - Generative UI Compiler MVP 需求规格说明书
 
-**文档版本：** 1.1
+**文档版本：** 1.2
 **项目阶段：** MVP
 **目标读者：** 产品负责人、架构师、开发人员、测试人员、Codex、Claude Code 等编码 Agent
 
@@ -618,7 +618,6 @@ export interface UICompileRequest {
   source?: {
     sourceType:
       | "ui-compiler-agent"
-      | "interaction-gateway"
       | "business-agent"
       | "http"
       | "sdk"
@@ -1592,7 +1591,9 @@ UICompileResult
 
 ## 22. 后续阶段：Interaction Gateway
 
-当项目出现以下需求时，再启动 Interaction Gateway：
+本节是 non-normative roadmap，不属于当前 MVP 的设计、契约、测试或验收依据。
+
+当项目出现以下需求时，可以启动 Interaction Gateway 的设计：
 
 * 前端需要统一连接多个业务 Agent；
 * 需要根据 Agent ID 或能力路由请求；
@@ -1602,27 +1603,10 @@ UICompileResult
 * 需要处理审批、中断和任务恢复；
 * 需要聚合多个 Agent 的业务结果。
 
-届时目录扩展为：
-
-```text
-generative-ui-platform/
-├─ apps/
-│  ├─ ui-compiler-agent/
-│  └─ interaction-gateway/
-│
-└─ packages/
-   └─ ui-compiler-core/
-```
-
-Interaction Gateway 应优先直接复用 `ui-compiler-core`，不应把 `ui-compiler-agent` 作为代码依赖。
-
-```text
-Interaction Gateway
-        ↓
-UI Compiler Core
-```
-
-只有需要独立扩容或故障隔离时，才通过 HTTP 调用 UI Compiler Agent。
+这些条件只允许启动设计，不自动授权创建或实现 Gateway。
+正式启动必须先创建显式的范围变更 Issue，并形成新的 ADR。
+新 ADR 必须重新确认 Gateway 的职责、依赖方向、契约归属、部署和协议边界，以及对产品范围和验收标准的影响。
+MVP 目标 workspace 不得保留 Gateway app、专属 contract package 或公共契约预留。
 
 ---
 

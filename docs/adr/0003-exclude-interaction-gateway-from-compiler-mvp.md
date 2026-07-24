@@ -30,9 +30,10 @@ ADR-0001 的 monorepo 和其余模块边界决策继续有效。
 ## Consequences
 
 - 当前设计和交付计划不得依赖 Interaction Gateway。
-- 仓库中的现有 Gateway app 和专属 contract package 需要通过独立实现 ticket 清理。
+- 仓库中的现有 Gateway app、专属 contract package 和相关活跃配置需要通过独立实现 ticket 清理。
 - UI Compiler Agent 必须能够独立对外提供当前 MVP 的编译能力。
 - 未来重新启动 Gateway 时，必须基于届时需求重新设计，不能默认恢复旧脚手架。
 - 清理 ticket 必须移除 `sourceType: "interaction-gateway"` 等 Gateway 专属契约。
+- 清理 ticket 必须同步移除 Gateway 的容器、构建、发布、依赖维护、标签和 Issue 入口配置。
 - 当前架构视图必须将未来 Gateway 与规范性的 MVP 架构明确分开。
 - 未完成新的范围变更 Issue 和 ADR 前，不得重新创建 Gateway app 或专属 contract package。

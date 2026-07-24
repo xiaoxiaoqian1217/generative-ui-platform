@@ -26,20 +26,25 @@
 
 ## 当前 MVP: Generative UI Compiler
 
-- packages/ui-compiler-core
-- apps/ui-compiler-agent
+- `packages/ui-compiler-core`
+- `apps/ui-compiler-agent`
 
-当前 MVP 解决输出标准化和受控 UI 编译；Action 路由和回传由后续 Interaction Gateway 负责。
+当前 MVP 解决输出标准化和受控 UI 编译。
+Action 路由和回传不属于当前 MVP。
 
 ## 后续规划: Interaction Gateway
 
-- apps/interaction-gateway
+Interaction Gateway 仅作为 non-normative roadmap 保留。
+只有满足业务触发条件，并通过显式的范围变更 Issue 和新 ADR 后，才能进入设计。
+MVP 目标 workspace 不保留 Gateway app、专属 contract 或契约预留。
+仓库中仍存在等待 ADR-0003 清理的早期 Gateway 遗留物，它们不是受支持的 MVP 能力。
 
 ## 文档入口
 
 - [需求规格说明书](./docs/REQUIREMENTS.md)
 - [架构说明](./docs/ARCHITECTURE.md)
 - [数据契约](./docs/CONTRACTS.md)
+- [领域词汇](./CONTEXT.md)
 - [AI 编码 Agent 使用说明](./AGENTS.md)
 
 ## 快速开始
