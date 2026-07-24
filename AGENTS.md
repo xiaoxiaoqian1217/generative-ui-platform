@@ -50,3 +50,20 @@ Run `pnpm validate` after all changes. Documentation-only changes must run `pnpm
 ## Pull requests
 
 PR descriptions must include: scope, rationale, architecture impact, validation, risks, and documentation changes.
+
+## Agent skills
+
+### Issue tracker
+
+Issue 使用 GitHub Issues 跟踪。
+详见 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+Triage 使用五种默认角色标签。
+详见 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+领域文档使用 single-context 布局。
+详见 `docs/agents/domain.md`。
