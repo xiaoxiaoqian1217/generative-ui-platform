@@ -1,6 +1,18 @@
 # Generative UI Platform
 
-面向多智能体应用的生成式 UI 编译与统一交互平台。
+面向多智能体应用的生成式 UI 编译与统一交互平台仓库。
+
+## 名称与范围
+
+| 名称 | 定位 | 当前状态 |
+|---|---|---|
+| Generative UI Platform | 仓库名称和长期平台定位 | 持续使用 |
+| Generative UI Compiler | 当前 MVP 产品 | 本期实现 |
+| Interaction Gateway | 平台未来扩展能力 | 不属于当前 MVP |
+
+仓库名称使用 Generative UI Platform，不表示当前已经实现完整平台能力。
+
+当前需求、开发和验收范围仅覆盖 Generative UI Compiler。
 
 ## Problem
 
@@ -9,15 +21,19 @@
 - Agent 输出格式不统一
 - 前端需要适配不同 Agent
 - UI 和业务逻辑强耦合
-- Action 无法可靠回传
 
 本项目通过统一 Presentation Contract 和 UI Compiler 解决。
 
-## 核心模块
+## 当前 MVP: Generative UI Compiler
 
-- `packages/ui-compiler-core`：框架无关的 Markdown / 结构化数据 → UI IR → A2UI 编译核心。
-- `apps/ui-compiler-agent`：将编译核心封装为独立 HTTP / AG-UI 服务。
-- `apps/interaction-gateway`：面向前端的统一 AG-UI 入口，协调业务 Agent、Action 与 Surface。
+- packages/ui-compiler-core
+- apps/ui-compiler-agent
+
+当前 MVP 解决输出标准化和受控 UI 编译；Action 路由和回传由后续 Interaction Gateway 负责。
+
+## 后续规划: Interaction Gateway
+
+- apps/interaction-gateway
 
 ## 文档入口
 

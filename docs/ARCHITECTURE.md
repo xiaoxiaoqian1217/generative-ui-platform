@@ -1,41 +1,22 @@
 # Architecture
 
-## Components
+## 1. Current MVP Architecture
 
-```text
-Frontend (external)
-  → AG-UI
-Interaction Gateway
-  → Business Agent Adapters (external agents)
-  → UI Compiler Core
-  → A2UI carried in AG-UI events
-```
+External Caller
+    → HTTP / AG-UI
+UI Compiler Agent
+    → internal function call
+UI Compiler Core
+    → A2UI / Fallback
 
-The independent compiler path is:
+## 2. Current Dependency Direction
 
-```text
-External caller → HTTP / AG-UI → UI Compiler Agent → UI Compiler Core
-```
+ui-compiler-agent → ui-compiler-core
+ui-compiler-core → contract packages
 
-## Dependency direction
+## 3. Future Platform Architecture
 
-```text
-apps → packages
-ui-compiler-core → contract packages only
-```
-
-Forbidden:
-
-```text
-packages → apps
-interaction-gateway ↔ ui-compiler-agent package imports
-```
-
-## State ownership
-
-- Gateway: Run, routing, Action, Surface correlation.
-- Business systems: authoritative domain state and checkpoints.
-- Compiler: Catalog and compilation caches only.
-- Frontend: rendered Surface state.
-
-See `docs/REQUIREMENTS.md` for normative requirements.
+Frontend
+    → Interaction Gateway
+    → Business Agents
+    → UI Compiler Core

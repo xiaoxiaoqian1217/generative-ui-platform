@@ -1,8 +1,7 @@
-# Generative UI Compiler 需求规格说明书
+# Generative UI Platform - Generative UI Compiler MVP 需求规格说明书
 
 **文档版本：** 1.1
 **项目阶段：** MVP
-**推荐文件名：** `REQUIREMENTS.md`
 **目标读者：** 产品负责人、架构师、开发人员、测试人员、Codex、Claude Code 等编码 Agent
 
 ---
@@ -30,7 +29,21 @@
 
 ## 2. 项目概述
 
-### 2.1 背景
+### 2.1 名称与范围
+
+| 名称 | 定位 | 本文含义 |
+|---|---|---|
+| Generative UI Platform | 仓库名称和长期平台定位 | 承载当前 Compiler MVP 及未来平台能力 |
+| Generative UI Compiler | 当前 MVP 产品 | 本文的需求、开发和验收对象 |
+| Interaction Gateway | 未来平台扩展能力 | 不属于当前 MVP 范围 |
+
+仓库长期使用 Generative UI Platform 作为名称。
+
+本文标题中的 Generative UI Compiler 表示当前 MVP 产品，不表示仓库从 Platform 更名为 Compiler。
+
+除非文档明确说明未来阶段，本文中的“项目”和“系统”均指当前 Generative UI Compiler MVP。
+
+### 2.2 背景
 
 业务 Agent 通常以 Markdown 或结构化数据返回结果。
 
@@ -46,7 +59,7 @@
 
 本项目建设独立的生成式 UI 编译能力，将 Markdown 或结构化数据转换为受控的 A2UI 数据。
 
-### 2.2 项目定位
+### 2.3 项目定位
 
 本项目定位为：
 
@@ -60,7 +73,7 @@
 2. **UI Compiler Agent**
    将 UI Compiler Core 封装为可独立调用和部署的 HTTP／AG-UI 服务。
 
-### 2.3 当前阶段结论
+### 2.4 当前阶段结论
 
 当前 MVP 不建设 Interaction Gateway。
 
@@ -599,11 +612,14 @@ MVP 中 Action 只用于生成 UI 描述，不实现 Action 回传业务 Agent �
 ```ts
 export interface UICompileRequest {
   requestId: string;
+  threadId?: string;
+  runId?: string;
 
   source?: {
     sourceType:
+      | "ui-compiler-agent"
+      | "interaction-gateway"
       | "business-agent"
-      | "runtime"
       | "http"
       | "sdk"
       | "mcp";
@@ -633,42 +649,76 @@ export interface UICompileRequest {
 }
 ```
 
-`threadId` 和 `runId` 属于协议或调用上下文，不属于 Core 必需字段。
+`threadId` 和 `runId` 是可选的协议关联字段。
+
+Core 可以透传这些字段，但不得根据这些字段维护会话状态或 Run 生命周期。
 
 AG-UI Adapter 可以在协议层维护 Run 信息，但不得要求 Core 维护会话状态。
 
 ### 10.5 编译结果
 
 ```ts
-export interface UICompileResult {
-  requestId: string;
-  success: boolean;
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 
-  surfaceId?: string;
-  operations?: A2UIOperation[];
-
-  fallback?: {
-    type: "template" | "markdown" | "text";
-    content: unknown;
-  };
-
-  metadata: {
-    catalogId: string;
-    catalogVersion: string;
-    compilerVersion: string;
-    compileDurationMs: number;
-    degraded: boolean;
-  };
-
-  diagnostics?: {
-    inferredIntent?: PresentationIntent;
-    selectedComponents?: string[];
-    warnings?: string[];
-  };
-
-  errors?: CompileError[];
+export interface UICompileMetadata {
+  catalogId: string;
+  catalogVersion: string;
+  compilerVersion: string;
+  compileDurationMs: number;
 }
+
+export interface CompileFallback {
+  type: "template" | "markdown" | "text";
+  content: JsonValue;
+  reason: string;
+  errorCode: string;
+}
+
+interface UICompileResultBase {
+  requestId: string;
+  metadata: UICompileMetadata;
+}
+
+export type UICompileResult = UICompileResultBase &
+  (
+    | {
+      success: true;
+      degraded: false;
+      surfaceId: string;
+      operations: A2UIOperation[];
+      fallback?: never;
+      errors?: never;
+    }
+    | {
+      success: true;
+      degraded: true;
+      surfaceId?: never;
+      operations?: never;
+      fallback: CompileFallback;
+      errors: CompileError[];
+    }
+    | {
+      success: false;
+      degraded: false;
+      surfaceId?: never;
+      operations?: never;
+      fallback?: never;
+      errors: CompileError[];
+    }
+  );
 ```
+
+`success` 表示调用方是否获得了可消费结果。
+完整 A2UI 和降级内容都属于可消费结果。
+`degraded` 只在返回降级内容时为 `true`。
+完全失败不得同时返回 Operations 或 Fallback。
+所有结果都必须携带请求关联信息和编译元数据。
 
 ### 10.6 编译错误
 
@@ -820,12 +870,18 @@ UI IR 必须满足：
 * `catalogId`；
 * `catalogVersion`；
 * Action 基础结构；
-* 请求大小；
-* 数据嵌套深度。
+* 数据嵌套深度；
+* 数据项数量。
 
 #### CORE-003
 
 输入校验失败时不得继续执行 UI 编译。
+
+数据嵌套深度和数据项数量的阈值必须通过配置注入，不得硬编码到 UI Compiler Core。
+
+开发阶段可以使用宽松配置，但单元测试和集成测试必须能够注入有限阈值并验证拒绝行为。
+
+HTTP 请求体字节数必须由 UI Compiler Agent 在反序列化之前校验，不得由 UI Compiler Core 负责。
 
 ---
 
@@ -1184,6 +1240,12 @@ UI Compiler Core 不得依赖：
 * 编译失败时提供降级结果；
 * 提供健康检查。
 
+请求超时必须通过配置注入。
+
+启用模型 Adapter 时，模型调用超时和模型重试次数必须通过配置注入。
+
+在对应功能进入阶段验收前，必须根据真实 Fixture、性能测试结果和部署环境约束确定相关默认值。
+
 ### 16.3 安全性
 
 系统必须：
@@ -1199,7 +1261,50 @@ UI Compiler Core 不得依赖：
 * 禁止加载未经授权的远程组件；
 * 禁止向调用方返回内部堆栈信息。
 
-### 16.4 可观测性
+### 16.4 资源限制配置
+
+MVP 必须提供以下基础资源限制配置能力：
+
+| 配置项 | 含义 | MVP 默认值确定时间 |
+|---|---|---|
+| `maxRequestBytes` | HTTP 请求体允许的最大字节数 | 阶段四验收前 |
+| `maxDataDepth` | 结构化数据允许的最大嵌套层数 | 阶段二验收前 |
+| `maxDataItems` | 单次请求允许处理的最大数据项数量 | 阶段二验收前 |
+| `compileTimeoutMs` | 单次编译允许的最长执行时间 | 阶段五验收前 |
+
+启用阶段三的模型 Adapter 时，还必须提供以下配置能力：
+
+| 配置项 | 含义 | 默认值确定时间 |
+|---|---|---|
+| `modelTimeoutMs` | 单次模型调用允许的最长执行时间 | 阶段三验收前 |
+| `modelRetryCount` | 单次编译允许的模型调用重试次数 | 阶段三验收前 |
+
+需求确认阶段不预先规定这些配置的具体数值，也不得将未经验证的示例值直接作为验收标准。
+
+开发环境可以使用相对宽松的配置，以便收集输入规模、执行时间和资源消耗数据。
+
+生产部署不得关闭请求体大小、数据嵌套深度、数据项数量和超时保护。
+
+`maxDataItems` 的统计口径必须在阶段二验收前明确，并在契约测试中保持一致。
+
+统计口径至少需要说明数组元素、对象属性和 UI IR 节点是否分别计数。
+
+资源限制触发后必须返回稳定错误代码，不得依赖错误文本区分原因。
+
+MVP 资源限制错误代码至少包括：
+
+| 错误代码 | 触发条件 | 责任模块 |
+|---|---|---|
+| `REQUEST_BODY_TOO_LARGE` | HTTP 请求体超过 `maxRequestBytes` | UI Compiler Agent |
+| `DATA_DEPTH_EXCEEDED` | 结构化数据嵌套深度超过 `maxDataDepth` | UI Compiler Core |
+| `DATA_ITEMS_EXCEEDED` | 数据项数量超过 `maxDataItems` | UI Compiler Core |
+| `COMPILE_TIMEOUT` | 编译执行时间超过 `compileTimeoutMs` | UI Compiler Agent |
+| `MODEL_TIMEOUT` | 模型调用时间超过 `modelTimeoutMs` | Model Adapter |
+| `MODEL_RETRY_EXHAUSTED` | 可重试模型错误超过 `modelRetryCount` | Model Adapter |
+
+未启用模型 Adapter 时，不要求实现模型相关错误代码。
+
+### 16.5 可观测性
 
 每次请求至少记录：
 
@@ -1222,7 +1327,7 @@ UI Compiler Core 不得依赖：
 * 错误代码；
 * 编译器版本。
 
-### 16.5 性能
+### 16.6 性能
 
 系统应该：
 
@@ -1230,11 +1335,23 @@ UI Compiler Core 不得依赖：
 * 缓存重复 Schema；
 * 使用确定性 Markdown Parser；
 * 本地执行 Schema 校验；
-* 对大型表格进行截断或摘要；
+* 记录表格行数、列数和处理耗时；
 * 避免不必要的模型调用；
 * 为后续增量编译预留接口。
 
 MVP 不规定固定毫秒指标，但必须记录性能数据。
+
+MVP 不自动截断或摘要大型表格。
+
+开发阶段应通过真实 Fixture 记录表格行数、列数、单元格数量、输入字节数和处理耗时，为后续策略提供依据。
+
+后续引入大型表格截断或摘要前必须形成 ADR。
+
+ADR 必须明确判定维度、阈值配置、处理策略、表头计数方式、最低保留规则以及 Markdown 表格与结构化数据表格的统计口径。
+
+截断或摘要会改变输出内容，因此 ADR 还必须定义结构化通知和结果元数据契约。
+
+系统不得静默截断或摘要表格。
 
 ---
 
@@ -1300,6 +1417,8 @@ MVP 不规定固定毫秒指标，但必须记录性能数据。
 * 超大输入；
 * 超时模拟。
 
+超大输入和超时测试必须通过测试配置注入有限阈值，不依赖开发环境的宽松默认值。
+
 ---
 
 ## 18. MVP 验收标准
@@ -1362,6 +1481,8 @@ MVP 不规定固定毫秒指标，但必须记录性能数据。
 
 ### 阶段二：确定性编译链路
 
+开始本阶段前，必须完成第 23 节中阶段二对应的 ADR。
+
 完成：
 
 * Input Validator；
@@ -1386,6 +1507,8 @@ UICompileResult
 
 ### 阶段三：可选智能分析
 
+开始本阶段前，必须完成第 23 节中阶段三对应的 ADR。
+
 在确定性链路稳定后，可以增加模型 Adapter，用于：
 
 * 展示意图推断；
@@ -1396,6 +1519,8 @@ UICompileResult
 模型输出仍必须转换为 UI IR 并通过 Schema 校验。
 
 ### 阶段四：UI Compiler Agent
+
+开始本阶段前，必须完成第 23 节中阶段四对应的 ADR。
 
 完成：
 
@@ -1503,17 +1628,24 @@ UI Compiler Core
 
 ## 23. 待确认事项
 
-以下事项可在开发阶段形成 ADR，不阻塞需求确认：
+以下事项不阻塞当前需求确认，但必须在对应阶段开始前形成 ADR：
 
-1. AG-UI SDK 版本。
-2. A2UI Schema 版本。
-3. Node HTTP 框架。
-4. Markdown Parser。
-5. Schema 校验库。
-6. 模型 Adapter 接口。
-7. Component Catalog 存储方式。
-8. A2UI 自定义事件载荷格式。
-9. 编译结果缓存策略。
-10. 日志和链路追踪方案。
+| 待确认事项 | 决策截止点 |
+|---|---|
+| A2UI Schema 版本 | 阶段二开始前 |
+| Markdown Parser | 阶段二开始前 |
+| Schema 校验库 | 阶段二开始前 |
+| 模型 Adapter 接口 | 阶段三开始前 |
+| Node HTTP 框架 | 阶段四开始前 |
+| AG-UI SDK 版本 | 阶段四开始前 |
+| A2UI 自定义事件载荷格式 | 阶段四开始前 |
+
+以下事项可以在开发阶段根据实现和验证结果形成 ADR，但不得晚于相关功能进入阶段验收：
+
+| 待确认事项 | 决策要求 |
+|---|---|
+| Component Catalog 存储方式 | 在引入持久化实现前完成 |
+| 编译结果缓存策略 | 在启用编译结果缓存前完成 |
+| 日志和链路追踪方案 | 阶段五验收前完成 |
 
 在没有明确决策前，编码 Agent 不得将具体实现硬编码到 UI Compiler Core。

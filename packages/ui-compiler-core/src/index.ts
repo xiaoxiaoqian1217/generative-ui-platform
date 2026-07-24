@@ -1,12 +1,17 @@
-import type { ComponentCatalog } from "@generative-ui/component-catalog-schema";
 import {
   type UICompileRequest,
   type UICompileResult,
   uiCompileRequestSchema,
+  uiCompileResultSchema,
 } from "@generative-ui/compiler-contract";
+import type { ComponentCatalog } from "@generative-ui/component-catalog-schema";
 
 export interface CompileOptions {
   catalog: ComponentCatalog;
+}
+
+function readNonEmptyString(value: unknown, fallback: string): string {
+  return typeof value === "string" && value.length > 0 ? value : fallback;
 }
 
 export async function compileUI(
@@ -15,23 +20,29 @@ export async function compileUI(
 ): Promise<UICompileResult> {
   const startedAt = performance.now();
   const parsed = uiCompileRequestSchema.safeParse(input);
-  const metadata = {
-    catalogId: input.catalog.catalogId,
-    catalogVersion: input.catalog.catalogVersion,
-    compilerVersion: "0.1.0",
-    compileDurationMs: 0,
-    degraded: false,
-  };
 
   if (!parsed.success) {
-    return {
-      requestId: input.requestId,
+    const invalidInput = input as {
+      requestId?: unknown;
+      catalog?: { catalogId?: unknown; catalogVersion?: unknown };
+    };
+
+    return uiCompileResultSchema.parse({
+      requestId: readNonEmptyString(invalidInput.requestId, "unknown-request"),
       success: false,
-      fallback: {
-        type: input.presentation.content ? "markdown" : "text",
-        content: input.presentation.content ?? "Invalid compile request",
+      degraded: false,
+      metadata: {
+        catalogId: readNonEmptyString(
+          invalidInput.catalog?.catalogId,
+          "unknown-catalog",
+        ),
+        catalogVersion: readNonEmptyString(
+          invalidInput.catalog?.catalogVersion,
+          "unknown-version",
+        ),
+        compilerVersion: "0.1.0",
+        compileDurationMs: performance.now() - startedAt,
       },
-      metadata: { ...metadata, compileDurationMs: performance.now() - startedAt, degraded: true },
       errors: [
         {
           code: "COMPILE_INPUT_INVALID",
@@ -41,31 +52,52 @@ export async function compileUI(
           details: parsed.error.flatten(),
         },
       ],
-    };
+    });
   }
 
-  const markdownComponent = options.catalog.components.find((component) => component.type === "Markdown");
+  const request = parsed.data;
+  const metadata = {
+    catalogId: request.catalog.catalogId,
+    catalogVersion: request.catalog.catalogVersion,
+    compilerVersion: "0.1.0",
+    compileDurationMs: 0,
+  };
+
+  const markdownComponent = options.catalog.components.find(
+    (component) => component.type === "Markdown",
+  );
   if (!markdownComponent) {
-    return {
-      requestId: input.requestId,
-      success: false,
-      fallback: { type: "markdown", content: input.presentation.content ?? input.presentation.data },
-      metadata: { ...metadata, compileDurationMs: performance.now() - startedAt, degraded: true },
+    return uiCompileResultSchema.parse({
+      requestId: request.requestId,
+      success: true,
+      degraded: true,
+      fallback: {
+        type: request.presentation.content ? "markdown" : "text",
+        content: request.presentation.content ?? request.presentation.data,
+        reason: "The requested catalog cannot render Markdown",
+        errorCode: "CATALOG_MARKDOWN_COMPONENT_MISSING",
+      },
+      metadata: {
+        ...metadata,
+        compileDurationMs: performance.now() - startedAt,
+      },
       errors: [
         {
           code: "CATALOG_MARKDOWN_COMPONENT_MISSING",
-          message: "The MVP compiler requires a Markdown component in the catalog",
-          stage: "catalog-selection",
+          message:
+            "The MVP compiler requires a Markdown component in the catalog",
+          stage: "component-selection",
           retryable: false,
         },
       ],
-    };
+    });
   }
 
-  const surfaceId = `surface-${input.requestId}`;
-  return {
-    requestId: input.requestId,
+  const surfaceId = `surface-${request.requestId}`;
+  return uiCompileResultSchema.parse({
+    requestId: request.requestId,
     success: true,
+    degraded: false,
     surfaceId,
     operations: [
       {
@@ -75,11 +107,12 @@ export async function compileUI(
           component: markdownComponent.type,
           props: {
             content:
-              input.presentation.content ?? JSON.stringify(input.presentation.data, null, 2),
+              request.presentation.content ??
+              JSON.stringify(request.presentation.data, null, 2),
           },
         },
       },
     ],
     metadata: { ...metadata, compileDurationMs: performance.now() - startedAt },
-  };
+  });
 }

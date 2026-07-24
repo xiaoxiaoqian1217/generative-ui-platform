@@ -7,12 +7,29 @@ export interface AgUiEvent {
   payload?: unknown;
 }
 
-export function compileResultToAgUiEvents(runId: string, result: UICompileResult): AgUiEvent[] {
+export function compileResultToAgUiEvents(
+  runId: string,
+  result: UICompileResult,
+): AgUiEvent[] {
   const now = new Date().toISOString();
+  const started = { type: "RUN_STARTED", runId, timestamp: now };
+
+  if (!result.success) {
+    return [
+      started,
+      {
+        type: "RUN_ERROR",
+        runId,
+        timestamp: new Date().toISOString(),
+        payload: result,
+      },
+    ];
+  }
+
   return [
-    { type: "RUN_STARTED", runId, timestamp: now },
+    started,
     {
-      type: result.success ? "A2UI_RESULT" : "A2UI_FALLBACK",
+      type: result.degraded ? "A2UI_FALLBACK" : "A2UI_RESULT",
       runId,
       timestamp: new Date().toISOString(),
       payload: result,

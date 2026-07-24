@@ -10,7 +10,9 @@
 
 - `packages/ui-compiler-core` MUST remain framework-, transport-, and vendor-neutral.
 - Apps may depend on packages; packages MUST NOT depend on apps.
-- `apps/ui-compiler-agent` and `apps/interaction-gateway` MUST NOT import one another.
+- Current MVP MUST NOT create or implement `apps/interaction-gateway`.
+- In the future Gateway phase, `ui-compiler-agent` and
+  `interaction-gateway` MUST NOT import one another.
 - Shared contracts belong in the matching contract package; do not duplicate types.
 - External systems (frontend, Copilot Runtime, real business agents) are out of scope; use mocks.
 
