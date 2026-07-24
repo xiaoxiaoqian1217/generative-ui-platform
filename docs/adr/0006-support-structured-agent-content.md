@@ -39,6 +39,7 @@ The router may use deterministic rules or a replaceable Model Adapter.
 
 When structured data does not become generative UI, UI Compiler Service must produce a deterministic and safe Markdown representation.
 The service uses `fallbackMarkdown` when one is present and valid.
+The service must reject an empty fallback and sanitize Markdown before returning or passing it to a compilation fallback.
 Otherwise it performs stable JSON-to-Markdown serialization.
 Serialization must not execute input, silently truncate data, or silently summarize business facts.
 

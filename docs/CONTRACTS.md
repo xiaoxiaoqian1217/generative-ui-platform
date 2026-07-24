@@ -74,6 +74,7 @@ export interface PresentationRequest {
 
 Markdown content must be present and non-empty.
 Structured data must be JSON serializable and remain within configured depth and item limits.
+When `fallbackMarkdown` is present, it must be non-empty and pass Markdown safety sanitization before use.
 When structured data does not include `fallbackMarkdown`, the service must be able to produce a deterministic and safe Markdown serialization without silently truncating data.
 `userMessage` is optional because some callers only have the Agent response.
 The service must not require a Business Agent to provide presentation mode, presentation intent, or a UI plan.
@@ -153,6 +154,20 @@ Every result contains request correlation and compile metadata.
 It distinguishes ordinary Markdown from generative UI.
 
 ```ts
+export interface PresentationError {
+  code: string;
+  message: string;
+  stage:
+    | "input-validation"
+    | "content-serialization"
+    | "presentation-routing"
+    | "model-analysis"
+    | "ui-plan-validation"
+    | "ui-compilation";
+  retryable: boolean;
+  details?: unknown;
+}
+
 export type PresentationResult =
   | {
       requestId: string;
@@ -184,7 +199,7 @@ export type PresentationResult =
 The frontend sends `mode = "markdown"` to its Markdown Renderer.
 The frontend sends `mode = "generative-ui"` to its A2UI Renderer and Component Registry.
 
-Model, routing, planning, or compilation failure should normally produce a degraded Markdown result when valid source Markdown is available.
+Model, routing, planning, or compilation failure should normally produce a degraded Markdown result when valid source content is available.
 
 ## State and Correlation
 

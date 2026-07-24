@@ -692,7 +692,6 @@ Presentation Router 必须负责：
 3. 返回符合 Schema 的 `PresentationDecision`。
 4. 在 generative UI 分支同时返回 `UIPlan`。
 5. 路由或模型失败时选择安全 Markdown 降级。
-6. 为结构化数据生成确定性、可审计且不静默截断的 Markdown 表示。
 
 Model Adapter 必须负责：
 
@@ -759,10 +758,11 @@ export interface PresentationRequest {
 
 1. Markdown 内容必须存在且非空。
 2. 结构化数据必须是合法 JSON，并满足数据深度和数据项数量限制。
-3. 结构化数据未提供 `fallbackMarkdown` 时，Service 必须能够生成确定性、安全且不静默截断的 Markdown 表示。
-4. `userMessage` 是调用方能够提供时使用的可选上下文。
-5. Service 不得要求业务 Agent 提供 `presentationMode`、`presentationIntent` 或 UI Plan。
-6. UI Compiler 不校验 Agent 内容中的业务结果是否真实。
+3. 结构化数据提供 `fallbackMarkdown` 时，该字段必须非空，并在返回前通过 Markdown 安全清理。
+4. 结构化数据未提供 `fallbackMarkdown` 时，Service 必须能够生成确定性、安全且不静默截断的 Markdown 表示。
+5. `userMessage` 是调用方能够提供时使用的可选上下文。
+6. Service 不得要求业务 Agent 提供 `presentationMode`、`presentationIntent` 或 UI Plan。
+7. UI Compiler 不校验 Agent 内容中的业务结果是否真实。
 
 ### 10.2 Presentation Decision 和 UI Plan
 
@@ -894,7 +894,13 @@ export type PresentationResult =
 export interface PresentationError {
   code: string;
   message: string;
-  stage: "presentation-routing" | "model-analysis" | "ui-plan-validation" | "ui-compilation";
+  stage:
+    | "input-validation"
+    | "content-serialization"
+    | "presentation-routing"
+    | "model-analysis"
+    | "ui-plan-validation"
+    | "ui-compilation";
   retryable: boolean;
   details?: unknown;
 }
@@ -1373,7 +1379,7 @@ Presentation Router 必须返回 `mode = "markdown"` 或 `mode = "generative-ui"
 #### SERVICE-014
 
 `mode = "markdown"` 且输入为 Markdown 时，Service 必须清理危险 HTML、内联 JavaScript、危险 URL 和不支持结构，然后直接返回 Markdown 结果。
-`mode = "markdown"` 且输入为结构化数据时，Service 必须使用调用方提供的 `fallbackMarkdown`，或生成确定性、安全且不静默截断的 Markdown 表示。
+`mode = "markdown"` 且输入为结构化数据时，Service 必须使用经过非空校验和安全清理的 `fallbackMarkdown`，或生成确定性、安全且不静默截断的 Markdown 表示。
 该路径不得调用 UI Compiler Core。
 
 #### SERVICE-015
@@ -1566,6 +1572,7 @@ MVP 必须提供：
 11. 模型超时、编译超时和请求取消。
 12. Catalog 中领域组件的合法选择。
 13. 未声明领域组件被拦截。
+14. 超深、超量和超大结构化输入在 Model Adapter 调用前被拒绝，并验证模型调用次数为零。
 
 ### 17.4 Fixture
 
@@ -1580,6 +1587,7 @@ MVP 必须提供：
 * 非法 Catalog；
 * 非法 Props；
 * 超大输入；
+* 超深和超量结构化输入；
 * 超时模拟。
 
 领域组件 Fixture 只包含声明和数据，不包含真实前端组件代码。
