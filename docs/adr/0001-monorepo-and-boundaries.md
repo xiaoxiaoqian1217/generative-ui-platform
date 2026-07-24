@@ -1,7 +1,12 @@
 # ADR-0001: Monorepo and module boundaries
 
-- **Status:** Accepted
+- **Status:** Accepted, partially superseded by ADR-0003
 - **Date:** 2026-07-23
+
+## Supersession
+
+ADR-0003 supersedes this ADR's decision to include Interaction Gateway in the MVP.
+The monorepo and framework-neutral compiler core decisions remain accepted.
 
 ## Decision
 

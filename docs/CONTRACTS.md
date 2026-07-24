@@ -10,7 +10,8 @@
 
 ## Future Contracts
 
-- packages/gateway-contract
+Gateway contracts are not reserved in the current workspace.
+They will be designed and versioned if a future Interaction Gateway phase is explicitly authorized.
 
 ## Compile result invariants
 
