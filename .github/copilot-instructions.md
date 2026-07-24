@@ -1,4 +1,4 @@
-Read `/REQUIREMENTS.md` and `/AGENTS.md` before generating code.
+Read `/docs/REQUIREMENTS.md` and `/AGENTS.md` before generating code.
 Keep `ui-compiler-core` independent of frameworks, transports, and model vendors.
 Never create app-to-app package dependencies.
 Put shared schemas and types in contract packages.
