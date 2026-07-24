@@ -1,25 +1,126 @@
 # Architecture
 
-## 1. Current MVP Architecture
+## 1. Product Architecture
 
-External Caller
-    → HTTP / AG-UI
+Generative UI Compiler is an Agent interaction infrastructure layer.
+
+Its responsibility is to transform Agent output into controlled, declarative UI descriptions.
+
+It does not manage business Agent execution, routing, workflow state, or business logic.
+
+```text
+Business Agent / LLM Agent
+(LangGraph / Claude / OpenAI Agent)
+
+        |
+        | Agent Output
+        v
+
 UI Compiler Agent
-    → internal function call
+        |
+        | internal call
+        v
+
 UI Compiler Core
-    → A2UI / Fallback
+        |
+        v
 
-## 2. Current Dependency Direction
+Presentation UI Schema / A2UI
+        |
+        v
 
-ui-compiler-agent → ui-compiler-core
-ui-compiler-core → contract packages
+Frontend Runtime Renderer
+```
 
-## 3. Future Platform Architecture Roadmap
+## 2. Current MVP Components
 
-This section is non-normative.
-It records a possible future platform direction and is not part of the current MVP design, contracts, tests, or acceptance criteria.
+### UI Compiler Agent
 
+Responsibilities:
+
+- Provide HTTP / AG-UI interface;
+- Receive external compilation requests;
+- Validate requests;
+- Invoke UI Compiler Core;
+- Return compiled UI result.
+
+It is an adapter service, not a business Agent.
+
+### UI Compiler Core
+
+Responsibilities:
+
+- Parse Markdown or structured data;
+- Analyze presentation intent;
+- Select components from Component Catalog;
+- Build UI IR;
+- Compile to A2UI;
+- Validate schema;
+- Provide fallback output.
+
+Core must remain independent from:
+
+- frontend frameworks;
+- network services;
+- specific Agent frameworks;
+- business domains.
+
+## 3. Component Extension Model
+
+Generative UI Compiler does not automatically create arbitrary business UI components.
+
+Business-specific components are provided through Component Registry.
+
+```text
+Component Catalog
+
+├── Common Components
+│   ├── Card
+│   ├── Table
+│   └── Form
+│
+└── Domain Components
+    ├── GISMapPanel
+    ├── DeviceControlPanel
+    └── TaskManagementPanel
+```
+
+Compiler only performs component selection and schema compilation.
+
+## 4. Dependency Direction
+
+```text
+ui-compiler-agent
+        |
+        v
+ui-compiler-core
+        |
+        v
+contract packages
+```
+
+## 5. Future Platform Extension: Interaction Gateway
+
+This section describes a possible future architecture and is not part of the current MVP.
+
+Interaction Gateway solves Agent orchestration problems:
+
+- multiple Agent routing;
+- Agent collaboration;
+- task/session state management;
+- human approval workflows.
+
+Relationship:
+
+```text
 Frontend
-    → Interaction Gateway
-    → Business Agents
-    → UI Compiler Core
+    |
+    v
+Interaction Gateway
+    |
+    +---- Business Agents
+    |
+    +---- Generative UI Compiler
+```
+
+Interaction Gateway composes Generative UI Compiler capabilities. It does not replace or contain the Compiler.
