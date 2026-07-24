@@ -38,7 +38,7 @@
 | Generative UI Compiler | 当前 MVP 产品 | 本文的需求、开发和验收对象 |
 | UI Compiler Agent | Compiler 的网络适配服务 | 当前 MVP 模块，不是业务 Agent |
 | UI Compiler Core | Compiler 的确定性核心能力 | 当前 MVP 模块，可脱离网络服务独立使用 |
-| Interaction Gateway | 未来可选的 Agent 协作扩展能力 | 独立于 Compiler，不属于当前 MVP |
+| Interaction Gateway | 未来可选的 Agent 协作问题空间 | 不属于当前 MVP，未来产品关系待决策 |
 
 仓库继续使用 **Generative UI Platform** 作为名称，但不代表当前已经实现完整 Agent 平台。
 
@@ -145,20 +145,8 @@ MVP 运行链路：
       外部 Frontend Runtime
 ```
 
-未来需要统一管理多个业务 Agent 时，可以增加独立的 Interaction Gateway：
-
-```text
-Frontend
-    │
-    ▼
-Interaction Gateway
-    ├── Business Agents
-    └── Generative UI Compiler
-            ├── UI Compiler Agent
-            └── UI Compiler Core
-```
-
-该图表达产品能力关系，不强制规定未来必须采用 HTTP 还是同进程 SDK 集成。
+未来 Agent 协作需求只作为 non-normative roadmap 记录在第 22 节。
+当前阶段不预先决定 Interaction Gateway 的产品关系、职责、依赖、协议或部署方式。
 
 ---
 
@@ -278,7 +266,7 @@ Copilot Runtime 可以作为外部代理层调用 UI Compiler Agent，但不属�
 
 #### 4.2.4 Interaction Gateway
 
-Interaction Gateway 是未来可选的上层 Agent 协作能力，用于：
+Interaction Gateway 代表未来可能需要设计的 Agent 协作问题空间，例如：
 
 * 多业务 Agent 路由；
 * Agent 协作和结果聚合；
@@ -286,7 +274,8 @@ Interaction Gateway 是未来可选的上层 Agent 协作能力，用于：
 * 用户 Action 回传；
 * 中断、恢复和权限控制。
 
-Interaction Gateway 不属于 Generative UI Compiler 的内部模块，不得成为 Compiler 的运行前置条件。
+当前 MVP 不包含 Interaction Gateway，也不得以现有 Gateway 遗留物作为运行前置条件。
+Gateway 与 Generative UI Compiler 的未来产品和架构关系必须由新的范围变更 Issue 和 ADR 决定。
 
 ---
 
@@ -855,12 +844,26 @@ export interface ComponentDefinition {
   fallbackComponent?: string;
 }
 
+export interface ActionDefinition {
+  actionType: string;
+  description: string;
+  payloadSchema: unknown;
+}
+
 export interface ComponentCatalog {
   catalogId: string;
   catalogVersion: string;
   components: ComponentDefinition[];
+  actions?: ActionDefinition[];
 }
 ```
+
+约束：
+
+1. `ActionDefinition.actionType` 在同一 Catalog 版本中必须唯一。
+2. `ComponentDefinition.allowedActions` 只能引用当前 Catalog 中存在的 `ActionDefinition`。
+3. `ActionIntent.payload` 必须通过对应 `ActionDefinition.payloadSchema` 校验。
+4. Action 类型未声明、引用无效或 payload 校验失败时，不得生成可执行 Action 描述。
 
 ### 11.2 Catalog 所有权
 
@@ -942,7 +945,20 @@ export interface UISurfaceIR {
   components: ComponentIR[];
   dataModel: Record<string, unknown>;
   actions?: ActionIntent[];
+  actionBindings?: ComponentActionBindingIR[];
   fallbackMarkdown?: string;
+}
+
+export interface ComponentIR {
+  componentId: string;
+  type: string;
+  props: Record<string, unknown>;
+  childComponentIds?: string[];
+}
+
+export interface ComponentActionBindingIR {
+  componentId: string;
+  actionId: string;
 }
 ```
 
@@ -958,6 +974,12 @@ UI IR 必须满足：
 8. 可以单独测试。
 9. 可以在未来转换为其他 UI 描述协议。
 10. 当前默认输出目标为 A2UI。
+11. `ComponentIR.componentId` 在同一个 Surface 中必须唯一。
+12. 每个 `ComponentActionBindingIR.componentId` 必须引用当前 Surface 中存在的 `ComponentIR`。
+13. 每个 `ComponentActionBindingIR.actionId` 必须引用当前 Surface 中存在的 `ActionIntent`。
+14. 每个进入 `UISurfaceIR.actions` 的 Action 必须至少存在一个有效的 `ComponentActionBindingIR`，MVP 不支持未绑定组件的 Surface Action。
+15. 被绑定 Action 的 `actionType` 必须同时存在于 Catalog 的 Action 定义和目标组件的 `allowedActions` 中。
+16. 组件引用、Action 引用、缺失绑定或 Action 许可校验失败时，必须返回 `schema-validation` 阶段的结构化错误并进入降级流程。
 
 ---
 
@@ -1458,7 +1480,7 @@ Frontend Runtime 和真实组件渲染不属于阶段五验收范围，可以通
 |---|---|
 | TD-001 | 当前 MVP 产品是 Generative UI Compiler |
 | TD-002 | 当前 MVP 只建设 UI Compiler Core 和 UI Compiler Agent |
-| TD-003 | Interaction Gateway 是未来独立可选扩展，不属于 Compiler 内部模块 |
+| TD-003 | Interaction Gateway 不属于当前 MVP，未来产品和架构关系由新的范围变更 Issue 与 ADR 决定 |
 | TD-004 | UI Compiler Core 是唯一核心编译能力 |
 | TD-005 | UI Compiler Agent 是 Core 的网络适配服务，不是业务 Agent |
 | TD-006 | 项目采用 Monorepo，共享包可以独立发布 |
@@ -1480,6 +1502,8 @@ Frontend Runtime 和真实组件渲染不属于阶段五验收范围，可以通
 
 ## 22. 后续可选能力：Interaction Gateway
 
+本节是 non-normative roadmap，不属于当前 MVP 的设计、契约、测试或验收依据。
+
 只有出现以下需求时，才考虑启动 Interaction Gateway：
 
 * 前端需要统一连接多个业务 Agent；
@@ -1500,16 +1524,11 @@ Interaction Gateway
     └── Generative UI Compiler
 ```
 
-约束：
-
-1. Gateway 必须把 Generative UI Compiler 视为独立产品能力。
-2. Gateway 不得复制或吸收 UI 编译逻辑。
-3. 独立部署时，Gateway 可以通过 HTTP／AG-UI 调用 UI Compiler Agent。
-4. 同进程或 SDK 部署时，可以调用 UI Compiler Core 的公开 API，但不得依赖 Core 内部目录或实现细节。
-5. 无论采用哪种集成方式，架构文档都应表达为“Gateway 组合 Generative UI Compiler”，而不是“Gateway 包含 Compiler”。
-6. Interaction Gateway 不得成为 UI Compiler Agent 的运行依赖。
-
-当前阶段不为 Interaction Gateway 创建应用目录、接口、数据库或验收标准。
+该图只表达可能的产品能力关系，不预先决定未来的依赖、协议或部署方式。
+上述触发条件只允许启动设计，不自动授权创建或实现 Gateway。
+正式启动必须先创建显式的范围变更 Issue，并形成新的 ADR。
+新 ADR 必须重新确认 Gateway 的职责、依赖方向、契约归属、协议、部署边界和验收标准。
+当前阶段不得为 Interaction Gateway 创建应用目录、公共契约、数据库或验收标准。
 
 ---
 

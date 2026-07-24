@@ -25,7 +25,7 @@ UI Compiler Core
         |
         v
 
-Presentation UI Schema / A2UI
+A2UI Operations / Fallback
         |
         v
 
@@ -69,7 +69,8 @@ Core must remain independent from:
 
 Generative UI Compiler does not automatically create arbitrary business UI components.
 
-Business-specific components are provided through Component Registry.
+Business-specific component declarations are provided through Component Catalog.
+Their real frontend implementations are provided through an external Component Registry.
 
 ```text
 Component Catalog
@@ -83,6 +84,14 @@ Component Catalog
     ├── GISMapPanel
     ├── DeviceControlPanel
     └── TaskManagementPanel
+
+Component type in A2UI
+        |
+        v
+External Component Registry
+        |
+        v
+Real frontend component
 ```
 
 Compiler only performs component selection and schema compilation.
@@ -101,9 +110,10 @@ contract packages
 
 ## 5. Future Platform Extension: Interaction Gateway
 
-This section describes a possible future architecture and is not part of the current MVP.
+This section is a non-normative roadmap and is not part of the current MVP.
+It illustrates a possible product relationship without deciding future dependencies, protocols, or deployment boundaries.
 
-Interaction Gateway solves Agent orchestration problems:
+Interaction Gateway may be considered when the product needs:
 
 - multiple Agent routing;
 - Agent collaboration;
@@ -123,4 +133,5 @@ Interaction Gateway
     +---- Generative UI Compiler
 ```
 
-Interaction Gateway composes Generative UI Compiler capabilities. It does not replace or contain the Compiler.
+Starting Gateway design requires an explicit scope-change issue and a new ADR.
+That ADR must decide responsibilities, dependency direction, contracts, protocols, deployment boundaries, and acceptance criteria.

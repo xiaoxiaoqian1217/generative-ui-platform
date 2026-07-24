@@ -23,7 +23,8 @@
 - UI 与业务 Agent 强耦合；
 - 缺少统一的 UI Contract 和组件约束。
 
-本项目通过 Presentation Contract、UI Compiler 和 Component Registry 解决 Agent 到 UI 的转换问题。
+本项目通过 Presentation Contract、UI Compiler 和 Component Catalog 解决 Agent 到声明式 UI 的转换问题。
+外部 Frontend Runtime 再通过 Component Registry 将组件类型映射为真实组件实现。
 
 ## 当前 MVP: Generative UI Compiler
 
@@ -48,7 +49,7 @@ Business Agent / LLM Agent
       UI Compiler Core
               |
               v
-     Presentation UI Schema
+      A2UI / Fallback
               |
               v
       Frontend Runtime Renderer
@@ -67,22 +68,24 @@ Generative UI Compiler 是一个通用的 Agent 交互编译层：
 
 - Agent 输出解析；
 - Presentation Contract 转换；
-- UI Schema 编译；
+- UI IR 到 A2UI 的编译；
 - Component Catalog 校验；
 - 受控 UI 生成。
 
-复杂业务组件（例如 GIS、设备控制、领域任务面板）通过 Component Registry 扩展，而不是由 Compiler 自动生成。
+复杂业务组件的类型、语义和 Schema 通过 Component Catalog 声明。
+真实的 GIS、设备控制和领域任务面板实现由外部 Component Registry 提供，而不是由 Compiler 自动生成。
 
 ## 后续规划: Interaction Gateway
 
-Interaction Gateway 属于未来扩展能力，用于解决：
+Interaction Gateway 是未来可能启动设计的 Agent 协作问题空间，例如：
 
 - 多 Agent 路由；
 - Agent 编排；
 - 会话状态管理；
 - 人机审批流程。
 
-它不是 Generative UI Compiler 的组成部分，而是在更上层组合 Compiler 能力。
+这些需求只构成启动设计的条件，不预先决定 Gateway 的产品关系、职责、依赖或部署方式。
+任何 Gateway 工作都必须先通过显式的范围变更 Issue 和新 ADR。
 
 ## 文档入口
 
