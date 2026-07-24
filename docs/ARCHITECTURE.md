@@ -38,4 +38,4 @@ interaction-gateway ↔ ui-compiler-agent package imports
 - Compiler: Catalog and compilation caches only.
 - Frontend: rendered Surface state.
 
-See `REQUIREMENTS.md` for normative requirements.
+See `docs/REQUIREMENTS.md` for normative requirements.

@@ -1,12 +1,7 @@
 {
   "version": "0.2",
   "language": "en,en-GB",
-  "ignorePaths": [
-    "node_modules",
-    "dist",
-    ".turbo",
-    "pnpm-lock.yaml"
-  ],
+  "ignorePaths": ["node_modules", "dist", ".turbo", "pnpm-lock.yaml"],
   "words": [
     "A2UI",
     "Actionable",
@@ -24,6 +19,7 @@
     "Codex",
     "CopilotKit",
     "CrewAI",
+    "cursorrules",
     "Dependabot",
     "Dockerfile",
     "E2E",

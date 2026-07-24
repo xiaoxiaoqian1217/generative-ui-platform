@@ -1,6 +1,6 @@
 # Claude Code Instructions
 
-Follow `AGENTS.md` and `REQUIREMENTS.md` as the primary repository instructions.
+Follow `AGENTS.md` and `docs/REQUIREMENTS.md` as the primary repository instructions.
 
 Before coding:
 

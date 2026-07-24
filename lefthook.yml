@@ -2,7 +2,7 @@ pre-commit:
   parallel: true
   commands:
     biome:
-      glob: "*.{ts,tsx,js,json,yml,yaml}"
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc}"
       run: pnpm biome check {staged_files}
     markdown:
       glob: "*.md"

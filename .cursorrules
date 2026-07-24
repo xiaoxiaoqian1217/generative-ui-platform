@@ -1,0 +1,33 @@
+# Cursor Repository Rules
+
+Follow `AGENTS.md` as the source of truth for repository, output, and pull request rules.
+Follow `docs/REQUIREMENTS.md` for product scope and public contracts.
+Do not duplicate rules from either file here.
+
+## Commit messages
+
+- Commit messages MUST follow Conventional Commits and use a Chinese description.
+- Keep the Conventional Commit type in English.
+- Use a scope when it helps identify the affected module.
+- The subject MUST use the format `<type>(<scope>): <中文摘要>` or `<type>: <中文摘要>`.
+- Write the Chinese summary in the imperative style, keep it concise, and do not end it with punctuation.
+- Do not add any agent name as a co-author.
+- For non-trivial commits, use the following body template.
+
+```text
+<type>(<scope>): <中文摘要>
+
+变更内容:
+- <具体变更>
+
+验证:
+- <执行的检查及结果>
+
+关联:
+- <Issue、ADR 或其他上下文，没有则写无>
+```
+
+- Separate the subject and body with one blank line.
+- Use `-` for body list items and keep each item concrete and verifiable.
+- Breaking changes MUST include a `BREAKING CHANGE: <中文说明>` footer.
+- Never manually edit `CHANGELOG.md` or any file marked as generated.

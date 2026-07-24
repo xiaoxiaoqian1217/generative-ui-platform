@@ -7,4 +7,4 @@
 5. Run `pnpm validate`.
 6. Complete the PR checklist and request review.
 
-Commit messages should follow Conventional Commits.
+Follow the commit message rules and template in `.cursorrules`.

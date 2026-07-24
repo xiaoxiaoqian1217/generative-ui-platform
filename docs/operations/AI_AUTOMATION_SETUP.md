@@ -16,7 +16,7 @@ AI workflows are committed but disabled by repository variables. This prevents m
 2. Add `ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN`.
 3. Set `ENABLE_CLAUDE=true`.
 4. Mention `@claude` in issues or PR comments.
-5. Claude reads `CLAUDE.md`, which delegates to `AGENTS.md` and `REQUIREMENTS.md`.
+5. Claude reads `CLAUDE.md`, which delegates to `AGENTS.md` and `docs/REQUIREMENTS.md`.
 
 ## Security
 

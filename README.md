@@ -2,6 +2,17 @@
 
 面向多智能体应用的生成式 UI 编译与统一交互平台。
 
+## Problem
+
+传统 Agent 交互存在：
+
+- Agent 输出格式不统一
+- 前端需要适配不同 Agent
+- UI 和业务逻辑强耦合
+- Action 无法可靠回传
+
+本项目通过统一 Presentation Contract 和 UI Compiler 解决。
+
 ## 核心模块
 
 - `packages/ui-compiler-core`：框架无关的 Markdown / 结构化数据 → UI IR → A2UI 编译核心。
@@ -10,18 +21,10 @@
 
 ## 文档入口
 
-- [需求规格说明书](./REQUIREMENTS.md)
+- [需求规格说明书](./docs/REQUIREMENTS.md)
 - [架构说明](./docs/ARCHITECTURE.md)
 - [数据契约](./docs/CONTRACTS.md)
 - [AI 编码 Agent 使用说明](./AGENTS.md)
-
-## GitHub 协作约定
-
-- 当前不配置 GitHub Actions。
-- Issue 和 Pull Request 由维护者按需手动创建和管理。
-- 不启用自动创建 Issue、自动分派、自动打标签或自动合并。
-- 项目代码正式纳入版本控制后，再按实际需要评估是否添加最小 CI。
-- 新增任何仓库自动化前，应确认它不会限制手动工作流或阻碍后续服务接入。
 
 ## 快速开始
 
