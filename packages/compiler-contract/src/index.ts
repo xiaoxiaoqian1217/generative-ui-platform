@@ -30,7 +30,6 @@ export const uiCompileRequestSchema = z.object({
     .object({
       sourceType: z.enum([
         "ui-compiler-agent",
-        "interaction-gateway",
         "business-agent",
         "http",
         "sdk",

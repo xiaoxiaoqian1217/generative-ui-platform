@@ -24,7 +24,6 @@ body:
       options:
         - ui-compiler-core
         - ui-compiler-agent
-        - interaction-gateway
         - contracts
         - CI/CD or documentation
     validations:

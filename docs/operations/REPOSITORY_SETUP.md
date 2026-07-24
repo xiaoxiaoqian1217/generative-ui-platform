@@ -27,9 +27,6 @@ Files in this repository configure most automation. Some repository-level contro
 - `PR Governance` checks semantic pull request titles and applies path-based labels.
 - `Security` runs CodeQL and dependency review when their repository variables are enabled.
 
-`Container Release` still contains a legacy Interaction Gateway matrix entry.
-ADR-0003 requires its removal, and the generated Gateway image is not a supported MVP artifact.
-
 No Codex or Claude GitHub Actions workflow is configured.
 Codex follows `AGENTS.md`, and Claude Code follows `CLAUDE.md`.
 Adding AI automation requires a separate security and permissions review.

@@ -1,6 +1,6 @@
 repository:
   name: generative-ui-platform
-  description: Framework-neutral Generative UI compiler and multi-agent interaction gateway
+  description: Framework-neutral Generative UI compiler
   private: true
   has_issues: true
   has_projects: true
@@ -16,8 +16,6 @@ labels:
     color: "1d76db"
   - name: "area: compiler-agent"
     color: "5319e7"
-  - name: "area: gateway"
-    color: "0052cc"
   - name: "area: contracts"
     color: "006b75"
   - name: "ci"

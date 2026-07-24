@@ -4,9 +4,6 @@
 "area: compiler-agent":
   - changed-files:
       - any-glob-to-any-file: "apps/ui-compiler-agent/**"
-"area: gateway":
-  - changed-files:
-      - any-glob-to-any-file: "apps/interaction-gateway/**"
 "area: contracts":
   - changed-files:
       - any-glob-to-any-file: "packages/*-contract/**"

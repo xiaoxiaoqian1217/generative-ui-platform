@@ -11,8 +11,7 @@
 ## Future Contracts
 
 Gateway contracts are outside the MVP.
-The current `packages/gateway-contract` package and Gateway-specific source value are legacy artifacts scheduled for removal by ADR-0003.
-No current design may depend on them.
+No Gateway package or Gateway-specific source value exists in the active workspace.
 Gateway contracts will be designed and versioned if a future Interaction Gateway phase is explicitly authorized.
 
 ## Compile result invariants

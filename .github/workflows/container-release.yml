@@ -10,9 +10,6 @@ permissions:
 
 jobs:
   publish:
-    strategy:
-      matrix:
-        app: [interaction-gateway, ui-compiler-agent]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -25,14 +22,14 @@ jobs:
       - uses: docker/metadata-action@v5
         id: meta
         with:
-          images: ghcr.io/${{ github.repository_owner }}/generative-ui-${{ matrix.app }}
+          images: ghcr.io/${{ github.repository_owner }}/generative-ui-ui-compiler-agent
           tags: |
             type=ref,event=tag
             type=sha
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/${{ matrix.app }}/Dockerfile
+          file: apps/ui-compiler-agent/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

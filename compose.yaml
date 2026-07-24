@@ -1,10 +1,4 @@
 services:
-  interaction-gateway:
-    build:
-      context: .
-      dockerfile: apps/interaction-gateway/Dockerfile
-    ports:
-      - "4100:4100"
   ui-compiler-agent:
     build:
       context: .
