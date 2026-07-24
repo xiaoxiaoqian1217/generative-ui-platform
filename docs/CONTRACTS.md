@@ -1,38 +1,195 @@
 # Contracts
 
-## MVP Contracts
+## Contract Boundaries
 
-- packages/presentation-contract
-- packages/component-catalog-schema
-- packages/compiler-contract
-- packages/ag-ui-adapter
-- packages/shared-types
+The MVP uses separate contracts for presentation routing and UI compilation.
+A Business Agent is only required to return Markdown.
+It is not required to construct compiler-specific metadata.
 
-## Future Contracts
+```text
+Agent Markdown
+    |
+    v
+PresentationRequest
+    |
+    v
+PresentationDecision
+    |
+    +---- markdown ------> PresentationResult
+    |
+    +---- generative-ui -> UICompileRequest
+                              |
+                              v
+                        UICompileResult
+                              |
+                              v
+                        PresentationResult
+```
 
-Gateway contracts are outside the MVP.
-No Gateway package or Gateway-specific source value exists in the active workspace.
-Gateway contracts will be designed and versioned if a future Interaction Gateway phase is explicitly authorized.
+## Presentation Request
 
-## Compile result invariants
+`PresentationRequest` is the public input to UI Compiler Service.
 
-`packages/compiler-contract` is the executable source of truth for `UICompileResult`.
-The result is a discriminated union with complete success, degraded success, and complete failure branches.
+```ts
+export interface PresentationRequest {
+  requestId: string;
+  threadId?: string;
+  runId?: string;
+  markdown: string;
+  context?: {
+    userMessage?: string;
+    locale?: string;
+    theme?: string;
+    viewport?: {
+      width: number;
+      height: number;
+    };
+    domain?: string;
+  };
+  catalog: {
+    catalogId: string;
+    catalogVersion: string;
+  };
+}
+```
+
+`markdown` must be present and non-empty.
+`userMessage` is optional because some callers only have the Agent response.
+The service must not require a Business Agent to provide presentation mode, presentation intent, structured data, or a UI plan.
+
+## Presentation Decision
+
+`PresentationDecision` is the validated output of Presentation Router.
+It is internal to UI Compiler Service and must not be accepted as trusted model output.
+
+```ts
+export type PresentationDecision =
+  | {
+      mode: "markdown";
+      reason: string;
+    }
+  | {
+      mode: "generative-ui";
+      reason: string;
+      plan: UIPlan;
+    };
+```
+
+The Model Adapter may produce a candidate decision.
+The service validates the candidate against its Schema before using it.
+An invalid decision degrades to sanitized Markdown.
+
+## UI Plan
+
+`UIPlan` is a framework-neutral semantic plan for generative UI.
+It may contain component suggestions, data, layout intent, and Action descriptions.
+It must not contain executable code, DOM nodes, framework component instances, or provider-specific model response objects.
+
+Every suggested component and Action is provisional.
+UI Compiler Core performs the authoritative Catalog and Schema validation.
+
+## Compile Request
+
+`UICompileRequest` is an internal or SDK-level request for content that has already been selected for generative UI.
+
+```ts
+export interface UICompileRequest {
+  requestId: string;
+  threadId?: string;
+  runId?: string;
+  plan: UIPlan;
+  fallbackMarkdown: string;
+  catalog: {
+    catalogId: string;
+    catalogVersion: string;
+  };
+  context?: {
+    locale?: string;
+    theme?: string;
+    viewport?: {
+      width: number;
+      height: number;
+    };
+  };
+}
+```
+
+Core assumes that the caller has already selected generative UI.
+Core must not use this request to decide between Markdown and generative UI.
+
+## Compile Result
+
+`UICompileResult` remains a discriminated union with complete success, degraded success, and complete failure branches.
 Only complete success contains A2UI Operations.
 Only degraded success contains a Fallback.
 Every result contains request correlation and compile metadata.
 
-## 编译请求不变量
+## Presentation Result
 
-`packages/compiler-contract` 是 `UICompileRequest` 的可执行事实来源。
-`threadId` 和 `runId` 是可选的协议关联字段。
-Core 可以透传关联字段，但不得使用这些字段维护会话状态或 AG-UI Run 生命周期。
-序列化请求的字节数限制由应用 Adapter 在反序列化之前执行，不由 Core 负责。
+`PresentationResult` is the public output of UI Compiler Service.
+It distinguishes ordinary Markdown from generative UI.
+
+```ts
+export type PresentationResult =
+  | {
+      requestId: string;
+      status: "completed";
+      mode: "markdown";
+      markdown: string;
+    }
+  | {
+      requestId: string;
+      status: "completed";
+      mode: "generative-ui";
+      surfaceId: string;
+      operations: A2UIOperation[];
+    }
+  | {
+      requestId: string;
+      status: "degraded";
+      mode: "markdown";
+      markdown: string;
+      errors: PresentationError[];
+    }
+  | {
+      requestId: string;
+      status: "failed";
+      errors: PresentationError[];
+    };
+```
+
+The frontend sends `mode = "markdown"` to its Markdown Renderer.
+The frontend sends `mode = "generative-ui"` to its A2UI Renderer and Component Registry.
+
+Model, routing, planning, or compilation failure should normally produce a degraded Markdown result when valid source Markdown is available.
+
+## State and Correlation
+
+`threadId` and `runId` are optional protocol correlation fields.
+Core may pass through correlation values but must not use them to maintain conversation state or AG-UI Run lifecycle.
+The serialized request byte limit is enforced by the application Adapter before deserialization.
+
+## Package Ownership
+
+The target package ownership is:
+
+- `presentation-contract` owns `PresentationRequest`, `PresentationDecision`, `PresentationResult`, and `UIPlan`.
+- `compiler-contract` owns `UICompileRequest`, `UICompileResult`, UI IR, compile diagnostics, and compile stages.
+- `component-catalog-schema` owns Catalog, component, Props, Action, and structure Schemas.
+- `ag-ui-adapter` owns protocol event mapping and does not own routing or compilation logic.
+
+## Migration Status
+
+The executable contracts currently reflect the pre-ADR-0005 shape.
+They remain the executable source of truth for the current code until the contract migration is implemented.
+The contract migration must include Schema updates, tests, a changeset, and any required major version changes.
 
 ## Rules
 
 1. Contract changes require tests and a changeset.
 2. Breaking changes require an ADR and major version change.
-3. External input is validated at app boundaries.
-4. Core functions validate generated output and protect contract invariants.
-5. Stable error codes are part of the public contract.
+3. External input is validated at application boundaries.
+4. Model output is always treated as external untrusted input.
+5. Core validates generated output and protects contract invariants.
+6. Stable error codes are part of the public contract.
+7. No contract may require a Business Agent to emit compiler-specific routing metadata.

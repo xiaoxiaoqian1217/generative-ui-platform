@@ -3,6 +3,11 @@
 - **Status:** Accepted
 - **Date:** 2026-07-24
 
+## Terminology update
+
+ADR-0005 renames UI Compiler Agent to UI Compiler Service and expands it from a pure network Adapter to a presentation routing and compilation application service.
+References to UI Compiler Agent below describe the module name used when this ADR was accepted.
+
 ## Context
 
 早期仓库脚手架和 ADR-0001 将 Interaction Gateway 纳入了 MVP。

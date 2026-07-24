@@ -1,6 +1,6 @@
 # Generative UI Platform
 
-面向 Agent 应用的生成式 UI 编译基础设施仓库。
+面向 Agent 应用的生成式 UI 展示和编译基础设施仓库。
 
 ## 名称与范围
 
@@ -12,80 +12,100 @@
 
 仓库名称使用 Generative UI Platform，不代表当前已经实现完整 Agent 平台能力。
 
-当前实现重点是 **Generative UI Compiler**：将 Agent 输出转换为标准化、受控、可渲染的生成式 UI 描述。
-
 ## Problem
 
-传统 Agent 应用交互存在：
+真实业务 Agent 通常只返回 Markdown。
+它们不会稳定提供 `presentationMode`、`presentationIntent`、结构化业务数据或 UI Plan。
 
-- Agent 输出格式不统一；
-- 每个前端应用需要重复处理 Agent 输出；
-- UI 与业务 Agent 强耦合；
-- 缺少统一的 UI Contract 和组件约束。
+系统需要解决两个不同问题：
 
-本项目通过 Presentation Contract、UI Compiler 和 Component Catalog 解决 Agent 到声明式 UI 的转换问题。
-外部 Frontend Runtime 再通过 Component Registry 将组件类型映射为真实组件实现。
+1. 这次 Agent 输出应该直接显示为 Markdown，还是生成结构化 UI。
+2. 已经决定生成 UI 后，如何把 UI Plan 转换为受控、可验证、可渲染的 UI 描述。
 
-## 当前 MVP: Generative UI Compiler
+这两个问题分别由 Presentation Router 和 UI Compiler Core 负责。
 
-核心模块：
-
-- `packages/ui-compiler-core`
-- `apps/ui-compiler-agent`
-- `packages/presentation-contract`
-- `packages/component-catalog-schema`
-
-架构：
+## 当前 MVP 架构
 
 ```text
 Business Agent / LLM Agent
-(LangGraph / Claude / OpenAI Agent 等)
-              |
-              | Agent Output
-              v
-      UI Compiler Agent
+只返回 Markdown
               |
               v
-      UI Compiler Core
+      UI Compiler Service
               |
               v
-      A2UI / Fallback
+      Presentation Router
+              |
+              +---- markdown ----> Sanitized Markdown
+              |
+              +---- generative-ui
+                          |
+                          v
+                    Validated UI Plan
+                          |
+                          v
+                  UI Compiler Core
+                          |
+                          v
+                    A2UI / Fallback
               |
               v
       Frontend Runtime Renderer
 ```
 
-## 产品定位
+Presentation Router 可以通过可替换的 Model Adapter 调用大模型。
+一次模型调用应同时返回 Markdown 直出决策或受 Schema 约束的 UI Plan，避免分类和规划分别调用模型。
 
-Generative UI Compiler 是一个通用的 Agent 交互编译层：
+普通 Markdown 经过安全清理后直接返回前端，不进入 UI Compiler Core。
+只有已经选择生成式 UI 的请求才进入 Core。
 
-- 不负责业务推理；
-- 不负责 Agent 路由；
-- 不负责任务编排；
-- 不负责业务状态管理。
+## 模块职责
 
-它负责：
+### UI Compiler Service
 
-- Agent 输出解析；
-- Presentation Contract 转换；
-- UI IR 到 A2UI 的编译；
-- Component Catalog 校验；
-- 受控 UI 生成。
+- 接收业务 Agent 返回的 Markdown。
+- 接收调用方能够提供的原始用户消息和展示上下文。
+- 调用 Presentation Router。
+- 组装具体 Model Adapter。
+- 直接返回安全的 Markdown，或调用 UI Compiler Core。
+- 处理 HTTP、AG-UI、超时、取消、错误映射和可观测性。
 
-复杂业务组件的类型、语义和 Schema 通过 Component Catalog 声明。
-真实的 GIS、设备控制和领域任务面板实现由外部 Component Registry 提供，而不是由 Compiler 自动生成。
+### Presentation Router
 
-## 后续规划: Interaction Gateway
+- 判断 Markdown 应直接展示还是生成 UI。
+- 在需要语义分析时调用 Model Adapter。
+- 返回受约束的 `PresentationDecision`。
+- 模型或路由失败时安全降级为 Markdown。
 
-Interaction Gateway 是未来可能启动设计的 Agent 协作问题空间，例如：
+### UI Compiler Core
 
-- 多 Agent 路由；
-- Agent 编排；
-- 会话状态管理；
-- 人机审批流程。
+- 接受已经选择生成式 UI 的编译请求。
+- 校验 UI Plan、Component Catalog、Props 和 Actions。
+- 构建框架无关 UI IR。
+- 将 UI IR 编译为 A2UI。
+- 生成确定性错误和降级结果。
 
-这些需求只构成启动设计的条件，不预先决定 Gateway 的产品关系、职责、依赖或部署方式。
-任何 Gateway 工作都必须先通过显式的范围变更 Issue 和新 ADR。
+Core 不决定是否生成 UI，也不直接依赖模型 SDK 或具体模型供应商。
+
+### Frontend Runtime
+
+- 使用 Markdown Renderer 展示 Markdown 结果。
+- 使用 A2UI Renderer 和 Component Registry 展示生成式 UI。
+- 提供真实 Vue、React、Flutter 或其他框架组件。
+
+## 安全边界
+
+- 模型输出始终是不可信输入。
+- 模型不得生成或执行任意前端代码。
+- 模型建议的组件必须存在于当前 Component Catalog。
+- 所有 Props、Actions、UI IR 和 A2UI 必须经过 Schema 校验。
+- 模型失败不得导致有效 Markdown 业务内容丢失。
+
+## 当前实现状态
+
+当前仓库仍是基础设施和架构骨架，不代表需求规格中的产品能力已经全部实现。
+现有应用目录仍名为 `apps/ui-compiler-agent`，现有 Core 仍直接把 Markdown 包装为 `Markdown` 组件。
+后续实现工作需要根据 ADR-0005 迁移服务名称、公共契约和编译输入边界。
 
 ## 文档入口
 
@@ -93,6 +113,7 @@ Interaction Gateway 是未来可能启动设计的 Agent 协作问题空间，�
 - [架构说明](./docs/ARCHITECTURE.md)
 - [数据契约](./docs/CONTRACTS.md)
 - [领域词汇](./CONTEXT.md)
+- [ADR-0005](./docs/adr/0005-route-markdown-before-ui-compilation.md)
 - [AI 编码 Agent 使用说明](./AGENTS.md)
 
 ## 快速开始
@@ -117,5 +138,3 @@ pnpm dev
 pnpm build
 pnpm test
 ```
-
-> 当前仓库是基础设施和架构骨架，不代表需求规格中的产品能力已经全部实现。
