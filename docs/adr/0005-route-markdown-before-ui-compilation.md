@@ -72,7 +72,8 @@ UI Compiler Core 不得依赖模型 SDK、模型供应商、网络协议或 Serv
 `AgentPresentationResult` 不再作为业务 Agent 必须构造的外部输入契约。
 
 模块名称统一使用 UI Compiler Service。
-应用实现路径已迁移为 `apps/ui-compiler-service`，该模块不是 Agent。
+目标应用路径为 `apps/ui-compiler-service`，该模块不是 Agent。
+当前规划基线尚未创建该应用实现。
 
 ## Consequences
 
@@ -83,8 +84,8 @@ UI Compiler Core 不得依赖模型 SDK、模型供应商、网络协议或 Serv
 - 前端必须能够根据 `PresentationResult` 在 Markdown Renderer 和 A2UI Renderer 之间分派。
 - 调用方提供原始用户消息时，路由可以结合用户意图判断展示方式。
 - 只有 Markdown 时仍然允许路由，但系统必须接受判断置信度下降。
-- 现有 `presentation-contract`、`compiler-contract`、Service 路由和 Core 输入需要通过后续实现变更迁移。
-- 迁移完成前，README 必须明确当前实现与目标架构的差距。
+- `presentation-contract`、`compiler-contract`、Service 路由和 Core 输入必须通过明确的后续任务按本 ADR 创建。
+- README 必须明确仓库仍处于规划阶段，不得暗示目标架构已经实现。
 
 ## Supersession
 

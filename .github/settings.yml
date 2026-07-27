@@ -14,7 +14,7 @@ repository:
 labels:
   - name: "area: compiler-core"
     color: "1d76db"
-  - name: "area: compiler-agent"
+  - name: "area: compiler-service"
     color: "5319e7"
   - name: "area: contracts"
     color: "006b75"

@@ -435,7 +435,7 @@ Component Catalog
 | `tests` | Fixture、契约、集成和端到端测试 |
 | `docs` | 需求、架构、契约和 ADR |
 
-当前实现与目标结构的差异记录在 [README](../README.md#当前实现状态)。
+当前项目阶段记录在 [README](../README.md#当前项目阶段)。
 MVP 不得创建 `apps/interaction-gateway`、`packages/frontend-runtime` 或 `packages/component-registry`。
 未来扩展必须保持包可独立构建和发布。
 

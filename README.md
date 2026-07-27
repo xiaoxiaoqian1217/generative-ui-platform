@@ -103,23 +103,23 @@ Core 不决定是否生成 UI，也不直接依赖模型 SDK 或具体模型供�
 - 所有 Props、Actions、UI IR 和 A2UI 必须经过 Schema 校验。
 - 模型失败不得导致有效 Agent 业务内容丢失。
 
-## 当前实现状态
+## 当前项目阶段
 
-当前仓库仍是基础设施和架构骨架，不代表需求规格中的产品能力已经全部实现。
+当前仓库处于需求确认后的规划阶段。
+提前创建且与确认后架构不一致的应用、共享包和测试实现已经从活动代码树移除。
+Git 历史和归档分支保留这些旧实现，仅用于追溯，不作为当前完成度或后续设计依据。
 
-| 关注点 | 当前代码 | 目标架构 |
-|---|---|---|
-| Service 输入 | `AgentPresentationResult` | `PresentationRequest` 和 `AgentContent` |
-| Core 输入 | Markdown 或结构化数据包装 | Schema 合法但仍不可信的 UI Plan Candidate |
-| 展示路由 | 尚未实现 | Presentation Router 和可替换 Model Adapter |
-
-迁移必须遵循 ADR-0005、ADR-0006 和 UI Plan Candidate 接口决策，不得把目标文档误认为当前已实现能力。
+当前阶段只维护需求、架构、ADR、领域语言和仓库级工程基础设施。
+任何产品代码都必须由明确的任务和已满足的阶段前置决策授权。
+阶段二开始前必须先完成 A2UI Schema 版本和 Schema 校验库 ADR。
 
 ## 文档入口
 
 - [需求规格说明书](./docs/REQUIREMENTS.md)
+- [系统设计说明书](./docs/Generative_UI_Compiler_Design.md)
 - [架构说明](./docs/ARCHITECTURE.md)
 - [数据契约](./docs/CONTRACTS.md)
+- [实施任务候选清单](./docs/IMPLEMENTATION_PLAN.md)
 - [领域词汇](./CONTEXT.md)
 - [ADR-0005](./docs/adr/0005-route-markdown-before-ui-compilation.md)
 - [ADR-0006](./docs/adr/0006-support-structured-agent-content.md)
@@ -139,11 +139,9 @@ Core 不决定是否生成 UI，也不直接依赖模型 SDK 或具体模型供�
 ./scripts/bootstrap.sh
 ```
 
-常用命令：
+规划阶段常用命令：
 
 ```bash
 pnpm validate
-pnpm dev
-pnpm build
-pnpm test
+pnpm docs:check
 ```

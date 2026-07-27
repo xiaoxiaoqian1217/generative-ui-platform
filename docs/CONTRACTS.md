@@ -239,11 +239,11 @@ The target package ownership is:
 - `component-catalog-schema` owns Catalog, component, Props, Action, and structure Schemas.
 - `ag-ui-adapter` owns protocol event mapping and does not own routing or compilation logic.
 
-## Migration Status
+## Implementation Status
 
-The executable contracts currently reflect the pre-ADR-0005 shape.
-They remain the executable source of truth for the current code until the contract migration is implemented.
-The contract migration must include Schema updates, tests, a changeset, and any required major version changes.
+The current planning baseline contains no executable product contracts.
+The contracts in this document are the target design for future implementation tasks.
+Each executable contract must be introduced with Schema tests, a changeset, and any required versioning decision.
 
 ## Rules
 

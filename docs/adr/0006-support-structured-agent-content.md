@@ -57,7 +57,7 @@ If routing, model analysis, UI Plan Candidate validation, or compilation fails, 
 - Structured Data Validator and Structured Data Serializer become explicit Service modules.
 - Frontends still consume the same `PresentationResult` union and do not need a separate raw JSON rendering path.
 - Resource limit tests must cover structured Agent content before model invocation.
-- The executable presentation contract requires a breaking migration with Schema tests and a changeset.
+- The executable presentation contract must be introduced with Schema tests, a changeset, and an explicit versioning decision.
 
 ## Supersession
 

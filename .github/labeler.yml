@@ -1,9 +1,9 @@
 "area: compiler-core":
   - changed-files:
       - any-glob-to-any-file: "packages/ui-compiler-core/**"
-"area: compiler-agent":
+"area: compiler-service":
   - changed-files:
-      - any-glob-to-any-file: "apps/ui-compiler-agent/**"
+      - any-glob-to-any-file: "apps/ui-compiler-service/**"
 "area: contracts":
   - changed-files:
       - any-glob-to-any-file: "packages/*-contract/**"
