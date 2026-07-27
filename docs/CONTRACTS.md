@@ -169,6 +169,31 @@ Core must reject a mismatch between the request Catalog reference and the inject
 Core recomputes the injected Catalog content hash and compares it with the trusted Adapter option.
 Service separately verifies that the Router capability summary used the same content hash.
 
+## Catalog Content Hash
+
+`catalogContentHash` has one normative representation across UI Compiler Service, Presentation Router capability summaries, trusted direct Core Adapters, Core validation, and cache keys.
+The phrases "canonical content hash" and "normalized content hash" elsewhere in this repository refer to this exact algorithm.
+
+```ts
+export function computeCatalogContentHash(
+  catalog: ComponentCatalog
+): `sha256:${string}`;
+```
+
+The algorithm is:
+
+1. Validate the complete Catalog against the versioned Component Catalog Schema before hashing. Inputs containing duplicate object member names, non-finite numbers, or values outside the supported JSON domain must be rejected.
+2. Canonicalize the complete validated Catalog using RFC 8785 JSON Canonicalization Scheme (JCS). Object member order is canonicalized by JCS, array order remains significant, and no Catalog fields are excluded.
+3. Encode the canonical JSON text as UTF-8 without a byte-order mark.
+4. Compute SHA-256 over those exact bytes.
+5. Serialize the digest as `sha256:` followed by 64 lowercase hexadecimal characters.
+
+All callers must use the shared `computeCatalogContentHash` implementation exported by `component-catalog-schema`; ad hoc `JSON.stringify` hashing is forbidden.
+Core must still recompute the hash from the injected Catalog rather than trusting the caller-provided value.
+The Router capability summary, Core `CompileOptions.catalogContentHash`, and cache key must carry the exact same hash string.
+A change to any Catalog field, including `catalogId` or `catalogVersion`, changes the content hash.
+Changing the canonicalization algorithm, digest algorithm, or wire representation is a contract change and requires an ADR, tests, and a changeset.
+
 ## UI IR
 
 UI IR is the trusted, framework-neutral intermediate representation produced by Core.
@@ -257,7 +282,7 @@ The target package ownership is:
 
 - `presentation-contract` owns `AgentContent`, `PresentationRequest`, `PresentationDecision`, `PresentationResult`, `UIPlan`, and `ActionIntent`.
 - `compiler-contract` owns `UICompileRequest`, `UICompileResult`, UI IR, compile diagnostics, compile stages, and the A2UI 0.9.1 Profile Schema and mapping contract.
-- `component-catalog-schema` owns Catalog, component, Props, Action, and structure Schemas.
+- `component-catalog-schema` owns Catalog, component, Props, Action, and structure Schemas, plus the shared `computeCatalogContentHash` implementation.
 - `ag-ui-adapter` owns protocol event mapping and does not own routing or compilation logic.
 
 ## Implementation Status
@@ -277,3 +302,4 @@ Each executable contract must be introduced with Schema tests, a changeset, and 
 7. No contract may require a Business Agent to emit compiler-specific routing metadata.
 8. A2UI 0.9.1 Profile messages use the wire discriminator `version = "v0.9"`.
 9. Complete UI IR, compile results, A2UI Operations, request data, Fallback Markdown, and Surface IDs are not cross-request cache entries in the MVP.
+10. Catalog hashes use the shared RFC 8785 plus SHA-256 algorithm and `sha256:<lowercase-hex>` wire representation defined above.
