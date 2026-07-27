@@ -1,7 +1,7 @@
 services:
-  ui-compiler-agent:
+  ui-compiler-service:
     build:
       context: .
-      dockerfile: apps/ui-compiler-agent/Dockerfile
+      dockerfile: apps/ui-compiler-service/Dockerfile
     ports:
       - "4101:4101"

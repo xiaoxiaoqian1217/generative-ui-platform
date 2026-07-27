@@ -109,7 +109,6 @@ Core 不决定是否生成 UI，也不直接依赖模型 SDK 或具体模型供�
 
 | 关注点 | 当前代码 | 目标架构 |
 |---|---|---|
-| 应用身份 | `apps/ui-compiler-agent` | `apps/ui-compiler-service` |
 | Service 输入 | `AgentPresentationResult` | `PresentationRequest` 和 `AgentContent` |
 | Core 输入 | Markdown 或结构化数据包装 | Schema 合法但仍不可信的 UI Plan Candidate |
 | 展示路由 | 尚未实现 | Presentation Router 和可替换 Model Adapter |

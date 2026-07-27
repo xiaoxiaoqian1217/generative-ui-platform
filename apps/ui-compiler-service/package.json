@@ -1,5 +1,5 @@
 {
-  "name": "@generative-ui/ui-compiler-agent",
+  "name": "@generative-ui/ui-compiler-service",
   "version": "0.1.0",
   "private": true,
   "type": "module",

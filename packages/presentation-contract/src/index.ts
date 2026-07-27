@@ -39,13 +39,23 @@ export const agentPresentationResultSchema = z
   })
   .superRefine((value, context) => {
     if (value.contentType === "markdown" && !value.content?.trim()) {
-      context.addIssue({ code: "custom", path: ["content"], message: "Markdown content is required" });
+      context.addIssue({
+        code: "custom",
+        path: ["content"],
+        message: "Markdown content is required",
+      });
     }
     if (value.contentType === "structured-data" && value.data === undefined) {
-      context.addIssue({ code: "custom", path: ["data"], message: "Structured data is required" });
+      context.addIssue({
+        code: "custom",
+        path: ["data"],
+        message: "Structured data is required",
+      });
     }
   });
 
 export type PresentationIntent = z.infer<typeof presentationIntentSchema>;
 export type ActionIntent = z.infer<typeof actionIntentSchema>;
-export type AgentPresentationResult = z.infer<typeof agentPresentationResultSchema>;
+export type AgentPresentationResult = z.infer<
+  typeof agentPresentationResultSchema
+>;

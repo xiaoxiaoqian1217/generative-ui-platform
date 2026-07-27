@@ -72,7 +72,7 @@ UI Compiler Core 不得依赖模型 SDK、模型供应商、网络协议或 Serv
 `AgentPresentationResult` 不再作为业务 Agent 必须构造的外部输入契约。
 
 模块名称统一使用 UI Compiler Service。
-现有 `apps/ui-compiler-agent` 是待迁移的实现路径，不代表该模块是 Agent。
+应用实现路径已迁移为 `apps/ui-compiler-service`，该模块不是 Agent。
 
 ## Consequences
 
