@@ -44,8 +44,10 @@ Service 必须拒绝空的 Fallback，并在返回或将 Markdown 传给编译�
 序列化不得执行输入、静默截断数据或静默汇总业务事实。
 
 结构化数据转换为 generative UI 时，适用 ADR-0005 中相同的 UI Plan Candidate、Catalog、Props、Action、UI IR 和 A2UI 校验规则。
-UI Compiler Core 与源内容格式保持独立。
-Core 只接收已经选定、Schema 合法但仍不可信的 UI Plan Candidate 和 Fallback Markdown。
+UI Compiler Core 与业务 Agent 的原始内容契约和传输格式保持独立。
+Core 接收已经选定、Schema 合法但仍不可信的 UI Plan Candidate，以及规范化且已校验的 `sourceData`、`sourceKind`、Fallback Markdown 和 Catalog 引用。
+结构化输入的 `sourceData` 保留完整 JSON；Markdown 输入的 `sourceData` 精确为 `{ "markdown": sanitizedMarkdown }`。
+未经安全清理的原始 Markdown 不得进入 Core。
 
 如果路由、模型分析、UI Plan Candidate 校验或编译失败，且存在有效源内容，Service 将返回经过安全清理的 Markdown 或确定性 Markdown 序列化结果。
 
@@ -63,3 +65,4 @@ Core 只接收已经选定、Schema 合法但仍不可信的 UI Plan Candidate �
 
 本 ADR 仅取代 ADR-0005 中仅支持 Markdown 输入的假设。
 ADR-0005 在展示路由、模型隔离、UI 编译、校验和降级方面仍具有权威性。
+ADR-0007 进一步定义传入 Core 的 `sourceData` 规范和 Catalog 注入边界。
