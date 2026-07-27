@@ -20,7 +20,7 @@
 系统需要解决两个不同问题：
 
 1. 这次 Agent 输出应该直接显示为 Markdown，还是生成结构化 UI。
-2. 已经决定生成 UI 后，如何把 UI Plan 转换为受控、可验证、可渲染的 UI 描述。
+2. 已经决定生成 UI 后，如何把不可信的 UI Plan Candidate 转换为受控、可验证、可渲染的 UI 描述。
 
 这两个问题分别由 Presentation Router 和 UI Compiler Core 负责。
 
@@ -41,7 +41,7 @@ Business Agent / LLM Agent
               +---- generative-ui
                           |
                           v
-                    Validated UI Plan
+              Schema-valid UI Plan Candidate
                           |
                           v
                   UI Compiler Core
@@ -54,10 +54,10 @@ Business Agent / LLM Agent
 ```
 
 Presentation Router 可以通过可替换的 Model Adapter 调用大模型。
-一次模型调用应同时返回简单 Markdown 表示决策或受 Schema 约束的 UI Plan，避免分类和规划分别调用模型。
+一次模型调用应同时返回简单 Markdown 表示决策或受 Schema 约束的 UI Plan Candidate，避免分类和规划分别调用模型。
 
 普通 Markdown 经过安全清理后直接返回前端，不进入 UI Compiler Core。
-结构化数据可以通过确定性规则或模型生成 UI Plan，也可以安全序列化为 Markdown 结果。
+结构化数据可以通过确定性规则或模型生成 UI Plan Candidate，也可以安全序列化为 Markdown 结果。
 只有已经选择生成式 UI 的请求才进入 Core。
 
 ## 模块职责
@@ -82,7 +82,7 @@ Presentation Router 可以通过可替换的 Model Adapter 调用大模型。
 ### UI Compiler Core
 
 - 接受已经选择生成式 UI 的编译请求。
-- 校验 UI Plan、Component Catalog、Props 和 Actions。
+- 把 UI Plan Candidate 视为不可信输入，并校验 Component Catalog、Props、Actions 和结构。
 - 构建框架无关 UI IR。
 - 将 UI IR 编译为 A2UI。
 - 生成确定性错误和降级结果。
@@ -101,13 +101,20 @@ Core 不决定是否生成 UI，也不直接依赖模型 SDK 或具体模型供�
 - 模型不得生成或执行任意前端代码。
 - 模型建议的组件必须存在于当前 Component Catalog。
 - 所有 Props、Actions、UI IR 和 A2UI 必须经过 Schema 校验。
-- 模型失败不得导致有效 Markdown 业务内容丢失。
+- 模型失败不得导致有效 Agent 业务内容丢失。
 
 ## 当前实现状态
 
 当前仓库仍是基础设施和架构骨架，不代表需求规格中的产品能力已经全部实现。
-现有应用目录仍名为 `apps/ui-compiler-agent`，现有 Core 仍直接把 Markdown 包装为 `Markdown` 组件。
-后续实现工作需要根据 ADR-0005 迁移服务名称、公共契约和编译输入边界。
+
+| 关注点 | 当前代码 | 目标架构 |
+|---|---|---|
+| 应用身份 | `apps/ui-compiler-agent` | `apps/ui-compiler-service` |
+| Service 输入 | `AgentPresentationResult` | `PresentationRequest` 和 `AgentContent` |
+| Core 输入 | Markdown 或结构化数据包装 | Schema 合法但仍不可信的 UI Plan Candidate |
+| 展示路由 | 尚未实现 | Presentation Router 和可替换 Model Adapter |
+
+迁移必须遵循 ADR-0005、ADR-0006 和 UI Plan Candidate 接口决策，不得把目标文档误认为当前已实现能力。
 
 ## 文档入口
 

@@ -18,7 +18,7 @@ The presentation routing, Model Adapter, Core, validation, and fallback decision
 这种包装统一了传输形式，但没有产生实际的生成式 UI 价值。
 
 是否生成 UI 是展示策略决策。
-如何把已经选定的 UI Plan 编译为受控 A2UI 是编译决策。
+如何把已经选定但仍不可信的 UI Plan Candidate 编译为受控 A2UI 是编译决策。
 两个决策具有不同输入、失败策略和可信边界，不应由同一模块承担。
 
 ## Decision
@@ -45,12 +45,13 @@ type PresentationDecision =
 `mode = "markdown"` 时，Service 必须对 Markdown 执行安全清理，并直接返回 Markdown 展示结果。
 该路径不得调用 UI Compiler Core。
 
-`mode = "generative-ui"` 时，Service 必须先校验模型输出和 UI Plan，再把编译请求交给 UI Compiler Core。
+`mode = "generative-ui"` 时，Service 必须先校验模型输出和 UI Plan Candidate 的 Schema，再把编译请求交给 UI Compiler Core。
+Schema 校验不会使 Candidate 成为可信或权威输入。
 Core 必须根据 Component Catalog 对组件、Props、Actions、结构和数据执行权威校验，然后生成 UI IR 和 A2UI。
 
 Presentation Router 可以使用确定性规则。
 需要语义判断时，Router 必须通过可替换 Model Adapter 调用模型。
-一次模型调用应该同时完成展示模式判断和 UI Plan 生成，不得默认使用两次独立模型调用。
+一次模型调用应该同时完成展示模式判断和 UI Plan Candidate 生成，不得默认使用两次独立模型调用。
 
 具体 Model Adapter 由 UI Compiler Service 创建和注入。
 UI Compiler Core 不得依赖模型 SDK、模型供应商、网络协议或 Service。
@@ -58,14 +59,14 @@ UI Compiler Core 不得依赖模型 SDK、模型供应商、网络协议或 Serv
 模型输出始终是不可信输入。
 模型不得生成可执行代码，不得绕过 Catalog，也不得直接成为未经验证的 A2UI。
 
-模型调用、路由或 UI Plan 校验失败时，默认降级为经过安全清理的原始 Markdown。
+模型调用、路由或 UI Plan Candidate 校验失败时，默认降级为经过安全清理的原始 Markdown。
 有效业务内容不得因为生成式 UI 失败而丢失。
 
 公共服务契约必须区分：
 
 - `PresentationRequest`，包含 Agent Markdown 和可选上下文。
 - `PresentationDecision`，表示内部展示路由结果。
-- `UICompileRequest`，包含已经选择并验证的生成式 UI Plan。
+- `UICompileRequest`，包含已经选择且 Schema 合法但仍不可信的 UI Plan Candidate。
 - `PresentationResult`，以判别联合区分 Markdown、generative UI、降级和失败结果。
 
 `AgentPresentationResult` 不再作为业务 Agent 必须构造的外部输入契约。

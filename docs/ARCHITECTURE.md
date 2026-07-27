@@ -27,7 +27,7 @@ Presentation Router
         +---- generative-ui
                     |
                     v
-              Validated UI Plan
+        Schema-valid UI Plan Candidate
                     |
                     v
               UI Compiler Core
@@ -56,7 +56,7 @@ Responsibilities:
 - Serialize structured data to a safe Markdown representation when generative UI is not selected.
 - Invoke Presentation Router.
 - Return ordinary content as a Markdown result without invoking UI Compiler Core.
-- Pass a validated UI plan to UI Compiler Core when generative UI is selected.
+- Pass a Schema-valid but still untrusted UI plan candidate to UI Compiler Core when generative UI is selected.
 - Manage request lifecycle, cancellation, timeout, error mapping, and observability.
 
 The service is the application composition root.
@@ -83,7 +83,7 @@ type PresentationDecision =
 
 The router may use deterministic shortcuts for unambiguous cases.
 When semantic analysis is required, it uses a replaceable Model Adapter.
-One model call should produce both the presentation decision and the UI plan so the system does not pay for separate classification and planning calls.
+One model call should produce both the presentation decision and the UI plan candidate so the system does not pay for separate classification and planning calls.
 
 The decision should consider the original user message when it is available.
 Content without the original user message is accepted, but the system must treat the decision as lower confidence.
@@ -108,7 +108,7 @@ It must not be executed and must pass contract, Catalog, Props, Action, and stru
 
 Responsibilities:
 
-- Validate a generative UI compile request and UI plan.
+- Validate a generative UI compile request and treat its UI plan candidate as untrusted input.
 - Load the requested Component Catalog.
 - Resolve and validate component selections against the Catalog.
 - Build framework-neutral UI IR.
@@ -157,7 +157,8 @@ PresentationDecision
 `PresentationRequest` contains Markdown or JSON structured data plus optional user and rendering context.
 `PresentationDecision` is the validated output of Presentation Router.
 A Model Adapter may produce an untrusted candidate decision, but that candidate is not a `PresentationDecision` until it passes Schema validation.
-`UICompileRequest` describes an already selected and validated generative UI plan.
+`UICompileRequest` describes an already selected and Schema-valid generative UI plan candidate.
+The candidate remains non-authoritative until UI Compiler Core validates it against the active Catalog and lowers it to UI IR.
 `PresentationResult` is the public service result and distinguishes a simple Markdown representation from generative UI.
 
 ## 4. Component Extension Model

@@ -101,14 +101,31 @@ The Model Adapter may produce a candidate decision.
 The service validates the candidate against its Schema before using it.
 An invalid decision degrades to sanitized Markdown or a deterministic Markdown serialization of structured data.
 
-## UI Plan
+## UI Plan Candidate
 
-`UIPlan` is a framework-neutral semantic plan for generative UI.
+`UIPlan` is the contract name for a framework-neutral UI plan candidate.
+It is Schema-valid but remains untrusted and non-authoritative.
 It may contain component suggestions, data, layout intent, and Action descriptions.
 It must not contain executable code, DOM nodes, framework component instances, or provider-specific model response objects.
 
 Every suggested component and Action is provisional.
 UI Compiler Core performs the authoritative Catalog and Schema validation.
+The candidate should describe semantic regions, source-data bindings, component preferences, layout constraints, and Action intent rather than duplicate final UI IR.
+Its exact interface must be decided before the model-analysis implementation phase and must preserve a meaningful lowering step from candidate to UI IR.
+
+The three representations have distinct trust levels:
+
+| Representation | Meaning | Trust |
+|---|---|---|
+| UI Plan Candidate | A semantic proposal from a model or deterministic planner | Untrusted |
+| UI IR | The normalized component graph produced after authoritative Core validation | Trusted inside the Compiler |
+| A2UI | The validated external rendering payload compiled from UI IR | Trusted protocol output |
+
+## Action Intent
+
+`ActionIntent` describes what an interface action means, not how a frontend executes arbitrary code.
+Candidate Actions are provisional until Core validates their type, payload, target component, and Catalog permission.
+The MVP may emit validated Action descriptions but does not implement the complete action callback path to a Business Agent.
 
 ## Compile Request
 
@@ -140,6 +157,12 @@ export interface UICompileRequest {
 Core assumes that the caller has already selected generative UI.
 Core must not use this request to decide between Markdown and generative UI.
 For structured Agent content, UI Compiler Service supplies `fallbackMarkdown` from the request or from deterministic serialization.
+
+## UI IR
+
+UI IR is the trusted, framework-neutral intermediate representation produced by Core.
+It contains only Catalog-approved components, validated Props and Actions, resolved references, normalized layout, source-data bindings, and fallback metadata.
+It is not a model response, a frontend component instance, or an external rendering protocol.
 
 ## Compile Result
 

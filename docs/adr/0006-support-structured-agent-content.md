@@ -34,7 +34,7 @@ UI Compiler Service must validate structured data before passing it to Presentat
 Validation includes JSON compatibility, configured nesting depth, configured item count, and request size.
 
 Presentation Router handles both content variants.
-It returns either a simple Markdown presentation decision or a generative UI decision with a UI plan.
+It returns either a simple Markdown presentation decision or a generative UI decision with a UI plan candidate.
 The router may use deterministic rules or a replaceable Model Adapter.
 
 When structured data does not become generative UI, UI Compiler Service must produce a deterministic and safe Markdown representation.
@@ -43,11 +43,11 @@ The service must reject an empty fallback and sanitize Markdown before returning
 Otherwise it performs stable JSON-to-Markdown serialization.
 Serialization must not execute input, silently truncate data, or silently summarize business facts.
 
-When structured data becomes generative UI, the same UI Plan, Catalog, Props, Action, UI IR, and A2UI validation rules from ADR-0005 apply.
+When structured data becomes generative UI, the same UI Plan Candidate, Catalog, Props, Action, UI IR, and A2UI validation rules from ADR-0005 apply.
 UI Compiler Core remains independent from the source content format.
-Core receives only an already selected UI plan and fallback Markdown.
+Core receives only an already selected, Schema-valid but still untrusted UI plan candidate and fallback Markdown.
 
-If routing, model analysis, UI Plan validation, or compilation fails, the service returns sanitized Markdown or deterministic Markdown serialization when valid source content is available.
+If routing, model analysis, UI Plan Candidate validation, or compilation fails, the service returns sanitized Markdown or deterministic Markdown serialization when valid source content is available.
 
 ## Consequences
 

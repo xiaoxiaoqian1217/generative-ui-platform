@@ -40,7 +40,7 @@
 | Generative UI Compiler | 当前 MVP 产品 | 本文的需求、开发和验收对象 |
 | UI Compiler Service | Agent 内容展示路由和 UI 编译服务 | 当前 MVP 模块，不是业务 Agent |
 | Presentation Router | Markdown 或结构化数据展示模式决策能力 | Service 内部模块，可使用模型 Adapter |
-| UI Compiler Core | UI Plan 的确定性编译能力 | 当前 MVP 模块，可脱离网络服务独立使用 |
+| UI Compiler Core | UI Plan Candidate 的确定性编译能力 | 当前 MVP 模块，可脱离网络服务独立使用 |
 | Interaction Gateway | 未来可选的 Agent 协作问题空间 | 不属于当前 MVP，未来产品关系待决策 |
 
 仓库继续使用 **Generative UI Platform** 作为名称，但不代表当前已经实现完整 Agent 平台。
@@ -100,15 +100,15 @@ Generative UI Compiler MVP 包含两个产品模块和一个可替换 Adapter：
    * 不负责业务推理、业务工具调用、Agent 路由或任务编排。
 
 2. **UI Compiler Core**
-   * 接收已经选择生成式 UI 的 UI Plan；
+   * 接收已经选择生成式 UI、Schema 合法但仍不可信的 UI Plan Candidate；
    * 根据 Component Catalog 解析和校验组件选择；
-   * 将 UI Plan 转换为 UI IR；
+   * 将 UI Plan Candidate 规范化为可信 UI IR；
    * 将 UI IR 编译为 A2UI；
    * 执行 Schema 校验和确定性降级处理。
 
 3. **Model Adapter**
    * 为 Presentation Router 提供可替换的模型调用；
-   * 输出经过 Schema 约束的展示决策和 UI Plan；
+   * 输出经过 Schema 约束的展示决策和 UI Plan Candidate；
    * 负责模型超时、有限重试和供应商错误映射；
    * 不得被 UI Compiler Core 直接依赖。
 
@@ -121,7 +121,7 @@ PresentationRequest（Service 外部输入契约）
     ↓
 Presentation Router
     ├── markdown → Sanitized Markdown
-    └── generative-ui → Validated UI Plan
+    └── generative-ui → Schema-valid UI Plan Candidate
                               ↓
                        UI Compiler Core
                               ↓
@@ -138,14 +138,14 @@ Frontend Markdown Renderer / A2UI Renderer
 
 * **Presentation Request**：描述业务 Agent 返回的 Markdown 或结构化数据，以及调用方可选提供的上下文。
 * **Presentation Decision**：Presentation Router 输出的 Markdown 或 generative UI 判别联合。
-* **UI Plan**：模型提出的框架无关生成式 UI 计划，必须经过验证。
+* **UI Plan Candidate**：模型或确定性规划器提出的、Schema 合法但仍不可信的框架无关 UI 语义方案。
 * **Presentation Result**：Service 返回的 Markdown 或 generative UI 判别联合。
 * **UI IR**：Compiler 内部的框架无关中间表示。
 * **A2UI**：当前 MVP 默认的外部声明式 UI 输出协议。
 * **Component Catalog**：Compiler 可选择组件的声明、语义和 Schema。
 * **Component Registry**：前端 Runtime 中“组件类型 → 真实组件实现”的映射，不属于当前 MVP。
 
-禁止将 Presentation Request、Presentation Decision、UI Plan、UI IR、A2UI 和 Component Registry 混用为同一概念。
+禁止将 Presentation Request、Presentation Decision、UI Plan Candidate、UI IR、A2UI 和 Component Registry 混用为同一概念。
 
 ### 2.6 当前阶段结论
 
@@ -165,7 +165,7 @@ MVP 运行链路：
                 │
                 ├── Safe Markdown Representation
                 │
-                └── Validated UI Plan
+                └── Schema-valid UI Plan Candidate
                             │
                             ▼
                      UI Compiler Core
@@ -192,8 +192,8 @@ MVP 运行链路：
 2. 接收调用方可选提供的原始用户消息和展示上下文。
 3. 判断 Agent 内容应使用简单 Markdown 表示还是生成结构化 UI。
 4. 对普通 Markdown 执行安全清理，对结构化数据执行确定性安全序列化。
-5. 需要生成 UI 时产生经过 Schema 校验的 UI Plan。
-6. 将 UI Plan 转换为内部 UI IR。
+5. 需要生成 UI 时产生经过 Schema 校验但仍不可信的 UI Plan Candidate。
+6. 将 UI Plan Candidate 校验并规范化为内部 UI IR。
 7. 将 UI IR 编译为 A2UI。
 8. 根据 Component Catalog 选择和校验受控组件。
 9. 禁止生成 Catalog 中不存在的组件。
@@ -244,7 +244,7 @@ MVP 交付内容包括：
 
 * `ui-compiler-core`；
 * `ui-compiler-service`；
-* Presentation Request、Decision、Result、UI Plan 和编译输入输出契约；
+* Presentation Request、Decision、Result、UI Plan Candidate 和编译输入输出契约；
 * Presentation Router 和可替换 Model Adapter；
 * Component Catalog Schema；
 * UI IR；
@@ -294,7 +294,7 @@ MVP 交付内容包括：
 * 输出 Markdown 或 JSON 结构化业务结果。
 
 业务 Agent 不需要输出 `presentationMode`、`presentationIntent` 或 UI Plan。
-本项目不判断 Agent 内容中的业务结果是否正确，只校验输入结构、展示决策、UI Plan 和编译结果是否合法。
+本项目不判断 Agent 内容中的业务结果是否正确，只校验输入结构、展示决策、UI Plan Candidate 和编译结果是否合法。
 
 #### 4.2.3 Copilot Runtime
 
@@ -344,7 +344,7 @@ Gateway 与 Generative UI Compiler 的未来产品和架构关系必须由新的
             │
             ├── Safe Markdown Representation
             │
-            └── Validated UI Plan
+            └── Schema-valid UI Plan Candidate
                          │
                          ▼
 ┌─────────────────────────────────┐
@@ -373,10 +373,10 @@ Gateway 与 Generative UI Compiler 的未来产品和架构关系必须由新的
 负责“业务结果是什么”
 
 Presentation Router
-负责“Agent 内容应使用简单 Markdown 表示还是生成 UI，以及生成什么 UI Plan”
+负责“Agent 内容应使用简单 Markdown 表示还是生成 UI，以及生成什么 UI Plan Candidate”
 
 UI Compiler Core
-负责“已经选择的 UI Plan 如何转换为受控的声明式 UI”
+负责“UI Plan Candidate 如何经过权威校验后转换为受控的声明式 UI”
 
 UI Compiler Service
 负责“如何通过网络协议提供展示路由和编译能力”
@@ -421,42 +421,22 @@ Component Catalog
 
 ## 6. Monorepo 结构
 
-MVP 采用以下目录结构：
+目标结构由一个应用、六个共享包、测试目录和文档目录组成。
 
-```text
-generative-ui-platform/
-├─ apps/
-│  └─ ui-compiler-service/
-├─ packages/
-│  ├─ ui-compiler-core/
-│  ├─ presentation-contract/
-│  ├─ component-catalog-schema/
-│  ├─ compiler-contract/
-│  ├─ ag-ui-adapter/
-│  └─ shared-types/
-├─ tests/
-│  ├─ fixtures/
-│  ├─ contract/
-│  ├─ integration/
-│  └─ e2e/
-├─ docs/
-│  ├─ REQUIREMENTS.md
-│  ├─ ARCHITECTURE.md
-│  └─ CONTRACTS.md
-├─ pnpm-workspace.yaml
-├─ package.json
-├─ tsconfig.base.json
-└─ turbo.json
-```
+| 路径 | 目标职责 |
+|---|---|
+| `apps/ui-compiler-service` | HTTP、AG-UI、Presentation Router、Model Adapter 组装和应用编排 |
+| `packages/ui-compiler-core` | UI Plan Candidate 到 UI IR 和 A2UI 的确定性编译 |
+| `packages/presentation-contract` | 展示请求、决策、结果和 UI Plan Candidate 契约 |
+| `packages/component-catalog-schema` | Catalog、组件和 Action Schema |
+| `packages/compiler-contract` | 编译请求、UI IR、结果和错误契约 |
+| `packages/ag-ui-adapter` | AG-UI 输入输出适配 |
+| `packages/shared-types` | 最小通用类型 |
+| `tests` | Fixture、契约、集成和端到端测试 |
+| `docs` | 需求、架构、契约和 ADR |
 
-MVP 不创建：
-
-```text
-apps/interaction-gateway/
-packages/frontend-runtime/
-packages/component-registry/
-```
-
+当前实现与目标结构的差异记录在 [README](../README.md#当前实现状态)。
+MVP 不得创建 `apps/interaction-gateway`、`packages/frontend-runtime` 或 `packages/component-registry`。
 未来扩展必须保持包可独立构建和发布。
 
 ---
@@ -465,52 +445,13 @@ packages/component-registry/
 
 ### 7.1 UI Compiler Service
 
-```text
-apps/ui-compiler-service/
-├─ src/
-│  ├─ http/
-│  │  ├─ controllers/
-│  │  ├─ routes/
-│  │  └─ middleware/
-│  ├─ ag-ui/
-│  │  ├─ endpoint/
-│  │  ├─ event-mapper/
-│  │  └─ run-handler/
-│  ├─ application/
-│  │  ├─ present-use-case.ts
-│  │  └─ compile-use-case.ts
-│  ├─ presentation-router/
-│  ├─ markdown-sanitizer/
-│  ├─ structured-data/
-│  ├─ model-adapter/
-│  ├─ config/
-│  ├─ observability/
-│  ├─ bootstrap.ts
-│  └─ main.ts
-├─ tests/
-├─ package.json
-├─ tsconfig.json
-└─ Dockerfile
-```
+Service 内部至少分离 HTTP、AG-UI、应用用例、Presentation Router、Markdown 安全处理、结构化数据处理、Model Adapter、配置和可观测性。
+具体目录结构由实现决定，不构成公共契约。
 
 ### 7.2 UI Compiler Core
 
-```text
-packages/ui-compiler-core/
-├─ src/
-│  ├─ input-validator/
-│  ├─ catalog-loader/
-│  ├─ component-selector/
-│  ├─ ui-ir/
-│  ├─ a2ui-compiler/
-│  ├─ schema-validator/
-│  ├─ fallback/
-│  ├─ compiler.ts
-│  └─ index.ts
-├─ tests/
-├─ package.json
-└─ tsconfig.json
-```
+Core 内部至少分离输入校验、Catalog 加载、组件选择、UI IR、A2UI 编译、Schema 校验和降级。
+具体目录结构由实现决定，不构成公共契约。
 
 ### 7.3 共享契约包
 
@@ -577,43 +518,15 @@ packages/ui-compiler-core/
 
 ### 8.1 允许的依赖
 
-```text
-ui-compiler-service
-├─ ui-compiler-core
-├─ presentation-contract
-├─ compiler-contract
-├─ component-catalog-schema
-├─ ag-ui-adapter
-├─ concrete-model-adapter
-└─ shared-types
-
-ui-compiler-core
-├─ presentation-contract
-├─ compiler-contract
-├─ component-catalog-schema
-└─ shared-types
-
-ag-ui-adapter
-├─ compiler-contract
-└─ shared-types
-```
+| 模块 | 可依赖 |
+|---|---|
+| `ui-compiler-service` | Core、全部共享契约、AG-UI Adapter、具体 Model Adapter |
+| `ui-compiler-core` | Presentation Contract、Compiler Contract、Catalog Schema、Shared Types |
+| `ag-ui-adapter` | Compiler Contract、Shared Types |
 
 ### 8.2 禁止的依赖
 
-```text
-ui-compiler-core → ui-compiler-service
-ui-compiler-core → AG-UI Server
-ui-compiler-core → HTTP Framework
-ui-compiler-core → Model SDK
-ui-compiler-core → Model Provider
-ui-compiler-core → CopilotKit
-ui-compiler-core → Vue
-ui-compiler-core → React
-ui-compiler-core → LangGraph
-ui-compiler-core → Browser API
-ui-compiler-core → Frontend Component Registry
-```
-
+UI Compiler Core 不得依赖 UI Compiler Service、网络协议、HTTP 框架、模型 SDK、模型供应商、Agent 框架、前端框架、浏览器 API 或前端 Component Registry。
 共享契约包不得反向依赖应用层。
 
 ---
@@ -625,7 +538,7 @@ ui-compiler-core → Frontend Component Registry
 UI Compiler Core 必须负责：
 
 1. 校验编译输入。
-2. 校验 UI Plan。
+2. 校验 UI Plan Candidate。
 3. 加载指定 Component Catalog。
 4. 解析和校验组件建议，包括 Catalog 中声明的领域组件。
 5. 校验组件层级和布局。
@@ -661,7 +574,7 @@ UI Compiler Service 必须负责：
 5. 清理需要直出的 Markdown，并安全序列化不生成 UI 的结构化数据。
 6. 调用 Presentation Router。
 7. 创建并注入具体 Model Adapter。
-8. 校验 Presentation Decision 和 UI Plan。
+8. 校验 Presentation Decision 和 UI Plan Candidate。
 9. 对 generative UI 决策调用 UI Compiler Core。
 10. 将 Markdown 或 generative UI 结果转换为 HTTP 响应。
 11. 将结果转换为 AG-UI 事件。
@@ -701,7 +614,7 @@ Model Adapter 必须负责：
 4. 将供应商错误映射为稳定错误代码。
 5. 隔离供应商 SDK 和响应类型。
 
-一次模型调用应该同时完成展示模式判断和 UI Plan 生成。
+一次模型调用应该同时完成展示模式判断和 UI Plan Candidate 生成。
 不得默认使用一次分类调用加一次 UI 规划调用。
 
 ---
@@ -712,47 +625,8 @@ Model Adapter 必须负责：
 
 ### 10.1 Presentation Request
 
-```ts
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue };
-
-export type AgentContent =
-  | {
-      contentType: "markdown";
-      markdown: string;
-    }
-  | {
-      contentType: "structured-data";
-      data: JsonValue;
-      fallbackMarkdown?: string;
-    };
-
-export interface PresentationRequest {
-  requestId: string;
-  threadId?: string;
-  runId?: string;
-  content: AgentContent;
-  context?: {
-    userMessage?: string;
-    locale?: string;
-    theme?: string;
-    viewport?: {
-      width: number;
-      height: number;
-    };
-    domain?: string;
-  };
-  catalog: {
-    catalogId: string;
-    catalogVersion: string;
-  };
-}
-```
+`PresentationRequest` 的目标契约形状定义在 [CONTRACTS.md](./CONTRACTS.md#presentation-request)。
+可执行事实来源在迁移完成后必须是 `packages/presentation-contract` 的运行时 Schema。
 
 约束：
 
@@ -761,65 +635,26 @@ export interface PresentationRequest {
 3. 结构化数据提供 `fallbackMarkdown` 时，该字段必须非空，并在返回前通过 Markdown 安全清理。
 4. 结构化数据未提供 `fallbackMarkdown` 时，Service 必须能够生成确定性、安全且不静默截断的 Markdown 表示。
 5. `userMessage` 是调用方能够提供时使用的可选上下文。
-6. Service 不得要求业务 Agent 提供 `presentationMode`、`presentationIntent` 或 UI Plan。
+6. Service 不得要求业务 Agent 提供 `presentationMode`、`presentationIntent` 或 UI Plan Candidate。
 7. UI Compiler 不校验 Agent 内容中的业务结果是否真实。
 
-### 10.2 Presentation Decision 和 UI Plan
+### 10.2 Presentation Decision 和 UI Plan Candidate
 
-```ts
-export type PresentationDecision =
-  | {
-      mode: "markdown";
-      reason: string;
-    }
-  | {
-      mode: "generative-ui";
-      reason: string;
-      plan: UIPlan;
-    };
-
-export interface UIPlan {
-  intent?: "summary" | "status" | "comparison" | "timeline" | "confirmation" | "form" | "detail";
-  components: PlannedComponent[];
-  dataModel: Record<string, unknown>;
-  layout?: LayoutPlan;
-  actions?: ActionIntent[];
-}
-
-export interface PlannedComponent {
-  componentId: string;
-  suggestedType: string;
-  props: Record<string, unknown>;
-  childComponentIds?: string[];
-}
-
-export interface LayoutPlan {
-  kind: string;
-  properties?: Record<string, unknown>;
-}
-```
+`PresentationDecision` 和 `UIPlan` 的目标契约定义在 [CONTRACTS.md](./CONTRACTS.md#presentation-decision)。
+`UIPlan` 是契约类型名，领域概念使用 UI Plan Candidate。
 
 `PresentationDecision` 是 Presentation Router 的内部输出，不是业务 Agent 输入。
 Model Adapter 产生的候选结果必须先通过 Schema 校验。
-`UIPlan` 不得包含可执行代码、DOM、前端组件实例或模型供应商响应对象。
+UI Plan Candidate 通过 Schema 校验后仍然是不可信、非权威输入。
+它应表达语义区域、源数据绑定、组件偏好、布局约束和 Action 意图，而不是复制最终 UI IR。
+UI Plan Candidate 不得包含可执行代码、DOM、前端组件实例或模型供应商响应对象。
 所有组件和 Action 建议都必须由 UI Compiler Core 根据当前 Catalog 做权威校验。
+UI Plan Candidate 的精确接口必须在模型分析阶段开始前通过 ADR 决定。
+该接口必须保留从 Candidate 到 UI IR 的实质性 lowering，禁止让 Core 退化成字段透传层。
 
 ### 10.3 Action
 
-```ts
-export interface ActionIntent {
-  actionId: string;
-  actionType: string;
-  label: string;
-
-  ownerAgentId?: string;
-  resourceId?: string;
-  payload?: Record<string, unknown>;
-
-  requiresApproval?: boolean;
-  destructive?: boolean;
-}
-```
+`ActionIntent` 的目标语义定义在 [CONTRACTS.md](./CONTRACTS.md#action-intent)，可执行事实来源必须是 `packages/presentation-contract`。
 
 MVP 中 Action 只用于生成 UI 描述，不实现 Action 回传业务 Agent 的完整链路。
 
@@ -833,157 +668,30 @@ MVP 中 Action 只用于生成 UI 描述，不实现 Action 回传业务 Agent �
 
 ### 10.4 编译请求
 
-```ts
-export interface UICompileRequest {
-  requestId: string;
-  threadId?: string;
-  runId?: string;
-  plan: UIPlan;
-  fallbackMarkdown: string;
-  catalog: {
-    catalogId: string;
-    catalogVersion: string;
-  };
-
-  context?: {
-    locale?: string;
-    theme?: string;
-    viewport?: {
-      width: number;
-      height: number;
-    };
-    userPreferences?: Record<string, unknown>;
-  };
-}
-```
+`UICompileRequest` 的目标契约形状定义在 [CONTRACTS.md](./CONTRACTS.md#compile-request)。
 
 `threadId` 和 `runId` 是可选的协议关联字段。
 Core 可以透传，但不得据此维护会话状态或 Run 生命周期。
 Core 接收到 `UICompileRequest` 时必须假设调用方已经选择生成式 UI，不得再次执行展示模式路由。
+Core 必须继续把其中的 UI Plan Candidate 视为不可信输入。
 
 ### 10.5 Presentation Result
 
-```ts
-export type PresentationResult =
-  | {
-      requestId: string;
-      status: "completed";
-      mode: "markdown";
-      markdown: string;
-    }
-  | {
-      requestId: string;
-      status: "completed";
-      mode: "generative-ui";
-      surfaceId: string;
-      operations: A2UIOperation[];
-    }
-  | {
-      requestId: string;
-      status: "degraded";
-      mode: "markdown";
-      markdown: string;
-      errors: PresentationError[];
-    }
-  | {
-      requestId: string;
-      status: "failed";
-      errors: PresentationError[];
-    };
-
-export interface PresentationError {
-  code: string;
-  message: string;
-  stage:
-    | "input-validation"
-    | "content-serialization"
-    | "presentation-routing"
-    | "model-analysis"
-    | "ui-plan-validation"
-    | "ui-compilation";
-  retryable: boolean;
-  details?: unknown;
-}
-```
+`PresentationResult` 和 `PresentationError` 的目标契约形状定义在 [CONTRACTS.md](./CONTRACTS.md#presentation-result)。
 
 前端必须根据 `mode` 把结果发送给 Markdown Renderer 或 A2UI Renderer。
-只要原始 Agent 内容有效，路由、模型、UI Plan 或编译失败都应优先返回 `status = "degraded"` 的安全 Markdown 表示。
+只要原始 Agent 内容有效，路由、模型、UI Plan Candidate 或编译失败都应优先返回 `status = "degraded"` 的安全 Markdown 表示。
 
 ### 10.6 编译结果
 
-```ts
-export interface UICompileMetadata {
-  catalogId: string;
-  catalogVersion: string;
-  compilerVersion: string;
-  compileDurationMs: number;
-}
-
-export interface CompileFallback {
-  type: "template" | "markdown" | "text";
-  content: JsonValue;
-  reason: string;
-  errorCode: string;
-}
-
-interface UICompileResultBase {
-  requestId: string;
-  metadata: UICompileMetadata;
-}
-
-export type UICompileResult = UICompileResultBase &
-  (
-    | {
-        success: true;
-        degraded: false;
-        surfaceId: string;
-        operations: A2UIOperation[];
-        fallback?: never;
-        errors?: never;
-      }
-    | {
-        success: true;
-        degraded: true;
-        surfaceId?: never;
-        operations?: never;
-        fallback: CompileFallback;
-        errors: CompileError[];
-      }
-    | {
-        success: false;
-        degraded: false;
-        surfaceId?: never;
-        operations?: never;
-        fallback?: never;
-        errors: CompileError[];
-      }
-  );
-```
+`UICompileResult` 的可执行事实来源是 `packages/compiler-contract`。
+其完整成功、降级成功和完整失败三个互斥状态由 ADR-0002 定义。
 
 `success` 表示调用方是否获得可消费结果；完整 A2UI 和降级内容都属于可消费结果。
 
 ### 10.7 编译错误
 
-```ts
-export type CompileStage =
-  | "input-validation"
-  | "ui-plan-validation"
-  | "catalog-loading"
-  | "component-selection"
-  | "ui-ir"
-  | "a2ui-compile"
-  | "schema-validation"
-  | "fallback"
-  | "output-adapter";
-
-export interface CompileError {
-  code: string;
-  message: string;
-  stage: CompileStage;
-  retryable: boolean;
-  details?: unknown;
-}
-```
+`CompileStage` 和 `CompileError` 的可执行事实来源是 `packages/compiler-contract`。
 
 错误代码必须稳定，禁止仅通过自然语言文本判断错误类型。
 
@@ -993,31 +701,8 @@ export interface CompileError {
 
 ### 11.1 Component Catalog 定义
 
-```ts
-export interface ComponentDefinition {
-  type: string;
-  description: string;
-  propsSchema: unknown;
-
-  allowedChildren?: string[];
-  allowedActions?: string[];
-  domains?: string[];
-  fallbackComponent?: string;
-}
-
-export interface ActionDefinition {
-  actionType: string;
-  description: string;
-  payloadSchema: unknown;
-}
-
-export interface ComponentCatalog {
-  catalogId: string;
-  catalogVersion: string;
-  components: ComponentDefinition[];
-  actions?: ActionDefinition[];
-}
-```
+Component Catalog 的契约所有权说明位于 [CONTRACTS.md](./CONTRACTS.md#package-ownership)。
+可执行事实来源必须是 `packages/component-catalog-schema` 的运行时 Schema。
 
 约束：
 
@@ -1096,32 +781,8 @@ UI Compiler 必须禁止生成：
 ## 12. UI IR
 
 A2UI 编译前必须生成独立 UI IR。
-
-```ts
-export interface UISurfaceIR {
-  surfaceId: string;
-  catalogId: string;
-  catalogVersion: string;
-  layout: LayoutIR;
-  components: ComponentIR[];
-  dataModel: Record<string, unknown>;
-  actions?: ActionIntent[];
-  actionBindings?: ComponentActionBindingIR[];
-  fallbackMarkdown?: string;
-}
-
-export interface ComponentIR {
-  componentId: string;
-  type: string;
-  props: Record<string, unknown>;
-  childComponentIds?: string[];
-}
-
-export interface ComponentActionBindingIR {
-  componentId: string;
-  actionId: string;
-}
-```
+UI IR 的目标语义定义在 [CONTRACTS.md](./CONTRACTS.md#ui-ir)。
+可执行事实来源必须位于 `packages/compiler-contract`。
 
 UI IR 必须满足：
 
@@ -1154,7 +815,7 @@ UI IR 必须满足：
 
 #### CORE-002
 
-系统必须校验 `requestId`、UI Plan、Fallback Markdown、Catalog、Action、数据嵌套深度和数据项数量。
+系统必须校验 `requestId`、UI Plan Candidate、Fallback Markdown、Catalog、Action、数据嵌套深度和数据项数量。
 
 #### CORE-003
 
@@ -1162,7 +823,7 @@ UI IR 必须满足：
 
 HTTP 请求体字节数由 UI Compiler Service 在反序列化之前校验。
 
-### 13.2 UI Plan 校验
+### 13.2 UI Plan Candidate 校验
 
 #### CORE-004
 
@@ -1170,31 +831,32 @@ HTTP 请求体字节数由 UI Compiler Service 在反序列化之前校验。
 
 #### CORE-005
 
-系统必须拒绝 UI Plan 中的可执行代码、DOM、前端组件实例和模型供应商响应对象。
+系统必须拒绝 UI Plan Candidate 中的可执行代码、DOM、前端组件实例和模型供应商响应对象。
 
 #### CORE-006
 
-系统必须把 UI Plan 视为不可信输入，即使 Service 已经执行过边界校验。
+系统必须把 UI Plan Candidate 视为不可信输入，即使 Service 已经执行过边界校验。
 
 #### CORE-007
 
 系统必须保留 `fallbackMarkdown`，以便编译失败时返回有效业务内容。
 
-### 13.3 UI Plan 处理
+### 13.3 UI Plan Candidate 处理
 
 #### CORE-008
 
-系统必须支持包含组件建议、数据模型、布局意图和 Action 的 UI Plan。
+系统必须支持表达语义区域、源数据绑定、组件偏好、布局约束和 Action 意图的 UI Plan Candidate。
+Candidate 不得复制最终 UI IR，也不得要求模型决定权威组件树。
 
 #### CORE-009
 
-系统应根据 UI Plan、Catalog、数据规模、嵌套约束、Actions、领域信息和 Viewport 解析最终展示结构。
+系统应根据 UI Plan Candidate、Catalog、数据规模、嵌套约束、Actions、领域信息和 Viewport 解析最终展示结构。
 
 #### CORE-010
 
-MVP 至少支持：
+MVP 至少支持以下展示场景：
 
-| UI Plan intent | 推荐组件 |
+| 展示场景 | Core 可选择的组件 |
 |---|---|
 | summary | Card、Text、List |
 | status | Card、Table、Alert |
@@ -1206,8 +868,8 @@ MVP 至少支持：
 
 #### CORE-011
 
-未指定 `UIPlan.intent` 时，Core 可以根据 UI Plan 的其他结构使用确定性规则解析。
-Core 不得为了补充 intent 调用模型。
+UI Plan Candidate 未表达可用的语义提示时，Core 可以根据其他候选信息使用确定性规则解析。
+Core 不得为了补充语义提示调用模型。
 
 ### 13.4 组件选择
 
@@ -1217,7 +879,7 @@ Core 不得为了补充 intent 调用模型。
 
 #### CORE-013
 
-组件选择应考虑 UI Plan、数据规模、组件描述、嵌套约束、Actions、领域信息和 Viewport。
+组件选择应考虑 UI Plan Candidate、数据规模、组件描述、嵌套约束、Actions、领域信息和 Viewport。
 
 #### CORE-014
 
@@ -1394,7 +1056,7 @@ Presentation Router 必须返回 `mode = "markdown"` 或 `mode = "generative-ui"
 #### SERVICE-017
 
 需要模型分析时，Presentation Router 必须通过可替换 Model Adapter 调用模型。
-一次模型调用应该同时返回展示模式决策和可选 UI Plan。
+一次模型调用应该同时返回展示模式决策和可选 UI Plan Candidate。
 
 #### SERVICE-018
 
@@ -1403,7 +1065,7 @@ Presentation Router 必须返回 `mode = "markdown"` 或 `mode = "generative-ui"
 
 #### SERVICE-019
 
-路由、模型、UI Plan 或编译失败时，只要原始 Agent 内容有效，Service 必须返回经过安全清理或确定性序列化的降级 Markdown。
+路由、模型、UI Plan Candidate 或编译失败时，只要原始 Agent 内容有效，Service 必须返回经过安全清理或确定性序列化的降级 Markdown。
 
 #### SERVICE-020
 
@@ -1426,7 +1088,7 @@ UI Compiler Core 应优先保持无状态。
 
 * Component Catalog；
 * Catalog Schema；
-* UI Plan Schema；
+* UI Plan Candidate Schema；
 * 相同输入的编译结果；
 * 编译器静态配置。
 
@@ -1502,8 +1164,8 @@ MVP 必须提供：
 | 错误代码 | 触发条件 | 责任模块 |
 |---|---|---|
 | `REQUEST_BODY_TOO_LARGE` | 请求体超过限制 | UI Compiler Service |
-| `DATA_DEPTH_EXCEEDED` | Agent 内容或 UI Plan 数据嵌套深度超过限制 | UI Compiler Service / UI Compiler Core |
-| `DATA_ITEMS_EXCEEDED` | Agent 内容或 UI Plan 数据项数量超过限制 | UI Compiler Service / UI Compiler Core |
+| `DATA_DEPTH_EXCEEDED` | Agent 内容或 UI Plan Candidate 数据嵌套深度超过限制 | UI Compiler Service / UI Compiler Core |
+| `DATA_ITEMS_EXCEEDED` | Agent 内容或 UI Plan Candidate 数据项数量超过限制 | UI Compiler Service / UI Compiler Core |
 | `COMPILE_TIMEOUT` | 编译执行超时 | UI Compiler Service |
 | `MODEL_TIMEOUT` | 模型调用超时 | Model Adapter |
 | `MODEL_RETRY_EXHAUSTED` | 模型重试耗尽 | Model Adapter |
@@ -1537,7 +1199,7 @@ MVP 必须提供：
 
 ### 17.1 单元测试
 
-必须覆盖 Input Validator、Markdown Sanitizer、Structured Data Validator、Structured Data Serializer、Presentation Router、Model Adapter、UI Plan Validator、Catalog Loader、Component Selector、UI IR Builder、A2UI Compiler、Schema Validator、Fallback Generator 和 Error Mapper。
+必须覆盖 Input Validator、Markdown Sanitizer、Structured Data Validator、Structured Data Serializer、Presentation Router、Model Adapter、UI Plan Candidate Validator、Catalog Loader、Component Selector、UI IR Builder、A2UI Compiler、Schema Validator、Fallback Generator 和 Error Mapper。
 
 ### 17.2 契约测试
 
@@ -1561,10 +1223,10 @@ MVP 必须提供：
 
 1. 普通 Markdown → Sanitizer → Markdown Result。
 2. 结构化数据 → Serializer → Markdown Result。
-3. Markdown → Presentation Router → UI Plan → Core → A2UI。
-4. 结构化数据 → Presentation Router → UI Plan → Core → A2UI。
+3. Markdown → Presentation Router → UI Plan Candidate → Core → A2UI。
+4. 结构化数据 → Presentation Router → UI Plan Candidate → Core → A2UI。
 5. 模型路由失败 → Safe Markdown Representation。
-6. 非法 UI Plan → Safe Markdown Representation。
+6. 非法 UI Plan Candidate → Safe Markdown Representation。
 7. HTTP → Presentation Result。
 8. AG-UI → Markdown 或 A2UI Events。
 9. Catalog 不兼容降级。
@@ -1583,7 +1245,7 @@ MVP 必须提供：
 * 适合 Markdown 直出的示例；
 * 适合生成状态、比较、时间线、确认和表单 UI 的 Markdown；
 * 适合简单序列化和生成式 UI 的结构化数据；
-* 对应的 UI Plan；
+* 对应的 UI Plan Candidate；
 * 非法 Catalog；
 * 非法 Props；
 * 超大输入；
@@ -1607,8 +1269,8 @@ MVP 必须提供：
 
 ### 18.2 Core 验收
 
-* UI Plan 可以转换为 UI IR。
-* 七类 UI Plan intent 均有测试用例。
+* UI Plan Candidate 可以转换为 UI IR。
+* 七类展示场景均有 UI Plan Candidate 到 UI IR 的测试用例。
 * UI IR 可以转换为 A2UI。
 * 未注册组件、非法 Props、嵌套和 Action 会被拦截。
 * Catalog 不兼容会报错或降级。
@@ -1641,12 +1303,12 @@ MVP 必须提供：
 
 ### 阶段二：确定性编译链路
 
-完成 Input Validator、UI Plan Validator、基础和领域 Catalog Fixture、组件选择、UI IR、A2UI Compiler、Schema Validator 和 Fallback。
+完成 Input Validator、UI Plan Candidate Validator、基础和领域 Catalog Fixture、组件选择、UI IR、A2UI Compiler、Schema Validator 和 Fallback。
 
 阶段目标：
 
 ```text
-Validated UI Plan
+Schema-valid UI Plan Candidate
         ↓
 UI Compiler Core
         ↓
@@ -1658,7 +1320,7 @@ A2UI / Fallback
 ### 阶段三：展示路由和模型分析
 
 增加 Presentation Router、Markdown Sanitizer、Structured Data Validator、Structured Data Serializer 和可替换 Model Adapter。
-Model Adapter 用于判断简单 Markdown 表示或生成式 UI，并在 generative UI 分支生成 UI Plan。
+Model Adapter 用于判断简单 Markdown 表示或生成式 UI，并在 generative UI 分支生成 UI Plan Candidate。
 
 模型输出仍必须转换为 UI IR 并通过 Schema 校验。
 
@@ -1718,7 +1380,7 @@ Frontend Runtime 和真实组件渲染不属于阶段五验收范围，可以通
 | TD-017 | MVP 支持一次性 A2UI，预留增量输出 |
 | TD-018 | 所有失败必须返回明确错误或降级结果 |
 | TD-019 | Presentation Router 位于 Core 之前，负责安全 Markdown 表示或 generative UI 决策 |
-| TD-020 | 一次模型调用应该同时返回展示决策和可选 UI Plan |
+| TD-020 | 一次模型调用应该同时返回展示决策和可选 UI Plan Candidate |
 | TD-021 | Core 不依赖模型供应商，也不决定是否生成 UI |
 | TD-022 | 业务 Agent、Frontend Runtime、Component Registry 和 Interaction Gateway 均为外部系统 |
 

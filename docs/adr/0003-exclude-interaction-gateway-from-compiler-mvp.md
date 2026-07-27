@@ -3,11 +3,6 @@
 - **Status:** Accepted
 - **Date:** 2026-07-24
 
-## Terminology update
-
-ADR-0005 renames UI Compiler Agent to UI Compiler Service and expands it from a pure network Adapter to a presentation routing and compilation application service.
-References to UI Compiler Agent below describe the module name used when this ADR was accepted.
-
 ## Context
 
 早期仓库脚手架和 ADR-0001 将 Interaction Gateway 纳入了 MVP。
@@ -17,7 +12,7 @@ References to UI Compiler Agent below describe the module name used when this AD
 ## Decision
 
 Interaction Gateway 不属于 Generative UI Compiler MVP，不纳入当前阶段的创建、实现或验收范围。
-当前 MVP 的产品边界仅包含 UI Compiler Core 和 UI Compiler Agent。
+当前 MVP 的产品边界仅包含 UI Compiler Core 和 UI Compiler Service。
 未来只有在需求定义的多 Agent 连接、路由或交互闭环条件出现后，才重新启动 Interaction Gateway 的设计。
 现有 `apps/interaction-gateway` 和仅为其服务的 `packages/gateway-contract` 必须从活跃 workspace 移除。
 Git 历史负责保留旧脚手架，不在当前源码树中维护休眠实现。
@@ -36,7 +31,7 @@ ADR-0001 的 monorepo 和其余模块边界决策继续有效。
 
 - 当前设计和交付计划不得依赖 Interaction Gateway。
 - 仓库中的现有 Gateway app、专属 contract package 和相关活跃配置需要通过独立实现 ticket 清理。
-- UI Compiler Agent 必须能够独立对外提供当前 MVP 的编译能力。
+- UI Compiler Service 必须能够独立对外提供当前 MVP 的展示和编译能力。
 - 未来重新启动 Gateway 时，必须基于届时需求重新设计，不能默认恢复旧脚手架。
 - 清理 ticket 必须移除 `sourceType: "interaction-gateway"` 等 Gateway 专属契约。
 - 清理 ticket 必须同步移除 Gateway 的容器、构建、发布、依赖维护、标签和 Issue 入口配置。

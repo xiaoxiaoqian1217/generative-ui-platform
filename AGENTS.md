@@ -9,6 +9,9 @@
 ## Architecture rules
 
 - `packages/ui-compiler-core` MUST remain framework-, transport-, and vendor-neutral.
+- UI Compiler Service owns presentation routing and concrete model adapters.
+- UI Compiler Core MUST NOT choose a presentation mode or call a model.
+- A Schema-valid UI Plan Candidate remains untrusted until Core validates and lowers it to UI IR.
 - Apps may depend on packages; packages MUST NOT depend on apps.
 - Current MVP MUST NOT create or implement `apps/interaction-gateway`.
 - Future Gateway work requires an explicit scope-change issue and a new ADR.
