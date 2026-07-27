@@ -1,13 +1,26 @@
 # Generative UI Compiler MVP 系统设计说明书
 
-- **文档版本：** 1.1
+- **文档版本：** 1.2
 - **设计阶段：** MVP 系统设计（评审修订版）
-- **需求基线：** `docs/REQUIREMENTS.md` v1.3
+- **需求基线：** `docs/REQUIREMENTS.md` v1.4
 - **适用范围：** Generative UI Compiler MVP
 - **不适用范围：** Interaction Gateway、业务 Agent、Frontend Runtime、真实前端组件
-**规范状态：** 设计输入，尚未取代 `docs/REQUIREMENTS.md`
+- **规范状态：** 设计输入，尚未取代 `docs/REQUIREMENTS.md`
 
 ## 版本修订
+
+v1.2 根据第二轮设计评审完成以下修订：
+
+- 编译缓存改为只缓存不含请求数据和 Surface 标识的编译模板；
+- Markdown 输入在进入模型、Core 或 A2UI 前统一安全清理；
+- A2UI 发布版本与消息中的协议判别版本分离；
+- `UICompileRequest`、Catalog 加载和 Catalog 引用一致性形成统一契约；
+- Catalog 在展示路由前加载，Router 使用同一版本 Catalog 的能力摘要；
+- 固定 UI 模板降级和 Surface 删除范围与需求及 ADR 对齐；
+- 定义 UI IR Props、Binding 和 Action 到 A2UI 的精确映射；
+- AG-UI Adapter 为缺失的 Thread ID 和 Run ID 生成稳定的请求级标识；
+- 明确结构化数据序列化的数组和对象顺序规则；
+- 修正公共错误阶段和错误代码混用。
 
 v1.1 根据设计评审补齐：
 
@@ -16,13 +29,12 @@ v1.1 根据设计评审补齐：
 - 完整 `sourceData` 与模型 `derivedData` 分离；
 - Action 展示与组件事件绑定；
 - Catalog 外部加载边界；
-- A2UI v0.9.1 Profile；
+- A2UI 0.9.1 Profile；
 - AG-UI 标准事件映射；
 - 内部错误阶段到公共错误阶段映射；
 - 删除与公共结果契约冲突的固定 UI 模板降级。
 
-固定 UI 模板降级决定与 `docs/REQUIREMENTS.md` CORE-024 存在待解决冲突。
-在显式需求变更完成前，以 CORE-024 为准，并由 `docs/IMPLEMENTATION_PLAN.md` PLAN-000 跟踪对齐。
+固定 UI 模板降级、A2UI Profile、编译输入数据所有权、AG-UI 映射和编译模板缓存分别由对应 ADR 固化。
 
 ---
 
@@ -96,7 +108,7 @@ v1.1 根据设计评审补齐：
 |---|---|
 | 安全 | 模型和外部输入均视为不可信；所有结构、组件、Props、Actions 和 A2UI 必须校验 |
 | 可降级 | 生成式 UI 失败不得造成有效业务内容丢失 |
-| 确定性 | Core 在相同输入、Catalog 和配置下产生稳定结果 |
+| 确定性 | Core 在相同语义输入、Catalog 和配置下产生稳定组件规划；请求级 Surface 标识除外 |
 | 框架无关 | Core 不依赖 Vue、React、浏览器、CopilotKit 或具体 Agent 框架 |
 | 协议可适配 | UI IR 与 A2UI 解耦，未来可以增加其他输出协议 |
 | 可扩展 | 通用组件和领域组件统一通过 Component Catalog 扩展 |
@@ -189,10 +201,11 @@ flowchart TB
     RequestValidator --> DataValidator
     RequestValidator --> MarkdownSanitizer
     DataValidator --> DataSerializer
+    Orchestrator --> CatalogRepository
     Orchestrator --> Router
+    CatalogRepository -->|能力摘要| Router
     Router --> ModelAdapter
     Router -->|markdown| ResultMapper
-    Router -->|generative-ui| CatalogRepository
     CatalogRepository --> CompileValidator
     CompileValidator --> PlanValidator
     PlanValidator --> CatalogValidator
@@ -300,8 +313,8 @@ sequenceDiagram
 
 Serializer 必须：
 
-- 保留数据顺序；
-- 使用稳定键排序策略；
+- 保留所有数组的原始顺序；
+- 对象键使用 Unicode 码点升序的规范化排序，不承诺保留对象的声明顺序；
 - 不执行输入；
 - 不静默截断；
 - 不自动摘要或改写业务事实；
@@ -319,8 +332,10 @@ sequenceDiagram
     participant K as UI Compiler Core
 
     C->>S: PresentationRequest
-    S->>S: 输入校验并生成完整 sourceData 与安全 fallbackMarkdown
-    S->>R: AgentContent + context + Catalog 能力摘要
+    S->>S: 输入校验并生成安全 sourceData 与 fallbackMarkdown
+    S->>G: catalogId + catalogVersion
+    G-->>S: 已校验 Catalog + 能力摘要
+    S->>R: AgentContent + context + 同版本 Catalog 能力摘要
     alt 确定性规则足够
         R-->>S: generative-ui + UIPlan Candidate
     else 需要语义分析
@@ -329,24 +344,23 @@ sequenceDiagram
         R->>R: PresentationDecision Schema 校验
         R-->>S: generative-ui + UIPlan Candidate
     end
-    S->>G: catalogId + catalogVersion
-    G-->>S: 可信来源 Catalog
-    S->>K: UICompileRequest + 完整 sourceData + Catalog
+    S->>K: UICompileRequest + sourceData + Catalog
     K->>K: Candidate、Catalog 和资源限制校验
     K->>K: 语义解析与组合规划
     K->>K: 组件图选择、Props 解析和 Action 绑定
     K->>K: UI IR 构建与校验
-    K->>K: A2UI v0.9.1 Profile 编译与校验
+    K->>K: A2UI 0.9.1 Profile 编译与校验
     K-->>S: Complete UICompileResult
     S-->>C: completed / generative-ui
 ```
 
-完整业务数据由 Service 直接传给 Core。
+结构化输入的完整业务数据由 Service 直接传给 Core。
+Markdown 输入在清理后以 `{ markdown: sanitizedMarkdown }` 形式进入 Core。
 模型只提出语义和绑定建议，不拥有或重写完整业务数据。
 
 ### 6.4 降级流程
 
-为与当前 `PresentationResult` 公共契约保持一致，MVP 不采用“固定 UI 模板降级”。
+为与当前 `PresentationResult` 公共契约和 ADR-0009 保持一致，MVP 不采用“固定 UI 模板降级”。
 
 ```mermaid
 flowchart TD
@@ -364,7 +378,7 @@ flowchart TD
 2. 不得返回“部分成功”的非法或不完整 A2UI。
 3. 不得为了降级再次调用模型。
 4. 降级结果包含稳定错误代码、公共阶段、可重试标记和安全消息。
-5. Core 返回内部详细诊断，Service 将其映射为公共 `PresentationError`。
+5. Core 使用请求中的安全 `fallbackMarkdown` 返回 degraded `UICompileResult` 和内部详细诊断，Service 将其映射为公共 `PresentationError`。
 6. 只有输入本身不可用且无法形成安全文本时，才返回完整失败。
 
 ## 7. UI Compiler Service 设计
@@ -375,11 +389,13 @@ UI Compiler Service 是应用组合根，负责：
 
 - 接收并校验网络请求；
 - 创建请求级上下文；
-- 保留完整 `sourceData` 并生成安全 `fallbackMarkdown`；
+- 为结构化输入保留完整 `sourceData`，为 Markdown 输入生成清理后的 `sourceData`，并生成安全 `fallbackMarkdown`；
+- 在展示路由前从受信任来源加载并校验 Catalog；
+- 从该 Catalog 生成与完整 Catalog 同版本、同内容哈希的能力摘要；
+- 为每次 generative-ui 编译生成请求级唯一 `surfaceId`；
 - 调用 Presentation Router；
 - 注入具体 Model Adapter；
-- 从受信任来源获取指定 Catalog；
-- 在 generative-ui 分支将 Candidate、完整数据和 Catalog 一并传给 Core；
+- 在 generative-ui 分支将 Candidate、规范化数据和 Catalog 一并传给 Core；
 - 映射 HTTP 响应或 AG-UI 事件；
 - 处理取消、超时、日志、指标和错误；
 - 对外提供存活、就绪和版本信息。
@@ -402,6 +418,13 @@ interface PresentUseCase {
 ```ts
 interface RequestExecutionContext {
   requestId: string;
+  threadId: string;
+  runId: string;
+  catalogIdentity?: {
+    catalogId: string;
+    catalogVersion: string;
+    catalogContentHash: string;
+  };
   startedAt: number;
   signal: AbortSignal;
   transport: "http" | "ag-ui";
@@ -410,6 +433,9 @@ interface RequestExecutionContext {
 ```
 
 该上下文请求结束后销毁，不作为业务会话状态。
+`catalogIdentity` 在 Catalog 校验完成后、调用 Router 前填入。
+协议 Adapter 必须把可选的请求关联字段规范化为非空请求级 `threadId` 和 `runId`。
+HTTP 不必把生成值写回 `PresentationResult`，AG-UI 必须在完整事件流中使用这些值。
 
 ### 7.3 HTTP 接口
 
@@ -431,7 +457,11 @@ POST /api/ui-compiler/compile
 
 - 可作为内部或 SDK 入口保留；
 - 输入必须是已经选择 generative-ui 的 `UICompileRequest`；
-- 由可信调用方同时提供或由 Service 解析出指定 Catalog；
+- 网络入口只接受 `CatalogRef`，Catalog 必须由 Service 从受信任来源解析；
+- 直接使用 Core 库的可信调用方通过 `CompileOptions` 注入完整 Catalog；
+- Service 和 Core 都必须验证 `UICompileRequest.catalog` 与注入 Catalog 的 ID 和版本一致；
+- Core 必须重新计算注入 Catalog 的内容哈希，并与 `CompileOptions.catalogContentHash` 一致；
+- 网络部署必须通过路由隔离或访问控制将该入口限制为内部调用方；
 - 禁止再次执行展示模式判断；
 - 默认不作为业务 Agent 的主要接入入口。
 
@@ -468,18 +498,20 @@ GET /version
 
 AG-UI Adapter 使用标准生命周期事件和 Step 事件。
 项目结果通过 `CUSTOM` 事件承载，不新增伪标准事件类型。
+AG-UI 标准生命周期事件要求 `threadId` 和 `runId`。
+调用方未提供时，Adapter 必须在接收请求时生成请求级标识，并在整个事件流和请求上下文中复用。
 
 #### 成功或降级 Run
 
 ```text
 RUN_STARTED
 STEP_STARTED(stepName="presentation-routing")
-STEP_FINISHED(stepName="presentation-routing")
 STEP_STARTED(stepName="model-analysis")       可选
 STEP_FINISHED(stepName="model-analysis")      可选
+STEP_FINISHED(stepName="presentation-routing")
 STEP_STARTED(stepName="ui-compilation")       可选
 STEP_FINISHED(stepName="ui-compilation")      可选
-CUSTOM(name="generative-ui.presentation-result", value=PresentationResult)
+CUSTOM(name="generative-ui.presentation-result", value={mappingVersion:"1.0",result})
 RUN_FINISHED
 ```
 
@@ -488,7 +520,7 @@ RUN_FINISHED
 ```text
 RUN_STARTED
 ...
-CUSTOM(name="generative-ui.presentation-error", value=PresentationError[])
+CUSTOM(name="generative-ui.presentation-error", value={mappingVersion:"1.0",errors})
 RUN_ERROR
 ```
 
@@ -498,19 +530,26 @@ RUN_ERROR
 interface PresentationResultCustomEvent {
   type: "CUSTOM";
   name: "generative-ui.presentation-result";
-  value: PresentationResult;
+  value: {
+    mappingVersion: "1.0";
+    result: PresentationResult;
+  };
 }
 
 interface PresentationErrorCustomEvent {
   type: "CUSTOM";
   name: "generative-ui.presentation-error";
-  value: PresentationError[];
+  value: {
+    mappingVersion: "1.0";
+    errors: PresentationError[];
+  };
 }
 ```
 
 设计约束：
 
 - 每个 Run 必须以 `RUN_FINISHED` 或 `RUN_ERROR` 二选一结束；
+- `RUN_STARTED`、`RUN_FINISHED` 和请求上下文必须使用相同的非空 `threadId` 与 `runId`；
 - 已经返回可消费的 degraded Markdown 时使用 `RUN_FINISHED`；
 - `STEP_STARTED` 与 `STEP_FINISHED` 必须成对且 `stepName` 相同；
 - Core 不感知 Run、Thread 或事件流；
@@ -531,7 +570,20 @@ interface PresentationRoutingInput {
   context?: PresentationContext;
   catalogSummary: CatalogCapabilitySummary;
 }
+
+interface CatalogCapabilitySummary {
+  catalogId: string;
+  catalogVersion: string;
+  catalogContentHash: string;
+  supportedIntents: PresentationIntent[];
+  componentCapabilities: CatalogComponentCapability[];
+  actionTypes: string[];
+}
 ```
+
+`CatalogCapabilitySummary` 必须由已经通过校验的完整 Catalog 确定性生成。
+Service 必须在请求上下文中保留该摘要的 ID、版本和内容哈希，并在调用 Core 前再次核对。
+Markdown `AgentContent` 在传给 Router 前必须替换为已经安全清理的内容。
 
 输出：
 
@@ -678,7 +730,9 @@ Service 保存完整 sourceData
 
 对于 Markdown 输入：
 
-- `sourceData` 固定保存原始 Markdown 内容；
+- Service 必须先执行 Markdown 安全清理；
+- `sourceData` 固定为 `{ markdown: sanitizedMarkdown }`；
+- 原始未清理 Markdown 不得进入 Model Adapter、Core、UI IR、A2UI、缓存或日志；
 - 模型或确定性规划器可以在 Candidate 中提供小规模 `derivedData`；
 - `derivedData` 只用于展示提取结果，不得冒充原始业务事实；
 - Core 在 UI IR 中保留绑定来源。
@@ -709,7 +763,7 @@ UI Plan Candidate 是模型或确定性规划器提出的**语义展示方案**�
 它必须：
 
 - 表达展示意图和语义区域；
-- 通过安全路径引用完整 `sourceData`；
+- 通过安全路径引用规范化 `sourceData`；
 - 可以包含 Markdown 提取形成的小规模 `derivedData`；
 - 表达组件偏好但不具有权威性；
 - 表达布局约束和 Action 意图；
@@ -739,11 +793,18 @@ interface UICompileRequest {
 }
 ```
 
+`sourceData` 的规范形状为：
+
+- `sourceKind = "structured-data"` 时，`sourceData` 是通过资源校验的完整原始 JSON；
+- `sourceKind = "markdown"` 时，`sourceData` 必须是 `{ "markdown": sanitizedMarkdown }`；
+- Markdown Candidate 只能通过 `/markdown` 读取清理后的内容；
+- `fallbackMarkdown` 必须已经通过 Markdown 安全清理。
+
 数据所有权：
 
 | 数据 | 所有者 | 信任级别 | 用途 |
 |---|---|---|---|
-| `sourceData` | Service 从原始 Agent 内容构造 | 外部输入，结构已校验 | 最终完整数据绑定 |
+| `sourceData` | Service 从 Agent 内容构造 | 结构化数据完整保留；Markdown 已安全清理 | 最终数据绑定 |
 | `derivedData` | Model Adapter 或确定性规划器提出 | 不可信 Candidate | Markdown 语义提取或小规模派生展示数据 |
 | UI IR Data Sources | Core 规范化生成 | Compiler 内部可信 | A2UI 数据模型生成 |
 
@@ -866,7 +927,8 @@ Candidate 只引用 sourceData 路径
 
 ```text
 Agent Markdown
-  ├── sourceData = { markdown: 原始 Markdown }
+  ├── Sanitizer
+  ├── sourceData = { markdown: 清理后的 Markdown }
   └── derivedData = 可选的结构化提取结果
 ```
 
@@ -1050,6 +1112,8 @@ Core 侧只负责校验已经传入的 Catalog：
 ```ts
 interface CompileOptions {
   catalog: ComponentCatalog;
+  catalogContentHash: string;
+  surfaceId: string;
   limits: CompileLimits;
   selectionPolicy: SelectionPolicy;
   signal: AbortSignal;
@@ -1062,6 +1126,9 @@ interface CompileOptions {
 - Catalog 只能由 Service 从受信任本地包、镜像资源或授权配置存储获取；
 - Core 不执行网络访问；
 - Catalog 进入 Core 后仍必须通过 Schema、引用完整性和版本校验；
+- Core 必须验证请求中的 `catalogId + catalogVersion` 与传入 Catalog 完全一致；
+- Core 必须重新计算传入 Catalog 的规范化内容哈希，并与 `catalogContentHash` 一致；
+- Service 传给 Router 的能力摘要必须由同一个已校验 Catalog 生成，并携带相同的内容哈希；
 - 相同 `catalogId + catalogVersion` 必须不可变；
 - 缓存键使用 `catalogId + catalogVersion + contentHash`；
 - 未找到、版本不兼容或校验失败时由 Service 降级为 Markdown。
@@ -1091,6 +1158,8 @@ interface UICompilerCore {
     request: UICompileRequest,
     options: {
       catalog: ComponentCatalog;
+      catalogContentHash: string;
+      surfaceId: string;
       limits: CompileLimits;
       selectionPolicy: SelectionPolicy;
       signal: AbortSignal;
@@ -1108,6 +1177,10 @@ Core 是纯编译能力：
 - 不感知 HTTP 或 AG-UI；
 - 不依赖浏览器；
 - 输入输出均可序列化和测试。
+
+`surfaceId` 由 Service 或直接调用 Core 的可信 Adapter 为每次编译生成。
+Service 不接受外部 Candidate 指定 `surfaceId`，并使用 UUID 或等价的高熵标识保证 Renderer 生命周期内的实际唯一性。
+请求级 `surfaceId` 不参与确定性组件规划，也不得进入跨请求缓存。
 
 ### 12.2 编译管线
 
@@ -1136,7 +1209,7 @@ UICompileRequest + ComponentCatalog
     ↓
 11. UI IR Validation
     ↓
-12. A2UI v0.9.1 Profile Compilation
+12. A2UI 0.9.1 Profile Compilation
     ↓
 13. A2UI Validation
     ↓
@@ -1344,6 +1417,8 @@ Action Resolver 根据以下信息确定最终交互组件和事件：
 ### 13.1 UI IR 定位
 
 UI IR 是 Core 经过权威校验和规范化后生成的可信中间表示。
+“可信”只表示结构、引用、组件、Props、Binding 和 Action 已通过 Compiler 校验。
+`sourceData` 中的业务事实仍来自外部系统，不因进入 UI IR 而变成可信业务事实或可执行内容。
 
 | UI Plan Candidate | UI IR |
 |---|---|
@@ -1411,7 +1486,7 @@ interface ComponentActionBindingIR {
 
 ### 13.3 UI IR 不变量
 
-1. `surfaceId` 唯一。
+1. `surfaceId` 在目标 Renderer 生命周期内唯一，并且不从 Candidate 或跨请求缓存取得。
 2. 根组件 ID 固定规范化为 `root`。
 3. `componentId` 在 Surface 内唯一。
 4. 所有 `children` 和 Slot 引用必须存在。
@@ -1427,13 +1502,20 @@ interface ComponentActionBindingIR {
 14. Action payload 必须通过对应 Schema。
 15. 破坏性和审批标记不得弱于 Catalog 默认安全级别。
 16. UI IR 不包含函数、DOM、Store、组件实例和协议事件。
+17. A2UI 0.9.1 MVP Profile 中，每个组件最多绑定一个 Action。
 
-## 14. A2UI v0.9.1 Profile 编译设计
+## 14. A2UI 0.9.1 Profile 编译设计
 
 ### 14.1 协议基线
 
-MVP 锁定 **A2UI v0.9.1 Profile**。
+MVP 锁定 **A2UI 0.9.1 发布版的 v0.9 协议 Profile**。
 上游协议升级不会自动改变 Compiler 输出；升级必须通过 ADR、契约测试和版本变更。
+
+版本含义必须严格区分：
+
+- Profile 和验证器基线版本是 `0.9.1`；
+- 每条 A2UI 消息的协议判别字段是 `version: "v0.9"`；
+- 禁止把发布补丁版本 `"v0.9.1"` 写入消息的 `version` 字段。
 
 本项目支持的消息子集：
 
@@ -1441,15 +1523,14 @@ MVP 锁定 **A2UI v0.9.1 Profile**。
 type A2UIOperation =
   | CreateSurfaceOperation
   | UpdateComponentsOperation
-  | UpdateDataModelOperation
-  | DeleteSurfaceOperation;
+  | UpdateDataModelOperation;
 ```
 
 所有消息包含：
 
 ```ts
 interface A2UIBaseMessage {
-  version: "v0.9.1";
+  version: "v0.9";
 }
 ```
 
@@ -1486,9 +1567,15 @@ interface UpdateDataModelOperation extends A2UIBaseMessage {
   };
 }
 
-interface DeleteSurfaceOperation extends A2UIBaseMessage {
-  deleteSurface: {
-    surfaceId: string;
+interface A2UIEventAction {
+  event: {
+    name: string;
+    context: {
+      actionId: string;
+      payload?: JsonValue;
+      requiresApproval: boolean;
+      destructive: boolean;
+    };
   };
 }
 ```
@@ -1499,7 +1586,8 @@ interface DeleteSurfaceOperation extends A2UIBaseMessage {
 - 组件使用扁平 ID 引用结构；
 - 数据绑定使用标准 JSON Pointer `{ "path": "/..." }`；
 - `catalogId` 使用由部署约定映射出的稳定 Catalog 标识，不接受 Candidate 提供的 URL；
-- MVP 的初次完整输出不生成 `deleteSurface`，该操作只供内部接口或未来更新场景使用。
+- MVP 只生成初次完整 Surface，不支持替换或删除已存在的 Surface；
+- `deleteSurface` 和替换流程属于未来增量 Surface 生命周期扩展。
 
 ### 14.3 UI IR 映射
 
@@ -1521,10 +1609,37 @@ PropBindingIR(sourceData, /devices)
 
 PropBindingIR(derivedData, /summary)
   → { path: "/derivedData/summary" }
+
+ComponentActionBindingIR(button-1, approve-task, click)
+  → {
+      action: {
+        event: {
+          name: "task.approve",
+          context: {
+            actionId: "approve-task",
+            payload,
+            requiresApproval,
+            destructive
+          }
+        }
+      }
+    }
 ```
 
-组件映射由 Catalog 的 A2UI 属性 Schema 决定。
-A2UI Compiler 不猜测前端属性名。
+Props、Binding 和 Action 使用以下精确映射规则：
+
+1. `ComponentIR.props` 中除保留字段外的属性按原名称平铺到 A2UI Component。
+2. `id`、`component` 和 `action` 是 A2UI Compiler 保留字段，Catalog Props Schema 不得自行定义。
+3. `PropBindingIR.prop` 必须引用 Props Schema 中允许绑定的属性。
+4. Binding 将对应属性值替换为 `{ "path": "/sourceData/..." }` 或 `{ "path": "/derivedData/..." }`。
+5. `ComponentActionBindingIR` 按上面的 `A2UIEventAction` 结构写入组件的 `action` 属性。
+6. A2UI 0.9.1 MVP Profile 的单个组件最多写入一个 `action` 属性，因此每个组件最多绑定一个 Action。
+7. Action `event.name` 使用经过 Catalog 校验的 `actionType`，`event.context` 使用经过 Schema 校验的安全字段。
+8. 不支持映射的 Props、Binding 或 Action 必须产生结构化编译错误，禁止猜测属性名。
+
+Catalog 的 `propsSchema` 定义协议无关的规范化 Props。
+A2UI 0.9.1 Profile Schema 定义最终扁平组件、Binding 和 Action Envelope。
+二者都必须通过校验。
 
 ### 14.4 初次完整输出顺序
 
@@ -1546,7 +1661,7 @@ A2UI Compiler 不猜测前端属性名。
 
 必须校验：
 
-- `version = "v0.9.1"`；
+- `version = "v0.9"`；
 - 消息判别联合；
 - Surface ID 一致；
 - Catalog ID 一致；
@@ -1557,7 +1672,9 @@ A2UI Compiler 不猜测前端属性名。
 - 操作顺序合法；
 - 禁止字段和非法扩展。
 
-A2UI 校验失败时，Core 返回完整失败或降级诊断，由 Service 转为安全 Markdown。
+A2UI 校验失败且存在有效 `fallbackMarkdown` 时，Core 返回 degraded `UICompileResult`。
+没有有效 Fallback 时，Core 返回完整失败。
+Service 将 degraded 结果映射为安全 Markdown `PresentationResult`。
 
 ## 15. Action 设计
 
@@ -1664,9 +1781,10 @@ ui-compilation
 | schema-validation | ui-compilation |
 | a2ui-compilation | ui-compilation |
 | a2ui-validation | ui-compilation |
-| AG-UI / HTTP 映射失败 | ui-compilation 或 INTERNAL_ERROR |
+| AG-UI / HTTP 映射失败 | ui-compilation |
 
 详细内部阶段保存在诊断和日志中，不扩大公共联合类型。
+协议映射失败使用 `stage = "ui-compilation"` 和 `code = "INTERNAL_ERROR"`，不得将错误代码写入 `stage`。
 
 ### 16.4 稳定错误代码
 
@@ -1725,7 +1843,7 @@ flowchart LR
     Service -->|受控视图| Model
     Model -->|UI Plan Candidate| Service
     CatalogRepo -->|Catalog| Service
-    Service -->|Candidate + 完整 sourceData + Catalog| Core
+    Service -->|Candidate + 安全 sourceData + Catalog| Core
     Core --> IR --> A2UI
 ```
 
@@ -1793,20 +1911,16 @@ Service 只维护请求级临时状态：
 - 已校验 Catalog；
 - JSON Schema 编译结果；
 - UI Plan Schema；
-- A2UI Schema；
-- 确定性 Core 编译结果。
+- A2UI Profile Schema。
 
-编译结果缓存键建议包含：
+MVP 禁止跨请求缓存完整 `UISurfaceIR`、`UICompileResult` 或 A2UI Operations。
+这些对象包含请求级 `sourceData`、`derivedData`、`fallbackMarkdown` 或 `surfaceId`，共享缓存会产生数据串用和 Surface ID 冲突。
 
-```text
-compilerVersion
-+ catalogId
-+ catalogVersion
-+ catalogHash
-+ planHash
-+ contextHash
-+ compileConfigVersion
-```
+未来如启用编译缓存，只允许缓存不含请求值的 `CompiledUITemplate`。
+该模板必须排除 `sourceData`、`derivedData` 的值、`fallbackMarkdown`、`requestId`、`threadId`、`runId`、`surfaceId` 和最终 Operations。
+模板实例化阶段必须重新注入当前请求数据并生成请求级输出。
+模板缓存还必须按安全域分区，并至少使用 Compiler 版本、Catalog ID、Catalog 版本、Catalog 内容哈希、Plan 哈希、数据形状哈希、上下文哈希和编译配置版本组成缓存键。
+启用前必须通过独立 ADR、隐私评估和跨用户隔离测试。
 
 模型路由结果默认不做跨用户共享缓存，除非完成隐私评估并确保输入完全相同且无用户敏感信息。
 
@@ -2097,7 +2211,7 @@ flowchart TD
 - Table/List/Form/Timeline 等 Props Resolver；
 - Action Placement and Binding Resolver；
 - UI IR Builder 和 Validator；
-- A2UI v0.9.1 Compiler 和 Validator；
+- A2UI 0.9.1 Profile Compiler 和 Validator；
 - Error Stage Mapper；
 - AG-UI Event Mapper。
 
@@ -2116,7 +2230,7 @@ flowchart TD
 - PresentationResult；
 - Component Catalog；
 - CompositionPattern；
-- A2UI v0.9.1 Operations；
+- A2UI 0.9.1 Profile Operations；
 - AG-UI 标准生命周期和 CustomEvent 载荷。
 
 ### 23.3 集成测试矩阵
@@ -2141,6 +2255,10 @@ flowchart TD
 | 超深或超量数据 | rejected | failed，模型调用次数为 0 |
 | 请求取消且连接可写 | failed | `REQUEST_CANCELLED` |
 | 请求取消且连接断开 | terminated | 不生成非法 Result，Run 有终止诊断 |
+| 未清理 Markdown 尝试绑定 Markdown 组件 | rejected | 原始内容不进入 Model、Core 或 A2UI |
+| 两个请求共享 Plan 但数据不同 | isolated | 不命中完整结果缓存，数据和 Surface ID 不串用 |
+| 调用方未提供 AG-UI 标识 | completed | Adapter 生成并复用非空 threadId 和 runId |
+| A2UI 完整输出 | completed | 所有消息使用 `version = "v0.9"` |
 
 ### 23.4 组件组合测试
 
@@ -2165,17 +2283,21 @@ flowchart TD
 - 模型抽样不会造成最终数据截断；
 - Resolver 不复制大集合到 Props；
 - 所有 Props 通过组件 Schema。
+- 跨请求不复用 `sourceData`、`fallbackMarkdown`、`surfaceId` 或最终 Operations。
 
 ### 23.6 属性与安全测试
 
 - 任意合法 UI IR 编译后引用完整；
 - 任意非法组件类型无法进入 A2UI；
 - 任意 Action 必须存在合法绑定；
-- 相同输入和配置产生相同 Core 输出；
+- 相同语义输入和配置产生相同组件规划，请求级 Surface ID 除外；
 - Candidate 中额外字段不会被静默接受；
 - 组件图不会产生环；
 - 降级路径始终保留安全内容或明确失败；
 - XSS Markdown、`javascript:` URL、原型污染、超深 JSON、模型脚本、未注册组件、未注册 Action、远程脚本字段均被拒绝。
+- A2UI Action Envelope 与组件事件绑定通过 0.9.1 Profile Schema。
+- 未清理 Markdown 不会出现在 A2UI Data Model。
+- A2UI 消息拒绝 `"v0.9.1"` 并接受 `"v0.9"`。
 
 ## 24. 版本兼容设计
 
@@ -2197,7 +2319,8 @@ MVP 固定：
 UI Plan Schema       = 1.0
 Component Catalog    = 1.0
 UI IR                = 1.0
-A2UI Profile         = v0.9.1
+A2UI Profile release = 0.9.1
+A2UI wire version    = v0.9
 AG-UI Mapping        = 1.0
 ```
 
@@ -2253,6 +2376,7 @@ MVP 返回完整操作数组。未来增量能力可以增加：
 - A2UI Operation Stream；
 - Surface Revision；
 - 操作序号和幂等键。
+- `deleteSurface` 和 Surface 替换流程。
 
 本期不实现模型边生成边渲染，也不把增量状态放入 Core 的全局状态。
 
@@ -2284,7 +2408,7 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 | DD-003 | 一次模型调用同时完成展示决策和 UI Plan Candidate 生成 |
 | DD-004 | 模型输出永远是不可信 Candidate，不能直接生成最终协议 |
 | DD-005 | UI Plan Candidate 使用语义 Region，不直接描述最终组件树 |
-| DD-006 | 完整业务数据由 Service 通过 `sourceData` 传入 Core，模型样本不能替代完整数据 |
+| DD-006 | 完整结构化业务数据由 Service 通过 `sourceData` 传入 Core，模型样本不能替代完整数据 |
 | DD-007 | Markdown 提取数据使用独立 `derivedData`，并保留来源 |
 | DD-008 | Core 增加 Composition Planner，将预置组件组合成完整 UI Surface |
 | DD-009 | Catalog 使用 Slot 和 CompositionPattern 同时描述合法性与默认组合 |
@@ -2292,7 +2416,7 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 | DD-011 | Core 使用硬过滤加稳定评分进行权威组件图选择 |
 | DD-012 | Action 展示提示不具有权威性，最终组件和事件绑定由 Core 决定 |
 | DD-013 | UI IR 是协议无关、已解析、可信的组件图 |
-| DD-014 | MVP 固定输出 A2UI v0.9.1 Profile |
+| DD-014 | MVP 固定输出 A2UI 0.9.1 Profile，消息判别版本为 v0.9 |
 | DD-015 | Component Catalog 是 Compiler 权威能力声明，Registry 属于外部前端 |
 | DD-016 | Catalog 外部获取位于 Service，Core 只校验传入 Catalog |
 | DD-017 | MVP 不采用固定 UI 模板降级，只支持 A2UI → Markdown → 失败 |
@@ -2302,18 +2426,24 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 | DD-021 | 所有安全和 Schema 校验不可关闭 |
 | DD-022 | MVP 一次性输出完整 A2UI，架构预留增量输出 |
 | DD-023 | Interaction Gateway 是未来独立组合层，不进入当前系统边界 |
+| DD-024 | Markdown `sourceData` 只保存清理后的规范形状，原始未清理 Markdown 不进入输出链路 |
+| DD-025 | MVP 不跨请求缓存完整 UI IR、编译结果或 A2UI Operations |
+| DD-026 | Catalog 在路由前加载，能力摘要与完整 Catalog 使用同一内容哈希 |
+| DD-027 | Surface ID 是请求级标识，不参与确定性组件规划或跨请求缓存 |
+| DD-028 | A2UI Props、Binding 和 Action 使用版本化 Profile 的精确映射 |
+| DD-029 | AG-UI Adapter 保证每个 Run 使用非空且一致的 Thread ID 和 Run ID |
 
 ## 27. 编码前必须形成的契约与 ADR
 
 本设计已经固定组件组合、数据所有权、降级方向和协议 Profile。编码前仍必须将以下内容写成可执行 Schema 或 ADR：
 
 1. UI Plan Candidate v1.0 JSON Schema；
-2. `UICompileRequest.sourceData` 和 `derivedData` 契约；
+2. `UICompileRequest.sourceData` 和 `UIPlan.derivedData` 契约；
 3. 受限 JSON Pointer 规则；
 4. Component Catalog v1.0 Schema；
 5. Slot 和 CompositionPattern Schema；
 6. UI IR v1.0 Schema；
-7. A2UI v0.9.1 Profile Schema 与映射测试；
+7. A2UI 0.9.1 Profile Schema、v0.9 消息判别与映射测试；
 8. AG-UI Mapping v1.0 的标准事件和 CustomEvent 载荷；
 9. 基础组件 Props Schema；
 10. 八类 Prop Resolver 的输入输出契约；
@@ -2321,7 +2451,10 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 12. 内部 CompileStage 到公共 PresentationError.stage 的映射表；
 13. 组件选择评分权重和稳定决胜规则；
 14. 资源限制默认值；
-15. 模型 Structured Output Schema 和提示词安全模板。
+15. 模型 Structured Output Schema 和提示词安全模板；
+16. A2UI Props、Binding 和 Action 的精确映射 Schema；
+17. AG-UI 缺失 Thread ID 和 Run ID 时的生成与传播测试；
+18. 编译模板缓存的安全域分区和实例化契约；MVP 未启用时不实现该缓存。
 
 以下事项不再作为开放问题：
 
@@ -2329,8 +2462,10 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 - 是否由模型携带完整数据：否；
 - 是否使用固定 UI 模板降级：MVP 否；
 - Catalog 是否由 Core 访问外部存储：否；
-- A2UI 输出基线：v0.9.1 Profile；
-- AG-UI 是否自定义生命周期事件：否，使用标准生命周期和 CustomEvent。
+- A2UI 输出基线：0.9.1 Profile，消息 `version = "v0.9"`；
+- AG-UI 是否自定义生命周期事件：否，使用标准生命周期和 CustomEvent；
+- 是否缓存完整编译结果：MVP 否；
+- Markdown `sourceData` 是否保留未清理原文：否。
 
 ## 28. 设计验收检查表
 
@@ -2347,9 +2482,11 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 - [ ] 完整结构化数据通过 `sourceData` 直接进入 Core。
 - [ ] 模型抽样不会替代或截断完整业务数据。
 - [ ] UI Plan Candidate 与 UI IR 存在实质性 lowering。
-- [ ] A2UI v0.9.1 只从已验证 UI IR 生成。
+- [ ] A2UI 0.9.1 Profile 只从已验证 UI IR 生成，消息使用 `version = "v0.9"`。
+- [ ] Markdown `sourceData` 只包含安全清理后的 `/markdown`。
 - [ ] 公共契约有唯一 Schema 所有者。
 - [ ] AG-UI 使用标准生命周期和版本化 CustomEvent 映射。
+- [ ] AG-UI 事件流具有一致且非空的 Thread ID 和 Run ID。
 
 ### 组件组合与 Props
 
@@ -2370,6 +2507,7 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 - [ ] 取消和超时能贯穿完整链路。
 - [ ] 有效业务内容在生成失败时能够降级为 Markdown。
 - [ ] 不存在与公共结果契约冲突的固定模板降级。
+- [ ] 不跨请求缓存包含业务数据或 Surface ID 的完整编译结果。
 
 ### 可实施性
 
@@ -2388,7 +2526,7 @@ Generative UI Compiler MVP 采用“**展示路由 + 受控组合编译**”架�
 Agent Markdown / JSON
         ↓
 UI Compiler Service
-├── 完整 sourceData
+├── 安全 sourceData
 ├── 安全 fallbackMarkdown
 └── Presentation Router
         ├── Safe Markdown
@@ -2403,7 +2541,7 @@ UI Compiler Service
                   ↓
                  UI IR
                   ↓
-          A2UI v0.9.1 Profile
+          A2UI 0.9.1 Profile
 ```
 
 系统包含预置的组件能力声明，但不包含真实前端组件代码。

@@ -1,6 +1,6 @@
 # Generative UI Platform - Generative UI Compiler MVP 需求规格说明书
 
-**文档版本：** 1.3
+**文档版本：** 1.4
 **项目阶段：** MVP
 **目标读者：** 产品负责人、架构师、开发人员、测试人员、Codex、Claude Code 等编码 Agent
 
@@ -94,6 +94,8 @@ Generative UI Compiler MVP 包含两个产品模块和一个可替换 Adapter：
    * 通过 Presentation Router 判断简单 Markdown 表示或生成式 UI；
    * 对普通 Markdown 执行安全清理并直接返回；
    * 对不生成 UI 的结构化数据执行确定性安全序列化；
+   * 在展示路由前从授权来源加载并校验指定 Catalog；
+   * 从同一 Catalog 生成带内容哈希的 Router 能力摘要；
    * 组装具体 Model Adapter；
    * 调用 UI Compiler Core；
    * 负责网络协议、请求生命周期、错误映射和可观测性；
@@ -101,7 +103,7 @@ Generative UI Compiler MVP 包含两个产品模块和一个可替换 Adapter：
 
 2. **UI Compiler Core**
    * 接收已经选择生成式 UI、Schema 合法但仍不可信的 UI Plan Candidate；
-   * 根据 Component Catalog 解析和校验组件选择；
+   * 接收由可信 Adapter 注入的 Component Catalog，并验证引用、内容哈希和组件选择；
    * 将 UI Plan Candidate 规范化为可信 UI IR；
    * 将 UI IR 编译为 A2UI；
    * 执行 Schema 校验和确定性降级处理。
@@ -351,7 +353,7 @@ Gateway 与 Generative UI Compiler 的未来产品和架构关系必须由新的
 │ UI Compiler Core                │
 │                                 │
 │ Input Validator                 │
-│ Catalog Loader                  │
+│ Catalog Validator               │
 │ Component Selector              │
 │ UI IR Builder                   │
 │ A2UI Compiler                   │
@@ -445,12 +447,12 @@ MVP 不得创建 `apps/interaction-gateway`、`packages/frontend-runtime` 或 `p
 
 ### 7.1 UI Compiler Service
 
-Service 内部至少分离 HTTP、AG-UI、应用用例、Presentation Router、Markdown 安全处理、结构化数据处理、Model Adapter、配置和可观测性。
+Service 内部至少分离 HTTP、AG-UI、应用用例、Catalog Repository、Presentation Router、Markdown 安全处理、结构化数据处理、Model Adapter、配置和可观测性。
 具体目录结构由实现决定，不构成公共契约。
 
 ### 7.2 UI Compiler Core
 
-Core 内部至少分离输入校验、Catalog 加载、组件选择、UI IR、A2UI 编译、Schema 校验和降级。
+Core 内部至少分离输入校验、Catalog 校验、组件选择、UI IR、A2UI 编译、Schema 校验和降级。
 具体目录结构由实现决定，不构成公共契约。
 
 ### 7.3 共享契约包
@@ -489,7 +491,8 @@ Core 内部至少分离输入校验、Catalog 加载、组件选择、UI IR、A2
 * `UICompileResult`；
 * `UISurfaceIR`；
 * `CompileError`；
-* 编译阶段定义。
+* 编译阶段定义；
+* A2UI 0.9.1 Profile Schema 和 UI IR 映射契约。
 
 #### `ag-ui-adapter`
 
@@ -539,7 +542,7 @@ UI Compiler Core 必须负责：
 
 1. 校验编译输入。
 2. 校验 UI Plan Candidate。
-3. 加载指定 Component Catalog。
+3. 接收并校验由可信调用方注入的指定 Component Catalog。
 4. 解析和校验组件建议，包括 Catalog 中声明的领域组件。
 5. 校验组件层级和布局。
 6. 生成 UI IR。
@@ -571,19 +574,22 @@ UI Compiler Service 必须负责：
 2. 暴露 AG-UI 展示接口。
 3. 接收 Markdown、JSON 结构化数据和可选展示上下文。
 4. 校验网络层请求。
-5. 清理需要直出的 Markdown，并安全序列化不生成 UI 的结构化数据。
-6. 调用 Presentation Router。
-7. 创建并注入具体 Model Adapter。
-8. 校验 Presentation Decision 和 UI Plan Candidate。
-9. 对 generative UI 决策调用 UI Compiler Core。
-10. 将 Markdown 或 generative UI 结果转换为 HTTP 响应。
-11. 将结果转换为 AG-UI 事件。
-12. 处理请求和模型超时。
-13. 处理请求取消。
-14. 处理协议层错误。
-15. 提供健康检查。
-16. 提供版本信息。
-17. 记录请求、路由和编译日志。
+5. 在任何模型或编译处理前安全清理 Markdown，并安全序列化不生成 UI 的结构化数据。
+6. 在展示路由前从授权来源加载并校验 Catalog。
+7. 从该 Catalog 生成相同 ID、版本和内容哈希的能力摘要。
+8. 调用 Presentation Router。
+9. 创建并注入具体 Model Adapter。
+10. 校验 Presentation Decision 和 UI Plan Candidate。
+11. 为每次 generative UI 编译生成请求级唯一 Surface ID。
+12. 对 generative UI 决策调用 UI Compiler Core。
+13. 将 Markdown 或 generative UI 结果转换为 HTTP 响应。
+14. 将结果转换为 AG-UI 事件。
+15. 处理请求和模型超时。
+16. 处理请求取消。
+17. 处理协议层错误。
+18. 提供健康检查。
+19. 提供版本信息。
+20. 记录请求、路由和编译日志。
 
 UI Compiler Service 禁止负责：
 
@@ -631,12 +637,13 @@ Model Adapter 必须负责：
 约束：
 
 1. Markdown 内容必须存在且非空。
-2. 结构化数据必须是合法 JSON，并满足数据深度和数据项数量限制。
-3. 结构化数据提供 `fallbackMarkdown` 时，该字段必须非空，并在返回前通过 Markdown 安全清理。
-4. 结构化数据未提供 `fallbackMarkdown` 时，Service 必须能够生成确定性、安全且不静默截断的 Markdown 表示。
-5. `userMessage` 是调用方能够提供时使用的可选上下文。
-6. Service 不得要求业务 Agent 提供 `presentationMode`、`presentationIntent` 或 UI Plan Candidate。
-7. UI Compiler 不校验 Agent 内容中的业务结果是否真实。
+2. Markdown 必须在进入 Presentation Router、Model Adapter、Core、UI IR、A2UI、缓存或日志前完成安全清理。
+3. 结构化数据必须是合法 JSON，并满足数据深度和数据项数量限制。
+4. 结构化数据提供 `fallbackMarkdown` 时，该字段必须非空，并在返回前通过 Markdown 安全清理。
+5. 结构化数据未提供 `fallbackMarkdown` 时，Service 必须能够生成确定性、安全且不静默截断的 Markdown 表示。
+6. `userMessage` 是调用方能够提供时使用的可选上下文。
+7. Service 不得要求业务 Agent 提供 `presentationMode`、`presentationIntent` 或 UI Plan Candidate。
+8. UI Compiler 不校验 Agent 内容中的业务结果是否真实。
 
 ### 10.2 Presentation Decision 和 UI Plan Candidate
 
@@ -674,6 +681,13 @@ MVP 中 Action 只用于生成 UI 描述，不实现 Action 回传业务 Agent �
 Core 可以透传，但不得据此维护会话状态或 Run 生命周期。
 Core 接收到 `UICompileRequest` 时必须假设调用方已经选择生成式 UI，不得再次执行展示模式路由。
 Core 必须继续把其中的 UI Plan Candidate 视为不可信输入。
+`sourceKind = "structured-data"` 时，`sourceData` 必须是通过资源校验的完整原始 JSON。
+`sourceKind = "markdown"` 时，`sourceData` 必须是 `{ "markdown": sanitizedMarkdown }`。
+原始未清理 Markdown 不得进入 Model Adapter、Core、UI IR、A2UI、缓存或日志。
+网络请求只提供 Catalog ID 和版本，Service 必须从授权来源解析完整 Catalog。
+Core 必须验证请求 Catalog 引用与注入 Catalog 的 ID 和版本一致。
+Core 必须重新计算注入 Catalog 的规范化内容哈希，并与可信 Adapter 传入的哈希一致。
+Service 必须验证 Router 能力摘要使用相同的内容哈希。
 
 ### 10.5 Presentation Result
 
@@ -722,7 +736,6 @@ Generative UI Compiler 负责处理：
 * Action Schema；
 * 组件嵌套关系；
 * 领域标签；
-* 降级组件定义。
 
 ### 11.3 Component Registry 边界
 
@@ -815,7 +828,7 @@ UI IR 必须满足：
 
 #### CORE-002
 
-系统必须校验 `requestId`、UI Plan Candidate、Fallback Markdown、Catalog、Action、数据嵌套深度和数据项数量。
+系统必须校验 `requestId`、UI Plan Candidate、`sourceKind`、`sourceData`、Fallback Markdown、Catalog 引用、重新计算的 Catalog 内容哈希、Action、数据嵌套深度和数据项数量。
 
 #### CORE-003
 
@@ -839,7 +852,7 @@ HTTP 请求体字节数由 UI Compiler Service 在反序列化之前校验。
 
 #### CORE-007
 
-系统必须保留 `fallbackMarkdown`，以便编译失败时返回有效业务内容。
+系统必须保留已经安全清理的 `fallbackMarkdown`，以便编译失败时返回有效业务内容。
 
 ### 13.3 UI Plan Candidate 处理
 
@@ -905,11 +918,13 @@ UI IR 生成失败时必须返回明确的编译错误。
 
 #### CORE-018
 
-系统必须将 UI IR 编译为 A2UI Operations。
+系统必须将 UI IR 编译为 A2UI 0.9.1 Profile Operations。
+每条消息必须使用 A2UI v0.9 协议判别字段 `version = "v0.9"`。
 
 #### CORE-019
 
-MVP 至少支持 Surface 创建、组件创建与更新、数据模型更新、Action 绑定、Surface 替换和删除。
+MVP 至少支持单次完整输出中的 Surface 创建、组件创建与更新、数据模型更新和 Action 绑定。
+Surface 替换、删除和增量生命周期属于后续扩展范围。
 
 #### CORE-020
 
@@ -938,16 +953,15 @@ Schema 校验失败时不得直接返回非法 A2UI。
 ```text
 动态 A2UI
     ↓
-固定 UI 模板
-    ↓
-原始 Markdown
+安全 Markdown
     ↓
 纯文本错误
 ```
 
 #### CORE-025
 
-降级结果必须包含降级类型、原因、原始错误代码和 `degraded = true`。
+降级结果必须包含安全 Markdown、原因、原始错误代码和 `degraded = true`。
+MVP 不生成固定模板 A2UI 降级结果。
 
 #### CORE-026
 
@@ -1000,6 +1014,9 @@ Markdown、A2UI 或 Fallback 结果
 RUN_FINISHED 或 RUN_ERROR
 ```
 
+`RUN_STARTED`、`RUN_FINISHED` 和请求上下文必须使用一致且非空的 `threadId` 与 `runId`。
+调用方未提供时，AG-UI Adapter 必须生成请求级标识并在整个事件流中复用。
+
 #### SERVICE-006
 
 AG-UI Adapter 负责协议事件，不得将 Run 生命周期逻辑放入 UI Compiler Core。
@@ -1043,6 +1060,7 @@ Presentation Router 必须返回 `mode = "markdown"` 或 `mode = "generative-ui"
 `mode = "markdown"` 且输入为 Markdown 时，Service 必须清理危险 HTML、内联 JavaScript、危险 URL 和不支持结构，然后直接返回 Markdown 结果。
 `mode = "markdown"` 且输入为结构化数据时，Service 必须使用经过非空校验和安全清理的 `fallbackMarkdown`，或生成确定性、安全且不静默截断的 Markdown 表示。
 该路径不得调用 UI Compiler Core。
+无论最终路由模式如何，Markdown 都必须在进入 Presentation Router、Model Adapter、Core、UI IR 或 A2UI 前完成安全清理。
 
 #### SERVICE-015
 
@@ -1089,8 +1107,10 @@ UI Compiler Core 应优先保持无状态。
 * Component Catalog；
 * Catalog Schema；
 * UI Plan Candidate Schema；
-* 相同输入的编译结果；
 * 编译器静态配置。
+
+MVP 不得跨请求缓存完整 UI IR、`UICompileResult`、A2UI Operations、业务数据、Fallback Markdown 或 Surface ID。
+未来如缓存不含请求值的编译模板，必须先完成独立 ADR、隐私评估、安全域分区和跨用户隔离测试。
 
 不得保存：
 
@@ -1143,6 +1163,7 @@ UI Compiler Core 不得调用模型。
 * 限制数据项数量；
 * 限制嵌套深度；
 * 避免在日志中输出敏感原文；
+* 禁止原始未清理 Markdown 进入模型、编译、输出或缓存；
 * 禁止加载未经授权的远程组件；
 * 禁止向调用方返回内部堆栈信息。
 
@@ -1189,7 +1210,7 @@ MVP 必须提供：
 
 ### 16.6 性能
 
-系统应该缓存 Catalog 和重复 Schema，在本地执行 Markdown 清理和 Schema 校验，避免重复模型调用，并为后续增量编译预留接口。
+系统应该缓存已校验 Catalog 和重复 Schema，在本地执行 Markdown 清理和 Schema 校验，避免重复模型调用，并为后续增量编译预留接口。
 
 系统不得静默截断或摘要业务数据。
 
@@ -1199,7 +1220,7 @@ MVP 必须提供：
 
 ### 17.1 单元测试
 
-必须覆盖 Input Validator、Markdown Sanitizer、Structured Data Validator、Structured Data Serializer、Presentation Router、Model Adapter、UI Plan Candidate Validator、Catalog Loader、Component Selector、UI IR Builder、A2UI Compiler、Schema Validator、Fallback Generator 和 Error Mapper。
+必须覆盖 Input Validator、Markdown Sanitizer、Structured Data Validator、Structured Data Serializer、Presentation Router、Model Adapter、UI Plan Candidate Validator、Catalog Repository、Catalog Validator、Component Selector、UI IR Builder、A2UI Compiler、Schema Validator、Fallback Generator 和 Error Mapper。
 
 ### 17.2 契约测试
 
@@ -1235,6 +1256,10 @@ MVP 必须提供：
 12. Catalog 中领域组件的合法选择。
 13. 未声明领域组件被拦截。
 14. 超深、超量和超大结构化输入在 Model Adapter 调用前被拒绝，并验证模型调用次数为零。
+15. 原始未清理 Markdown 不进入 Model Adapter、Core、UI IR 或 A2UI。
+16. 相同 Plan 和不同 `sourceData` 的并发请求不会串用数据、Fallback 或 Surface ID。
+17. A2UI 0.9.1 Profile 的所有消息使用 `version = "v0.9"`。
+18. AG-UI 调用缺少 Thread ID 或 Run ID 时生成一致且非空的请求级标识。
 
 ### 17.4 Fixture
 
@@ -1272,6 +1297,7 @@ MVP 必须提供：
 * UI Plan Candidate 可以转换为 UI IR。
 * 七类展示场景均有 UI Plan Candidate 到 UI IR 的测试用例。
 * UI IR 可以转换为 A2UI。
+* A2UI 0.9.1 Profile 消息使用 `version = "v0.9"`。
 * 未注册组件、非法 Props、嵌套和 Action 会被拦截。
 * Catalog 不兼容会报错或降级。
 * 编译失败会返回降级结果。
@@ -1286,6 +1312,7 @@ MVP 必须提供：
 * HTTP 可以完成一次展示路由和可选编译。
 * AG-UI 可以完成一次展示 Run。
 * AG-UI Run 有明确开始和结束事件。
+* AG-UI Run 的开始、结束和上下文使用一致且非空的 Thread ID 与 Run ID。
 * A2UI 和降级结果可以通过 AG-UI 返回。
 * `/health` 和 `/version` 可用。
 * UI Compiler Service 可以独立运行。
@@ -1354,6 +1381,7 @@ Frontend Runtime 和真实组件渲染不属于阶段五验收范围，可以通
 12. 未将 Catalog 与 Component Registry 混为同一模块。
 13. 未将 UI Compiler Service 实现为业务 Agent。
 14. 未让 UI Compiler Core 承担展示模式路由或模型调用。
+15. 未跨请求缓存包含业务数据、Fallback Markdown、Surface ID 或最终 Operations 的完整编译结果。
 
 ---
 
@@ -1383,6 +1411,12 @@ Frontend Runtime 和真实组件渲染不属于阶段五验收范围，可以通
 | TD-020 | 一次模型调用应该同时返回展示决策和可选 UI Plan Candidate |
 | TD-021 | Core 不依赖模型供应商，也不决定是否生成 UI |
 | TD-022 | 业务 Agent、Frontend Runtime、Component Registry 和 Interaction Gateway 均为外部系统 |
+| TD-023 | Catalog 由 Service 或可信 Adapter 加载，Core 校验注入 Catalog 与请求引用及内容哈希一致 |
+| TD-024 | Markdown 在进入模型、Core 或 A2UI 前清理，Markdown `sourceData` 只保存清理后的 `/markdown` |
+| TD-025 | A2UI 0.9.1 Profile 消息使用 v0.9 协议判别字段 |
+| TD-026 | MVP 降级链为 A2UI、Markdown、失败，不生成固定模板 A2UI |
+| TD-027 | MVP 不支持 Surface 替换和删除 |
+| TD-028 | MVP 不跨请求缓存完整编译结果 |
 
 ---
 
@@ -1424,13 +1458,13 @@ Interaction Gateway
 
 | 待确认事项 | 决策截止点 |
 |---|---|
-| A2UI Schema 版本 | 阶段二开始前 |
 | Markdown Sanitizer | 阶段三开始前 |
 | Schema 校验库 | 阶段二开始前 |
 | Presentation Router 和模型 Adapter 接口 | 阶段三开始前 |
 | Node HTTP 框架 | 阶段四开始前 |
 | AG-UI SDK 版本 | 阶段四开始前 |
-| A2UI 自定义事件载荷格式 | 阶段四开始前 |
+
+A2UI 0.9.1 Profile、Markdown 降级、AG-UI CustomEvent 映射、编译数据所有权和完整结果缓存边界已经分别由 ADR-0007 至 ADR-0011 固化。
 
 以下事项必须在相关功能进入验收前形成 ADR：
 
@@ -1438,7 +1472,7 @@ Interaction Gateway
 |---|---|
 | Component Catalog 存储方式 | 在引入持久化实现前完成 |
 | Catalog 与外部 Component Registry 的版本协商方式 | 在接入真实 Runtime 前完成 |
-| 编译结果缓存策略 | 在启用缓存前完成 |
+| 编译模板缓存策略 | MVP 不启用；未来启用前必须完成独立 ADR、隐私评估和隔离测试 |
 | 日志和链路追踪方案 | 阶段五验收前完成 |
 
 在没有明确决策前，编码 Agent 不得将具体实现硬编码到 UI Compiler Core。

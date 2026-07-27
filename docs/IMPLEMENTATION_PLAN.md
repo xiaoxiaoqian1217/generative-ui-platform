@@ -30,16 +30,18 @@
 
 #### PLAN-000 对齐固定 UI 模板降级范围
 
-- 产出：显式需求变更决定，统一 REQUIREMENTS CORE-024 与系统设计 DD-017。
+- 状态：已由 ADR-0009 完成。
+- 产出：显式需求变更决定，统一 REQUIREMENTS CORE-024 与系统设计 DD-017，并将 Surface 替换和删除移出 MVP。
 - 需求映射：第 13.8、20、23 节。
 - 设计映射：第 6.4、16.1、26、27、28 节。
 - 阻塞：无。
 - 阻塞下游：CORE-005、ACCEPTANCE-002、ACCEPTANCE-003。
 - 验收：REQUIREMENTS、系统设计、CONTRACTS 和相关 ADR 对降级状态与顺序使用同一规范。
 
-#### PLAN-001 将 A2UI v0.9.1 Profile 固化为 ADR
+#### PLAN-001 将 A2UI 0.9.1 Profile 固化为 ADR
 
-- 产出：Accepted ADR，记录系统设计选定的 v0.9.1 Profile、支持的 Operation、验证方式和兼容策略。
+- 状态：已由 ADR-0008 完成。
+- 产出：Accepted ADR，记录系统设计选定的 0.9.1 Profile、`version = "v0.9"`、支持的 Operation、精确映射、验证方式和兼容策略。
 - 需求映射：第 10.6、13.6、18.2、23 节。
 - 设计映射：第 14、24、26、27 节。
 - 阻塞：无。
@@ -54,7 +56,8 @@
 
 #### PLAN-003 确认 UI Plan Candidate 和 Model Adapter 接口
 
-- 产出：Accepted ADR 和可执行 Schema 设计，固化系统设计中的 UI Plan Candidate、Presentation Decision、sourceData、derivedData 和一次模型调用接口。
+- 状态：数据所有权和 Catalog 注入已由 ADR-0007 完成；Candidate、Presentation Decision 和 Model Adapter 的可执行 Schema 仍待完成。
+- 产出：Accepted ADR 和可执行 Schema 设计，固化系统设计中的 UI Plan Candidate、Presentation Decision、derivedData 和一次模型调用接口。
 - 需求映射：第 9.3、10.2、14.5、23 节。
 - 设计映射：第 8、9、10、26、27 节。
 - 阻塞：PLAN-002。
@@ -83,7 +86,8 @@
 
 #### PLAN-007 确认 A2UI 自定义事件载荷
 
-- 产出：Accepted ADR，记录 A2UI 结果、降级结果和错误结果的 AG-UI 事件载荷。
+- 状态：协议映射已由 ADR-0010 完成；选定 SDK 后仍需用对应类型和契约测试确认。
+- 产出：版本化 A2UI 结果、降级结果和错误结果的 AG-UI CustomEvent 载荷。
 - 需求映射：第 14.2、18.3、23 节。
 - 阻塞：PLAN-001、PLAN-006。
 - 阻塞下游：SERVICE-006。
@@ -129,7 +133,7 @@
 
 #### CORE-002 实现 Catalog 解析和组件选择
 
-- 产出：Catalog Loader、兼容性检查、基础与领域组件选择。
+- 产出：Catalog Validator、兼容性检查、基础与领域组件选择。
 - 需求映射：第 11、13.4、18.2 节。
 - 阻塞：CORE-001。
 - 验收：未注册组件、非法 Props、Action 和结构被拒绝。
@@ -225,11 +229,12 @@
 
 ## 4. 首批推荐 Frontier
 
-任务发布到 GitHub 后，首批推荐完成以下决策：
+ADR-0008、ADR-0009、ADR-0010 和 ADR-0011 已完成 A2UI Profile、降级、AG-UI 映射和缓存边界决策。
+任务发布到 GitHub 后，首批推荐完成以下剩余决策：
 
-- PLAN-000 对齐固定 UI 模板降级范围。
-- PLAN-001 将 A2UI v0.9.1 Profile 固化为 ADR。
 - PLAN-002 确认 Schema 校验库。
+- PLAN-003 完成 Candidate、Presentation Decision 和 Model Adapter 的可执行 Schema。
+- PLAN-004 确认 Markdown Sanitizer。
 
 PLAN-005 同样没有技术 blocker，但应推迟到阶段四准备开始时处理，避免过早固定 HTTP 技术选择。
-在 PLAN-000、PLAN-001 和 PLAN-002 完成之前，不应创建产品实现代码。
+在 PLAN-002、PLAN-003 和 PLAN-004 完成之前，不应创建依赖对应 Schema 或 Sanitizer 的产品实现代码。

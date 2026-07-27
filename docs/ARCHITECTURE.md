@@ -52,11 +52,13 @@ Responsibilities:
 - Provide HTTP and AG-UI interfaces.
 - Receive Markdown or JSON structured data produced by an external Business Agent.
 - Accept the original user message and presentation context when the caller can provide them.
-- Sanitize Markdown before returning it to a frontend.
+- Sanitize Markdown before it enters routing, model analysis, Core, UI IR, A2UI, caching, or frontend output.
 - Serialize structured data to a safe Markdown representation when generative UI is not selected.
+- Load and validate the requested Component Catalog from an authorized source before routing.
+- Derive the Router capability summary from that exact Catalog ID, version, and content hash.
 - Invoke Presentation Router.
 - Return ordinary content as a Markdown result without invoking UI Compiler Core.
-- Pass a Schema-valid but still untrusted UI plan candidate to UI Compiler Core when generative UI is selected.
+- Pass a Schema-valid but still untrusted UI plan candidate, safe source data, and the validated Catalog to UI Compiler Core when generative UI is selected.
 - Manage request lifecycle, cancellation, timeout, error mapping, and observability.
 
 The service is the application composition root.
@@ -109,7 +111,9 @@ It must not be executed and must pass contract, Catalog, Props, Action, and stru
 Responsibilities:
 
 - Validate a generative UI compile request and treat its UI plan candidate as untrusted input.
-- Load the requested Component Catalog.
+- Validate the Component Catalog injected by the Service or another trusted Adapter.
+- Reject Catalog ID or version mismatches between the request and injected Catalog.
+- Recompute the injected Catalog content hash and compare it with the trusted Adapter option and Router summary identity.
 - Resolve and validate component selections against the Catalog.
 - Build framework-neutral UI IR.
 - Compile UI IR to A2UI.
@@ -158,6 +162,9 @@ PresentationDecision
 `PresentationDecision` is the validated output of Presentation Router.
 A Model Adapter may produce an untrusted candidate decision, but that candidate is not a `PresentationDecision` until it passes Schema validation.
 `UICompileRequest` describes an already selected and Schema-valid generative UI plan candidate.
+It also contains `sourceKind`, safe `sourceData`, safe Fallback Markdown, and a Catalog reference.
+Structured `sourceData` preserves the complete validated JSON.
+Markdown `sourceData` is exactly `{ "markdown": sanitizedMarkdown }`.
 The candidate remains non-authoritative until UI Compiler Core validates it against the active Catalog and lowers it to UI IR.
 `PresentationResult` is the public service result and distinguishes a simple Markdown representation from generative UI.
 
@@ -210,6 +217,7 @@ ui-compiler-service
 ```
 
 UI Compiler Core must not depend on UI Compiler Service or a concrete Model Adapter.
+The MVP does not cross-request cache complete UI IR, compile results, A2UI Operations, source data, Fallback Markdown, or Surface IDs.
 
 ## 6. Future Platform Extension: Interaction Gateway
 
