@@ -119,7 +119,6 @@ Git 历史和归档分支保留这些旧实现，仅用于追溯，不作为当�
 - [系统设计说明书](./docs/Generative_UI_Compiler_Design.md)
 - [架构说明](./docs/ARCHITECTURE.md)
 - [数据契约](./docs/CONTRACTS.md)
-- [实施任务候选清单](./docs/IMPLEMENTATION_PLAN.md)
 - [领域词汇](./CONTEXT.md)
 - [ADR-0005](./docs/adr/0005-route-markdown-before-ui-compilation.md)
 - [ADR-0006](./docs/adr/0006-support-structured-agent-content.md)
