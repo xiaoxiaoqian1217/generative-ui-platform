@@ -6,16 +6,17 @@ Do not duplicate rules from either file here.
 
 ## Commit messages
 
-- Commit messages MUST follow Conventional Commits and use a Chinese description.
+- Commit messages MUST follow Conventional Commits.
 - Keep the Conventional Commit type in English.
+- The subject description may use Chinese or English.
 - Use a scope when it helps identify the affected module.
-- The subject MUST use the format `<type>(<scope>): <中文摘要>` or `<type>: <中文摘要>`.
-- Write the Chinese summary in the imperative style, keep it concise, and do not end it with punctuation.
+- The subject MUST use the format `<type>(<scope>): <description>` or `<type>: <description>`.
+- Write the summary in the imperative style, keep it concise, and do not end it with punctuation.
 - Do not add any agent name as a co-author.
 - For non-trivial commits, use the following body template.
 
 ```text
-<type>(<scope>): <中文摘要>
+<type>(<scope>): <摘要>
 
 变更内容:
 - <具体变更>

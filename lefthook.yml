@@ -3,11 +3,13 @@ pre-commit:
   commands:
     biome:
       glob: "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc}"
-      run: pnpm biome check {staged_files}
+      run: pnpm exec biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
     markdown:
       glob: "*.md"
-      run: pnpm markdownlint-cli2 {staged_files}
+      run: pnpm exec markdownlint-cli2 --fix {staged_files}
+      stage_fixed: true
 commit-msg:
   commands:
     commitlint:
-      run: pnpm commitlint --edit {1}
+      run: pnpm exec commitlint --edit {1}
