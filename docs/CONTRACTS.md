@@ -73,6 +73,7 @@ export interface PresentationRequest {
 ```
 
 Markdown content must be present and non-empty.
+Before Markdown enters a Model Adapter, UI Compiler Core, UI IR, A2UI, a cache, or a log, UI Compiler Service must sanitize it.
 Structured data must be JSON serializable and remain within configured depth and item limits.
 When `fallbackMarkdown` is present, it must be non-empty and pass Markdown safety sanitization before use.
 When structured data does not include `fallbackMarkdown`, the service must be able to produce a deterministic and safe Markdown serialization without silently truncating data.
@@ -137,6 +138,8 @@ export interface UICompileRequest {
   threadId?: string;
   runId?: string;
   plan: UIPlan;
+  sourceData: JsonValue;
+  sourceKind: "markdown" | "structured-data";
   fallbackMarkdown: string;
   catalog: {
     catalogId: string;
@@ -149,20 +152,56 @@ export interface UICompileRequest {
       width: number;
       height: number;
     };
-    userPreferences?: Record<string, unknown>;
   };
 }
 ```
 
 Core assumes that the caller has already selected generative UI.
 Core must not use this request to decide between Markdown and generative UI.
+For structured Agent content, `sourceData` is the complete validated input JSON.
+For Markdown Agent content, `sourceData` is exactly `{ "markdown": sanitizedMarkdown }`.
+Raw unsanitized Markdown is not part of the compile contract.
 For structured Agent content, UI Compiler Service supplies `fallbackMarkdown` from the request or from deterministic serialization.
+For Markdown Agent content, `fallbackMarkdown` is the sanitized Markdown.
+The network request contains only a Catalog ID and version.
+UI Compiler Service resolves the Catalog from an authorized source before routing, derives the Router capability summary from that exact Catalog, and injects the complete Catalog into Core.
+Core must reject a mismatch between the request Catalog reference and the injected Catalog ID or version.
+Core recomputes the injected Catalog content hash and compares it with the trusted Adapter option.
+Service separately verifies that the Router capability summary used the same content hash.
+
+## Catalog Content Hash
+
+`catalogContentHash` has one normative representation across UI Compiler Service, Presentation Router capability summaries, trusted direct Core Adapters, Core validation, and cache keys.
+The phrases "canonical content hash" and "normalized content hash" elsewhere in this repository refer to this exact algorithm.
+
+```ts
+export function computeCatalogContentHash(
+  catalog: ComponentCatalog
+): `sha256:${string}`;
+```
+
+The algorithm is:
+
+1. Validate the complete Catalog against the versioned Component Catalog Schema before hashing. Inputs containing duplicate object member names, non-finite numbers, or values outside the supported JSON domain must be rejected.
+2. Canonicalize the complete validated Catalog using RFC 8785 JSON Canonicalization Scheme (JCS). Object member order is canonicalized by JCS, array order remains significant, and no Catalog fields are excluded.
+3. Encode the canonical JSON text as UTF-8 without a byte-order mark.
+4. Compute SHA-256 over those exact bytes.
+5. Serialize the digest as `sha256:` followed by 64 lowercase hexadecimal characters.
+
+All callers must use the shared `computeCatalogContentHash` implementation exported by `component-catalog-schema`; ad hoc `JSON.stringify` hashing is forbidden.
+Core must still recompute the hash from the injected Catalog rather than trusting the caller-provided value.
+The Router capability summary, Core `CompileOptions.catalogContentHash`, and cache key must carry the exact same hash string.
+A change to any Catalog field, including `catalogId` or `catalogVersion`, changes the content hash.
+Changing the canonicalization algorithm, digest algorithm, or wire representation is a contract change and requires an ADR, tests, and a changeset.
 
 ## UI IR
 
 UI IR is the trusted, framework-neutral intermediate representation produced by Core.
+Trusted means that Compiler structure and references are validated; it does not make external business facts authoritative or executable.
 It contains only Catalog-approved components, validated Props and Actions, resolved references, normalized layout, source-data bindings, and fallback metadata.
 It is not a model response, a frontend component instance, or an external rendering protocol.
+The A2UI 0.9.1 Profile compiler maps normalized Props to flat component properties, Bindings to standard JSON Pointer objects, and validated component Action bindings to the versioned `action.event` Envelope.
+`id`, `component`, and `action` are reserved A2UI output properties and cannot be supplied as ordinary Catalog Props.
 
 ## Compile Result
 
@@ -170,6 +209,8 @@ It is not a model response, a frontend component instance, or an external render
 Only complete success contains A2UI Operations.
 Only degraded success contains a Fallback.
 Every result contains request correlation and compile metadata.
+The MVP Fallback is safe Markdown.
+The MVP does not emit fixed-template A2UI, `deleteSurface`, or Surface replacement results.
 
 ## Presentation Result
 
@@ -223,27 +264,32 @@ The frontend sends `mode = "markdown"` to its Markdown Renderer.
 The frontend sends `mode = "generative-ui"` to its A2UI Renderer and Component Registry.
 
 Model, routing, planning, or compilation failure should normally produce a degraded Markdown result when valid source content is available.
+AG-UI carries completed or degraded results in `CUSTOM(name = "generative-ui.presentation-result")` with `{ mappingVersion: "1.0", result }`.
+Failures without consumable content use `CUSTOM(name = "generative-ui.presentation-error")` with `{ mappingVersion: "1.0", errors }` before `RUN_ERROR`.
 
 ## State and Correlation
 
 `threadId` and `runId` are optional protocol correlation fields.
 Core may pass through correlation values but must not use them to maintain conversation state or AG-UI Run lifecycle.
+The AG-UI Adapter must generate non-empty request-level values when either field is missing and must reuse them for the complete event stream.
 The serialized request byte limit is enforced by the application Adapter before deserialization.
+The Service or another trusted Core Adapter generates a unique request-level Surface ID.
+Surface IDs and complete compile results must not be reused through cross-request caches.
 
 ## Package Ownership
 
 The target package ownership is:
 
 - `presentation-contract` owns `AgentContent`, `PresentationRequest`, `PresentationDecision`, `PresentationResult`, `UIPlan`, and `ActionIntent`.
-- `compiler-contract` owns `UICompileRequest`, `UICompileResult`, UI IR, compile diagnostics, and compile stages.
-- `component-catalog-schema` owns Catalog, component, Props, Action, and structure Schemas.
+- `compiler-contract` owns `UICompileRequest`, `UICompileResult`, UI IR, compile diagnostics, compile stages, and the A2UI 0.9.1 Profile Schema and mapping contract.
+- `component-catalog-schema` owns Catalog, component, Props, Action, and structure Schemas, plus the shared `computeCatalogContentHash` implementation.
 - `ag-ui-adapter` owns protocol event mapping and does not own routing or compilation logic.
 
-## Migration Status
+## Implementation Status
 
-The executable contracts currently reflect the pre-ADR-0005 shape.
-They remain the executable source of truth for the current code until the contract migration is implemented.
-The contract migration must include Schema updates, tests, a changeset, and any required major version changes.
+The current planning baseline contains no executable product contracts.
+The contracts in this document are the target design for future implementation tasks.
+Each executable contract must be introduced with Schema tests, a changeset, and any required versioning decision.
 
 ## Rules
 
@@ -254,3 +300,6 @@ The contract migration must include Schema updates, tests, a changeset, and any 
 5. Core validates generated output and protects contract invariants.
 6. Stable error codes are part of the public contract.
 7. No contract may require a Business Agent to emit compiler-specific routing metadata.
+8. A2UI 0.9.1 Profile messages use the wire discriminator `version = "v0.9"`.
+9. Complete UI IR, compile results, A2UI Operations, request data, Fallback Markdown, and Surface IDs are not cross-request cache entries in the MVP.
+10. Catalog hashes use the shared RFC 8785 plus SHA-256 algorithm and `sha256:<lowercase-hex>` wire representation defined above.

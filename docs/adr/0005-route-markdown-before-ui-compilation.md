@@ -1,14 +1,14 @@
-# ADR-0005: Route Markdown before UI compilation
+# ADR-0005: 在 UI 编译前路由 Markdown
 
-- **Status:** Accepted
-- **Date:** 2026-07-24
+- **状态：** 已接受
+- **日期：** 2026-07-24
 
-## Input scope update
+## 输入范围更新
 
-ADR-0006 supersedes the Markdown-only input assumption in this ADR.
-The presentation routing, Model Adapter, Core, validation, and fallback decisions remain accepted for both Markdown and JSON structured data.
+ADR-0006 取代了本 ADR 中仅支持 Markdown 输入的假设。
+展示路由、Model Adapter、Core、校验和降级决策继续同时适用于 Markdown 和 JSON 结构化数据。
 
-## Context
+## 背景
 
 真实业务 Agent 只保证返回 Markdown。
 它们不会稳定提供 `presentationMode`、`presentationIntent`、结构化业务数据或 UI Plan。
@@ -21,7 +21,7 @@ The presentation routing, Model Adapter, Core, validation, and fallback decision
 如何把已经选定但仍不可信的 UI Plan Candidate 编译为受控 A2UI 是编译决策。
 两个决策具有不同输入、失败策略和可信边界，不应由同一模块承担。
 
-## Decision
+## 决策
 
 UI Compiler Service 必须在调用 UI Compiler Core 之前执行展示路由。
 业务 Agent 只需要提供 Markdown。
@@ -72,9 +72,10 @@ UI Compiler Core 不得依赖模型 SDK、模型供应商、网络协议或 Serv
 `AgentPresentationResult` 不再作为业务 Agent 必须构造的外部输入契约。
 
 模块名称统一使用 UI Compiler Service。
-应用实现路径已迁移为 `apps/ui-compiler-service`，该模块不是 Agent。
+目标应用路径为 `apps/ui-compiler-service`，该模块不是 Agent。
+当前规划基线尚未创建该应用实现。
 
-## Consequences
+## 后果
 
 - 普通 Markdown 不再经过无价值的 A2UI `Markdown` 组件包装。
 - UI Compiler Core 的接口变窄，只处理已经选择生成式 UI 的编译请求。
@@ -83,11 +84,11 @@ UI Compiler Core 不得依赖模型 SDK、模型供应商、网络协议或 Serv
 - 前端必须能够根据 `PresentationResult` 在 Markdown Renderer 和 A2UI Renderer 之间分派。
 - 调用方提供原始用户消息时，路由可以结合用户意图判断展示方式。
 - 只有 Markdown 时仍然允许路由，但系统必须接受判断置信度下降。
-- 现有 `presentation-contract`、`compiler-contract`、Service 路由和 Core 输入需要通过后续实现变更迁移。
-- 迁移完成前，README 必须明确当前实现与目标架构的差距。
+- `presentation-contract`、`compiler-contract`、Service 路由和 Core 输入必须通过明确的后续任务按本 ADR 创建。
+- README 必须明确仓库仍处于规划阶段，不得暗示目标架构已经实现。
 
-## Supersession
+## 取代关系
 
-本 ADR 取代 ADR-0001 中将 UI Compiler Agent 定义为纯网络适配器的部分。
+本 ADR 取代 ADR-0001 中将 UI Compiler Agent 定义为纯网络 Adapter 的部分。
 ADR-0001 的 Monorepo、独立部署和框架无关 Core 决策继续有效。
 本 ADR 不改变 ADR-0003 对 Interaction Gateway 的排除，也不改变 ADR-0004 的 Component Catalog 扩展模型。

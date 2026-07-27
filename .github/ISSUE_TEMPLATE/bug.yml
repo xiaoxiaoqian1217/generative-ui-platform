@@ -23,7 +23,7 @@ body:
       label: Module
       options:
         - ui-compiler-core
-        - ui-compiler-agent
+        - ui-compiler-service
         - contracts
         - CI/CD or documentation
     validations:
