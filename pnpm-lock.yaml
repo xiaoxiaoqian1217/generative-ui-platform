@@ -73,6 +73,19 @@ importers:
         version: 3.2.4(@types/debug@4.1.13)(@types/node@24.0.15)(jiti@2.6.1)(tsx@4.20.3)(yaml@2.9.0)
 
   packages/compiler-contract:
+    dependencies:
+      '@generative-ui/presentation-contract':
+        specifier: workspace:*
+        version: link:../presentation-contract
+      '@generative-ui/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@sinclair/typebox':
+        specifier: ^0.34.52
+        version: 0.34.52
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
     devDependencies:
       tsup:
         specifier: 8.5.0

@@ -74,6 +74,7 @@ try {
     "shared-types",
     "presentation-contract",
     "component-catalog-schema",
+    "compiler-contract",
   ].map((packageName) => join(repositoryRoot, "packages", packageName));
 
   const tarballs = packageDirectories.map((packageDirectory) =>
@@ -102,6 +103,7 @@ try {
   );
   const dependencyOverrides = {
     "@generative-ui/shared-types": asFileDependency(tarballs[0]),
+    "@generative-ui/presentation-contract": asFileDependency(tarballs[1]),
     ...Object.fromEntries(
       Object.entries(externalDependencyTarballs).map(
         ([packageName, tarball]) => [packageName, asFileDependency(tarball)],
@@ -120,6 +122,7 @@ try {
           "@generative-ui/component-catalog-schema": asFileDependency(
             tarballs[2],
           ),
+          "@generative-ui/compiler-contract": asFileDependency(tarballs[3]),
           "@generative-ui/presentation-contract": asFileDependency(tarballs[1]),
           "@generative-ui/shared-types": asFileDependency(tarballs[0]),
         },
@@ -156,6 +159,10 @@ import {
   defaultCatalogSchemaLimits,
   validateComponentCatalog,
 } from "@generative-ui/component-catalog-schema";
+import {
+  validateCatalogContentHash,
+  validateUICompileRequest,
+} from "@generative-ui/compiler-contract";
 
 const catalog = {
   schemaVersion: "1.0",
@@ -214,6 +221,18 @@ const result = {
   ],
 };
 
+const compileRequest = {
+  requestId: "request-1",
+  plan,
+  sourceKind: "structured-data",
+  sourceData: { total: 42 },
+  fallbackMarkdown: "Total: 42",
+  catalog: {
+    catalogId: "consumer",
+    catalogVersion: "1.0.0",
+  },
+};
+
 assert.equal(typeof jsonValueSchema.$id, "string", "shared schema export");
 assert.equal(validateUIPlan(plan).success, true, "UI Plan validation");
 assert.equal(
@@ -225,6 +244,18 @@ assert.equal(
   validatePresentationResult(result).success,
   true,
   "Presentation Result validation",
+);
+assert.equal(
+  validateUICompileRequest(compileRequest).success,
+  true,
+  "UI Compile Request validation",
+);
+assert.equal(
+  validateCatalogContentHash(
+    "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  ).success,
+  true,
+  "Catalog content hash validation",
 );
 `,
     "utf8",
@@ -238,6 +269,10 @@ import type {
   UIPlan,
 } from "@generative-ui/presentation-contract";
 import type { ComponentCatalog } from "@generative-ui/component-catalog-schema";
+import type {
+  UICompileRequest,
+  UICompileResult,
+} from "@generative-ui/compiler-contract";
 
 const value: JsonValue = { total: 42 };
 const result: PresentationResult = {
@@ -249,11 +284,15 @@ const result: PresentationResult = {
 };
 declare const plan: UIPlan;
 declare const catalog: ComponentCatalog;
+declare const compileRequest: UICompileRequest;
+declare const compileResult: UICompileResult;
 
 void value;
 void result;
 void plan;
 void catalog;
+void compileRequest;
+void compileResult;
 `,
     "utf8",
   );
@@ -298,6 +337,7 @@ void catalog;
     "@generative-ui/shared-types",
     "@generative-ui/presentation-contract",
     "@generative-ui/component-catalog-schema",
+    "@generative-ui/compiler-contract",
   ];
   for (const packageName of packageNames) {
     const packageJson = readFileSync(

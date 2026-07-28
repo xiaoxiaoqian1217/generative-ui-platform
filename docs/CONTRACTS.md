@@ -203,6 +203,13 @@ It contains only Catalog-approved components, validated Props and Actions, resol
 It is not a model response, a frontend component instance, or an external rendering protocol.
 The A2UI 0.9.1 Profile compiler maps normalized Props to flat component properties, Bindings to standard JSON Pointer objects, and validated component Action bindings to the versioned `action.event` Envelope.
 `id`, `component`, and `action` are reserved A2UI output properties and cannot be supplied as ordinary Catalog Props.
+`ActionIR.payload` 的每个参数必须保留为 `source-binding` 或 string、number、boolean 类型的 `literal`，以便确定性映射为 A2UI `DynamicValue`。
+`actionId`、`requiresApproval` 和 `destructive` 是 Action Envelope 的保留 context 键，不能作为 payload 参数名。
+`source-binding.sourcePointer` 映射为以 `/sourceData` 为前缀的 A2UI DataBinding，`literal.value` 原样映射为标量。
+不能映射为 A2UI `DynamicValue` 的候选 Action 参数不得进入可信 UI IR。
+进入可信 UI IR 的 Prop Binding 和 Action source binding 必须能够在声明的数据源中解析到现有值。
+`compiler-contract` 的 A2UI Profile 只验证协议 Envelope 和与 Catalog 无关的 Surface 不变量。
+Component Prop 的结构引用与 Binding 语义由已授权 Catalog 和 Core 映射负责，不得根据字段名或普通对象形状推断。
 
 ## Compile Result
 
@@ -292,8 +299,8 @@ The target package ownership is:
 `component-catalog-schema` 现已实现第一组可执行的 Catalog、component、Props、Action 和 nesting 契约。
 `shared-types` 统一拥有两个包共用的公共 `JsonValue` 和校验结果定义。
 `presentation-contract` 只把 `PresentationResult.operations` 校验为非空的可序列化对象数组，不在该包复制 A2UI Profile。
-完整的 A2UI Operation Schema 仍由后续限定范围任务在 `compiler-contract` 中实现并拥有。
-Compiler、UI IR、A2UI Profile、Service 和协议 Adapter 契约仍是后续限定范围实现任务的目标设计。
+`compiler-contract` 现已实现可执行的编译请求、UI IR、三态编译结果、稳定错误和 A2UI 0.9.1 Profile 契约。
+UI Compiler Core、Service 和协议 Adapter 契约仍是后续限定范围实现任务的目标设计。
 每个新增可执行契约都必须包含 Schema 测试、changeset 和必要的版本决策。
 
 ## Rules

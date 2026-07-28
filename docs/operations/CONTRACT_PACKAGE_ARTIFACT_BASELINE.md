@@ -14,8 +14,9 @@
 | `@generative-ui/shared-types` | 732 | 1,057 |
 | `@generative-ui/presentation-contract` | 13,168 | 40,782 |
 | `@generative-ui/component-catalog-schema` | 16,586 | 28,389 |
+| `@generative-ui/compiler-contract` | 28,684 | 57,085 |
 
 ## 比较规则
 
-依赖升级时必须重新构建这三个包并比较这些数值。
+依赖升级时必须重新构建这四个包并比较这些数值。
 出现非预期大小变化时，必须在发布前检查生成的 JavaScript 和声明文件。
