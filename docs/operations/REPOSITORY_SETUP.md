@@ -37,6 +37,5 @@ Install the Probot Settings app to apply `.github/settings.yml`. Review its perm
 
 ## Lockfile
 
-The repository does not currently include `pnpm-lock.yaml`.
-Run `scripts/bootstrap.ps1` or `scripts/bootstrap.sh` locally, then commit the generated lockfile in a focused pull request.
-CI uses non-frozen installation until the lockfile exists and frozen installation afterward.
+The repository includes `pnpm-lock.yaml`.
+CI uses `pnpm install --frozen-lockfile` when the lockfile is present.

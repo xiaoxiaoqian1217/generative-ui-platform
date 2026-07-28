@@ -107,13 +107,13 @@ Core 不决定是否生成 UI，也不直接依赖模型 SDK 或具体模型供�
 
 ## 当前项目阶段
 
-当前仓库已完成需求确认后的最小 Workspace 骨架。
-活动代码树包含 UI Compiler Service 和六个共享包。
+当前仓库已具备最小 Workspace、共享契约包和 UI Compiler Core 的 summary 场景确定性编译链路。
+活动代码树包含 UI Compiler Service、六个共享包和 UI Compiler Core。
 `presentation-contract` 和 `component-catalog-schema` 已提供第一组可执行契约、运行时 Schema 和边界校验。
 `shared-types` 提供这些契约共用的唯一 `JsonValue` 和校验结果类型。
-UI Compiler Core、UI Compiler Service 和其余包仍仅提供严格 TypeScript、ESM、构建、测试和发布入口。
-当前实现不包含 UI IR Builder、A2UI Compiler、模型调用、前端或业务 Agent 集成。
-Git 历史和归档分支保留这些旧实现，仅用于追溯，不作为当前完成度或后续设计依据。
+UI Compiler Core 已实现输入和 Catalog 校验、UI IR lowering、A2UI 0.9.1 Profile 编译和 Markdown 降级。
+UI Compiler Service 仍只提供严格 TypeScript、ESM、构建、测试和发布入口。
+当前实现不包含模型调用、前端或真实业务 Agent 集成。
 
 当前阶段维护需求、架构、ADR、领域语言和仓库级工程基础设施。
 依赖边界检查用于阻止应用反向依赖、Core 依赖协议 Adapter 等违规方向。

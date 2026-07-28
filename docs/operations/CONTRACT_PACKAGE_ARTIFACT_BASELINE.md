@@ -13,7 +13,7 @@
 |---|---:|---:|
 | `@generative-ui/shared-types` | 732 | 1,057 |
 | `@generative-ui/presentation-contract` | 13,168 | 40,782 |
-| `@generative-ui/component-catalog-schema` | 16,586 | 28,389 |
+| `@generative-ui/component-catalog-schema` | 18,679 | 28,508 |
 | `@generative-ui/compiler-contract` | 28,684 | 57,085 |
 | `@generative-ui/ag-ui-adapter` | 17,769 | 71,083 |
 
