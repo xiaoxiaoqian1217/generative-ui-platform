@@ -216,16 +216,20 @@ Catalog Schema 的大小、深度和允许关键字必须在编译前受限，�
 |---|---|
 | Presentation Request | `PRESENTATION_REQUEST_INVALID` |
 | Presentation Decision | `PRESENTATION_DECISION_INVALID` |
+| Presentation Result | `PRESENTATION_RESULT_INVALID` |
 | UI Plan Candidate | `UI_PLAN_INVALID` |
 | UI Compile Request | `UI_COMPILE_REQUEST_INVALID` |
 | Component Catalog | `COMPONENT_CATALOG_INVALID` |
+| Component Props | `COMPONENT_PROPS_INVALID` |
+| Action payload | `ACTION_PAYLOAD_INVALID` |
 | UI IR | `UI_IR_INVALID` |
 | A2UI 0.9.1 Profile | `A2UI_INVALID` |
 | 外部或 Catalog Schema 定义 | `SCHEMA_DEFINITION_INVALID` |
 | Catalog Schema 资源限制 | `SCHEMA_LIMIT_EXCEEDED` |
 | validator 初始化或编译失败 | `SCHEMA_COMPILATION_FAILED` |
 
-资源限制仍使用 Requirements 已定义的 `REQUEST_BODY_TOO_LARGE`、`DATA_DEPTH_EXCEEDED` 和 `DATA_ITEMS_EXCEEDED` 等代码。
+Catalog 的 `maxCatalogBytes`、`maxEmbeddedSchemaBytes`、`maxEmbeddedSchemaDepth` 和 `maxEmbeddedSchemaNodes` 四项资源限制统一使用 `SCHEMA_LIMIT_EXCEEDED`。
+Requirements 已定义的 `REQUEST_BODY_TOO_LARGE`、`DATA_DEPTH_EXCEEDED` 和 `DATA_ITEMS_EXCEEDED` 仅分别适用于 Presentation Request 请求体、Agent 内容或 UI Plan Candidate，不适用于 Catalog 及其内嵌 Schema。
 不得把资源限制失败折叠为通用 Schema 错误。
 
 私有 Adapter 可以把 Ajv 的 `instancePath` 转换为 RFC 6901 JSON Pointer，并把 keyword 映射为项目自有的诊断 constraint。

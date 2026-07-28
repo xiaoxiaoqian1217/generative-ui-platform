@@ -44,6 +44,7 @@ Run `pnpm validate` after all changes. Documentation-only changes must run `pnpm
 ## Output requirements
 
 - Respond in Simplified Chinese unless the user explicitly requests another language.
+- By default, all AI-generated content written into documentation MUST use Simplified Chinese, regardless of the language already used in the file, unless the user explicitly requests another language.
 - Lead with the result, then list changed files, validation performed, and any remaining risks or follow-up work.
 - Keep output concise, specific, and verifiable.
 - Do not claim that a command, test, commit, push, or deployment succeeded unless it was actually completed.

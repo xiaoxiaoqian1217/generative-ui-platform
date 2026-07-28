@@ -127,6 +127,7 @@ The three representations have distinct trust levels:
 `ActionIntent` describes what an interface action means, not how a frontend executes arbitrary code.
 Candidate Actions are provisional until Core validates their type, payload, target component, and Catalog permission.
 The MVP may emit validated Action descriptions but does not implement the complete action callback path to a Business Agent.
+候选 `payload` 是命名语义参数映射，每个参数只能是源数据 JSON Pointer 绑定或 JSON 标量字面值。
 
 ## Compile Request
 
@@ -287,9 +288,13 @@ The target package ownership is:
 
 ## Implementation Status
 
-The current planning baseline contains no executable product contracts.
-The contracts in this document are the target design for future implementation tasks.
-Each executable contract must be introduced with Schema tests, a changeset, and any required versioning decision.
+`presentation-contract` 现已实现第一组可执行的 `AgentContent`、`PresentationRequest`、`PresentationDecision`、`PresentationResult`、`UIPlan` 和 `ActionIntent` 契约。
+`component-catalog-schema` 现已实现第一组可执行的 Catalog、component、Props、Action 和 nesting 契约。
+`shared-types` 统一拥有两个包共用的公共 `JsonValue` 和校验结果定义。
+`presentation-contract` 只把 `PresentationResult.operations` 校验为非空的可序列化对象数组，不在该包复制 A2UI Profile。
+完整的 A2UI Operation Schema 仍由后续限定范围任务在 `compiler-contract` 中实现并拥有。
+Compiler、UI IR、A2UI Profile、Service 和协议 Adapter 契约仍是后续限定范围实现任务的目标设计。
+每个新增可执行契约都必须包含 Schema 测试、changeset 和必要的版本决策。
 
 ## Rules
 
