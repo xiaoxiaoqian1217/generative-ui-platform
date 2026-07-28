@@ -80,11 +80,21 @@ describe("dependency boundary checker", () => {
       "packages/ag-ui-adapter": {
         dependencies: {
           "@generative-ui/compiler-contract": "workspace:*",
+          "@generative-ui/presentation-contract": "workspace:*",
+          "@generative-ui/shared-types": "workspace:*",
+          "@sinclair/typebox": "0.34.52",
+          ajv: "8.20.0",
         },
         name: "@generative-ui/ag-ui-adapter",
       },
       "packages/compiler-contract": {
         name: "@generative-ui/compiler-contract",
+      },
+      "packages/presentation-contract": {
+        name: "@generative-ui/presentation-contract",
+      },
+      "packages/shared-types": {
+        name: "@generative-ui/shared-types",
       },
       "packages/ui-compiler-core": {
         dependencies: {
@@ -176,7 +186,28 @@ describe("dependency boundary checker", () => {
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain(
-      "AG-UI Adapter may depend only on Compiler Contract and Shared Types",
+      "AG-UI Adapter runtime dependencies are limited to approved contract and Schema packages",
     );
   });
+
+  it.each(["@ag-ui/core", "fastify"])(
+    "rejects an AG-UI Adapter runtime dependency on %s",
+    (dependencyName) => {
+      const fixtureRoot = createFixture({
+        "packages/ag-ui-adapter": {
+          dependencies: {
+            [dependencyName]: "1.0.0",
+          },
+          name: "@generative-ui/ag-ui-adapter",
+        },
+      });
+
+      const result = runChecker(fixtureRoot);
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(
+        "AG-UI Adapter runtime dependencies are limited to approved contract and Schema packages",
+      );
+    },
+  );
 });

@@ -76,6 +76,7 @@ try {
     "component-catalog-schema",
     "compiler-contract",
     "ui-compiler-core",
+    "ag-ui-adapter",
   ].map((packageName) => join(repositoryRoot, "packages", packageName));
 
   const tarballs = packageDirectories.map((packageDirectory) =>
@@ -126,6 +127,7 @@ try {
             tarballs[2],
           ),
           "@generative-ui/compiler-contract": asFileDependency(tarballs[3]),
+          "@generative-ui/ag-ui-adapter": asFileDependency(tarballs[5]),
           "@generative-ui/presentation-contract": asFileDependency(tarballs[1]),
           "@generative-ui/shared-types": asFileDependency(tarballs[0]),
           "@generative-ui/ui-compiler-core": asFileDependency(tarballs[4]),
@@ -169,6 +171,13 @@ import {
   validateUICompileRequest,
 } from "@generative-ui/compiler-contract";
 import { compileUI } from "@generative-ui/ui-compiler-core";
+import {
+  createRunFinishedEvent,
+  createRunStartedEvent,
+  mapPresentationResultToCustomEvent,
+  parseAGUICompileRequest,
+  validateAGUIEventSequence,
+} from "@generative-ui/ag-ui-adapter";
 
 const catalog = {
   schemaVersion: "1.0",
@@ -285,6 +294,40 @@ const compileResult = compileUI(compileRequest, {
 });
 assert.equal(compileResult.success, true, "Core compile result");
 assert.equal(compileResult.degraded, false, "Core compile degradation");
+const {
+  requestId,
+  threadId,
+  runId,
+  ...compileRequestBody
+} = compileRequest;
+const parsedRequest = parseAGUICompileRequest({
+  requestId,
+  threadId,
+  runId,
+  compileRequest: compileRequestBody,
+});
+assert.equal(parsedRequest.success, true, "AG-UI compile request parsing");
+if (!parsedRequest.success) {
+  throw new Error("Expected AG-UI compile request parsing to succeed.");
+}
+const mappedEvent = mapPresentationResultToCustomEvent(
+  parsedRequest.value.context,
+  result,
+);
+assert.equal(mappedEvent.success, true, "AG-UI CustomEvent mapping");
+if (!mappedEvent.success) {
+  throw new Error("Expected AG-UI CustomEvent mapping to succeed.");
+}
+const events = [
+  createRunStartedEvent(parsedRequest.value.context),
+  mappedEvent.value,
+  createRunFinishedEvent(parsedRequest.value.context),
+];
+assert.equal(
+  validateAGUIEventSequence(events, parsedRequest.value.context).success,
+  true,
+  "AG-UI event sequence validation",
+);
 `,
     "utf8",
   );
@@ -302,6 +345,10 @@ import type {
   UICompileResult,
 } from "@generative-ui/compiler-contract";
 import type { CompileOptions } from "@generative-ui/ui-compiler-core";
+import type {
+  AGUIEventSequence,
+  AGUIRequestContext,
+} from "@generative-ui/ag-ui-adapter";
 
 const value: JsonValue = { total: 42 };
 const result: PresentationResult = {
@@ -316,6 +363,8 @@ declare const catalog: ComponentCatalog;
 declare const compileRequest: UICompileRequest;
 declare const compileResult: UICompileResult;
 declare const compileOptions: CompileOptions;
+declare const agUIContext: AGUIRequestContext;
+declare const agUIEvents: AGUIEventSequence;
 
 void value;
 void result;
@@ -324,6 +373,8 @@ void catalog;
 void compileRequest;
 void compileResult;
 void compileOptions;
+void agUIContext;
+void agUIEvents;
 `,
     "utf8",
   );
@@ -370,6 +421,7 @@ void compileOptions;
     "@generative-ui/component-catalog-schema",
     "@generative-ui/compiler-contract",
     "@generative-ui/ui-compiler-core",
+    "@generative-ui/ag-ui-adapter",
   ];
   for (const packageName of packageNames) {
     const packageJson = readFileSync(

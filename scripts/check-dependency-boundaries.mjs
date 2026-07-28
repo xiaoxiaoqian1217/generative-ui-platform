@@ -28,9 +28,18 @@ const allowedCoreDevelopmentDependencies = new Set([
   "vitest",
 ]);
 
-const allowedAdapterWorkspaceDependencies = new Set([
+const allowedAdapterRuntimeDependencies = new Set([
   "@generative-ui/compiler-contract",
+  "@generative-ui/presentation-contract",
   "@generative-ui/shared-types",
+  "@sinclair/typebox",
+  "ajv",
+]);
+
+const allowedAdapterDevelopmentDependencies = new Set([
+  "tsup",
+  "typescript",
+  "vitest",
 ]);
 
 const contractPackagePaths = new Set([
@@ -138,6 +147,26 @@ function findViolations(projects) {
       const target = projectsByName.get(dependencyName);
 
       if (
+        source.path === "packages/ag-ui-adapter" &&
+        runtimeDependencySections.has(dependencySection) &&
+        !allowedAdapterRuntimeDependencies.has(dependencyName)
+      ) {
+        violations.push(
+          `${source.path} -> ${dependencyName}: AG-UI Adapter runtime dependencies are limited to approved contract and Schema packages`,
+        );
+      }
+
+      if (
+        source.path === "packages/ag-ui-adapter" &&
+        dependencySection === "devDependencies" &&
+        !allowedAdapterDevelopmentDependencies.has(dependencyName)
+      ) {
+        violations.push(
+          `${source.path} -> ${dependencyName}: AG-UI Adapter development dependencies are limited to approved tooling`,
+        );
+      }
+
+      if (
         source.path === "packages/ui-compiler-core" &&
         runtimeDependencySections.has(dependencySection) &&
         !allowedCoreRuntimeDependencies.has(dependencyName)
@@ -182,15 +211,6 @@ function findViolations(projects) {
       ) {
         violations.push(
           `${source.path} -> ${dependencyName}: UI Compiler Core must not depend on protocol adapters`,
-        );
-      }
-
-      if (
-        source.path === "packages/ag-ui-adapter" &&
-        !allowedAdapterWorkspaceDependencies.has(dependencyName)
-      ) {
-        violations.push(
-          `${source.path} -> ${dependencyName}: AG-UI Adapter may depend only on Compiler Contract and Shared Types`,
         );
       }
 
