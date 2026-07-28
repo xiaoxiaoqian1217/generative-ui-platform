@@ -273,7 +273,7 @@ The frontend sends `mode = "generative-ui"` to its A2UI Renderer and Component R
 
 Model, routing, planning, or compilation failure should normally produce a degraded Markdown result when valid source content is available.
 `PresentationResult` 是 UI Compiler Service 的规范应用层输出，不依赖 AG-UI 或 CopilotKit。
-如果外部 Runtime Host 选择 AG-UI，它可以把 completed 或 degraded 结果映射到 `CUSTOM(name = "generative-ui.presentation-result")`，并使用 `{ mappingVersion: "1.0", result }`。
+如果 Agent Runtime Host 选择 AG-UI，它可以把 completed 或 degraded 结果映射到 `CUSTOM(name = "generative-ui.presentation-result")`，并使用 `{ mappingVersion: "1.0", result }`。
 没有可消费内容的失败可以映射到 `CUSTOM(name = "generative-ui.presentation-error")`，并在 `RUN_ERROR` 前携带 `{ mappingVersion: "1.0", errors }`。
 该可选映射不属于当前 Compiler MVP 的必需接口。
 
@@ -281,8 +281,8 @@ Model, routing, planning, or compilation failure should normally produce a degra
 
 `threadId` and `runId` are optional protocol correlation fields.
 Core may pass through correlation values but must not use them to maintain conversation state or AG-UI Run lifecycle.
-UI Compiler Service 只把这些字段用于当前请求的关联和诊断，不拥有外部 Agent Run。
-如果外部 Runtime Host 需要非空标识符，由该 Runtime Host 按其协议要求生成并复用。
+UI Compiler Service 只把这些字段用于当前请求的关联和诊断，不拥有 Business Agent Run。
+如果 Agent Runtime Host 需要非空标识符，由该 Agent Runtime Host 按其协议要求生成并复用。
 The serialized request byte limit is enforced by the application Adapter before deserialization.
 The Service or another trusted Core Adapter generates a unique request-level Surface ID.
 Surface IDs and complete compile results must not be reused through cross-request caches.
@@ -294,7 +294,7 @@ The target package ownership is:
 - `presentation-contract` owns `AgentContent`, `PresentationRequest`, `PresentationDecision`, `PresentationResult`, `UIPlan`, and `ActionIntent`.
 - `compiler-contract` owns `UICompileRequest`, `UICompileResult`, UI IR, compile diagnostics, compile stages, and the A2UI 0.9.1 Profile Schema and mapping contract.
 - `component-catalog-schema` owns Catalog, component, Props, Action, and structure Schemas, plus the shared `computeCatalogContentHash` implementation.
-- `ag-ui-adapter` 如果通过单独范围启用，只拥有可选协议事件工具，不拥有展示路由、业务 Agent Run 或编译逻辑。
+- `ag-ui-adapter` 如果通过单独范围启用，只拥有可选协议事件工具，不拥有展示路由、Business Agent Run 或编译逻辑。
 
 ## Implementation Status
 

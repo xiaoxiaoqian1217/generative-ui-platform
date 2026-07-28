@@ -51,6 +51,11 @@ gh issue edit <number> --remove-label "..."
 gh issue close <number> --comment "..."
 ```
 
+实现提交完成一个 Issue 时，优先在简洁的提交标题末尾添加 `, fixes #<number>`。
+例如：`fix: Fix login bug, fixes #45`。
+该提交进入默认分支后，GitHub 会关联并自动关闭对应 Issue。
+仅关联但不应关闭时，使用 `refs #<number>`，不要使用关闭关键字。
+
 通过 `git remote -v` 确定仓库。
 在仓库克隆目录中运行时，`gh` 会自动识别仓库。
 

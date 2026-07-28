@@ -6,6 +6,14 @@
 2. Read `docs/ARCHITECTURE.md` and relevant ADRs before adding dependencies.
 3. Do not expand MVP scope without an issue or ADR.
 
+## Branch creation rules
+
+- 创建任何任务或 Issue 分支前，必须先获取远端 GitHub `main` 的最新状态，并验证本地远端跟踪引用与 GitHub 远端提交一致。
+- 新分支必须直接从已验证的 `origin/main` 创建，禁止从当前本地 `HEAD`、其他本地分支或未经验证的本地 `main` 创建。
+- 如果任务依赖尚未合并到远端 GitHub `main` 的前置 Issue，必须暂停并征求用户意见。
+- 在确认依赖的 Issue 已合并到远端 GitHub `main` 并重新验证 `origin/main` 前，禁止创建或实现依赖该 Issue 的后续分支。
+- 不得默认创建 stacked branch。
+
 ## Architecture rules
 
 - `packages/ui-compiler-core` MUST remain framework-, transport-, and vendor-neutral.

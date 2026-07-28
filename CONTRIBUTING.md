@@ -7,4 +7,7 @@
 5. Run `pnpm validate`.
 6. Complete the PR checklist and request review.
 
-Follow the commit message rules and template in `.cursorrules`.
+Follow the commit message rules in `.cursorrules`.
+Use a concise subject-only commit message by default.
+When the commit completes an Issue, append `, fixes #<number>` so GitHub closes it after the commit reaches the default branch.
+For example: `fix: Fix login bug, fixes #45`.

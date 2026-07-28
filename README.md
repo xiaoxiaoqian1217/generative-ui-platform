@@ -50,7 +50,7 @@ Business Agent / LLM Agent
                     A2UI / Fallback
               |
               v
-      Frontend Runtime Renderer
+      Frontend Runtime
 ```
 
 Presentation Router 可以通过可替换的 Model Adapter 调用大模型。
@@ -71,7 +71,7 @@ Presentation Router 可以通过可替换的 Model Adapter 调用大模型。
 - 直接返回安全的 Markdown，或调用 UI Compiler Core。
 - 通过 HTTP 返回 `PresentationResult`，并处理超时、取消、错误映射和可观测性。
 
-AG-UI Run 生命周期属于外部 Runtime Host 或可选协议 Adapter，不是 UI Compiler Service 的规范输出。
+AG-UI Run 生命周期属于 Agent Runtime Host 或可选协议 Adapter，不是 UI Compiler Service 的规范输出。
 
 ### Presentation Router
 

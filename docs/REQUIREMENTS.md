@@ -299,10 +299,10 @@ MVP 交付内容包括：
 
 #### 4.2.3 Copilot Runtime
 
-Copilot Runtime 或其他 Runtime Host 可以作为外部代理层通过 HTTP 调用 UI Compiler Service，但不属于本期建设范围。
-外部 Runtime Host 负责调用协议无关的业务 Agent，并把 `PresentationResult` 映射为 AG-UI 或其他前端通信协议。
+Copilot Runtime 或其他 Agent Runtime Host 可以作为外部代理层通过 HTTP 调用 UI Compiler Service，但不属于本期建设范围。
+Agent Runtime Host 负责调用协议无关的业务 Agent，并把 `PresentationResult` 映射为 AG-UI 或其他前端通信协议。
 业务 Agent 不需要实现 AG-UI。
-UI Compiler Service 不拥有外部 Agent Run 的生命周期。
+UI Compiler Service 不拥有 Business Agent Run 的生命周期。
 
 #### 4.2.4 Interaction Gateway
 
@@ -310,7 +310,7 @@ Interaction Gateway 代表未来可能需要设计的 Agent 协作问题空间�
 
 * 多业务 Agent 路由；
 * Agent 协作和结果聚合；
-* Thread、Run、任务和审批状态管理；
+* Thread、Business Agent Run、任务和审批状态管理；
 * 用户 Action 回传；
 * 中断、恢复和权限控制。
 
@@ -327,7 +327,7 @@ Gateway 与 Generative UI Compiler 的未来产品和架构关系必须由新的
 +---------------------------------+
 | External Caller                 |
 | Business Agent / Test Client    |
-| Runtime Host / Other            |
+| Agent Runtime Host / Other      |
 +----------------+----------------+
                  | HTTP PresentationRequest
                  v
@@ -370,11 +370,11 @@ Gateway 与 Generative UI Compiler 的未来产品和架构关系必须由新的
                  |
                  | External protocol mapping
                  v
-+---------------------------------+
-| External Runtime / Frontend     |
-| AG-UI or another transport      |
-| Component Registry + Renderer   |
-+---------------------------------+
++---------------------------------------+
+| Agent Runtime Host / Frontend Runtime |
+| AG-UI or another transport            |
+| Component Registry + Renderer         |
++---------------------------------------+
 ```
 
 ### 5.2 职责关系
@@ -513,8 +513,8 @@ Core 内部至少分离输入校验、Catalog 校验、组件选择、UI IR、A2
 * 通用错误事件封装；
 * 事件序列化。
 
-该包不得包含 UI 编译逻辑、展示路由、业务 Agent 调用或外部 Run 编排。
-`PresentationResult` 到业务 Agent Run 事件的组装属于外部 Runtime Host。
+该包不得包含 UI 编译逻辑、展示路由、业务 Agent 调用或 Business Agent Run 编排。
+`PresentationResult` 到 Business Agent Run 事件的组装属于 Agent Runtime Host。
 
 #### `shared-types`
 
@@ -687,7 +687,7 @@ MVP 中 Action 只用于生成 UI 描述，不实现 Action 回传业务 Agent �
 `UICompileRequest` 的目标契约形状定义在 [CONTRACTS.md](./CONTRACTS.md#compile-request)。
 
 `threadId` 和 `runId` 是可选的协议关联字段。
-Core 可以透传，但不得据此维护会话状态或 Run 生命周期。
+Core 可以透传，但不得据此维护会话状态或 Business Agent Run 生命周期。
 Core 接收到 `UICompileRequest` 时必须假设调用方已经选择生成式 UI，不得再次执行展示模式路由。
 Core 必须继续把其中的 UI Plan Candidate 视为不可信输入。
 `sourceKind = "structured-data"` 时，`sourceData` 必须是通过资源校验的完整原始 JSON。
@@ -1014,12 +1014,12 @@ UI Compiler Service 的规范应用层输出必须是 `PresentationResult`，不
 
 #### SERVICE-005
 
-外部 Runtime Host 可以把 `PresentationResult` 映射为 AG-UI、WebSocket、SSE 或其他前端协议。
+Agent Runtime Host 可以把 `PresentationResult` 映射为 AG-UI、WebSocket、SSE 或其他前端协议。
 该映射不属于当前 Compiler MVP 的运行前置条件。
 
 #### SERVICE-006
 
-外部 Runtime Host 负责业务 Agent Run 的生命周期、关联标识、取消、错误和终止语义。
+Agent Runtime Host 负责 Business Agent Run 的生命周期、关联标识、取消、错误和终止语义。
 UI Compiler Service 只维护当前 HTTP 请求所需的临时上下文。
 
 #### SERVICE-007
@@ -1424,7 +1424,7 @@ Frontend Runtime 和真实组件渲染不属于阶段五验收范围，可以通
 * 前端需要统一连接多个业务 Agent；
 * 需要根据 Agent ID、能力或业务领域路由请求；
 * 需要聚合多个 Agent 的结果和进度；
-* 需要维护 Thread、Run、任务和 Agent 关系；
+* 需要维护 Thread、Business Agent Run、任务和 Agent 关系；
 * 需要将用户 Action 回传给对应业务 Agent；
 * 需要处理审批、中断、任务恢复和权限；
 * 单个业务 Agent 或现有 Runtime 无法承担上述职责。

@@ -12,23 +12,10 @@ Do not duplicate rules from either file here.
 - Use a scope when it helps identify the affected module.
 - The subject MUST use the format `<type>(<scope>): <description>` or `<type>: <description>`.
 - Write the summary in the imperative style, keep it concise, and do not end it with punctuation.
+- Use a subject-only commit message by default.
+- When a commit completes an Issue, append `, fixes #<number>` to the subject so GitHub links and closes the Issue after the commit reaches the default branch.
+- Use `fix`, not `fixed`, as the Conventional Commit type.
+- Example: `fix: Fix login bug, fixes #45`.
 - Do not add any agent name as a co-author.
-- For non-trivial commits, use the following body template.
-
-```text
-<type>(<scope>): <摘要>
-
-变更内容:
-- <具体变更>
-
-验证:
-- <执行的检查及结果>
-
-关联:
-- <Issue、ADR 或其他上下文，没有则写无>
-```
-
-- Separate the subject and body with one blank line.
-- Use `-` for body list items and keep each item concrete and verifiable.
 - Breaking changes MUST include a `BREAKING CHANGE: <中文说明>` footer.
 - Never manually edit `CHANGELOG.md` or any file marked as generated.

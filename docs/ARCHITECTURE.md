@@ -38,32 +38,33 @@ Presentation Router
         |
         v
 
-Frontend Runtime Renderer
+Frontend Runtime
 ```
 
 The service does not manage business Agent execution, Agent routing, workflow state, or business logic.
 
-### 1.1 外部 Runtime 集成边界
+### 1.1 Agent Runtime Host 集成边界
 
 UI Compiler Service 的规范网络入口是 HTTP `POST /api/ui-compiler/present`。
 它接收 `PresentationRequest` 并返回 `PresentationResult`。
-Compiler 不拥有外部业务 Agent Run，也不要求业务 Agent 实现 AG-UI。
+Compiler 不拥有 Business Agent Run，也不要求业务 Agent 实现 AG-UI。
 
-外部 Copilot Runtime 或其他 Runtime Host 可以调用协议无关的业务 Agent，并在得到 Markdown 或 JSON 后调用 UI Compiler Service。
-Runtime Host 负责把 `PresentationResult` 映射为 AG-UI、WebSocket、SSE 或其他前端通信协议。
-该 Runtime Host 是当前 Compiler MVP 的外部系统。
+Copilot Runtime 或其他 Agent Runtime Host 可以调用协议无关的业务 Agent，并在得到 Markdown 或 JSON 后调用 UI Compiler Service。
+Agent Runtime Host 负责把 `PresentationResult` 映射为 AG-UI、WebSocket、SSE 或其他前端通信协议。
+Agent Runtime Host 是当前 Compiler MVP 的外部系统。
 
 ```mermaid
 sequenceDiagram
     participant F as 浏览器前端
-    participant R as 外部 Runtime Host
+    participant R as Agent Runtime Host
     participant D as Business Agent Adapter
     participant A as 协议无关的业务 Agent
     participant C as UI Compiler Service
     participant V as 前端 Renderer
 
     F->>R: Agent 协议请求
-    R->>D: 分发 Agent Run
+    R->>R: 创建 Business Agent Run
+    R->>D: 调用业务 Agent
     D->>A: 调用业务原生接口
     A-->>D: Markdown 或 JSON
     D-->>R: 业务结果
@@ -75,11 +76,11 @@ sequenceDiagram
 
 AG-UI 和 A2UI 必须保持独立：
 
-- AG-UI 描述前端与 Agent Runtime 之间的 Run、Step、消息和事件传输。
+- AG-UI 描述前端与 Agent Runtime Host 之间的 Run、Step、消息和事件传输。
 - A2UI 描述前端可以渲染的声明式 UI Surface。
 - `PresentationResult` 是 UI Compiler Service 的规范应用层输出。
 - A2UI Operations 是 `PresentationResult` 的 generative-ui 分支内容。
-- AG-UI 只是外部 Runtime Host 可以选择的一种传输封装。
+- AG-UI 只是 Agent Runtime Host 可以选择的一种传输封装。
 
 ## 2. Current MVP Modules
 
@@ -102,7 +103,7 @@ Responsibilities:
 The service is the application composition root.
 It selects and injects the concrete Model Adapter.
 It is not a Business Agent and does not perform business reasoning, business tool calls, or Agent orchestration.
-UI Compiler Service 不拥有外部 AG-UI Run 生命周期。
+UI Compiler Service 不拥有 AG-UI Run 生命周期。
 
 ### Presentation Router
 
@@ -174,7 +175,7 @@ Core must remain independent from:
 
 The external Frontend Runtime consumes a presentation result.
 It sends a Markdown result to its Markdown Renderer and a generative UI result to its A2UI Renderer and Component Registry.
-外部 Runtime Host 可以通过 AG-UI 或其他协议传输该结果，但该映射不属于 Compiler MVP。
+Agent Runtime Host 可以通过 AG-UI 或其他协议传输该结果，但该映射不属于 Compiler MVP。
 
 ## 3. Contract Flow
 

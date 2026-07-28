@@ -14,7 +14,7 @@ v1.3 根据协议边界评审完成以下修订：
 - 将 `PresentationResult` 固定为 UI Compiler Service 的规范应用层输出；
 - 将 HTTP 固定为 UI Compiler Service 的主要网络接口；
 - 将 AG-UI Run 生命周期移出 UI Compiler Service；
-- 明确外部 Runtime Host 负责调用业务 Agent 和映射前端 Agent 协议；
+- 明确 Agent Runtime Host 负责调用业务 Agent 和映射前端 Agent 协议；
 - 保留 A2UI 作为当前 UI 输出协议，并继续通过 UI IR 隔离未来输出协议；
 - 明确可选 AG-UI 工具包不属于 Compiler MVP 的必需接口。
 
@@ -144,18 +144,19 @@ AG-UI 事件映射历史由 ADR-0010 记录，当前协议归属由 ADR-0013 固
 
 ```mermaid
 flowchart LR
-    Caller[业务 Agent / 测试客户端 / 外部 Runtime]
+    Caller[业务 Agent / 测试客户端]
     Service[UI Compiler Service]
     Model[外部模型供应商]
     Catalog[(可信 Component Catalog)]
-    Runtime[外部 Runtime Host]
-    Frontend[外部 Frontend Runtime]
+    Runtime[Agent Runtime Host]
+    Frontend[Frontend Runtime]
 
     Caller -->|HTTP PresentationRequest| Service
+    Runtime -->|HTTP PresentationRequest| Service
     Service -->|需要语义分析时| Model
     Service -->|Catalog ID + Version| Catalog
     Service -->|PresentationResult| Caller
-    Caller -.->|可选外部编排| Runtime
+    Service -->|PresentationResult| Runtime
     Runtime -->|AG-UI 或其他协议| Frontend
 ```
 
@@ -237,7 +238,7 @@ flowchart TB
 
 | 层 | 主要职责 | 禁止职责 |
 |---|---|---|
-| 协议适配层 | HTTP 请求响应、状态码和错误映射 | Agent Run 生命周期、展示决策、组件选择、业务逻辑 |
+| 协议适配层 | HTTP 请求响应、状态码和错误映射 | Business Agent Run 生命周期、展示决策、组件选择、业务逻辑 |
 | 应用编排层 | 请求生命周期、Catalog 获取、路由、模型注入、Core 调用、Markdown 降级整合 | 业务 Agent 编排、权威业务状态 |
 | 展示决策层 | Markdown / generative-ui 判断和候选计划生成 | 直接生成 A2UI、决定最终组件图 |
 | 确定性编译层 | Candidate 校验、组合规划、组件图选择、Props 解析、Action 绑定、UI IR 和 A2UI | 模型调用、网络访问、AG-UI Run 状态 |
@@ -444,7 +445,7 @@ interface RequestExecutionContext {
 该上下文请求结束后销毁，不作为业务会话状态。
 `catalogIdentity` 在 Catalog 校验完成后、调用 Router 前填入。
 `threadId` 和 `runId` 只用于调用方提供的请求关联和诊断。
-Service 不生成或管理外部 Agent Run 标识。
+Service 不生成或管理 Business Agent Run 标识。
 
 ### 7.3 HTTP 接口
 
@@ -501,19 +502,19 @@ GET /version
 | 未预期内部错误且无法降级 | 500 | failed |
 
 取消不引入新的 `PresentationResult.status`。
-若连接仍可写出，可以返回 `failed + REQUEST_CANCELLED`；若连接已经断开，只记录 Run 终止和诊断。
+若连接仍可写出，可以返回 `failed + REQUEST_CANCELLED`；若连接已经断开，只记录当前请求的终止和诊断。
 
 ### 7.5 外部 Agent 协议集成
 
 AG-UI、WebSocket、SSE 和其他 Agent 事件协议不属于 UI Compiler Service 的规范网络接口。
-外部 Runtime Host 通过 HTTP 调用 `POST /api/ui-compiler/present`，并把返回的 `PresentationResult` 映射为目标前端协议。
+Agent Runtime Host 通过 HTTP 调用 `POST /api/ui-compiler/present`，并把返回的 `PresentationResult` 映射为目标前端协议。
 
 ```text
 Frontend
     |
     | AG-UI or another Agent protocol
     v
-External Runtime Host
+Agent Runtime Host
     |
     | HTTP PresentationRequest
     v
@@ -521,11 +522,11 @@ UI Compiler Service
     |
     | HTTP PresentationResult
     v
-External Runtime Host
+Agent Runtime Host
 ```
 
-外部 Runtime Host 负责业务 Agent Run 的开始、步骤、终止、关联标识、取消和错误语义。
-UI Compiler Service 不要求业务 Agent 实现 AG-UI，也不把一次展示编译伪装成完整业务 Agent Run。
+Agent Runtime Host 负责 Business Agent Run 的开始、步骤、终止、关联标识、取消和错误语义。
+UI Compiler Service 不要求业务 Agent 实现 AG-UI，也不把一次展示编译伪装成完整 Business Agent Run。
 如果未来通过独立范围启用可选 AG-UI Adapter，该 Adapter 只能包装已经验证的 `PresentationResult`，不得承担业务 Agent 调用、路由或编排。
 
 ## 8. Presentation Router 设计
@@ -2095,7 +2096,7 @@ flowchart LR
 - Catalog 可以随镜像发布，也可以从授权配置存储加载；
 - 模型不可用时仍支持 Markdown 路径和降级；
 - Docker 镜像包含健康检查；
-- 优雅关闭时停止接收新请求并取消或完成当前 Run；
+- 优雅关闭时停止接收新请求并取消或完成当前请求；
 - 不在本期部署 Frontend Runtime 或 Interaction Gateway。
 
 ---
@@ -2160,7 +2161,7 @@ flowchart TD
 - AG-UI Adapter 是可选协议工具，不是 Service 的必需依赖；
 - AG-UI Adapter 只提供标准事件、通用 `CUSTOM` 事件和序列化能力；
 - AG-UI Adapter 不依赖 `presentation-contract`；
-- `PresentationResult` 到完整 Agent Run 的组装属于外部 Runtime Host；
+- `PresentationResult` 到完整 Business Agent Run 的组装属于 Agent Runtime Host；
 - 禁止反向依赖应用层；
 - Core 不依赖 AG-UI Adapter、HTTP 框架、模型 SDK或 Catalog Repository。
 
@@ -2224,7 +2225,7 @@ flowchart TD
 | Action 无法绑定 | degraded | Markdown |
 | 超深或超量数据 | rejected | failed，模型调用次数为 0 |
 | 请求取消且连接可写 | failed | `REQUEST_CANCELLED` |
-| 请求取消且连接断开 | terminated | 不生成非法 Result，Run 有终止诊断 |
+| 请求取消且连接断开 | terminated | 不生成非法 Result，请求有终止诊断 |
 | 未清理 Markdown 尝试绑定 Markdown 组件 | rejected | 原始内容不进入 Model、Core 或 A2UI |
 | 两个请求共享 Plan 但数据不同 | isolated | 不命中完整结果缓存，数据和 Surface ID 不串用 |
 | A2UI 完整输出 | completed | 所有消息使用 `version = "v0.9"` |
@@ -2398,7 +2399,7 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 | DD-026 | Catalog 在路由前加载，能力摘要与完整 Catalog 使用同一内容哈希 |
 | DD-027 | Surface ID 是请求级标识，不参与确定性组件规划或跨请求缓存 |
 | DD-028 | A2UI Props、Binding 和 Action 使用版本化 Profile 的精确映射 |
-| DD-029 | Service 只透传可选关联字段，不拥有外部 Agent Run 标识或生命周期 |
+| DD-029 | Service 只透传可选关联字段，不拥有 Business Agent Run 标识或生命周期 |
 
 ## 27. 编码前必须形成的契约与 ADR
 
@@ -2428,7 +2429,7 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 - 是否使用固定 UI 模板降级：MVP 否；
 - Catalog 是否由 Core 访问外部存储：否；
 - A2UI 输出基线：0.9.1 Profile，消息 `version = "v0.9"`；
-- AG-UI 是否属于 Compiler 规范输出：否，由外部 Runtime Host 或可选协议 Adapter 负责；
+- AG-UI 是否属于 Compiler 规范输出：否，由 Agent Runtime Host 或可选协议 Adapter 负责；
 - 是否缓存完整编译结果：MVP 否；
 - Markdown `sourceData` 是否保留未清理原文：否。
 
@@ -2439,7 +2440,7 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 - [ ] Core 不依赖 HTTP、AG-UI、模型 SDK、前端框架、Catalog Store 和业务 Agent。
 - [ ] Service 不承担业务推理、Agent 路由和业务工具调用。
 - [ ] Service 以 HTTP `PresentationRequest` 和 `PresentationResult` 作为主要网络边界。
-- [ ] Service 不拥有外部 Agent Run 生命周期。
+- [ ] Service 不拥有 Business Agent Run 生命周期。
 - [ ] Catalog 与 Registry 没有混为同一模块。
 - [ ] Interaction Gateway 没有进入 MVP 运行前置条件。
 

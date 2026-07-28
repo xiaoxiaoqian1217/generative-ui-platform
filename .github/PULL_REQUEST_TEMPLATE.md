@@ -1,23 +1,25 @@
-## Scope
+## 摘要
 
-<!-- What changed? -->
+<!-- 用 1-3 句话说明改了什么，以及关联的 Issue。示例：修复 Catalog 校验遗漏的必填字段。Fixes #45 -->
 
-## Rationale
+## 变更内容
 
-<!-- Why is this needed? Link the issue. -->
+<!-- 仅列出审阅者需要关注的主要文件、行为或接口变更。 -->
 
-## Architecture impact
+- 待补充
 
-- [ ] No dependency-boundary changes
-- [ ] Contract change includes tests and a changeset
-- [ ] ADR added or updated when required
+## 验证
 
-## Validation
+<!-- 填写实际执行过的命令或手动验证方式。未执行时说明原因。 -->
 
 - [ ] `pnpm validate`
-- [ ] Documentation updated
-- [ ] Security and fallback behavior reviewed
+- [ ] 其他：
 
-## Risks
+## 按需确认
 
-<!-- Compatibility, security, rollout, or migration risks. -->
+<!-- 仅勾选与本次变更有关的项目。无关时无需填写。 -->
+
+- [ ] 修改了公开契约，并已补充测试和 Changeset。
+- [ ] 修改了依赖边界或架构决策，并已更新 ADR 或说明原因。
+- [ ] 修改了用户可见行为或文档，并已同步更新文档。
+- [ ] 已评估兼容性、安全性、降级、迁移或发布风险：
