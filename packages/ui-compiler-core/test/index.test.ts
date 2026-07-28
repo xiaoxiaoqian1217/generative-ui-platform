@@ -2,7 +2,10 @@ import {
   validateA2UIOperationSequence,
   validateUICompileResult,
 } from "@generative-ui/compiler-contract";
-import type { ComponentCatalog } from "@generative-ui/component-catalog-schema";
+import {
+  type ComponentCatalog,
+  computeCatalogContentHash,
+} from "@generative-ui/component-catalog-schema";
 import { describe, expect, it } from "vitest";
 import { compileUI } from "../src/index.js";
 import { compileOptions, summaryCatalog, summaryRequest } from "./fixtures.js";
@@ -68,6 +71,48 @@ describe("UI Compiler Core summary tracer bullet", () => {
     });
     expect(result.metadata.completedStages).toContain("schema-validation");
     expect(result.metadata.completedStages).toContain("a2ui-validation");
+  });
+
+  it("compiles through a Catalog component with union-typed Props", () => {
+    const unionTypeCatalog = {
+      ...summaryCatalog,
+      components: [
+        {
+          ...summaryCatalog.components[0],
+          propsSchema: {
+            ...summaryCatalog.components[0].propsSchema,
+            properties: {
+              ...summaryCatalog.components[0].propsSchema.properties,
+              title: {
+                type: ["string", "number"],
+              },
+            },
+          },
+        },
+      ],
+    } as const satisfies ComponentCatalog;
+    const result = compileUI(summaryRequest, {
+      ...compileOptions,
+      catalog: unionTypeCatalog,
+      catalogContentHash: computeCatalogContentHash(unionTypeCatalog),
+    });
+
+    expect(result).toMatchObject({
+      success: true,
+      degraded: false,
+    });
+    if (!result.success || result.degraded) {
+      throw new Error("Expected a completed union Props compile result.");
+    }
+    expect(result.operations[1]).toMatchObject({
+      updateComponents: {
+        components: [
+          {
+            title: "Account summary",
+          },
+        ],
+      },
+    });
   });
 
   it("revalidates an untrusted UI Plan Candidate at the Core boundary", () => {

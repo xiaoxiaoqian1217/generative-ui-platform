@@ -26,6 +26,11 @@ const ajvOptions = {
   $data: false,
 } as const;
 
+const embeddedSchemaAjvOptions = {
+  ...ajvOptions,
+  allowUnionTypes: true,
+} as const;
+
 export type CatalogValidationCode =
   | "COMPONENT_CATALOG_INVALID"
   | "SCHEMA_COMPILATION_FAILED"
@@ -87,6 +92,10 @@ function createCatalogAjv(): Ajv {
   ajv.addSchema(componentDefinitionSchema);
   ajv.addSchema(actionDefinitionSchema);
   return ajv;
+}
+
+function compileEmbeddedSchema(schema: object): ValidateFunction {
+  return new Ajv(embeddedSchemaAjvOptions).compile(schema);
 }
 
 const componentCatalogValidator = createCatalogAjv().compile(
@@ -256,7 +265,7 @@ function validateEmbeddedSchema(
   }
 
   try {
-    new Ajv(ajvOptions).compile(location.value as object);
+    compileEmbeddedSchema(location.value as object);
   } catch {
     return failure(
       "SCHEMA_COMPILATION_FAILED",
@@ -440,7 +449,7 @@ function validateCatalogBoundValue(
       : definition.payloadSchema;
   let validator: ValidateFunction;
   try {
-    validator = new Ajv(ajvOptions).compile(schema);
+    validator = compileEmbeddedSchema(schema);
   } catch {
     return failure(
       "SCHEMA_COMPILATION_FAILED",

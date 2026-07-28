@@ -90,6 +90,43 @@ const catalog = {
   ],
 } as const satisfies ComponentCatalog;
 
+const unionTypeCatalog = {
+  ...catalog,
+  components: [
+    {
+      ...catalog.components[0],
+      propsSchema: {
+        $schema: objectSchemaDialect,
+        type: "object",
+        properties: {
+          title: {
+            type: ["string", "number"],
+          },
+        },
+        required: ["title"],
+        additionalProperties: false,
+      },
+    },
+    catalog.components[1],
+  ],
+  actions: [
+    {
+      ...catalog.actions[0],
+      payloadSchema: {
+        $schema: objectSchemaDialect,
+        type: "object",
+        properties: {
+          accountId: {
+            type: ["string", "number"],
+          },
+        },
+        required: ["accountId"],
+        additionalProperties: false,
+      },
+    },
+  ],
+} as const satisfies ComponentCatalog;
+
 describe("Component Catalog", () => {
   it("computes the normative RFC 8785 SHA-256 content hash", () => {
     const hashCatalog = {
@@ -139,6 +176,15 @@ describe("Component Catalog", () => {
     ).toEqual({
       success: true,
       value: catalog,
+    });
+  });
+
+  it("accepts supported Draft 7 union types", () => {
+    expect(
+      validateComponentCatalog(unionTypeCatalog, defaultCatalogSchemaLimits),
+    ).toEqual({
+      success: true,
+      value: unionTypeCatalog,
     });
   });
 
@@ -216,6 +262,36 @@ describe("Component Catalog", () => {
     });
   });
 
+  it("rejects invalid union types with a stable definition error", () => {
+    const result = validateComponentCatalog(
+      {
+        ...catalog,
+        components: [
+          {
+            ...catalog.components[0],
+            propsSchema: {
+              $schema: objectSchemaDialect,
+              type: "object",
+              properties: {
+                title: {
+                  type: ["string", "unsupported"],
+                },
+              },
+            },
+          },
+        ],
+      },
+      defaultCatalogSchemaLimits,
+    );
+
+    expect(result).toMatchObject({
+      success: false,
+      error: {
+        code: "SCHEMA_DEFINITION_INVALID",
+      },
+    });
+  });
+
   it("enforces injected embedded Schema resource limits before compilation", () => {
     expect(
       validateComponentCatalog(catalog, {
@@ -258,6 +334,51 @@ describe("Component Catalog", () => {
 });
 
 describe("Catalog-owned Props and Action payload Schemas", () => {
+  it.each([
+    ["string", "summary"],
+    ["number", 14],
+  ] as const)("validates component Props with union member %s", (_, title) => {
+    expect(
+      validateComponentProps(
+        unionTypeCatalog,
+        "Card",
+        {
+          title,
+        },
+        defaultCatalogSchemaLimits,
+      ),
+    ).toEqual({
+      success: true,
+      value: {
+        title,
+      },
+    });
+  });
+
+  it.each([
+    ["string", "account-14"],
+    ["number", 14],
+  ] as const)(
+    "validates Action payloads with union member %s",
+    (_, accountId) => {
+      expect(
+        validateActionPayload(
+          unionTypeCatalog,
+          "refresh-account",
+          {
+            accountId,
+          },
+          defaultCatalogSchemaLimits,
+        ),
+      ).toEqual({
+        success: true,
+        value: {
+          accountId,
+        },
+      });
+    },
+  );
+
   it("validates component Props through the declared runtime Schema", () => {
     expect(
       validateComponentProps(

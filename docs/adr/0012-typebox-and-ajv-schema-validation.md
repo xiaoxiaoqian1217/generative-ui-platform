@@ -142,6 +142,8 @@ MVP 不接受其他 dialect，也不根据缺失的 `$schema` 猜测 dialect。
 - 对象约束: `minProperties` 和 `maxProperties`。
 - 注解关键字: `title`、`description`、`default` 和 `examples`。
 
+`type` 可以是单个类型名称，也可以是非空且元素唯一的类型名称数组。
+联合 `type` 可以包含多个非 `null` 类型。
 `default` 只作为注解，validator 不得把它写入数据。
 MVP 禁止 `$ref`、`$defs`、`definitions`、`$dynamicRef`、远程引用、`format`、`pattern`、`patternProperties`、条件关键字、内容关键字和自定义关键字。
 禁止引用和正则相关关键字可避免网络解析、递归图和 ReDoS 风险，并保持阶段二替换成本可控。
@@ -195,6 +197,8 @@ Catalog Schema 的大小、深度和允许关键字必须在编译前受限，�
 }
 ```
 
+编译 Catalog 内嵌 Props Schema 和 Action Schema 的 Ajv 实例必须额外设置 `allowUnionTypes: true`，使联合 `type` 与公开 Catalog Profile 一致。
+该选项不得替代 `strict: true`，也不得放宽关键字白名单、dialect 或资源限制。
 `strict: true` 防止未知关键字和被静默忽略的 Schema 错误。
 `allErrors: false` 使用 fail-fast 行为，避免不可信输入造成不必要的错误枚举成本。
 `coerceTypes: false`、`removeAdditional: false` 和 `useDefaults: false` 保证校验不修改输入。
