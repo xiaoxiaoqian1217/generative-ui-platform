@@ -5,6 +5,9 @@ on:
 permissions:
   contents: write
   pull-requests: write
+concurrency:
+  group: changesets-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   version:
     runs-on: ubuntu-latest
@@ -15,11 +18,12 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: corepack enable && corepack prepare pnpm@10.13.1 --activate
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - uses: changesets/action@v1
         with:
           version: pnpm version-packages
           commit: "chore: version packages"
           title: "chore: version packages"
+          commitMode: github-api
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
