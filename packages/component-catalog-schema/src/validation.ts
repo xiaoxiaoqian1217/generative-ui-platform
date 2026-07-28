@@ -146,31 +146,36 @@ function collectEmbeddedSchemas(input: unknown): EmbeddedSchemaLocation[] {
   return locations;
 }
 
-function measureSchema(value: unknown): {
-  bytes: number;
-  depth: number;
-  nodes: number;
-} | null {
-  let serialized: string;
-  try {
-    serialized = JSON.stringify(value);
-  } catch {
-    return null;
-  }
+type SchemaMeasurement =
+  | {
+      success: true;
+    }
+  | {
+      success: false;
+      reason:
+        | "invalid"
+        | "schema-byte-limit"
+        | "schema-depth-limit"
+        | "schema-node-limit";
+    };
 
-  if (serialized === undefined) {
-    return null;
-  }
-
-  let maxDepth = 0;
+function measureSchema(
+  value: unknown,
+  limits: CatalogSchemaLimits,
+): SchemaMeasurement {
   let nodes = 0;
-  const stack: Array<{ depth: number; value: unknown }> = [
+  const stack: Array<{
+    depth: number;
+    exiting: boolean;
+    value: unknown;
+  }> = [
     {
       depth: 1,
+      exiting: false,
       value,
     },
   ];
-  const seen = new WeakSet<object>();
+  const ancestors = new WeakSet<object>();
 
   while (stack.length > 0) {
     const current = stack.pop();
@@ -178,32 +183,105 @@ function measureSchema(value: unknown): {
       break;
     }
 
-    nodes += 1;
-    maxDepth = Math.max(maxDepth, current.depth);
-
-    if (typeof current.value !== "object" || current.value === null) {
+    if (current.exiting) {
+      ancestors.delete(current.value as object);
       continue;
     }
-    if (seen.has(current.value)) {
-      return null;
-    }
-    seen.add(current.value);
 
-    const children = Array.isArray(current.value)
-      ? current.value
-      : Object.values(current.value);
-    for (const child of children) {
+    if (current.depth > limits.maxEmbeddedSchemaDepth) {
+      return {
+        success: false,
+        reason: "schema-depth-limit",
+      };
+    }
+
+    nodes += 1;
+    if (nodes > limits.maxEmbeddedSchemaNodes) {
+      return {
+        success: false,
+        reason: "schema-node-limit",
+      };
+    }
+
+    if (current.value === null) {
+      continue;
+    }
+
+    const valueType = typeof current.value;
+    if (
+      valueType === "string" ||
+      valueType === "boolean" ||
+      (valueType === "number" && Number.isFinite(current.value))
+    ) {
+      continue;
+    }
+    if (valueType !== "object") {
+      return {
+        success: false,
+        reason: "invalid",
+      };
+    }
+
+    if (ancestors.has(current.value as object)) {
+      return {
+        success: false,
+        reason: "invalid",
+      };
+    }
+    ancestors.add(current.value as object);
+    stack.push({
+      depth: current.depth,
+      exiting: true,
+      value: current.value,
+    });
+
+    let children: unknown[];
+    try {
+      children = Array.isArray(current.value)
+        ? current.value
+        : Object.values(current.value as object);
+    } catch {
+      return {
+        success: false,
+        reason: "invalid",
+      };
+    }
+
+    for (let index = children.length - 1; index >= 0; index -= 1) {
       stack.push({
         depth: current.depth + 1,
-        value: child,
+        exiting: false,
+        value: children[index],
       });
     }
   }
 
+  let serialized: string | undefined;
+  try {
+    serialized = JSON.stringify(value);
+  } catch {
+    return {
+      success: false,
+      reason: "invalid",
+    };
+  }
+  if (serialized === undefined) {
+    return {
+      success: false,
+      reason: "invalid",
+    };
+  }
+
+  const bytes = new TextEncoder().encode(serialized).byteLength;
+  if (bytes > limits.maxEmbeddedSchemaBytes) {
+    return {
+      success: false,
+      reason: "schema-byte-limit",
+    };
+  }
+
   return {
-    bytes: new TextEncoder().encode(serialized).byteLength,
-    depth: maxDepth,
-    nodes,
+    success: true,
   };
 }
 
@@ -211,37 +289,30 @@ function validateEmbeddedSchema(
   location: EmbeddedSchemaLocation,
   limits: CatalogSchemaLimits,
 ): ValidationResult<CatalogObjectValueSchema, CatalogValidationCode> {
-  const measurement = measureSchema(location.value);
-  if (!measurement) {
-    return failure(
-      "SCHEMA_DEFINITION_INVALID",
-      location.path,
-      "json-value",
-      "Catalog embedded Schema must be a finite JSON value.",
-    );
-  }
-  if (measurement.bytes > limits.maxEmbeddedSchemaBytes) {
-    return failure(
-      "SCHEMA_LIMIT_EXCEEDED",
-      location.path,
-      "schema-byte-limit",
-      "Catalog embedded Schema exceeds its configured byte limit.",
-    );
-  }
-  if (measurement.depth > limits.maxEmbeddedSchemaDepth) {
-    return failure(
-      "SCHEMA_LIMIT_EXCEEDED",
-      location.path,
-      "schema-depth-limit",
-      "Catalog embedded Schema exceeds its configured depth limit.",
-    );
-  }
-  if (measurement.nodes > limits.maxEmbeddedSchemaNodes) {
+  const measurement = measureSchema(location.value, limits);
+  if (!measurement.success) {
+    if (measurement.reason === "invalid") {
+      return failure(
+        "SCHEMA_DEFINITION_INVALID",
+        location.path,
+        "json-value",
+        "Catalog embedded Schema must be a finite JSON value.",
+      );
+    }
+
+    const limitMessages = {
+      "schema-byte-limit":
+        "Catalog embedded Schema exceeds its configured byte limit.",
+      "schema-depth-limit":
+        "Catalog embedded Schema exceeds its configured depth limit.",
+      "schema-node-limit":
+        "Catalog embedded Schema exceeds its configured node limit.",
+    } as const;
     return failure(
       "SCHEMA_LIMIT_EXCEEDED",
       location.path,
-      "schema-node-limit",
-      "Catalog embedded Schema exceeds its configured node limit.",
+      measurement.reason,
+      limitMessages[measurement.reason],
     );
   }
 
