@@ -536,7 +536,7 @@ Core 内部至少分离输入校验、Catalog 校验、组件选择、UI IR、A2
 |---|---|
 | `ui-compiler-service` | Core、全部 Compiler 共享契约、具体 Model Adapter |
 | `ui-compiler-core` | Presentation Contract、Compiler Contract、Catalog Schema、Shared Types |
-| `ag-ui-adapter` | Compiler Contract、Shared Types |
+| `ag-ui-adapter` | Compiler Contract、Presentation Contract、Shared Types |
 
 ### 8.2 禁止的依赖
 
