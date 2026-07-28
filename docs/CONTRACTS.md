@@ -296,11 +296,12 @@ The target package ownership is:
 ## Implementation Status
 
 `presentation-contract` 现已实现第一组可执行的 `AgentContent`、`PresentationRequest`、`PresentationDecision`、`PresentationResult`、`UIPlan` 和 `ActionIntent` 契约。
-`component-catalog-schema` 现已实现第一组可执行的 Catalog、component、Props、Action 和 nesting 契约。
+`component-catalog-schema` 现已实现第一组可执行的 Catalog、component、Props、Action 和 nesting 契约，以及共享的 RFC 8785 Catalog 内容哈希。
 `shared-types` 统一拥有两个包共用的公共 `JsonValue` 和校验结果定义。
 `presentation-contract` 只把 `PresentationResult.operations` 校验为非空的可序列化对象数组，不在该包复制 A2UI Profile。
 `compiler-contract` 现已实现可执行的编译请求、UI IR、三态编译结果、稳定错误和 A2UI 0.9.1 Profile 契约。
-UI Compiler Core、Service 和协议 Adapter 契约仍是后续限定范围实现任务的目标设计。
+UI Compiler Core 现已实现 summary 场景的最小确定性编译链路，包括输入和 Catalog 校验、UI IR lowering、A2UI 0.9.1 Profile 编译和 Markdown 降级。
+其他展示场景、Service 和协议 Adapter 仍是后续限定范围实现任务的目标设计。
 每个新增可执行契约都必须包含 Schema 测试、changeset 和必要的版本决策。
 
 ## Rules

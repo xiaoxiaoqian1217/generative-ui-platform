@@ -161,6 +161,19 @@ importers:
         version: 3.2.4(@types/debug@4.1.13)(@types/node@24.0.15)(jiti@2.6.1)(tsx@4.20.3)(yaml@2.9.0)
 
   packages/ui-compiler-core:
+    dependencies:
+      '@generative-ui/compiler-contract':
+        specifier: workspace:*
+        version: link:../compiler-contract
+      '@generative-ui/component-catalog-schema':
+        specifier: workspace:*
+        version: link:../component-catalog-schema
+      '@generative-ui/presentation-contract':
+        specifier: workspace:*
+        version: link:../presentation-contract
+      '@generative-ui/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
     devDependencies:
       tsup:
         specifier: 8.5.0

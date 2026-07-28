@@ -75,6 +75,7 @@ try {
     "presentation-contract",
     "component-catalog-schema",
     "compiler-contract",
+    "ui-compiler-core",
   ].map((packageName) => join(repositoryRoot, "packages", packageName));
 
   const tarballs = packageDirectories.map((packageDirectory) =>
@@ -104,6 +105,8 @@ try {
   const dependencyOverrides = {
     "@generative-ui/shared-types": asFileDependency(tarballs[0]),
     "@generative-ui/presentation-contract": asFileDependency(tarballs[1]),
+    "@generative-ui/component-catalog-schema": asFileDependency(tarballs[2]),
+    "@generative-ui/compiler-contract": asFileDependency(tarballs[3]),
     ...Object.fromEntries(
       Object.entries(externalDependencyTarballs).map(
         ([packageName, tarball]) => [packageName, asFileDependency(tarball)],
@@ -125,6 +128,7 @@ try {
           "@generative-ui/compiler-contract": asFileDependency(tarballs[3]),
           "@generative-ui/presentation-contract": asFileDependency(tarballs[1]),
           "@generative-ui/shared-types": asFileDependency(tarballs[0]),
+          "@generative-ui/ui-compiler-core": asFileDependency(tarballs[4]),
         },
       },
       null,
@@ -156,6 +160,7 @@ import {
   validateUIPlan,
 } from "@generative-ui/presentation-contract";
 import {
+  computeCatalogContentHash,
   defaultCatalogSchemaLimits,
   validateComponentCatalog,
 } from "@generative-ui/component-catalog-schema";
@@ -163,6 +168,7 @@ import {
   validateCatalogContentHash,
   validateUICompileRequest,
 } from "@generative-ui/compiler-contract";
+import { compileUI } from "@generative-ui/ui-compiler-core";
 
 const catalog = {
   schemaVersion: "1.0",
@@ -170,7 +176,7 @@ const catalog = {
   catalogVersion: "1.0.0",
   components: [
     {
-      componentType: "Summary",
+      componentType: "Card",
       displayName: "Summary",
       description: "Displays summary data.",
       category: "common",
@@ -178,6 +184,16 @@ const catalog = {
       propsSchema: {
         $schema: "http://json-schema.org/draft-07/schema#",
         type: "object",
+        properties: {
+          title: {
+            type: "string",
+            minLength: 1,
+          },
+          content: {
+            type: "number",
+          },
+        },
+        required: ["title", "content"],
         additionalProperties: false,
       },
       allowedActions: [],
@@ -199,7 +215,7 @@ const plan = {
       bindings: [{ sourcePointer: "/total", role: "content" }],
       componentPreferences: [
         {
-          componentType: "Summary",
+          componentType: "Card",
           reason: "Display one summary region.",
         },
       ],
@@ -257,6 +273,18 @@ assert.equal(
   true,
   "Catalog content hash validation",
 );
+const compileResult = compileUI(compileRequest, {
+  surfaceId: "surface-1",
+  catalog,
+  catalogContentHash: computeCatalogContentHash(catalog),
+  limits: {
+    maxDataDepth: 16,
+    maxDataItems: 256,
+    catalogSchema: defaultCatalogSchemaLimits,
+  },
+});
+assert.equal(compileResult.success, true, "Core compile result");
+assert.equal(compileResult.degraded, false, "Core compile degradation");
 `,
     "utf8",
   );
@@ -273,6 +301,7 @@ import type {
   UICompileRequest,
   UICompileResult,
 } from "@generative-ui/compiler-contract";
+import type { CompileOptions } from "@generative-ui/ui-compiler-core";
 
 const value: JsonValue = { total: 42 };
 const result: PresentationResult = {
@@ -286,6 +315,7 @@ declare const plan: UIPlan;
 declare const catalog: ComponentCatalog;
 declare const compileRequest: UICompileRequest;
 declare const compileResult: UICompileResult;
+declare const compileOptions: CompileOptions;
 
 void value;
 void result;
@@ -293,6 +323,7 @@ void plan;
 void catalog;
 void compileRequest;
 void compileResult;
+void compileOptions;
 `,
     "utf8",
   );
@@ -338,6 +369,7 @@ void compileResult;
     "@generative-ui/presentation-contract",
     "@generative-ui/component-catalog-schema",
     "@generative-ui/compiler-contract",
+    "@generative-ui/ui-compiler-core",
   ];
   for (const packageName of packageNames) {
     const packageJson = readFileSync(

@@ -3,6 +3,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   type ComponentCatalog,
   componentCatalogSchema,
+  computeCatalogContentHash,
   defaultCatalogSchemaLimits,
   validateActionPayload,
   validateComponentCatalog,
@@ -90,6 +91,48 @@ const catalog = {
 } as const satisfies ComponentCatalog;
 
 describe("Component Catalog", () => {
+  it("computes the normative RFC 8785 SHA-256 content hash", () => {
+    const hashCatalog = {
+      schemaVersion: "1.0",
+      catalogId: "hash-test",
+      catalogVersion: "1.0.0",
+      components: [
+        {
+          componentType: "Text",
+          displayName: "Text",
+          description: "Displays text.",
+          category: "common",
+          domainTags: [],
+          propsSchema: {
+            $schema: objectSchemaDialect,
+            type: "object",
+            additionalProperties: false,
+          },
+          allowedActions: [],
+          nesting: {
+            canHaveChildren: false,
+          },
+        },
+      ],
+      actions: [],
+    } as const satisfies ComponentCatalog;
+
+    expect(computeCatalogContentHash(hashCatalog)).toBe(
+      "sha256:adbfcc4ccc0e22f7e25c9d1a49b73241a5e13d8ace2c597510c3cc7d593e5fd6",
+    );
+    expect(
+      computeCatalogContentHash({
+        actions: hashCatalog.actions,
+        components: hashCatalog.components,
+        catalogVersion: hashCatalog.catalogVersion,
+        catalogId: hashCatalog.catalogId,
+        schemaVersion: hashCatalog.schemaVersion,
+      }),
+    ).toBe(
+      "sha256:adbfcc4ccc0e22f7e25c9d1a49b73241a5e13d8ace2c597510c3cc7d593e5fd6",
+    );
+  });
+
   it("accepts components, Props, Actions, nesting, domain tags, and versions", () => {
     expect(
       validateComponentCatalog(catalog, defaultCatalogSchemaLimits),
