@@ -16,6 +16,13 @@ function compileComponent(
     ...component.props,
   };
 
+  if (component.children.length > 0) {
+    output.children = component.children;
+  }
+  for (const [slot, references] of Object.entries(component.slots ?? {})) {
+    output[slot] = references;
+  }
+
   for (const binding of component.bindings ?? []) {
     const prefix =
       binding.source === "sourceData" ? "/sourceData" : "/derivedData";
