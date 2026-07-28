@@ -12,6 +12,21 @@ import {
 
 const objectSchemaDialect = "http://json-schema.org/draft-07/schema#" as const;
 
+function createNestedSchema(nestingLevels: number): Record<string, unknown> {
+  let nestedSchema: unknown = true;
+  for (let index = 0; index < nestingLevels; index += 1) {
+    nestedSchema = {
+      not: nestedSchema,
+    };
+  }
+
+  return {
+    $schema: objectSchemaDialect,
+    type: "object",
+    not: nestedSchema,
+  };
+}
+
 const catalog = {
   schemaVersion: "1.0",
   catalogId: "default",
@@ -303,6 +318,147 @@ describe("Component Catalog", () => {
       error: {
         code: "SCHEMA_LIMIT_EXCEEDED",
         constraint: "schema-node-limit",
+      },
+    });
+  });
+
+  it("accepts embedded Schema resource limits at their exact boundaries", () => {
+    const boundarySchema = createNestedSchema(3);
+    const boundaryCatalog = {
+      ...catalog,
+      components: [
+        {
+          ...catalog.components[0],
+          propsSchema: boundarySchema,
+          nesting: {
+            canHaveChildren: false,
+          },
+        },
+      ],
+      actions: [],
+    };
+    const serializedBytes = new TextEncoder().encode(
+      JSON.stringify(boundarySchema),
+    ).byteLength;
+
+    const result = validateComponentCatalog(boundaryCatalog, {
+      ...defaultCatalogSchemaLimits,
+      maxEmbeddedSchemaBytes: serializedBytes,
+      maxEmbeddedSchemaDepth: 5,
+      maxEmbeddedSchemaNodes: 7,
+    });
+    expect(result).toMatchObject({
+      success: true,
+    });
+  });
+
+  it.each([
+    {
+      constraint: "schema-byte-limit",
+      limits: {
+        ...defaultCatalogSchemaLimits,
+        maxEmbeddedSchemaBytes:
+          new TextEncoder().encode(JSON.stringify(createNestedSchema(3)))
+            .byteLength - 1,
+        maxEmbeddedSchemaDepth: 5,
+        maxEmbeddedSchemaNodes: 7,
+      },
+      schema: createNestedSchema(3),
+    },
+    {
+      constraint: "schema-depth-limit",
+      limits: {
+        ...defaultCatalogSchemaLimits,
+        maxEmbeddedSchemaBytes: 1_000,
+        maxEmbeddedSchemaDepth: 4,
+        maxEmbeddedSchemaNodes: 7,
+      },
+      schema: createNestedSchema(3),
+    },
+    {
+      constraint: "schema-node-limit",
+      limits: {
+        ...defaultCatalogSchemaLimits,
+        maxEmbeddedSchemaBytes: 1_000,
+        maxEmbeddedSchemaDepth: 5,
+        maxEmbeddedSchemaNodes: 6,
+      },
+      schema: createNestedSchema(3),
+    },
+  ])(
+    "reports $constraint when an embedded Schema exceeds its limit by one",
+    ({ constraint, limits, schema }) => {
+      expect(
+        validateComponentCatalog(
+          {
+            ...catalog,
+            components: [
+              {
+                ...catalog.components[0],
+                propsSchema: schema,
+              },
+            ],
+          },
+          limits,
+        ),
+      ).toMatchObject({
+        success: false,
+        error: {
+          code: "SCHEMA_LIMIT_EXCEEDED",
+          constraint,
+        },
+      });
+    },
+  );
+
+  it("classifies an extremely deep finite Schema before serialization overflows", () => {
+    expect(
+      validateComponentCatalog(
+        {
+          ...catalog,
+          components: [
+            {
+              ...catalog.components[0],
+              propsSchema: createNestedSchema(20_000),
+            },
+          ],
+        },
+        defaultCatalogSchemaLimits,
+      ),
+    ).toMatchObject({
+      success: false,
+      error: {
+        code: "SCHEMA_LIMIT_EXCEEDED",
+        constraint: "schema-depth-limit",
+      },
+    });
+  });
+
+  it("classifies cyclic embedded Schemas as invalid definitions", () => {
+    const cyclicSchema: Record<string, unknown> = {
+      $schema: objectSchemaDialect,
+      type: "object",
+    };
+    cyclicSchema.not = cyclicSchema;
+
+    expect(
+      validateComponentCatalog(
+        {
+          ...catalog,
+          components: [
+            {
+              ...catalog.components[0],
+              propsSchema: cyclicSchema,
+            },
+          ],
+        },
+        defaultCatalogSchemaLimits,
+      ),
+    ).toMatchObject({
+      success: false,
+      error: {
+        code: "SCHEMA_DEFINITION_INVALID",
+        constraint: "json-value",
       },
     });
   });
