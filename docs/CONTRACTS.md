@@ -272,14 +272,17 @@ The frontend sends `mode = "markdown"` to its Markdown Renderer.
 The frontend sends `mode = "generative-ui"` to its A2UI Renderer and Component Registry.
 
 Model, routing, planning, or compilation failure should normally produce a degraded Markdown result when valid source content is available.
-AG-UI carries completed or degraded results in `CUSTOM(name = "generative-ui.presentation-result")` with `{ mappingVersion: "1.0", result }`.
-Failures without consumable content use `CUSTOM(name = "generative-ui.presentation-error")` with `{ mappingVersion: "1.0", errors }` before `RUN_ERROR`.
+`PresentationResult` 是 UI Compiler Service 的规范应用层输出，不依赖 AG-UI 或 CopilotKit。
+如果外部 Runtime Host 选择 AG-UI，它可以把 completed 或 degraded 结果映射到 `CUSTOM(name = "generative-ui.presentation-result")`，并使用 `{ mappingVersion: "1.0", result }`。
+没有可消费内容的失败可以映射到 `CUSTOM(name = "generative-ui.presentation-error")`，并在 `RUN_ERROR` 前携带 `{ mappingVersion: "1.0", errors }`。
+该可选映射不属于当前 Compiler MVP 的必需接口。
 
 ## State and Correlation
 
 `threadId` and `runId` are optional protocol correlation fields.
 Core may pass through correlation values but must not use them to maintain conversation state or AG-UI Run lifecycle.
-The AG-UI Adapter must generate non-empty request-level values when either field is missing and must reuse them for the complete event stream.
+UI Compiler Service 只把这些字段用于当前请求的关联和诊断，不拥有外部 Agent Run。
+如果外部 Runtime Host 需要非空标识符，由该 Runtime Host 按其协议要求生成并复用。
 The serialized request byte limit is enforced by the application Adapter before deserialization.
 The Service or another trusted Core Adapter generates a unique request-level Surface ID.
 Surface IDs and complete compile results must not be reused through cross-request caches.
@@ -291,7 +294,7 @@ The target package ownership is:
 - `presentation-contract` owns `AgentContent`, `PresentationRequest`, `PresentationDecision`, `PresentationResult`, `UIPlan`, and `ActionIntent`.
 - `compiler-contract` owns `UICompileRequest`, `UICompileResult`, UI IR, compile diagnostics, compile stages, and the A2UI 0.9.1 Profile Schema and mapping contract.
 - `component-catalog-schema` owns Catalog, component, Props, Action, and structure Schemas, plus the shared `computeCatalogContentHash` implementation.
-- `ag-ui-adapter` owns protocol event mapping and does not own routing or compilation logic.
+- `ag-ui-adapter` 如果通过单独范围启用，只拥有可选协议事件工具，不拥有展示路由、业务 Agent Run 或编译逻辑。
 
 ## Implementation Status
 
@@ -301,7 +304,8 @@ The target package ownership is:
 `presentation-contract` 只把 `PresentationResult.operations` 校验为非空的可序列化对象数组，不在该包复制 A2UI Profile。
 `compiler-contract` 现已实现可执行的编译请求、UI IR、三态编译结果、稳定错误和 A2UI 0.9.1 Profile 契约。
 UI Compiler Core 现已实现 summary 场景的最小确定性编译链路，包括输入和 Catalog 校验、UI IR lowering、A2UI 0.9.1 Profile 编译和 Markdown 降级。
-其他展示场景、Service 和协议 Adapter 仍是后续限定范围实现任务的目标设计。
+其他展示场景和 Service 仍是后续限定范围实现任务的目标设计。
+协议 Adapter 需要单独范围，不是 Compiler Service 的必需接口。
 每个新增可执行契约都必须包含 Schema 测试、changeset 和必要的版本决策。
 
 ## Rules

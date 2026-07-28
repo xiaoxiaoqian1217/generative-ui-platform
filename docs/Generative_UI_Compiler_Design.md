@@ -1,13 +1,22 @@
 # Generative UI Compiler MVP 系统设计说明书
 
-- **文档版本：** 1.2
+- **文档版本：** 1.3
 - **设计阶段：** MVP 系统设计（评审修订版）
-- **需求基线：** `docs/REQUIREMENTS.md` v1.4
+- **需求基线：** `docs/REQUIREMENTS.md` v1.5
 - **适用范围：** Generative UI Compiler MVP
 - **不适用范围：** Interaction Gateway、业务 Agent、Frontend Runtime、真实前端组件
 - **规范状态：** 设计输入，尚未取代 `docs/REQUIREMENTS.md`
 
 ## 版本修订
+
+v1.3 根据协议边界评审完成以下修订：
+
+- 将 `PresentationResult` 固定为 UI Compiler Service 的规范应用层输出；
+- 将 HTTP 固定为 UI Compiler Service 的主要网络接口；
+- 将 AG-UI Run 生命周期移出 UI Compiler Service；
+- 明确外部 Runtime Host 负责调用业务 Agent 和映射前端 Agent 协议；
+- 保留 A2UI 作为当前 UI 输出协议，并继续通过 UI IR 隔离未来输出协议；
+- 明确可选 AG-UI 工具包不属于 Compiler MVP 的必需接口。
 
 v1.2 根据第二轮设计评审完成以下修订：
 
@@ -34,7 +43,8 @@ v1.1 根据设计评审补齐：
 - 内部错误阶段到公共错误阶段映射；
 - 删除与公共结果契约冲突的固定 UI 模板降级。
 
-固定 UI 模板降级、A2UI Profile、编译输入数据所有权、AG-UI 映射和编译模板缓存分别由对应 ADR 固化。
+固定 UI 模板降级、A2UI Profile、编译输入数据所有权和编译模板缓存分别由对应 ADR 固化。
+AG-UI 事件映射历史由 ADR-0010 记录，当前协议归属由 ADR-0013 固化。
 
 ---
 
@@ -70,7 +80,6 @@ v1.1 根据设计评审补齐：
 - UI IR；
 - A2UI Compiler；
 - HTTP Adapter；
-- AG-UI Adapter；
 - 错误、降级、超时、取消和可观测性能力。
 
 ### 2.2 外部系统
@@ -139,12 +148,15 @@ flowchart LR
     Service[UI Compiler Service]
     Model[外部模型供应商]
     Catalog[(可信 Component Catalog)]
+    Runtime[外部 Runtime Host]
     Frontend[外部 Frontend Runtime]
 
-    Caller -->|HTTP / AG-UI\nMarkdown 或 JSON| Service
+    Caller -->|HTTP PresentationRequest| Service
     Service -->|需要语义分析时| Model
     Service -->|Catalog ID + Version| Catalog
-    Service -->|Markdown Result 或 A2UI Result| Frontend
+    Service -->|PresentationResult| Caller
+    Caller -.->|可选外部编排| Runtime
+    Runtime -->|AG-UI 或其他协议| Frontend
 ```
 
 ### 4.1 系统责任边界
@@ -166,7 +178,6 @@ flowchart LR
 flowchart TB
     subgraph Service[UI Compiler Service]
         HTTP[HTTP Adapter]
-        AGUI[AG-UI Adapter]
         Orchestrator[Presentation Use Case]
         RequestValidator[Request Validator]
         MarkdownSanitizer[Markdown Sanitizer]
@@ -196,7 +207,6 @@ flowchart TB
     end
 
     HTTP --> Orchestrator
-    AGUI --> Orchestrator
     Orchestrator --> RequestValidator
     RequestValidator --> DataValidator
     RequestValidator --> MarkdownSanitizer
@@ -227,7 +237,7 @@ flowchart TB
 
 | 层 | 主要职责 | 禁止职责 |
 |---|---|---|
-| 协议适配层 | HTTP、SSE、AG-UI 生命周期、状态码和事件映射 | 展示决策、组件选择、业务逻辑 |
+| 协议适配层 | HTTP 请求响应、状态码和错误映射 | Agent Run 生命周期、展示决策、组件选择、业务逻辑 |
 | 应用编排层 | 请求生命周期、Catalog 获取、路由、模型注入、Core 调用、Markdown 降级整合 | 业务 Agent 编排、权威业务状态 |
 | 展示决策层 | Markdown / generative-ui 判断和候选计划生成 | 直接生成 A2UI、决定最终组件图 |
 | 确定性编译层 | Candidate 校验、组合规划、组件图选择、Props 解析、Action 绑定、UI IR 和 A2UI | 模型调用、网络访问、AG-UI Run 状态 |
@@ -396,7 +406,7 @@ UI Compiler Service 是应用组合根，负责：
 - 调用 Presentation Router；
 - 注入具体 Model Adapter；
 - 在 generative-ui 分支将 Candidate、规范化数据和 Catalog 一并传给 Core；
-- 映射 HTTP 响应或 AG-UI 事件；
+- 映射 `PresentationResult` HTTP 响应；
 - 处理取消、超时、日志、指标和错误；
 - 对外提供存活、就绪和版本信息。
 
@@ -418,8 +428,8 @@ interface PresentUseCase {
 ```ts
 interface RequestExecutionContext {
   requestId: string;
-  threadId: string;
-  runId: string;
+  threadId?: string;
+  runId?: string;
   catalogIdentity?: {
     catalogId: string;
     catalogVersion: string;
@@ -427,15 +437,14 @@ interface RequestExecutionContext {
   };
   startedAt: number;
   signal: AbortSignal;
-  transport: "http" | "ag-ui";
   traceContext?: TraceContext;
 }
 ```
 
 该上下文请求结束后销毁，不作为业务会话状态。
 `catalogIdentity` 在 Catalog 校验完成后、调用 Router 前填入。
-协议 Adapter 必须把可选的请求关联字段规范化为非空请求级 `threadId` 和 `runId`。
-HTTP 不必把生成值写回 `PresentationResult`，AG-UI 必须在完整事件流中使用这些值。
+`threadId` 和 `runId` 只用于调用方提供的请求关联和诊断。
+Service 不生成或管理外部 Agent Run 标识。
 
 ### 7.3 HTTP 接口
 
@@ -494,68 +503,30 @@ GET /version
 取消不引入新的 `PresentationResult.status`。
 若连接仍可写出，可以返回 `failed + REQUEST_CANCELLED`；若连接已经断开，只记录 Run 终止和诊断。
 
-### 7.5 AG-UI 接口与事件映射
+### 7.5 外部 Agent 协议集成
 
-AG-UI Adapter 使用标准生命周期事件和 Step 事件。
-项目结果通过 `CUSTOM` 事件承载，不新增伪标准事件类型。
-AG-UI 标准生命周期事件要求 `threadId` 和 `runId`。
-调用方未提供时，Adapter 必须在接收请求时生成请求级标识，并在整个事件流和请求上下文中复用。
-
-#### 成功或降级 Run
+AG-UI、WebSocket、SSE 和其他 Agent 事件协议不属于 UI Compiler Service 的规范网络接口。
+外部 Runtime Host 通过 HTTP 调用 `POST /api/ui-compiler/present`，并把返回的 `PresentationResult` 映射为目标前端协议。
 
 ```text
-RUN_STARTED
-STEP_STARTED(stepName="presentation-routing")
-STEP_STARTED(stepName="model-analysis")       可选
-STEP_FINISHED(stepName="model-analysis")      可选
-STEP_FINISHED(stepName="presentation-routing")
-STEP_STARTED(stepName="ui-compilation")       可选
-STEP_FINISHED(stepName="ui-compilation")      可选
-CUSTOM(name="generative-ui.presentation-result", value={mappingVersion:"1.0",result})
-RUN_FINISHED
+Frontend
+    |
+    | AG-UI or another Agent protocol
+    v
+External Runtime Host
+    |
+    | HTTP PresentationRequest
+    v
+UI Compiler Service
+    |
+    | HTTP PresentationResult
+    v
+External Runtime Host
 ```
 
-#### 无可消费结果的失败 Run
-
-```text
-RUN_STARTED
-...
-CUSTOM(name="generative-ui.presentation-error", value={mappingVersion:"1.0",errors})
-RUN_ERROR
-```
-
-事件载荷约束：
-
-```ts
-interface PresentationResultCustomEvent {
-  type: "CUSTOM";
-  name: "generative-ui.presentation-result";
-  value: {
-    mappingVersion: "1.0";
-    result: PresentationResult;
-  };
-}
-
-interface PresentationErrorCustomEvent {
-  type: "CUSTOM";
-  name: "generative-ui.presentation-error";
-  value: {
-    mappingVersion: "1.0";
-    errors: PresentationError[];
-  };
-}
-```
-
-设计约束：
-
-- 每个 Run 必须以 `RUN_FINISHED` 或 `RUN_ERROR` 二选一结束；
-- `RUN_STARTED`、`RUN_FINISHED` 和请求上下文必须使用相同的非空 `threadId` 与 `runId`；
-- 已经返回可消费的 degraded Markdown 时使用 `RUN_FINISHED`；
-- `STEP_STARTED` 与 `STEP_FINISHED` 必须成对且 `stepName` 相同；
-- Core 不感知 Run、Thread 或事件流；
-- MVP 通过 HTTP SSE 输出按顺序序列化的 AG-UI 事件；
-- AG-UI Adapter 只依赖 `compiler-contract` 和 `shared-types`；
-- `PresentationResult → CUSTOM` 的组装由 Service 完成，Adapter 只负责标准事件和通用 CustomEvent 序列化。
+外部 Runtime Host 负责业务 Agent Run 的开始、步骤、终止、关联标识、取消和错误语义。
+UI Compiler Service 不要求业务 Agent 实现 AG-UI，也不把一次展示编译伪装成完整业务 Agent Run。
+如果未来通过独立范围启用可选 AG-UI Adapter，该 Adapter 只能包装已经验证的 `PresentationResult`，不得承担业务 Agent 调用、路由或编排。
 
 ## 8. Presentation Router 设计
 
@@ -1781,7 +1752,7 @@ ui-compilation
 | schema-validation | ui-compilation |
 | a2ui-compilation | ui-compilation |
 | a2ui-validation | ui-compilation |
-| AG-UI / HTTP 映射失败 | ui-compilation |
+| HTTP 响应映射失败 | ui-compilation |
 
 详细内部阶段保存在诊断和日志中，不扩大公共联合类型。
 协议映射失败使用 `stage = "ui-compilation"` 和 `code = "INTERNAL_ERROR"`，不得将错误代码写入 `stage`。
@@ -2140,7 +2111,7 @@ packages/
 ├── presentation-contract/
 ├── component-catalog-schema/
 ├── compiler-contract/
-├── ag-ui-adapter/
+├── ag-ui-adapter/              # 可选协议工具
 └── shared-types/
 
 tests/
@@ -2172,7 +2143,6 @@ flowchart TD
     Service --> Presentation
     Service --> Catalog
     Service --> Compiler
-    Service --> AGUI
     Service --> Shared
 
     Core --> Presentation
@@ -2186,9 +2156,11 @@ flowchart TD
 
 依赖规则：
 
-- Service 负责把 `PresentationResult` 包装为 AG-UI `CUSTOM` 事件；
+- Service 负责通过 HTTP 返回 `PresentationResult`；
+- AG-UI Adapter 是可选协议工具，不是 Service 的必需依赖；
 - AG-UI Adapter 只提供标准事件、通用 `CUSTOM` 事件和序列化能力；
 - AG-UI Adapter 不依赖 `presentation-contract`；
+- `PresentationResult` 到完整 Agent Run 的组装属于外部 Runtime Host；
 - 禁止反向依赖应用层；
 - Core 不依赖 AG-UI Adapter、HTTP 框架、模型 SDK或 Catalog Repository。
 
@@ -2212,8 +2184,7 @@ flowchart TD
 - Action Placement and Binding Resolver；
 - UI IR Builder 和 Validator；
 - A2UI 0.9.1 Profile Compiler 和 Validator；
-- Error Stage Mapper；
-- AG-UI Event Mapper。
+- Error Stage Mapper。
 
 ### 23.2 契约测试
 
@@ -2230,8 +2201,7 @@ flowchart TD
 - PresentationResult；
 - Component Catalog；
 - CompositionPattern；
-- A2UI 0.9.1 Profile Operations；
-- AG-UI 标准生命周期和 CustomEvent 载荷。
+- A2UI 0.9.1 Profile Operations。
 
 ### 23.3 集成测试矩阵
 
@@ -2257,7 +2227,6 @@ flowchart TD
 | 请求取消且连接断开 | terminated | 不生成非法 Result，Run 有终止诊断 |
 | 未清理 Markdown 尝试绑定 Markdown 组件 | rejected | 原始内容不进入 Model、Core 或 A2UI |
 | 两个请求共享 Plan 但数据不同 | isolated | 不命中完整结果缓存，数据和 Surface ID 不串用 |
-| 调用方未提供 AG-UI 标识 | completed | Adapter 生成并复用非空 threadId 和 runId |
 | A2UI 完整输出 | completed | 所有消息使用 `version = "v0.9"` |
 
 ### 23.4 组件组合测试
@@ -2309,7 +2278,6 @@ flowchart TD
 - Catalog ID + Catalog Version；
 - UI IR Version；
 - A2UI Profile Version；
-- AG-UI Mapping Version；
 - Compiler Version；
 - Selection Policy Version。
 
@@ -2321,7 +2289,6 @@ Component Catalog    = 1.0
 UI IR                = 1.0
 A2UI Profile release = 0.9.1
 A2UI wire version    = v0.9
-AG-UI Mapping        = 1.0
 ```
 
 兼容规则：
@@ -2330,7 +2297,7 @@ AG-UI Mapping        = 1.0
 2. Catalog 版本不可覆盖更新。
 3. UI Plan 到 UI IR 的转换按 Schema Version 分派。
 4. UI IR 到 A2UI 的编译按 Profile Version 分派。
-5. 上游 A2UI 或 AG-UI 版本变化不会自动影响本项目。
+5. 外部 Agent 传输协议版本变化不会自动影响本项目。
 6. 公共契约破坏性变化必须升级主版本并记录 ADR。
 7. 日志和结果元数据包含关键版本，便于复现。
 
@@ -2421,7 +2388,7 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 | DD-016 | Catalog 外部获取位于 Service，Core 只校验传入 Catalog |
 | DD-017 | MVP 不采用固定 UI 模板降级，只支持 A2UI → Markdown → 失败 |
 | DD-018 | 内部 CompileStage 映射到稳定公共 PresentationError.stage |
-| DD-019 | AG-UI 使用标准生命周期、Step 和 CustomEvent；Adapter 不依赖 presentation-contract |
+| DD-019 | `PresentationResult` 是 Service 的规范应用层输出，AG-UI 属于外部或可选协议适配 |
 | DD-020 | Core 无状态；Service 只维护请求级临时上下文 |
 | DD-021 | 所有安全和 Schema 校验不可关闭 |
 | DD-022 | MVP 一次性输出完整 A2UI，架构预留增量输出 |
@@ -2431,7 +2398,7 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 | DD-026 | Catalog 在路由前加载，能力摘要与完整 Catalog 使用同一内容哈希 |
 | DD-027 | Surface ID 是请求级标识，不参与确定性组件规划或跨请求缓存 |
 | DD-028 | A2UI Props、Binding 和 Action 使用版本化 Profile 的精确映射 |
-| DD-029 | AG-UI Adapter 保证每个 Run 使用非空且一致的 Thread ID 和 Run ID |
+| DD-029 | Service 只透传可选关联字段，不拥有外部 Agent Run 标识或生命周期 |
 
 ## 27. 编码前必须形成的契约与 ADR
 
@@ -2444,17 +2411,15 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 5. Slot 和 CompositionPattern Schema；
 6. UI IR v1.0 Schema；
 7. A2UI 0.9.1 Profile Schema、v0.9 消息判别与映射测试；
-8. AG-UI Mapping v1.0 的标准事件和 CustomEvent 载荷；
-9. 基础组件 Props Schema；
-10. 八类 Prop Resolver 的输入输出契约；
-11. ActionDefinition、Action Presentation Hint 和绑定规则；
-12. 内部 CompileStage 到公共 PresentationError.stage 的映射表；
-13. 组件选择评分权重和稳定决胜规则；
-14. 资源限制默认值；
-15. 模型 Structured Output Schema 和提示词安全模板；
-16. A2UI Props、Binding 和 Action 的精确映射 Schema；
-17. AG-UI 缺失 Thread ID 和 Run ID 时的生成与传播测试；
-18. 编译模板缓存的安全域分区和实例化契约；MVP 未启用时不实现该缓存。
+8. 基础组件 Props Schema；
+9. 八类 Prop Resolver 的输入输出契约；
+10. ActionDefinition、Action Presentation Hint 和绑定规则；
+11. 内部 CompileStage 到公共 PresentationError.stage 的映射表；
+12. 组件选择评分权重和稳定决胜规则；
+13. 资源限制默认值；
+14. 模型 Structured Output Schema 和提示词安全模板；
+15. A2UI Props、Binding 和 Action 的精确映射 Schema；
+16. 编译模板缓存的安全域分区和实例化契约；MVP 未启用时不实现该缓存。
 
 以下事项不再作为开放问题：
 
@@ -2463,7 +2428,7 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 - 是否使用固定 UI 模板降级：MVP 否；
 - Catalog 是否由 Core 访问外部存储：否；
 - A2UI 输出基线：0.9.1 Profile，消息 `version = "v0.9"`；
-- AG-UI 是否自定义生命周期事件：否，使用标准生命周期和 CustomEvent；
+- AG-UI 是否属于 Compiler 规范输出：否，由外部 Runtime Host 或可选协议 Adapter 负责；
 - 是否缓存完整编译结果：MVP 否；
 - Markdown `sourceData` 是否保留未清理原文：否。
 
@@ -2473,6 +2438,8 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 
 - [ ] Core 不依赖 HTTP、AG-UI、模型 SDK、前端框架、Catalog Store 和业务 Agent。
 - [ ] Service 不承担业务推理、Agent 路由和业务工具调用。
+- [ ] Service 以 HTTP `PresentationRequest` 和 `PresentationResult` 作为主要网络边界。
+- [ ] Service 不拥有外部 Agent Run 生命周期。
 - [ ] Catalog 与 Registry 没有混为同一模块。
 - [ ] Interaction Gateway 没有进入 MVP 运行前置条件。
 
@@ -2485,8 +2452,7 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 - [ ] A2UI 0.9.1 Profile 只从已验证 UI IR 生成，消息使用 `version = "v0.9"`。
 - [ ] Markdown `sourceData` 只包含安全清理后的 `/markdown`。
 - [ ] 公共契约有唯一 Schema 所有者。
-- [ ] AG-UI 使用标准生命周期和版本化 CustomEvent 映射。
-- [ ] AG-UI 事件流具有一致且非空的 Thread ID 和 Run ID。
+- [ ] `PresentationResult` 不依赖 AG-UI 或 CopilotKit。
 
 ### 组件组合与 Props
 

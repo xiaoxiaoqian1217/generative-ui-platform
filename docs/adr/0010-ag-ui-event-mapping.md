@@ -1,7 +1,10 @@
 # ADR-0010: 定义 AG-UI 事件映射
 
-- **状态：** 已接受
+- **状态：** 部分被 ADR-0013 取代
 - **日期：** 2026-07-27
+
+ADR-0013 取代了由 UI Compiler Service 或其必需 Adapter 拥有完整 AG-UI Run 生命周期的决定。
+本 ADR 的事件名称、CustomEvent Payload 版本化和终止事件互斥规则，只在未来通过独立范围启用可选 AG-UI Adapter 时继续适用。
 
 ## 背景
 

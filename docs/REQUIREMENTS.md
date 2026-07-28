@@ -1,6 +1,6 @@
 # Generative UI Platform - Generative UI Compiler MVP 需求规格说明书
 
-**文档版本：** 1.4
+**文档版本：** 1.5
 **项目阶段：** MVP
 **目标读者：** 产品负责人、架构师、开发人员、测试人员、Codex、Claude Code 等编码 Agent
 
@@ -205,7 +205,7 @@ MVP 运行链路：
 13. UI Compiler Core 可脱离网络服务和模型独立运行。
 14. UI Compiler Service 可独立部署。
 15. UI Compiler Service 支持 HTTP 调用。
-16. UI Compiler Service 支持 AG-UI 调用。
+16. UI Compiler Service 通过协议无关的 `PresentationResult` 返回展示结果。
 17. 核心编译逻辑不绑定 Vue、React、CopilotKit 或具体 Agent 框架。
 18. 各共享包能够独立构建、测试和发布。
 19. 支持通过 Catalog 描述通用组件和领域组件，但不实现真实领域组件。
@@ -257,7 +257,6 @@ MVP 交付内容包括：
 * A2UI 编译；
 * Schema 校验；
 * HTTP Adapter；
-* AG-UI Adapter；
 * 错误、超时和取消；
 * Markdown 直出和安全降级；
 * 基础日志和可观测性；
@@ -300,7 +299,10 @@ MVP 交付内容包括：
 
 #### 4.2.3 Copilot Runtime
 
-Copilot Runtime 可以作为外部代理层调用 UI Compiler Service，但不属于本期建设范围。
+Copilot Runtime 或其他 Runtime Host 可以作为外部代理层通过 HTTP 调用 UI Compiler Service，但不属于本期建设范围。
+外部 Runtime Host 负责调用协议无关的业务 Agent，并把 `PresentationResult` 映射为 AG-UI 或其他前端通信协议。
+业务 Agent 不需要实现 AG-UI。
+UI Compiler Service 不拥有外部 Agent Run 的生命周期。
 
 #### 4.2.4 Interaction Gateway
 
@@ -322,50 +324,57 @@ Gateway 与 Generative UI Compiler 的未来产品和架构关系必须由新的
 ### 5.1 核心架构
 
 ```text
-┌─────────────────────────────────┐
-│ 外部调用方                      │
-│ Business Agent / Test Client    │
-│ Runtime / Gateway / Other       │
-└────────────────┬────────────────┘
-                 │ HTTP / AG-UI
-                 ▼
-┌─────────────────────────────────┐
-│ UI Compiler Service             │
-│                                 │
-│ HTTP Endpoint                   │
-│ AG-UI Endpoint                  │
-│ Request Validator               │
-│ Markdown Sanitizer              │
-│ Structured Data Serializer      │
-│ Presentation Router             │
-│ Model Adapter                   │
-│ Output Adapter                  │
-│ Error Handler                   │
-│ Observability                   │
-└───────────┬─────────────────────┘
-            │
-            ├── Safe Markdown Representation
-            │
-            └── Schema-valid UI Plan Candidate
-                         │
-                         ▼
-┌─────────────────────────────────┐
-│ UI Compiler Core                │
-│                                 │
-│ Input Validator                 │
-│ Catalog Validator               │
-│ Component Selector              │
-│ UI IR Builder                   │
-│ A2UI Compiler                   │
-│ Schema Validator                │
-│ Fallback Generator              │
-└────────────────┬────────────────┘
-                 │ A2UI / Fallback
-                 ▼
-┌─────────────────────────────────┐
-│ External Frontend Runtime       │
-│ Component Registry + Renderer   │
-└─────────────────────────────────┘
++---------------------------------+
+| External Caller                 |
+| Business Agent / Test Client    |
+| Runtime Host / Other            |
++----------------+----------------+
+                 | HTTP PresentationRequest
+                 v
++---------------------------------+
+| UI Compiler Service             |
+|                                 |
+| HTTP Endpoint                   |
+| Request Validator               |
+| Markdown Sanitizer              |
+| Structured Data Serializer      |
+| Presentation Router             |
+| Model Adapter                   |
+| Output Adapter                  |
+| Error Handler                   |
+| Observability                   |
++-----------+---------------------+
+            |
+            +-- Safe Markdown Representation
+            |
+            +-- Schema-valid UI Plan Candidate
+                         |
+                         v
++---------------------------------+
+| UI Compiler Core                |
+|                                 |
+| Input Validator                 |
+| Catalog Validator               |
+| Component Selector              |
+| UI IR Builder                   |
+| A2UI Compiler                   |
+| Schema Validator                |
+| Fallback Generator              |
++----------------+----------------+
+                 | A2UI / Fallback
+                 v
++---------------------------------+
+| PresentationResult              |
+| Markdown or A2UI Operations     |
++----------------+----------------+
+                 |
+                 | External protocol mapping
+                 v
++---------------------------------+
+| External Runtime / Frontend     |
+| AG-UI or another transport      |
+| Component Registry + Renderer   |
++---------------------------------+
 ```
 
 ### 5.2 职责关系
@@ -423,16 +432,16 @@ Component Catalog
 
 ## 6. Monorepo 结构
 
-目标结构由一个应用、六个共享包、测试目录和文档目录组成。
+目标结构由一个应用、五个 MVP 共享包、一个可选协议工具包、测试目录和文档目录组成。
 
 | 路径 | 目标职责 |
 |---|---|
-| `apps/ui-compiler-service` | HTTP、AG-UI、Presentation Router、Model Adapter 组装和应用编排 |
+| `apps/ui-compiler-service` | HTTP、Presentation Router、Model Adapter 组装和应用编排 |
 | `packages/ui-compiler-core` | UI Plan Candidate 到 UI IR 和 A2UI 的确定性编译 |
 | `packages/presentation-contract` | 展示请求、决策、结果和 UI Plan Candidate 契约 |
 | `packages/component-catalog-schema` | Catalog、组件和 Action Schema |
 | `packages/compiler-contract` | 编译请求、UI IR、结果和错误契约 |
-| `packages/ag-ui-adapter` | AG-UI 输入输出适配 |
+| `packages/ag-ui-adapter` | 可选且可替换的 AG-UI 协议工具，不属于 Compiler 规范输出 |
 | `packages/shared-types` | 最小通用类型 |
 | `tests` | Fixture、契约、集成和端到端测试 |
 | `docs` | 需求、架构、契约和 ADR |
@@ -447,7 +456,7 @@ MVP 不得创建 `apps/interaction-gateway`、`packages/frontend-runtime` 或 `p
 
 ### 7.1 UI Compiler Service
 
-Service 内部至少分离 HTTP、AG-UI、应用用例、Catalog Repository、Presentation Router、Markdown 安全处理、结构化数据处理、Model Adapter、配置和可观测性。
+Service 内部至少分离 HTTP、应用用例、Catalog Repository、Presentation Router、Markdown 安全处理、结构化数据处理、Model Adapter、配置和可观测性。
 具体目录结构由实现决定，不构成公共契约。
 
 ### 7.2 UI Compiler Core
@@ -496,14 +505,16 @@ Core 内部至少分离输入校验、Catalog 校验、组件选择、UI IR、A2
 
 #### `ag-ui-adapter`
 
-负责：
+该包是可选协议工具，不属于 Compiler MVP 的必需运行接口。
+如果后续范围 Issue 启用该包，它只负责：
 
-* AG-UI Run 事件封装；
-* 编译请求解析；
-* A2UI 载荷封装；
-* 错误事件封装。
+* 标准 AG-UI 事件对象和通用 CustomEvent 的构造；
+* 已验证 A2UI 载荷的协议封装；
+* 通用错误事件封装；
+* 事件序列化。
 
-该包不得包含 UI 编译逻辑。
+该包不得包含 UI 编译逻辑、展示路由、业务 Agent 调用或外部 Run 编排。
+`PresentationResult` 到业务 Agent Run 事件的组装属于外部 Runtime Host。
 
 #### `shared-types`
 
@@ -523,7 +534,7 @@ Core 内部至少分离输入校验、Catalog 校验、组件选择、UI IR、A2
 
 | 模块 | 可依赖 |
 |---|---|
-| `ui-compiler-service` | Core、全部共享契约、AG-UI Adapter、具体 Model Adapter |
+| `ui-compiler-service` | Core、全部 Compiler 共享契约、具体 Model Adapter |
 | `ui-compiler-core` | Presentation Contract、Compiler Contract、Catalog Schema、Shared Types |
 | `ag-ui-adapter` | Compiler Contract、Shared Types |
 
@@ -571,25 +582,23 @@ UI Compiler Core 禁止负责：
 UI Compiler Service 必须负责：
 
 1. 暴露 HTTP 展示接口。
-2. 暴露 AG-UI 展示接口。
-3. 接收 Markdown、JSON 结构化数据和可选展示上下文。
-4. 校验网络层请求。
-5. 在任何模型或编译处理前安全清理 Markdown，并安全序列化不生成 UI 的结构化数据。
-6. 在展示路由前从授权来源加载并校验 Catalog。
-7. 从该 Catalog 生成相同 ID、版本和内容哈希的能力摘要。
-8. 调用 Presentation Router。
-9. 创建并注入具体 Model Adapter。
-10. 校验 Presentation Decision 和 UI Plan Candidate。
-11. 为每次 generative UI 编译生成请求级唯一 Surface ID。
-12. 对 generative UI 决策调用 UI Compiler Core。
-13. 将 Markdown 或 generative UI 结果转换为 HTTP 响应。
-14. 将结果转换为 AG-UI 事件。
-15. 处理请求和模型超时。
-16. 处理请求取消。
-17. 处理协议层错误。
-18. 提供健康检查。
-19. 提供版本信息。
-20. 记录请求、路由和编译日志。
+2. 接收 Markdown、JSON 结构化数据和可选展示上下文。
+3. 校验网络层请求。
+4. 在任何模型或编译处理前安全清理 Markdown，并安全序列化不生成 UI 的结构化数据。
+5. 在展示路由前从授权来源加载并校验 Catalog。
+6. 从该 Catalog 生成相同 ID、版本和内容哈希的能力摘要。
+7. 调用 Presentation Router。
+8. 创建并注入具体 Model Adapter。
+9. 校验 Presentation Decision 和 UI Plan Candidate。
+10. 为每次 generative UI 编译生成请求级唯一 Surface ID。
+11. 对 generative UI 决策调用 UI Compiler Core。
+12. 将 Markdown 或 generative UI 结果转换为 `PresentationResult` HTTP 响应。
+13. 处理请求和模型超时。
+14. 处理请求取消。
+15. 处理 HTTP 协议层错误。
+16. 提供健康检查。
+17. 提供版本信息。
+18. 记录请求、路由和编译日志。
 
 UI Compiler Service 禁止负责：
 
@@ -997,33 +1006,26 @@ GET /version
 
 HTTP 层必须处理请求体限制、JSON 解析、参数校验、超时、取消和错误状态码转换。
 
-### 14.2 AG-UI 接口
+### 14.2 外部协议适配边界
 
 #### SERVICE-004
 
-UI Compiler Service 必须提供 AG-UI 兼容入口。
+UI Compiler Service 的规范应用层输出必须是 `PresentationResult`，不得把 AG-UI 事件流作为 Core 或 Service 用例的规范结果。
 
 #### SERVICE-005
 
-AG-UI Run 至少包含：
-
-```text
-RUN_STARTED
-展示路由事件或状态
-Markdown、A2UI 或 Fallback 结果
-RUN_FINISHED 或 RUN_ERROR
-```
-
-`RUN_STARTED`、`RUN_FINISHED` 和请求上下文必须使用一致且非空的 `threadId` 与 `runId`。
-调用方未提供时，AG-UI Adapter 必须生成请求级标识并在整个事件流中复用。
+外部 Runtime Host 可以把 `PresentationResult` 映射为 AG-UI、WebSocket、SSE 或其他前端协议。
+该映射不属于当前 Compiler MVP 的运行前置条件。
 
 #### SERVICE-006
 
-AG-UI Adapter 负责协议事件，不得将 Run 生命周期逻辑放入 UI Compiler Core。
+外部 Runtime Host 负责业务 Agent Run 的生命周期、关联标识、取消、错误和终止语义。
+UI Compiler Service 只维护当前 HTTP 请求所需的临时上下文。
 
 #### SERVICE-007
 
-AG-UI 输出中的 A2UI 数据必须来自已经通过 Schema 校验的编译结果。
+任何可选协议 Adapter 封装的 A2UI 数据都必须来自已经通过 Schema 校验的 `PresentationResult`。
+可选协议 Adapter 不得调用、执行或路由业务 Agent。
 
 ### 14.3 独立运行
 
@@ -1123,7 +1125,7 @@ MVP 不得跨请求缓存完整 UI IR、`UICompileResult`、A2UI Operations、�
 
 ### 15.2 Service 状态
 
-UI Compiler Service 可以维护当前请求的临时 Run 上下文，只用于请求关联、日志追踪、取消、超时和 AG-UI 生命周期。
+UI Compiler Service 可以维护当前 HTTP 请求的临时上下文，只用于请求关联、日志追踪、取消和超时。
 
 请求结束后不得将其视为权威业务状态。
 
@@ -1147,7 +1149,6 @@ UI Compiler Core 不得调用模型。
 * 限制重试次数；
 * 区分可重试和不可重试错误；
 * 支持请求取消；
-* 保证每个 AG-UI Run 明确结束；
 * 编译失败时提供降级结果；
 * 提供健康检查。
 
@@ -1235,8 +1236,7 @@ MVP 必须提供：
 * `UICompileRequest`；
 * `UICompileResult`；
 * `CompileError`；
-* Component Catalog；
-* AG-UI 事件封装。
+* Component Catalog。
 
 ### 17.3 集成测试
 
@@ -1249,17 +1249,15 @@ MVP 必须提供：
 5. 模型路由失败 → Safe Markdown Representation。
 6. 非法 UI Plan Candidate → Safe Markdown Representation。
 7. HTTP → Presentation Result。
-8. AG-UI → Markdown 或 A2UI Events。
-9. Catalog 不兼容降级。
-10. 非法组件、Props、Action 和嵌套降级。
-11. 模型超时、编译超时和请求取消。
-12. Catalog 中领域组件的合法选择。
-13. 未声明领域组件被拦截。
-14. 超深、超量和超大结构化输入在 Model Adapter 调用前被拒绝，并验证模型调用次数为零。
-15. 原始未清理 Markdown 不进入 Model Adapter、Core、UI IR 或 A2UI。
-16. 相同 Plan 和不同 `sourceData` 的并发请求不会串用数据、Fallback 或 Surface ID。
-17. A2UI 0.9.1 Profile 的所有消息使用 `version = "v0.9"`。
-18. AG-UI 调用缺少 Thread ID 或 Run ID 时生成一致且非空的请求级标识。
+8. Catalog 不兼容降级。
+9. 非法组件、Props、Action 和嵌套降级。
+10. 模型超时、编译超时和请求取消。
+11. Catalog 中领域组件的合法选择。
+12. 未声明领域组件被拦截。
+13. 超深、超量和超大结构化输入在 Model Adapter 调用前被拒绝，并验证模型调用次数为零。
+14. 原始未清理 Markdown 不进入 Model Adapter、Core、UI IR 或 A2UI。
+15. 相同 Plan 和不同 `sourceData` 的并发请求不会串用数据、Fallback 或 Surface ID。
+16. A2UI 0.9.1 Profile 的所有消息使用 `version = "v0.9"`。
 
 ### 17.4 Fixture
 
@@ -1310,10 +1308,7 @@ MVP 必须提供：
 * 适合生成 UI 的 Markdown 可以生成经过验证的 A2UI。
 * 结构化数据可以安全序列化为 Markdown 或生成经过验证的 A2UI。
 * HTTP 可以完成一次展示路由和可选编译。
-* AG-UI 可以完成一次展示 Run。
-* AG-UI Run 有明确开始和结束事件。
-* AG-UI Run 的开始、结束和上下文使用一致且非空的 Thread ID 与 Run ID。
-* A2UI 和降级结果可以通过 AG-UI 返回。
+* `PresentationResult` 可以独立于外部 Agent 协议被消费。
 * `/health` 和 `/version` 可用。
 * UI Compiler Service 可以独立运行。
 * UI Compiler Service 不依赖 Interaction Gateway。
@@ -1353,7 +1348,7 @@ Model Adapter 用于判断简单 Markdown 表示或生成式 UI，并在 generat
 
 ### 阶段四：UI Compiler Service
 
-完成 HTTP Server、HTTP 展示接口、AG-UI Endpoint、Run 生命周期、错误转换、健康检查、版本接口和 Dockerfile。
+完成 HTTP Server、HTTP 展示接口、请求生命周期、错误转换、健康检查、版本接口和 Dockerfile。
 
 ### 阶段五：集成验收
 
@@ -1403,7 +1398,7 @@ Frontend Runtime 和真实组件渲染不属于阶段五验收范围，可以通
 | TD-012 | Component Catalog 属于 Compiler 契约，Component Registry 属于外部 Frontend Runtime |
 | TD-013 | 领域组件可以通过 Catalog 扩展，但真实组件实现不属于 MVP |
 | TD-014 | 所有 A2UI 必须通过 Schema 校验 |
-| TD-015 | UI Compiler Service 同时提供 HTTP 和 AG-UI 接口 |
+| TD-015 | UI Compiler Service 以 HTTP `PresentationRequest` 和 `PresentationResult` 作为主要网络边界，AG-UI 属于外部或可选协议适配 |
 | TD-016 | Action MVP 只生成描述，不实现完整业务回传 |
 | TD-017 | MVP 支持一次性 A2UI，预留增量输出 |
 | TD-018 | 所有失败必须返回明确错误或降级结果 |
@@ -1462,9 +1457,9 @@ Interaction Gateway
 | Schema 校验库 | 阶段二开始前 |
 | Presentation Router 和模型 Adapter 接口 | 阶段三开始前 |
 | Node HTTP 框架 | 阶段四开始前 |
-| AG-UI SDK 版本 | 阶段四开始前 |
 
-A2UI 0.9.1 Profile、Markdown 降级、AG-UI CustomEvent 映射、编译数据所有权和完整结果缓存边界已经分别由 ADR-0007 至 ADR-0011 固化。
+A2UI 0.9.1 Profile、Markdown 降级、编译数据所有权和完整结果缓存边界已经分别由 ADR-0007 至 ADR-0011 固化。
+AG-UI Run 生命周期的协议归属由 ADR-0013 固化。
 
 以下事项必须在相关功能进入验收前形成 ADR：
 
