@@ -305,7 +305,7 @@ The target package ownership is:
 `compiler-contract` 现已实现可执行的编译请求、UI IR、三态编译结果、稳定错误和 A2UI 0.9.1 Profile 契约。
 `ag-ui-adapter` 现已实现 SDK 无关的编译请求解析、请求级标识规范化、最小 AG-UI 事件 Schema、PresentationResult Payload 和错误事件映射。
 `ag-ui-adapter` 只依赖 Compiler Contract、Presentation Contract、Shared Types 和 Schema 校验依赖，不安装或导入 AG-UI SDK。
-UI Compiler Core 现已实现 summary 场景的最小确定性编译链路，包括输入和 Catalog 校验、UI IR lowering、A2UI 0.9.1 Profile 编译和 Markdown 降级。
+UI Compiler Core 现已实现 summary、form 和 confirmation 场景的确定性编译链路，包括输入和 Catalog 校验、领域组件选择、Props 与 Action 权威校验、UI IR lowering、A2UI 0.9.1 Profile 编译和 Markdown 降级。
 其他展示场景和 Service 仍是后续限定范围实现任务的目标设计。
 协议 Adapter 需要单独范围，不是 Compiler Service 的必需接口。
 每个新增可执行契约都必须包含 Schema 测试、changeset 和必要的版本决策。

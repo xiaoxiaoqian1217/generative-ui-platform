@@ -9,11 +9,11 @@ import type {
 import { validateUICompileResult } from "@generative-ui/compiler-contract";
 import { compileA2UI } from "./a2ui-compiler.js";
 import { validateInjectedCatalog } from "./catalog-validation.js";
-import { selectSummaryComponent } from "./component-selection.js";
+import { selectComponents } from "./component-selection.js";
 import { CoreCompileFailure } from "./failure.js";
 import { validateCompileInput } from "./input-validation.js";
 import type { CompileOptions } from "./types.js";
-import { buildSummaryUIIR } from "./ui-ir-builder.js";
+import { buildUIIR } from "./ui-ir-builder.js";
 
 const compilerVersion = "0.1.0";
 const unknownCatalog = {
@@ -94,22 +94,25 @@ export function compileUI(
     contentHash = validatedCatalog.contentHash;
     completedStages.push("catalog-validation");
 
-    const selection = selectSummaryComponent(request, validatedCatalog.catalog);
+    const selections = selectComponents(request, validatedCatalog.catalog);
     completedStages.push(
       "semantic-resolution",
       "composition-planning",
       "component-selection",
-      "props-resolution",
-      "action-binding",
     );
 
-    const surface = buildSummaryUIIR(
+    const surface = buildUIIR(
       request,
-      selection,
+      selections,
       validatedCatalog.catalog,
       options,
     );
-    completedStages.push("ui-ir-building", "schema-validation");
+    completedStages.push(
+      "props-resolution",
+      "action-binding",
+      "ui-ir-building",
+      "schema-validation",
+    );
 
     const operations = compileA2UI(surface);
     completedStages.push("a2ui-compilation", "a2ui-validation");
