@@ -2,10 +2,7 @@ import {
   validateA2UIOperationSequence,
   validateUISurfaceIR,
 } from "@generative-ui/compiler-contract";
-import {
-  type ComponentCatalog,
-  computeCatalogContentHash,
-} from "@generative-ui/component-catalog-schema";
+import type { ComponentCatalog } from "@generative-ui/component-catalog-schema";
 import { describe, expect, it } from "vitest";
 import { compileA2UI } from "../src/a2ui-compiler.js";
 import { selectComponents } from "../src/component-selection.js";
@@ -217,87 +214,6 @@ describe("display scene lowering", () => {
       selectComponents(request, parentConstrainedCatalog)[0]?.component
         .componentType,
     ).toBe("Card");
-  });
-
-  it("selects an explicitly preferred Catalog domain component with an unambiguous direct binding", () => {
-    const domainCatalog = {
-      ...displayCatalog,
-      components: [
-        ...displayCatalog.components,
-        {
-          componentType: "AccountPanel",
-          displayName: "Account Panel",
-          description: "Displays account detail data.",
-          category: "domain",
-          domainTags: ["account"],
-          propsSchema: {
-            $schema: "http://json-schema.org/draft-07/schema#",
-            type: "object",
-            properties: {
-              data: { type: "object" },
-            },
-            required: ["data"],
-            additionalProperties: false,
-          },
-          allowedActions: [],
-          nesting: {
-            canHaveChildren: false,
-          },
-        },
-      ],
-    } as const satisfies ComponentCatalog;
-    const domainRequest = {
-      ...detailRequest,
-      requestId: "domain-detail-18",
-      sourceData: {
-        account: {
-          id: "account-1",
-        },
-      },
-      plan: {
-        ...detailRequest.plan,
-        regions: [
-          {
-            ...detailRequest.plan.regions[0],
-            bindings: [
-              {
-                sourcePointer: "/account",
-                role: "content",
-              },
-            ],
-            componentPreferences: [{ componentType: "AccountPanel" }],
-          },
-        ],
-      },
-    } as const;
-    const options = {
-      ...displayCompileOptions,
-      catalog: domainCatalog,
-      catalogContentHash: computeCatalogContentHash(domainCatalog),
-    };
-
-    const result = compileUI(domainRequest, options);
-
-    expect(result).toMatchObject({
-      success: true,
-      degraded: false,
-    });
-    if (!result.success || result.degraded) {
-      throw new Error("Expected completed domain component output.");
-    }
-    expect(result.operations[1]).toMatchObject({
-      updateComponents: {
-        components: [
-          {
-            id: "root",
-            component: "AccountPanel",
-            data: {
-              path: "/sourceData/account",
-            },
-          },
-        ],
-      },
-    });
   });
 
   it("keeps Markdown bindings relative to the sanitized /markdown sourceData", () => {

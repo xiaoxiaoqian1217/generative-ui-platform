@@ -10,7 +10,7 @@ import {
   validateComponentProps,
 } from "@generative-ui/component-catalog-schema";
 import type { JsonValue } from "@generative-ui/shared-types";
-import { resolveComponentMapping } from "./component-mappings.js";
+import { componentMappings } from "./component-mappings.js";
 import type { ComponentSelection } from "./component-selection.js";
 import { fail } from "./failure.js";
 import { resolveJsonPointer } from "./json-pointer.js";
@@ -30,10 +30,7 @@ function buildComponent(
 ): ComponentIR {
   const props: Record<string, JsonValue> = {};
   const resolvedProps: Record<string, JsonValue> = {};
-  const mapping = resolveComponentMapping(
-    selection.component,
-    selection.region.bindings.map((binding) => binding.role),
-  );
+  const mapping = componentMappings[selection.component.componentType];
   if (!mapping) {
     fail({
       code: "NO_COMPATIBLE_COMPONENT",

@@ -4,7 +4,7 @@ import type {
   ComponentDefinition,
 } from "@generative-ui/component-catalog-schema";
 import type { JsonValue } from "@generative-ui/shared-types";
-import { resolveComponentMapping } from "./component-mappings.js";
+import { componentMappings } from "./component-mappings.js";
 import { fail } from "./failure.js";
 import { resolveJsonPointer } from "./json-pointer.js";
 
@@ -249,16 +249,10 @@ function candidatesForRegion(
     if (!component) {
       continue;
     }
-    if (
-      !allowedTypes.has(preference.componentType) &&
-      component.category !== "domain"
-    ) {
+    if (!allowedTypes.has(preference.componentType)) {
       continue;
     }
-    const mapping = resolveComponentMapping(
-      component,
-      region.bindings.map((binding) => binding.role),
-    );
+    const mapping = componentMappings[component.componentType];
     if (!mapping) {
       continue;
     }
