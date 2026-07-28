@@ -10,11 +10,8 @@ import {
   validateComponentProps,
 } from "@generative-ui/component-catalog-schema";
 import type { JsonValue } from "@generative-ui/shared-types";
-import { componentMappings } from "./component-mappings.js";
-import type {
-  ComponentSelection,
-  SummarySelection,
-} from "./component-selection.js";
+import { resolveComponentMapping } from "./component-mappings.js";
+import type { ComponentSelection } from "./component-selection.js";
 import { fail } from "./failure.js";
 import { resolveJsonPointer } from "./json-pointer.js";
 import { normalizeLayout } from "./layout.js";
@@ -33,7 +30,10 @@ function buildComponent(
 ): ComponentIR {
   const props: Record<string, JsonValue> = {};
   const resolvedProps: Record<string, JsonValue> = {};
-  const mapping = componentMappings[selection.component.componentType];
+  const mapping = resolveComponentMapping(
+    selection.component,
+    selection.region.bindings.map((binding) => binding.role),
+  );
   if (!mapping) {
     fail({
       code: "NO_COMPATIBLE_COMPONENT",
@@ -196,13 +196,4 @@ export function buildUIIR(
     });
   }
   return validation.value;
-}
-
-export function buildSummaryUIIR(
-  request: UICompileRequest,
-  selection: SummarySelection,
-  catalog: ComponentCatalog,
-  options: CompileOptions,
-): UISurfaceIR {
-  return buildUIIR(request, [selection], catalog, options);
 }

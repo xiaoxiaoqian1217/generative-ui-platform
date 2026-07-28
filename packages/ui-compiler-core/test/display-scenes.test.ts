@@ -2,6 +2,10 @@ import {
   validateA2UIOperationSequence,
   validateUISurfaceIR,
 } from "@generative-ui/compiler-contract";
+import {
+  type ComponentCatalog,
+  computeCatalogContentHash,
+} from "@generative-ui/component-catalog-schema";
 import { describe, expect, it } from "vitest";
 import { compileA2UI } from "../src/a2ui-compiler.js";
 import { selectComponents } from "../src/component-selection.js";
@@ -53,6 +57,12 @@ const sceneCases = [
 ] as const;
 
 describe("display scene lowering", () => {
+  it("provides every common component declaration required by Issue 18", () => {
+    expect(
+      displayCatalog.components.map((component) => component.componentType),
+    ).toEqual(["Card", "Text", "List", "Table", "Alert", "Timeline", "Steps"]);
+  });
+
   it.each(sceneCases)(
     "lowers $name from UI Plan Candidate through UI IR to A2UI",
     ({
@@ -152,6 +162,142 @@ describe("display scene lowering", () => {
     expect(
       selectComponents(request, displayCatalog)[0]?.component.componentType,
     ).toBe("Card");
+  });
+
+  it("uses Catalog descriptions as a deterministic selection signal", () => {
+    const descriptionCatalog = {
+      ...displayCatalog,
+      components: displayCatalog.components.map((component) => {
+        if (component.componentType === "Card") {
+          return {
+            ...component,
+            description: "Highlights an important service status.",
+          };
+        }
+        if (component.componentType === "Alert") {
+          return {
+            ...component,
+            description: "Displays a generic notification.",
+          };
+        }
+        return component;
+      }),
+    } as ComponentCatalog;
+    const request = validateCompileInput(
+      statusRequest,
+      displayCompileOptions.limits,
+    );
+
+    expect(
+      selectComponents(request, descriptionCatalog)[0]?.component.componentType,
+    ).toBe("Card");
+  });
+
+  it("does not select a root component that requires a Catalog parent", () => {
+    const parentConstrainedCatalog = {
+      ...displayCatalog,
+      components: displayCatalog.components.map((component) =>
+        component.componentType === "Table"
+          ? {
+              ...component,
+              nesting: {
+                ...component.nesting,
+                allowedParentTypes: ["Card"],
+              },
+            }
+          : component,
+      ),
+    } as ComponentCatalog;
+    const request = validateCompileInput(
+      comparisonRequest,
+      displayCompileOptions.limits,
+    );
+
+    expect(
+      selectComponents(request, parentConstrainedCatalog)[0]?.component
+        .componentType,
+    ).toBe("Card");
+  });
+
+  it("selects an explicitly preferred Catalog domain component with an unambiguous direct binding", () => {
+    const domainCatalog = {
+      ...displayCatalog,
+      components: [
+        ...displayCatalog.components,
+        {
+          componentType: "AccountPanel",
+          displayName: "Account Panel",
+          description: "Displays account detail data.",
+          category: "domain",
+          domainTags: ["account"],
+          propsSchema: {
+            $schema: "http://json-schema.org/draft-07/schema#",
+            type: "object",
+            properties: {
+              data: { type: "object" },
+            },
+            required: ["data"],
+            additionalProperties: false,
+          },
+          allowedActions: [],
+          nesting: {
+            canHaveChildren: false,
+          },
+        },
+      ],
+    } as const satisfies ComponentCatalog;
+    const domainRequest = {
+      ...detailRequest,
+      requestId: "domain-detail-18",
+      sourceData: {
+        account: {
+          id: "account-1",
+        },
+      },
+      plan: {
+        ...detailRequest.plan,
+        regions: [
+          {
+            ...detailRequest.plan.regions[0],
+            bindings: [
+              {
+                sourcePointer: "/account",
+                role: "content",
+              },
+            ],
+            componentPreferences: [{ componentType: "AccountPanel" }],
+          },
+        ],
+      },
+    } as const;
+    const options = {
+      ...displayCompileOptions,
+      catalog: domainCatalog,
+      catalogContentHash: computeCatalogContentHash(domainCatalog),
+    };
+
+    const result = compileUI(domainRequest, options);
+
+    expect(result).toMatchObject({
+      success: true,
+      degraded: false,
+    });
+    if (!result.success || result.degraded) {
+      throw new Error("Expected completed domain component output.");
+    }
+    expect(result.operations[1]).toMatchObject({
+      updateComponents: {
+        components: [
+          {
+            id: "root",
+            component: "AccountPanel",
+            data: {
+              path: "/sourceData/account",
+            },
+          },
+        ],
+      },
+    });
   });
 
   it("keeps Markdown bindings relative to the sanitized /markdown sourceData", () => {
@@ -340,6 +486,64 @@ describe("display scene lowering", () => {
       ],
     });
   });
+
+  it("rejects column constraints on a non-grid layout with a structured error", () => {
+    const unsupportedLayout = {
+      ...comparisonRequest,
+      plan: {
+        ...comparisonRequest.plan,
+        regions: [
+          {
+            ...comparisonRequest.plan.regions[0],
+            layout: {
+              flow: "horizontal",
+              density: "comfortable",
+              minColumns: 2,
+            },
+          },
+        ],
+      },
+    } as const;
+
+    expect(compileUI(unsupportedLayout, displayCompileOptions)).toMatchObject({
+      success: true,
+      degraded: true,
+      errors: [
+        {
+          code: "NO_COMPATIBLE_COMPOSITION",
+          stage: "composition-planning",
+          constraint: "layout-columns-require-grid",
+        },
+      ],
+    });
+  });
+
+  it.each(["confirmation", "form"] as const)(
+    "keeps the out-of-scope %s scenario on a structured unsupported path",
+    (scenario) => {
+      const outOfScopeRequest = {
+        ...detailRequest,
+        plan: {
+          ...detailRequest.plan,
+          scenario,
+        },
+      };
+
+      expect(compileUI(outOfScopeRequest, displayCompileOptions)).toMatchObject(
+        {
+          success: true,
+          degraded: true,
+          errors: [
+            {
+              code: "NO_COMPATIBLE_COMPOSITION",
+              stage: "composition-planning",
+              constraint: "supported-core-scenario",
+            },
+          ],
+        },
+      );
+    },
+  );
 
   it("returns a structured component error for unsupported preferences", () => {
     const unsupportedComponent = {

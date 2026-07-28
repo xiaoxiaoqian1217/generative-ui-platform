@@ -132,6 +132,7 @@ export const displayCatalog = {
         canHaveChildren: true,
         allowedChildTypes: [
           "Card",
+          "Text",
           "List",
           "Table",
           "Alert",
@@ -139,6 +140,26 @@ export const displayCatalog = {
           "Steps",
         ],
         maxChildren: 4,
+      },
+    },
+    {
+      componentType: "Text",
+      displayName: "Text",
+      description: "Renders concise summary text.",
+      category: "common",
+      domainTags: [],
+      propsSchema: {
+        $schema: objectSchemaDialect,
+        type: "object",
+        properties: {
+          text: { type: "string" },
+        },
+        required: ["text"],
+        additionalProperties: false,
+      },
+      allowedActions: [],
+      nesting: {
+        canHaveChildren: false,
       },
     },
     {
@@ -160,7 +181,6 @@ export const displayCatalog = {
       allowedActions: [],
       nesting: {
         canHaveChildren: false,
-        allowedParentTypes: ["Card"],
       },
     },
     {
@@ -182,7 +202,6 @@ export const displayCatalog = {
       allowedActions: [],
       nesting: {
         canHaveChildren: false,
-        allowedParentTypes: ["Card"],
       },
     },
     {
@@ -205,7 +224,6 @@ export const displayCatalog = {
       allowedActions: [],
       nesting: {
         canHaveChildren: false,
-        allowedParentTypes: ["Card"],
       },
     },
     {
@@ -228,7 +246,6 @@ export const displayCatalog = {
       allowedActions: [],
       nesting: {
         canHaveChildren: false,
-        allowedParentTypes: ["Card"],
       },
     },
     {
@@ -251,7 +268,6 @@ export const displayCatalog = {
       allowedActions: [],
       nesting: {
         canHaveChildren: false,
-        allowedParentTypes: ["Card"],
       },
     },
   ],

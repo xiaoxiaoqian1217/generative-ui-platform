@@ -4,9 +4,9 @@ import {
   computeCatalogContentHash,
 } from "@generative-ui/component-catalog-schema";
 import { describe, expect, it } from "vitest";
-import { selectSummaryComponent } from "../src/component-selection.js";
+import { selectComponents } from "../src/component-selection.js";
 import { validateCompileInput } from "../src/input-validation.js";
-import { buildSummaryUIIR } from "../src/ui-ir-builder.js";
+import { buildUIIR } from "../src/ui-ir-builder.js";
 import { expectCoreFailure } from "./assertions.js";
 import { compileOptions, summaryCatalog, summaryRequest } from "./fixtures.js";
 
@@ -14,10 +14,10 @@ const request = validateCompileInput(summaryRequest, compileOptions.limits);
 
 describe("summary UI IR Builder", () => {
   it("builds Schema-valid IR from the authorized Card mapping", () => {
-    const selection = selectSummaryComponent(request, summaryCatalog);
-    const surface = buildSummaryUIIR(
+    const selections = selectComponents(request, summaryCatalog);
+    const surface = buildUIIR(
       request,
-      selection,
+      selections,
       summaryCatalog,
       compileOptions,
     );
@@ -69,10 +69,10 @@ describe("summary UI IR Builder", () => {
       catalog: misleadingCatalog,
       catalogContentHash: computeCatalogContentHash(misleadingCatalog),
     };
-    const selection = selectSummaryComponent(request, misleadingCatalog);
+    const selections = selectComponents(request, misleadingCatalog);
 
     const failure = expectCoreFailure(
-      () => buildSummaryUIIR(request, selection, misleadingCatalog, options),
+      () => buildUIIR(request, selections, misleadingCatalog, options),
       "COMPONENT_PROPS_INVALID",
     );
     expect(failure.compileError.stage).toBe("props-resolution");

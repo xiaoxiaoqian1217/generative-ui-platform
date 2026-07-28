@@ -4,31 +4,29 @@ import type {
   ComponentDefinition,
 } from "@generative-ui/component-catalog-schema";
 import type { JsonValue } from "@generative-ui/shared-types";
-import { componentMappings } from "./component-mappings.js";
+import { resolveComponentMapping } from "./component-mappings.js";
 import { fail } from "./failure.js";
 import { resolveJsonPointer } from "./json-pointer.js";
 
-const supportedComponents = {
+const supportedComponents: Partial<
+  Record<UICompileRequest["plan"]["scenario"], ReadonlySet<string>>
+> = {
   summary: new Set(["Card", "Text", "List"]),
   status: new Set(["Card", "Table", "Alert"]),
   comparison: new Set(["Table", "Card"]),
   timeline: new Set(["Timeline", "Steps"]),
-  confirmation: new Set(["Card", "Button"]),
-  form: new Set(["Form"]),
   detail: new Set(["Card", "List", "Table"]),
-} satisfies Record<UICompileRequest["plan"]["scenario"], ReadonlySet<string>>;
+};
 
 const narrowViewportWidth = 640;
 const largeCollectionSize = 5;
-const comparisonTableSize = 3;
+const collectionTableSize = 3;
 
 export interface ComponentSelection {
   component: ComponentDefinition;
   region: UICompileRequest["plan"]["regions"][number];
   regionIndex: number;
 }
-
-export interface SummarySelection extends ComponentSelection {}
 
 interface DataProfile {
   arraySize: number;
@@ -84,7 +82,7 @@ function semanticTokens(value: string): Set<string> {
   return new Set(
     value
       .toLocaleLowerCase("en-US")
-      .match(/[a-z0-9]+/g)
+      .match(/[\p{L}\p{N}]+/gu)
       ?.filter((token) => token.length > 2) ?? [],
   );
 }
@@ -132,7 +130,7 @@ function dataAndViewportScore(
         score += 45;
       } else if (
         componentType === "Table" &&
-        profile.arraySize >= comparisonTableSize
+        profile.arraySize >= collectionTableSize
       ) {
         score += 45;
       } else if (
@@ -147,12 +145,12 @@ function dataAndViewportScore(
     case "comparison":
       if (
         componentType === "Table" &&
-        profile.arraySize >= comparisonTableSize
+        profile.arraySize >= collectionTableSize
       ) {
         score += 50;
       } else if (
         componentType === "Card" &&
-        profile.arraySize < comparisonTableSize
+        profile.arraySize < collectionTableSize
       ) {
         score += 35;
       }
@@ -225,15 +223,22 @@ function candidatesForRegion(
 
   const profile = profileRegion(request, region);
   const allowedTypes = supportedComponents[request.plan.scenario];
+  if (!allowedTypes) {
+    fail({
+      code: "NO_COMPATIBLE_COMPOSITION",
+      message: "The Core does not support this display scenario yet.",
+      stage: "composition-planning",
+      retryable: false,
+      path: "/plan/scenario",
+      constraint: "supported-core-scenario",
+    });
+  }
   const candidates: ScoredCandidate[] = [];
 
   for (const [
     preferenceIndex,
     preference,
   ] of region.componentPreferences.entries()) {
-    if (!allowedTypes.has(preference.componentType)) {
-      continue;
-    }
     const catalogIndex = catalog.components.findIndex(
       (component) => component.componentType === preference.componentType,
     );
@@ -241,18 +246,25 @@ function candidatesForRegion(
       continue;
     }
     const component = catalog.components[catalogIndex];
+    if (!component) {
+      continue;
+    }
     if (
-      !component ||
-      componentMappings[component.componentType] === undefined
+      !allowedTypes.has(preference.componentType) &&
+      component.category !== "domain"
     ) {
+      continue;
+    }
+    const mapping = resolveComponentMapping(
+      component,
+      region.bindings.map((binding) => binding.role),
+    );
+    if (!mapping) {
       continue;
     }
     if (
       region.bindings.some(
-        (binding) =>
-          componentMappings[component.componentType]?.bindingProps[
-            binding.role
-          ] === undefined,
+        (binding) => mapping.bindingProps[binding.role] === undefined,
       )
     ) {
       continue;
@@ -333,6 +345,9 @@ export function selectComponents(
 
   const rootCandidates = candidateLists[0] ?? [];
   for (const rootCandidate of rootCandidates) {
+    if ((rootCandidate.component.nesting.allowedParentTypes?.length ?? 0) > 0) {
+      continue;
+    }
     const children: ScoredCandidate[] = [];
     let compatible = true;
     for (const candidates of candidateLists.slice(1)) {
@@ -372,24 +387,4 @@ export function selectComponents(
     path: "/plan/regions",
     constraint: "catalog-nesting",
   });
-}
-
-export function selectSummaryComponent(
-  request: UICompileRequest,
-  catalog: ComponentCatalog,
-): SummarySelection {
-  if (
-    request.plan.scenario !== "summary" ||
-    request.plan.regions.length !== 1
-  ) {
-    fail({
-      code: "NO_COMPATIBLE_COMPOSITION",
-      message: "Summary selection requires a one-region summary plan.",
-      stage: "composition-planning",
-      retryable: false,
-      path: "/plan",
-      constraint: "single-summary-region",
-    });
-  }
-  return selectComponents(request, catalog)[0] as SummarySelection;
 }
