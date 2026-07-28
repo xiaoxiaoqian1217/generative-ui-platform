@@ -554,8 +554,8 @@ interface PresentationErrorCustomEvent {
 - `STEP_STARTED` 与 `STEP_FINISHED` 必须成对且 `stepName` 相同；
 - Core 不感知 Run、Thread 或事件流；
 - MVP 通过 HTTP SSE 输出按顺序序列化的 AG-UI 事件；
-- AG-UI Adapter 只依赖 `compiler-contract` 和 `shared-types`；
-- `PresentationResult → CUSTOM` 的组装由 Service 完成，Adapter 只负责标准事件和通用 CustomEvent 序列化。
+- AG-UI Adapter 只依赖 `compiler-contract`、`presentation-contract`、`shared-types` 和 Schema 校验依赖；
+- `PresentationResult → CUSTOM` 的协议映射由 Adapter 完成，Service 负责决定何时输出结果，不把 Run 生命周期编排下沉到 Adapter。
 
 ## 8. Presentation Router 设计
 
@@ -2421,7 +2421,7 @@ Gateway 组合 Compiler，而不是把 UI Compiler Core 改造成 Gateway。
 | DD-016 | Catalog 外部获取位于 Service，Core 只校验传入 Catalog |
 | DD-017 | MVP 不采用固定 UI 模板降级，只支持 A2UI → Markdown → 失败 |
 | DD-018 | 内部 CompileStage 映射到稳定公共 PresentationError.stage |
-| DD-019 | AG-UI 使用标准生命周期、Step 和 CustomEvent；Adapter 不依赖 presentation-contract |
+| DD-019 | AG-UI 使用标准生命周期、Step 和 CustomEvent；Adapter 复用 presentation-contract，不重复定义 PresentationResult |
 | DD-020 | Core 无状态；Service 只维护请求级临时上下文 |
 | DD-021 | 所有安全和 Schema 校验不可关闭 |
 | DD-022 | MVP 一次性输出完整 A2UI，架构预留增量输出 |
