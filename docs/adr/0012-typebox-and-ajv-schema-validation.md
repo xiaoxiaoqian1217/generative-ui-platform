@@ -216,9 +216,12 @@ Catalog Schema 的大小、深度和允许关键字必须在编译前受限，�
 |---|---|
 | Presentation Request | `PRESENTATION_REQUEST_INVALID` |
 | Presentation Decision | `PRESENTATION_DECISION_INVALID` |
+| Presentation Result | `PRESENTATION_RESULT_INVALID` |
 | UI Plan Candidate | `UI_PLAN_INVALID` |
 | UI Compile Request | `UI_COMPILE_REQUEST_INVALID` |
 | Component Catalog | `COMPONENT_CATALOG_INVALID` |
+| Component Props | `COMPONENT_PROPS_INVALID` |
+| Action payload | `ACTION_PAYLOAD_INVALID` |
 | UI IR | `UI_IR_INVALID` |
 | A2UI 0.9.1 Profile | `A2UI_INVALID` |
 | 外部或 Catalog Schema 定义 | `SCHEMA_DEFINITION_INVALID` |

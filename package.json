@@ -12,7 +12,7 @@
     "build": "turbo run build",
     "check:boundaries": "node scripts/check-dependency-boundaries.mjs",
     "typecheck": "turbo run typecheck",
-    "test": "vitest run tests/workspace && turbo run test",
+    "test": "pnpm build && vitest run tests/workspace && node scripts/check-contract-package-installation.mjs && turbo run test",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "docs:lint": "markdownlint-cli2 \"**/*.md\" \"#node_modules\" \"#.turbo\"",
