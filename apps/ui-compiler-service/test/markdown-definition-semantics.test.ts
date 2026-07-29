@@ -1,8 +1,27 @@
+import { fromMarkdown } from "mdast-util-from-markdown";
 import { describe, expect, it } from "vitest";
 import {
   createMarkdownSanitizer,
   DEFAULT_MARKDOWN_SANITIZER_LIMITS,
 } from "../src/main.js";
+
+interface TestAstNode {
+  children?: TestAstNode[];
+}
+
+function countAstNodes(markdown: string): number {
+  const pending: TestAstNode[] = [fromMarkdown(markdown) as TestAstNode];
+  let count = 0;
+  while (pending.length > 0) {
+    const node = pending.pop();
+    if (node === undefined) {
+      continue;
+    }
+    count += 1;
+    pending.push(...(node.children ?? []));
+  }
+  return count;
+}
 
 describe("Markdown reference definition semantics", () => {
   const sanitizer = createMarkdownSanitizer();
@@ -58,5 +77,18 @@ describe("Markdown reference definition semantics", () => {
       expect(result.markdown).toContain("[id]: https://nested.example");
       expect(result.changes).not.toContain("unsafe-link-unwrapped");
     }
+  });
+
+  it("does not consume caller AST budget when lifting a nested definition", () => {
+    const input = `[文档][id]
+
+> [id]: https://nested.example
+`;
+    const result = sanitizer.sanitize(input, {
+      ...DEFAULT_MARKDOWN_SANITIZER_LIMITS,
+      maxAstNodes: countAstNodes(input),
+    });
+
+    expect(result.success).toBe(true);
   });
 });
