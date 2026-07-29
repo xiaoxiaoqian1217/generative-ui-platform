@@ -68,6 +68,16 @@ export interface MarkdownSanitizer {
   ): MarkdownSanitizationResult;
 }
 
+export interface MarkdownSyntaxAdapter {
+  parse(input: string): Root;
+  serialize(root: Root): string;
+}
+
+const commonMarkSyntaxAdapter: MarkdownSyntaxAdapter = {
+  parse: fromMarkdown,
+  serialize: toMarkdown,
+};
+
 interface AstNode {
   type: string;
   children?: AstNode[];
@@ -84,8 +94,11 @@ interface AstNode {
   label?: string | null;
   referenceType?: "shortcut" | "collapsed" | "full";
   alt?: string | null;
-  position?: unknown;
-  [key: string]: unknown;
+  position?: {
+    start?: {
+      offset?: number;
+    };
+  };
 }
 
 type NodeContext = "root" | "block" | "list" | "phrasing";
@@ -117,7 +130,9 @@ function failure(
   };
 }
 
-function hasValidLimits(limits: MarkdownSanitizerLimits): boolean {
+export function areMarkdownSanitizerLimitsValid(
+  limits: MarkdownSanitizerLimits,
+): boolean {
   return (
     Number.isSafeInteger(limits.maxInputBytes) &&
     limits.maxInputBytes > 0 &&
@@ -274,6 +289,15 @@ interface TransformState {
   changes: Set<MarkdownSanitizationChange>;
   definitions: Map<string, SafeDefinition>;
   referencedDefinitions: Set<string>;
+  source: string;
+}
+
+function isFencedCodeNode(node: AstNode, source: string): boolean {
+  const offset = node.position?.start?.offset;
+  return (
+    offset !== undefined &&
+    (source.startsWith("```", offset) || source.startsWith("~~~", offset))
+  );
 }
 
 function childContext(type: string): NodeContext | undefined {
@@ -389,6 +413,10 @@ function transformNode(
     if (typeof node.value !== "string") {
       return [];
     }
+    if (!isFencedCodeNode(node, state.source)) {
+      state.changes.add("unsupported-node-removed");
+      return [];
+    }
     const transformed: AstNode = { type: "code", value: node.value };
     if (typeof node.lang === "string" && codeLanguagePattern.test(node.lang)) {
       transformed.lang = node.lang;
@@ -402,6 +430,9 @@ function transformNode(
   }
   if (node.type === "link") {
     const children = transformChildren(node, "phrasing", state);
+    if (children.length === 0) {
+      return [];
+    }
     const url =
       typeof node.url === "string" ? sanitizeLinkUrl(node.url) : undefined;
     if (url === undefined) {
@@ -416,6 +447,9 @@ function transformNode(
   }
   if (node.type === "linkReference") {
     const children = transformChildren(node, "phrasing", state);
+    if (children.length === 0) {
+      return [];
+    }
     if (typeof node.identifier !== "string") {
       state.changes.add("unsafe-link-unwrapped");
       return children;
@@ -449,11 +483,12 @@ function transformNode(
     case "emphasis":
     case "strong":
     case "listItem":
-      return [{ type: node.type, children }];
+      return children.length === 0 ? [] : [{ type: node.type, children }];
     case "heading":
       return typeof node.depth === "number" &&
         node.depth >= 1 &&
-        node.depth <= 6
+        node.depth <= 6 &&
+        children.length > 0
         ? [{ type: "heading", depth: node.depth, children }]
         : [];
     case "list": {
@@ -462,6 +497,9 @@ function transformNode(
         ordered: node.ordered === true,
         children,
       };
+      if (children.length === 0) {
+        return [];
+      }
       if (node.ordered === true && typeof node.start === "number") {
         transformed.start = node.start;
       }
@@ -496,10 +534,12 @@ function canonicalizeMarkdown(markdown: string): string {
   return markdown.replace(/\r\n?/g, "\n").replace(/\n*$/u, "\n");
 }
 
-export function createMarkdownSanitizer(): MarkdownSanitizer {
+export function createMarkdownSanitizer(
+  syntax: MarkdownSyntaxAdapter = commonMarkSyntaxAdapter,
+): MarkdownSanitizer {
   return {
     sanitize(input, limits) {
-      if (!hasValidLimits(limits)) {
+      if (!areMarkdownSanitizerLimitsValid(limits)) {
         return failure("internal-error");
       }
       if (Buffer.byteLength(input, "utf8") > limits.maxInputBytes) {
@@ -508,7 +548,7 @@ export function createMarkdownSanitizer(): MarkdownSanitizer {
 
       let parsed: Root;
       try {
-        parsed = fromMarkdown(input);
+        parsed = syntax.parse(input);
       } catch {
         return failure("parse-failed");
       }
@@ -523,6 +563,7 @@ export function createMarkdownSanitizer(): MarkdownSanitizer {
           changes: new Set(),
           definitions: collectSafeDefinitions(parsed as AstNode),
           referencedDefinitions: new Set(),
+          source: input,
         };
         safeRoot = buildSafeRoot(parsed as AstNode, state);
       } catch {
@@ -531,7 +572,7 @@ export function createMarkdownSanitizer(): MarkdownSanitizer {
 
       let markdown: string;
       try {
-        markdown = canonicalizeMarkdown(toMarkdown(safeRoot));
+        markdown = canonicalizeMarkdown(syntax.serialize(safeRoot));
       } catch {
         return failure("serialize-failed");
       }

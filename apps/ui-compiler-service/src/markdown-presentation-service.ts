@@ -5,6 +5,7 @@ import type {
   PresentationResult,
 } from "@generative-ui/presentation-contract";
 import {
+  areMarkdownSanitizerLimitsValid,
   createDefensiveMarkdownSanitizerLimits,
   type MarkdownSanitizationFailureReason,
   type MarkdownSanitizer,
@@ -25,18 +26,9 @@ export interface MarkdownPresentationRequest {
   catalog: CatalogCapabilitySummary;
 }
 
-export interface GenerativeUICompilationRequest {
-  routeRequest: PresentationRouteRequest;
-  decision: Extract<PresentationDecision, { mode: "generative-ui" }>;
-}
-
 export interface MarkdownPresentationServiceDependencies {
   sanitizer: MarkdownSanitizer;
   router: PresentationRouter;
-  compileGenerativeUI(
-    request: GenerativeUICompilationRequest,
-    options: PresentationRouteOptions,
-  ): Promise<PresentationResult>;
   limits: MarkdownSanitizerLimits;
 }
 
@@ -51,6 +43,15 @@ const safeSanitizationFailureMessage =
   "Markdown content could not be safely processed.";
 const safeRoutingFailureMessage =
   "Presentation routing could not be completed.";
+
+export class MarkdownSanitizerConfigurationError extends Error {
+  readonly code = "MARKDOWN_SANITIZER_CONFIGURATION_INVALID";
+
+  constructor() {
+    super("Markdown sanitizer limits must be finite positive integers.");
+    this.name = "MarkdownSanitizerConfigurationError";
+  }
+}
 
 function sanitizationError(
   reason: MarkdownSanitizationFailureReason,
@@ -98,6 +99,10 @@ function defensiveSanitize(
 export function createMarkdownPresentationService(
   dependencies: MarkdownPresentationServiceDependencies,
 ): MarkdownPresentationService {
+  if (!areMarkdownSanitizerLimitsValid(dependencies.limits)) {
+    throw new MarkdownSanitizerConfigurationError();
+  }
+
   return {
     async present(request, options) {
       const sanitized = dependencies.sanitizer.sanitize(
@@ -145,13 +150,6 @@ export function createMarkdownPresentationService(
         };
       }
 
-      if (decision.mode === "generative-ui") {
-        return dependencies.compileGenerativeUI(
-          { routeRequest, decision },
-          options,
-        );
-      }
-
       const output = defensiveSanitize(
         dependencies.sanitizer,
         sanitized.markdown,
@@ -164,11 +162,21 @@ export function createMarkdownPresentationService(
         );
       }
 
+      if (decision.mode === "markdown") {
+        return {
+          requestId: request.requestId,
+          status: "completed",
+          mode: "markdown",
+          markdown: output.markdown,
+        };
+      }
+
       return {
         requestId: request.requestId,
-        status: "completed",
+        status: "degraded",
         mode: "markdown",
         markdown: output.markdown,
+        errors: [routingError()],
       };
     },
   };

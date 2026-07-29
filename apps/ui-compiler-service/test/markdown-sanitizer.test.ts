@@ -1,3 +1,6 @@
+import type { Root } from "mdast";
+import { fromMarkdown } from "mdast-util-from-markdown";
+import { toMarkdown } from "mdast-util-to-markdown";
 import { describe, expect, it } from "vitest";
 import {
   createDefensiveMarkdownSanitizerLimits,
@@ -5,10 +8,51 @@ import {
   DEFAULT_MARKDOWN_SANITIZER_LIMITS,
 } from "../src/main.js";
 import {
+  dangerousHtmlCorpus,
   dangerousMarkdownFixture,
   dangerousMarkdownTokens,
+  dangerousUrlCorpus,
   safeMarkdownFixture,
 } from "./fixtures/markdown.js";
+
+interface TestAstNode {
+  type: string;
+  children?: TestAstNode[];
+  url?: string;
+}
+
+const allowedOutputNodeTypes = new Set([
+  "root",
+  "paragraph",
+  "heading",
+  "blockquote",
+  "list",
+  "listItem",
+  "thematicBreak",
+  "code",
+  "definition",
+  "text",
+  "emphasis",
+  "strong",
+  "inlineCode",
+  "break",
+  "link",
+  "linkReference",
+]);
+
+function collectAstNodes(root: TestAstNode): TestAstNode[] {
+  const nodes: TestAstNode[] = [];
+  const pending = [root];
+  while (pending.length > 0) {
+    const node = pending.pop();
+    if (node === undefined) {
+      continue;
+    }
+    nodes.push(node);
+    pending.push(...(node.children ?? []));
+  }
+  return nodes;
+}
 
 describe("MarkdownSanitizer", () => {
   const sanitizer = createMarkdownSanitizer();
@@ -129,21 +173,7 @@ describe("MarkdownSanitizer", () => {
     }
   });
 
-  it.each([
-    "javascript:alert(1)",
-    "JaVaScRiPt:alert(1)",
-    "javascript%3Aalert%281%29",
-    "vbscript:msgbox(1)",
-    "data:text/html;base64,PHNjcmlwdD4=",
-    "file:///etc/passwd",
-    "blob:https://example.com/id",
-    "filesystem:https://example.com/path",
-    "custom-protocol:value",
-    "//attacker.example/path",
-    "%2F%2Fattacker.example/path",
-    "\\\\attacker.example\\path",
-    "https:%5C%5Cattacker.example/path",
-  ])("unwraps unsafe URL %s", (url) => {
+  it.each(dangerousUrlCorpus)("unwraps unsafe URL %s", (url) => {
     const result = sanitizer.sanitize(
       `[可见文本](${url})`,
       DEFAULT_MARKDOWN_SANITIZER_LIMITS,
@@ -154,6 +184,198 @@ describe("MarkdownSanitizer", () => {
       expect(result.markdown).toBe("可见文本\n");
       expect(result.changes).toContain("unsafe-link-unwrapped");
     }
+  });
+
+  it.each(dangerousHtmlCorpus)(
+    "removes or escapes executable HTML variant %s",
+    (html) => {
+      const result = sanitizer.sanitize(
+        `visible before\n\n${html}\n\nvisible after`,
+        DEFAULT_MARKDOWN_SANITIZER_LIMITS,
+      );
+
+      expect(result.success).toBe(true);
+      if (!result.success) {
+        return;
+      }
+
+      const nodes = collectAstNodes(
+        fromMarkdown(result.markdown) as TestAstNode,
+      );
+      expect(nodes.some((node) => node.type === "html")).toBe(false);
+      expect(result.markdown).not.toContain("attacker.example");
+      expect(result.markdown).not.toContain("onclick=");
+      expect(result.markdown).not.toContain("onerror=");
+      expect(result.markdown).not.toContain("srcdoc=");
+      expect(result.markdown).not.toContain("style=");
+    },
+  );
+
+  it("preserves HTML-like text in inline and fenced code as inert code", () => {
+    const input =
+      "`<script>alert(1)</script>`\n\n```js\nconst value = '<iframe>';\n```";
+    const result = sanitizer.sanitize(input, DEFAULT_MARKDOWN_SANITIZER_LIMITS);
+
+    expect(result.success).toBe(true);
+    if (!result.success) {
+      return;
+    }
+
+    const nodes = collectAstNodes(fromMarkdown(result.markdown) as TestAstNode);
+    expect(nodes.some((node) => node.type === "html")).toBe(false);
+    expect(nodes.some((node) => node.type === "inlineCode")).toBe(true);
+    expect(nodes.some((node) => node.type === "code")).toBe(true);
+  });
+
+  it("removes indented code because Policy 1.0 only permits fenced code", () => {
+    const result = sanitizer.sanitize(
+      "visible before\n\n    const unsupported = true;\n\nvisible after",
+      DEFAULT_MARKDOWN_SANITIZER_LIMITS,
+    );
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.markdown).toContain("visible before");
+      expect(result.markdown).toContain("visible after");
+      expect(result.markdown).not.toContain("unsupported");
+      expect(result.changes).toContain("unsupported-node-removed");
+    }
+  });
+
+  it("fails closed for unknown AST nodes with untrusted properties", () => {
+    const result = createMarkdownSanitizer({
+      parse() {
+        return {
+          type: "root",
+          children: [
+            {
+              type: "paragraph",
+              children: [{ type: "text", value: "visible" }],
+            },
+            {
+              type: "dangerousExtension",
+              value: "<script>alert(1)</script>",
+            },
+          ],
+        } as Root;
+      },
+      serialize: toMarkdown,
+    }).sanitize("untrusted extension", DEFAULT_MARKDOWN_SANITIZER_LIMITS);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.markdown).toBe("visible\n");
+      expect(result.changes).toContain("unsupported-node-removed");
+      expect(result.markdown).not.toContain("script");
+    }
+  });
+
+  it("maps parser and serializer exceptions without leaking input", () => {
+    const sensitiveInput = "SECRET <script>alert(1)</script>";
+    const parseFailure = createMarkdownSanitizer({
+      parse() {
+        throw new Error(`parser leaked ${sensitiveInput}`);
+      },
+      serialize: toMarkdown,
+    }).sanitize(sensitiveInput, DEFAULT_MARKDOWN_SANITIZER_LIMITS);
+    const serializeFailure = createMarkdownSanitizer({
+      parse: fromMarkdown,
+      serialize() {
+        throw new Error(`serializer leaked ${sensitiveInput}`);
+      },
+    }).sanitize(sensitiveInput, DEFAULT_MARKDOWN_SANITIZER_LIMITS);
+
+    expect(parseFailure).toEqual({
+      success: false,
+      error: {
+        code: "MARKDOWN_SANITIZATION_FAILED",
+        reason: "parse-failed",
+        retryable: false,
+      },
+    });
+    expect(serializeFailure).toEqual({
+      success: false,
+      error: {
+        code: "MARKDOWN_SANITIZATION_FAILED",
+        reason: "serialize-failed",
+        retryable: false,
+      },
+    });
+    expect(JSON.stringify([parseFailure, serializeFailure])).not.toContain(
+      "SECRET",
+    );
+  });
+
+  it("satisfies idempotence and allowlist properties across the security corpus", () => {
+    const generatedCorpus = [
+      safeMarkdownFixture,
+      dangerousMarkdownFixture,
+      ...dangerousHtmlCorpus.map(
+        (html, index) => `case ${index}\n\n${html}\n\nvisible`,
+      ),
+      ...dangerousUrlCorpus.map((url) => `[visible](${url})`),
+      ...Array.from(
+        { length: 32 },
+        (_, index) =>
+          `${"#".repeat((index % 6) + 1)} heading ${index}\n\n` +
+          `${"> ".repeat(index % 8)}**strong _nested ${index}_**\n\n` +
+          `[link](https://example.com/${index}?value=${index})`,
+      ),
+    ];
+
+    for (const input of generatedCorpus) {
+      const first = sanitizer.sanitize(
+        input,
+        DEFAULT_MARKDOWN_SANITIZER_LIMITS,
+      );
+      expect(first.success).toBe(true);
+      if (!first.success) {
+        continue;
+      }
+
+      const second = sanitizer.sanitize(
+        first.markdown,
+        createDefensiveMarkdownSanitizerLimits(
+          DEFAULT_MARKDOWN_SANITIZER_LIMITS,
+        ),
+      );
+      expect(second.success).toBe(true);
+      if (!second.success) {
+        continue;
+      }
+      expect(second.markdown).toBe(first.markdown);
+
+      const nodes = collectAstNodes(
+        fromMarkdown(first.markdown) as TestAstNode,
+      );
+      expect(nodes.every((node) => allowedOutputNodeTypes.has(node.type))).toBe(
+        true,
+      );
+      expect(
+        nodes.every(
+          (node) =>
+            node.url === undefined ||
+            /^(?:https?:|mailto:|#|\?|\.{0,2}\/)/u.test(node.url),
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it("rejects malicious deep combinations before recursive transform", () => {
+    const deeplyNested = `${"> ".repeat(80)}***[visible](https://example.com)***`;
+    const result = sanitizer.sanitize(deeplyNested, {
+      ...DEFAULT_MARKDOWN_SANITIZER_LIMITS,
+      maxAstDepth: 16,
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: {
+        code: "MARKDOWN_SANITIZATION_FAILED",
+        reason: "ast-limit-exceeded",
+        retryable: false,
+      },
+    });
   });
 
   it("returns stable failures for input, AST, output, and empty limits", () => {
