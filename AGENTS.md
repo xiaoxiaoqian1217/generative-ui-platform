@@ -6,9 +6,16 @@
 2. Read `docs/ARCHITECTURE.md` and relevant ADRs before adding dependencies.
 3. Do not expand MVP scope without an issue or ADR.
 
+## Branch and worktree applicability
+
+- 只有以下工作强制使用独立分支和独立 worktree：明确执行一个 Goal、实现或修复一个 GitHub Issue，或者用户明确要求创建分支、提交、发布或 Pull Request。
+- 只读检查、分析、答疑、状态报告，以及未绑定 Goal 或 Issue 的小型规则调整、文档修正、拼写修正和类似维护工作，不得自动创建新分支或 worktree。
+- 不强制隔离的修改可以在当前 worktree 中进行，但修改前必须检查分支、工作树状态和 worktree 所有权，并且不得混入其他 Goal 或 Issue 的专属 worktree。
+- 如果工作范围扩大为 Goal 或 Issue 实现，或者后续需要提交、发布或创建 Pull Request，必须先停止修改，再按下述规则创建或切换到合规的任务分支和 worktree。
+
 ## Branch creation rules
 
-- 创建任何任务或 Issue 分支前，必须先获取远端 GitHub `main` 的最新状态，并验证本地远端跟踪引用与 GitHub 远端提交一致。
+- 创建任何 Goal、Issue 或发布分支前，必须先获取远端 GitHub `main` 的最新状态，并验证本地远端跟踪引用与 GitHub 远端提交一致。
 - 新分支必须直接从已验证的 `origin/main` 创建，禁止从当前本地 `HEAD`、其他本地分支或未经验证的本地 `main` 创建。
 - 任务分支必须使用 `--no-track` 创建，初始状态不得跟踪 `origin/main` 或任何其他远端分支。
 - 创建分支后必须立即验证分支名、起点提交和 upstream 状态，确认任务分支没有 upstream 后才能修改文件。
@@ -27,11 +34,11 @@ git worktree add <absolute-task-worktree-path> codex/issue-N
 
 ## Parallel task and worktree rules
 
-- 主 worktree 只用于 `main` 同步、只读检查和任务协调，不得在主 worktree 中实现 Issue。
-- 每个活动 Goal、Issue 或任务必须拥有独立的分支和独立的 worktree，并且从第一次文件修改前开始保持隔离。
+- 主 worktree 用于 `main` 同步、只读检查、任务协调和不强制隔离的小型维护，不得在主 worktree 中实现 Goal 或 Issue。
+- 每个活动 Goal 或 Issue 实现任务必须拥有独立的分支和独立的 worktree，并且从第一次文件修改前开始保持隔离。
 - 一个任务分支和 worktree 在同一时间只能由一个任务拥有，其他任务不得在其中切换分支、重置、提交、合并或 rebase。
 - 执行任何修改、暂存、提交、合并或 rebase 前，必须在目标 worktree 内检查当前分支和工作树状态。
-- 如果当前分支、worktree、Goal 或 Issue 身份不一致，必须立即停止，不得通过 reset、切换分支或移动提交自行修复。
+- 对 Goal 或 Issue 实现任务，如果当前分支、worktree、Goal 或 Issue 身份不一致，必须立即停止，不得通过 reset、切换分支或移动提交自行修复。
 - 并行任务开始前必须评估预计修改的模块、公共契约和热点文件，并区分执行独立性与集成独立性。
 - 如果两个任务可能修改相同公共契约或编译主链路，可以并行实现，但必须明确串行集成顺序，不得声称它们可以无冲突合并。
 - 如果并行任务中的一个已经进入 `main`，其他任务必须先基于重新验证的 `origin/main` 完成集成、验证和审查，才能发布或合并。
@@ -39,7 +46,7 @@ git worktree add <absolute-task-worktree-path> codex/issue-N
 
 ## Branch publication rules
 
-- 禁止直接 push 到 `main`，所有任务修改必须先 push 到同名远端任务分支，再通过 Pull Request 合并。
+- 禁止直接 push 到 `main`，所有需要发布到远端的修改必须先位于合规任务分支，再 push 到同名远端任务分支并通过 Pull Request 合并。
 - 任务分支不得将 `origin/main` 配置为 upstream。
 - 第一次 push 必须显式指定本地任务分支和同名远端任务分支，不得使用裸 `git push`。
 - 后续 push 前必须验证 upstream 与当前任务分支同名，并再次确认目标不是 `main`。
