@@ -1,16 +1,12 @@
 import type {
   PresentationContext,
   PresentationDecision,
-  PresentationError,
   PresentationResult,
 } from "@generative-ui/presentation-contract";
 import {
   areMarkdownSanitizerLimitsValid,
-  createDefensiveMarkdownSanitizerLimits,
-  type MarkdownSanitizationFailureReason,
   type MarkdownSanitizer,
   type MarkdownSanitizerLimits,
-  type SanitizedMarkdown,
 } from "./markdown-sanitizer.js";
 import type {
   CatalogCapabilitySummary,
@@ -18,6 +14,12 @@ import type {
   PresentationRouteRequest,
   PresentationRouter,
 } from "./presentation-router.js";
+import {
+  failedPresentationResult,
+  finalizeSafeMarkdownPresentation,
+  routingPresentationError,
+  sanitizationPresentationError,
+} from "./safe-markdown-presentation.js";
 
 export interface MarkdownPresentationRequest {
   requestId: string;
@@ -39,11 +41,6 @@ export interface MarkdownPresentationService {
   ): Promise<PresentationResult>;
 }
 
-const safeSanitizationFailureMessage =
-  "Markdown content could not be safely processed.";
-const safeRoutingFailureMessage =
-  "Presentation routing could not be completed.";
-
 export class MarkdownSanitizerConfigurationError extends Error {
   readonly code = "MARKDOWN_SANITIZER_CONFIGURATION_INVALID";
 
@@ -51,49 +48,6 @@ export class MarkdownSanitizerConfigurationError extends Error {
     super("Markdown sanitizer limits must be finite positive integers.");
     this.name = "MarkdownSanitizerConfigurationError";
   }
-}
-
-function sanitizationError(
-  reason: MarkdownSanitizationFailureReason,
-): PresentationError {
-  return {
-    code: "MARKDOWN_SANITIZATION_FAILED",
-    message: safeSanitizationFailureMessage,
-    stage: "content-serialization",
-    retryable: false,
-    details: { reason },
-  };
-}
-
-function routingError(): PresentationError {
-  return {
-    code: "PRESENTATION_ROUTING_FAILED",
-    message: safeRoutingFailureMessage,
-    stage: "presentation-routing",
-    retryable: false,
-  };
-}
-
-function failedResult(
-  requestId: string,
-  error: PresentationError,
-): PresentationResult {
-  return {
-    requestId,
-    status: "failed",
-    errors: [error],
-  };
-}
-
-function defensiveSanitize(
-  sanitizer: MarkdownSanitizer,
-  markdown: SanitizedMarkdown,
-  limits: MarkdownSanitizerLimits,
-) {
-  return sanitizer.sanitize(
-    markdown,
-    createDefensiveMarkdownSanitizerLimits(limits),
-  );
 }
 
 export function createMarkdownPresentationService(
@@ -110,10 +64,9 @@ export function createMarkdownPresentationService(
         dependencies.limits,
       );
       if (!sanitized.success) {
-        return failedResult(
-          request.requestId,
-          sanitizationError(sanitized.error.reason),
-        );
+        return failedPresentationResult(request.requestId, [
+          sanitizationPresentationError(sanitized.error.reason),
+        ]);
       }
 
       const routeRequest: PresentationRouteRequest = {
@@ -130,54 +83,24 @@ export function createMarkdownPresentationService(
       try {
         decision = await dependencies.router.route(routeRequest, options);
       } catch {
-        const output = defensiveSanitize(
-          dependencies.sanitizer,
-          sanitized.markdown,
-          dependencies.limits,
-        );
-        if (!output.success) {
-          return failedResult(
-            request.requestId,
-            sanitizationError(output.error.reason),
-          );
-        }
-        return {
+        return finalizeSafeMarkdownPresentation({
           requestId: request.requestId,
-          status: "degraded",
-          mode: "markdown",
-          markdown: output.markdown,
-          errors: [routingError()],
-        };
+          markdown: sanitized.markdown,
+          sanitizer: dependencies.sanitizer,
+          limits: dependencies.limits,
+          errors: [routingPresentationError()],
+        });
       }
 
-      const output = defensiveSanitize(
-        dependencies.sanitizer,
-        sanitized.markdown,
-        dependencies.limits,
-      );
-      if (!output.success) {
-        return failedResult(
-          request.requestId,
-          sanitizationError(output.error.reason),
-        );
-      }
-
-      if (decision.mode === "markdown") {
-        return {
-          requestId: request.requestId,
-          status: "completed",
-          mode: "markdown",
-          markdown: output.markdown,
-        };
-      }
-
-      return {
+      return finalizeSafeMarkdownPresentation({
         requestId: request.requestId,
-        status: "degraded",
-        mode: "markdown",
-        markdown: output.markdown,
-        errors: [routingError()],
-      };
+        markdown: sanitized.markdown,
+        sanitizer: dependencies.sanitizer,
+        limits: dependencies.limits,
+        ...(decision.mode === "markdown"
+          ? {}
+          : { errors: [routingPresentationError()] }),
+      });
     },
   };
 }
