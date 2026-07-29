@@ -411,6 +411,8 @@ function expectDegradedWithError(
       },
     ],
   });
+  expect(result).not.toHaveProperty("operations");
+  expect(result).not.toHaveProperty("surfaceId");
 }
 
 describe("interactive component tracer bullets", () => {
