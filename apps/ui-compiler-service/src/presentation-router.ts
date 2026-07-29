@@ -7,6 +7,7 @@ import type {
   PresentationContext,
   PresentationDecision,
 } from "@generative-ui/presentation-contract";
+import { validatePresentationDecision } from "@generative-ui/presentation-contract";
 import type { JsonValue } from "@generative-ui/shared-types";
 import type { SanitizedMarkdown } from "./markdown-sanitizer.js";
 
@@ -110,6 +111,15 @@ export class PresentationRoutingError extends Error {
   }
 }
 
+export class PresentationDecisionValidationError extends Error {
+  readonly code = "PRESENTATION_DECISION_INVALID";
+
+  constructor() {
+    super("Model candidate does not match the Presentation Decision contract.");
+    this.name = "PresentationDecisionValidationError";
+  }
+}
+
 export function createPresentationRouter(
   _modelAdapter: ModelAdapter,
 ): PresentationRouter {
@@ -126,6 +136,41 @@ export function createPresentationRouter(
               ? STRUCTURED_DATA_DIRECT_REASON_WITHOUT_USER_CONTEXT
               : STRUCTURED_DATA_DIRECT_REASON_WITH_USER_CONTEXT,
       };
+    },
+  };
+}
+
+export function createModelPresentationRouter(
+  modelAdapter: ModelAdapter,
+  policy: ModelInvocationPolicy,
+): PresentationRouter {
+  return {
+    async route(request, options) {
+      const candidate =
+        await modelAdapter.generatePresentationDecisionCandidate(
+          {
+            requestId: request.requestId,
+            content: request.content,
+            ...(request.context === undefined
+              ? {}
+              : { context: request.context }),
+            catalog: request.catalog,
+            outputSchema: {
+              schemaId:
+                "https://generative-ui.dev/schemas/presentation/decision/1.0",
+              schemaVersion: "1.0",
+            },
+          },
+          {
+            signal: options.signal,
+            policy,
+          },
+        );
+      const validated = validatePresentationDecision(candidate);
+      if (!validated.success) {
+        throw new PresentationDecisionValidationError();
+      }
+      return validated.value;
     },
   };
 }

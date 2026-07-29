@@ -1,3 +1,5 @@
+export * from "./catalog-capability-summary.js";
+export * from "./generative-ui-presentation-service.js";
 export * from "./markdown-presentation-service.js";
 export {
   areMarkdownSanitizerLimitsValid,

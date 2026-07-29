@@ -10,15 +10,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@generative-ui/compiler-contract": "workspace:*",
+    "@generative-ui/component-catalog-schema": "workspace:*",
+    "@generative-ui/presentation-contract": "workspace:*",
+    "@generative-ui/shared-types": "workspace:*",
+    "@generative-ui/ui-compiler-core": "workspace:*",
     "mdast-util-from-markdown": "2.0.3",
     "mdast-util-to-markdown": "2.1.2",
     "micromark-util-sanitize-uri": "2.0.1"
   },
   "devDependencies": {
-    "@generative-ui/compiler-contract": "workspace:*",
-    "@generative-ui/component-catalog-schema": "workspace:*",
-    "@generative-ui/presentation-contract": "workspace:*",
-    "@generative-ui/shared-types": "workspace:*",
     "@types/mdast": "4.0.4",
     "tsup": "8.5.0",
     "typescript": "5.8.3",
