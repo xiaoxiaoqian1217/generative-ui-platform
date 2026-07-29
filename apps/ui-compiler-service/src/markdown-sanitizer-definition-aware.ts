@@ -42,6 +42,7 @@ type DefinitionPreparationResult =
   | {
       success: true;
       markdown: string;
+      addedDefinitionCount: number;
     }
   | {
       success: false;
@@ -200,7 +201,7 @@ function prepareDefinitionSemantics(
   }
 
   if (duplicateRanges.length === 0 && nestedDefinitions.length === 0) {
-    return { success: true, markdown: input };
+    return { success: true, markdown: input, addedDefinitionCount: 0 };
   }
 
   duplicateRanges.sort((left, right) => right.start - left.start);
@@ -224,7 +225,11 @@ function prepareDefinitionSemantics(
     markdown = `${markdown}${separator}${serializedDefinitions}`;
   }
 
-  return { success: true, markdown };
+  return {
+    success: true,
+    markdown,
+    addedDefinitionCount: nestedDefinitions.length,
+  };
 }
 
 export function createMarkdownSanitizer(): MarkdownSanitizer {
@@ -256,10 +261,16 @@ export function createMarkdownSanitizer(): MarkdownSanitizer {
         return internalFailure();
       }
 
+      const maxAstNodes = limits.maxAstNodes + prepared.addedDefinitionCount;
+      if (!Number.isSafeInteger(maxAstNodes)) {
+        return internalFailure();
+      }
+
       const preparedBytes = Buffer.byteLength(prepared.markdown, "utf8");
       return baseSanitizer.sanitize(prepared.markdown, {
         ...limits,
         maxInputBytes: Math.max(limits.maxInputBytes, preparedBytes),
+        maxAstNodes,
       });
     },
   };
