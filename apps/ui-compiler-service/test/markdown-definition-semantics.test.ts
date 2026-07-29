@@ -91,4 +91,32 @@ describe("Markdown reference definition semantics", () => {
 
     expect(result.success).toBe(true);
   });
+
+  it(
+    "processes near-limit duplicate definitions in bounded time",
+    () => {
+      const input = `[文档][id]
+
+[id]: /a
+${"[id]: /b\n".repeat(19_000)}`;
+      expect(Buffer.byteLength(input, "utf8")).toBeLessThanOrEqual(
+        DEFAULT_MARKDOWN_SANITIZER_LIMITS.maxInputBytes,
+      );
+      expect(countAstNodes(input)).toBeLessThanOrEqual(
+        DEFAULT_MARKDOWN_SANITIZER_LIMITS.maxAstNodes,
+      );
+
+      const result = sanitizer.sanitize(
+        input,
+        DEFAULT_MARKDOWN_SANITIZER_LIMITS,
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.markdown).toContain("[id]: /a");
+        expect(result.markdown).not.toContain("[id]: /b");
+      }
+    },
+    5_000,
+  );
 });
