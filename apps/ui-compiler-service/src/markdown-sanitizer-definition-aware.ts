@@ -137,7 +137,8 @@ function blankRangePreservingLines(
   let replacement = "";
   for (let index = 0; index < segment.length; index += 1) {
     const character = segment[index];
-    replacement += character === "\n" || character === "\r" ? character : " ";
+    replacement +=
+      character === "\n" || character === "\r" ? character : " ";
   }
   return `${markdown.slice(0, range.start)}${replacement}${markdown.slice(
     range.end,
@@ -234,7 +235,7 @@ export function createMarkdownSanitizer(): MarkdownSanitizer {
       if (
         !areMarkdownSanitizerLimitsValid(limits) ||
         Buffer.byteLength(input, "utf8") > limits.maxInputBytes ||
-        !input.includes("]: ")
+        !input.includes("]:")
       ) {
         return baseSanitizer.sanitize(input, limits);
       }
