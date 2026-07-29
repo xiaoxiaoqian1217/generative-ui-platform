@@ -112,8 +112,8 @@ Core 不决定是否生成 UI，也不直接依赖模型 SDK 或具体模型供�
 `presentation-contract` 和 `component-catalog-schema` 已提供第一组可执行契约、运行时 Schema 和边界校验。
 `shared-types` 提供这些契约共用的唯一 `JsonValue` 和校验结果类型。
 UI Compiler Core 已实现输入和 Catalog 校验、UI IR lowering、A2UI 0.9.1 Profile 编译和 Markdown 降级。
-UI Compiler Service 仍只提供严格 TypeScript、ESM、构建、测试和发布入口。
-当前实现不包含模型调用、前端或真实业务 Agent 集成。
+UI Compiler Service 已实现 ADR-0014 Policy 1.0 Markdown Sanitizer 和确定性 Markdown 直出 tracer bullet。
+当前实现不包含结构化数据直出、generative UI 模型路径、HTTP、前端或真实业务 Agent 集成。
 
 当前阶段维护需求、架构、ADR、领域语言和仓库级工程基础设施。
 依赖边界检查用于阻止应用反向依赖、Core 依赖协议 Adapter 等违规方向。

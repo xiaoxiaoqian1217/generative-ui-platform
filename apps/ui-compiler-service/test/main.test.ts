@@ -1,6 +1,8 @@
 import { expect, test } from "vitest";
 import * as serviceEntrypoint from "../src/main.js";
 
-test("service entrypoint loads without starting a capability", () => {
-  expect(Object.keys(serviceEntrypoint)).toEqual([]);
+test("service entrypoint exports the Markdown direct tracer bullet", () => {
+  expect(serviceEntrypoint).toHaveProperty("createMarkdownSanitizer");
+  expect(serviceEntrypoint).toHaveProperty("createPresentationRouter");
+  expect(serviceEntrypoint).toHaveProperty("createMarkdownPresentationService");
 });
