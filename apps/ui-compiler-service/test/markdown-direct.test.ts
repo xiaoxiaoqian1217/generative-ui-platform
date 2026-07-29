@@ -34,13 +34,6 @@ describe("Markdown direct presentation path", () => {
   it("returns completed sanitized Markdown with zero model and Core calls", async () => {
     const generateCandidate =
       vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>();
-    const outOfScopeBoundarySpies = {
-      compileGenerativeUI: vi.fn(),
-      lowerToUIIR: vi.fn(),
-      serializeA2UI: vi.fn(),
-      writeCache: vi.fn(),
-      logContent: vi.fn(),
-    };
     const modelAdapter: ModelAdapter = {
       generatePresentationDecisionCandidate: generateCandidate,
     };
@@ -52,13 +45,11 @@ describe("Markdown direct presentation path", () => {
         return directRouter.route(request, options);
       },
     };
-    const serviceDependencies = {
+    const service = createMarkdownPresentationService({
       sanitizer: createMarkdownSanitizer(),
       router,
       limits: DEFAULT_MARKDOWN_SANITIZER_LIMITS,
-      ...outOfScopeBoundarySpies,
-    };
-    const service = createMarkdownPresentationService(serviceDependencies);
+    });
 
     const result = await service.present(
       {
@@ -76,9 +67,6 @@ describe("Markdown direct presentation path", () => {
       mode: "markdown",
     });
     expect(generateCandidate).not.toHaveBeenCalled();
-    for (const boundarySpy of Object.values(outOfScopeBoundarySpies)) {
-      expect(boundarySpy).not.toHaveBeenCalled();
-    }
     expect(observedRouteRequest?.content.contentType).toBe("markdown");
     if (observedRouteRequest?.content.contentType === "markdown") {
       expect(observedRouteRequest.content.markdown).not.toBe(
@@ -152,18 +140,18 @@ describe("Markdown direct presentation path", () => {
   it("does not route, call a model, or call Core after sanitization failure", async () => {
     const generateCandidate =
       vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>();
-    const compileGenerativeUI = vi.fn();
-    const route = vi.fn<PresentationRouter["route"]>();
-    const serviceDependencies = {
+    const directRouter = createPresentationRouter({
+      generatePresentationDecisionCandidate: generateCandidate,
+    });
+    const route = vi.fn(directRouter.route.bind(directRouter));
+    const service = createMarkdownPresentationService({
       sanitizer: createMarkdownSanitizer(),
       router: { route },
-      compileGenerativeUI,
       limits: {
         ...DEFAULT_MARKDOWN_SANITIZER_LIMITS,
         maxInputBytes: 1,
       },
-    };
-    const service = createMarkdownPresentationService(serviceDependencies);
+    });
 
     const result = await service.present(
       {
@@ -189,21 +177,17 @@ describe("Markdown direct presentation path", () => {
     });
     expect(route).not.toHaveBeenCalled();
     expect(generateCandidate).not.toHaveBeenCalled();
-    expect(compileGenerativeUI).not.toHaveBeenCalled();
   });
 
   it("returns stable degraded Markdown when routing fails", async () => {
-    const compileGenerativeUI = vi.fn();
     const route = vi
       .fn<PresentationRouter["route"]>()
       .mockRejectedValue(new Error("unsafe internal detail"));
-    const serviceDependencies = {
+    const service = createMarkdownPresentationService({
       sanitizer: createMarkdownSanitizer(),
       router: { route },
-      compileGenerativeUI,
       limits: DEFAULT_MARKDOWN_SANITIZER_LIMITS,
-    };
-    const service = createMarkdownPresentationService(serviceDependencies);
+    });
 
     const result = await service.present(
       {
@@ -231,12 +215,10 @@ describe("Markdown direct presentation path", () => {
     for (const token of dangerousMarkdownTokens) {
       expect(JSON.stringify(result)).not.toContain(token);
     }
-    expect(compileGenerativeUI).not.toHaveBeenCalled();
     expect(validatePresentationResult(result).success).toBe(true);
   });
 
   it("fails closed to sanitized Markdown for an unexpected generative decision", async () => {
-    const compileGenerativeUI = vi.fn();
     const route = vi.fn<PresentationRouter["route"]>().mockResolvedValue({
       mode: "generative-ui",
       reason: "Unexpected decision for explicit Markdown.",
@@ -257,13 +239,11 @@ describe("Markdown direct presentation path", () => {
         ],
       },
     });
-    const serviceDependencies = {
+    const service = createMarkdownPresentationService({
       sanitizer: createMarkdownSanitizer(),
       router: { route },
       limits: DEFAULT_MARKDOWN_SANITIZER_LIMITS,
-      compileGenerativeUI,
-    };
-    const service = createMarkdownPresentationService(serviceDependencies);
+    });
 
     const result = await service.present(
       {
@@ -283,7 +263,6 @@ describe("Markdown direct presentation path", () => {
     for (const token of dangerousMarkdownTokens) {
       expect(JSON.stringify(result)).not.toContain(token);
     }
-    expect(compileGenerativeUI).not.toHaveBeenCalled();
     expect(validatePresentationResult(result).success).toBe(true);
   });
 
@@ -309,14 +288,11 @@ describe("Markdown direct presentation path", () => {
     const modelAdapter: ModelAdapter = {
       generatePresentationDecisionCandidate: vi.fn(),
     };
-    const compileGenerativeUI = vi.fn();
-    const serviceDependencies = {
+    const service = createMarkdownPresentationService({
       sanitizer,
       router: createPresentationRouter(modelAdapter),
-      compileGenerativeUI,
       limits: DEFAULT_MARKDOWN_SANITIZER_LIMITS,
-    };
-    const service = createMarkdownPresentationService(serviceDependencies);
+    });
 
     const result = await service.present(
       {
@@ -341,7 +317,6 @@ describe("Markdown direct presentation path", () => {
       ],
     });
     expect(JSON.stringify(result)).not.toContain("安全说明仍然保留");
-    expect(compileGenerativeUI).not.toHaveBeenCalled();
     expect(validatePresentationResult(result).success).toBe(true);
   });
 
