@@ -130,20 +130,28 @@ function toDefinition(node: AstNode): Definition | undefined {
   };
 }
 
-function blankRangePreservingLines(
+export function blankRangesPreservingLines(
   markdown: string,
-  range: SourceRange,
-): string {
-  const segment = markdown.slice(range.start, range.end);
-  let replacement = "";
-  for (let index = 0; index < segment.length; index += 1) {
-    const character = segment[index];
-    replacement +=
-      character === "\n" || character === "\r" ? character : " ";
+  ranges: SourceRange[],
+): string | undefined {
+  ranges.sort((left, right) => left.start - right.start);
+
+  const parts: string[] = [];
+  let cursor = 0;
+  for (const range of ranges) {
+    if (range.start < cursor || range.end > markdown.length) {
+      return undefined;
+    }
+
+    parts.push(markdown.slice(cursor, range.start));
+    parts.push(
+      markdown.slice(range.start, range.end).replace(/[^\r\n]/g, " "),
+    );
+    cursor = range.end;
   }
-  return `${markdown.slice(0, range.start)}${replacement}${markdown.slice(
-    range.end,
-  )}`;
+  parts.push(markdown.slice(cursor));
+
+  return parts.join("");
 }
 
 function prepareDefinitionSemantics(
@@ -204,11 +212,11 @@ function prepareDefinitionSemantics(
     return { success: true, markdown: input, addedDefinitionCount: 0 };
   }
 
-  duplicateRanges.sort((left, right) => right.start - left.start);
-  let markdown = input;
-  for (const range of duplicateRanges) {
-    markdown = blankRangePreservingLines(markdown, range);
+  const blankedMarkdown = blankRangesPreservingLines(input, duplicateRanges);
+  if (blankedMarkdown === undefined) {
+    return { success: false };
   }
+  let markdown = blankedMarkdown;
 
   if (nestedDefinitions.length > 0) {
     let serializedDefinitions: string;
