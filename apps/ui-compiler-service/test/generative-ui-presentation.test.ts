@@ -99,9 +99,10 @@ function createService(
   compile?: Parameters<
     typeof createGenerativeUIPresentationService
   >[0]["compile"],
+  catalogRepository: { load(): unknown } = { load: () => catalog },
 ) {
   return createGenerativeUIPresentationService({
-    catalogRepository: { load: () => catalog },
+    catalogRepository,
     sanitizer: createMarkdownSanitizer(),
     structuredDataValidator: createStructuredDataValidator(),
     structuredDataSerializer: createStructuredDataSerializer(),
@@ -325,6 +326,36 @@ describe("Generative UI presentation path", () => {
       status: "degraded",
       mode: "markdown",
       errors: [{ code: "COMPONENT_CATALOG_INVALID" }],
+    });
+  });
+
+  it("keeps the Core Catalog snapshot stable while the model call is pending", async () => {
+    const mutableCatalog = structuredClone(catalog) as ComponentCatalog;
+    const result = await createService(
+      {
+        generatePresentationDecisionCandidate: async (request) => {
+          const firstComponent = mutableCatalog.components[0];
+          if (firstComponent === undefined) {
+            throw new Error("Test Catalog must contain a component.");
+          }
+          firstComponent.description = "Changed after routing.";
+          return candidateFor(request);
+        },
+      },
+      undefined,
+      { load: () => mutableCatalog },
+    ).present(
+      {
+        requestId: "catalog-snapshot",
+        content: { contentType: "markdown", markdown: "Revenue is 125 CNY." },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: new AbortController().signal },
+    );
+
+    expect(result).toMatchObject({
+      status: "completed",
+      mode: "generative-ui",
     });
   });
 });

@@ -24,7 +24,10 @@ import {
   type CoreCompileLimits,
   compileUI,
 } from "@generative-ui/ui-compiler-core";
-import { createCatalogCapabilitySummary } from "./catalog-capability-summary.js";
+import {
+  createCatalogCapabilitySummary,
+  createImmutableCatalogSnapshot,
+} from "./catalog-capability-summary.js";
 import {
   areMarkdownSanitizerLimitsValid,
   type MarkdownSanitizer,
@@ -135,10 +138,11 @@ function validatedCatalog(
     ) {
       return { success: false, code: "CATALOG_REFERENCE_MISMATCH" };
     }
+    const catalog = createImmutableCatalogSnapshot(result.value);
     return {
       success: true,
-      catalog: result.value,
-      contentHash: computeCatalogContentHash(result.value),
+      catalog,
+      contentHash: computeCatalogContentHash(catalog),
     };
   } catch {
     return { success: false, code: "COMPONENT_CATALOG_INVALID" };

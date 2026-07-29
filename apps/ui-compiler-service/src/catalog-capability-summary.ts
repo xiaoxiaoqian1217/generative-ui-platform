@@ -39,6 +39,12 @@ function immutableCopy<T>(value: T): T {
   return deepFreeze(structuredClone(value));
 }
 
+export function createImmutableCatalogSnapshot(
+  catalog: ComponentCatalog,
+): ComponentCatalog {
+  return immutableCopy(catalog);
+}
+
 export function createCatalogCapabilitySummary(
   catalog: ComponentCatalog,
   catalogContentHash: CatalogContentHash = computeCatalogContentHash(catalog),
