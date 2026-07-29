@@ -10,7 +10,15 @@ export interface ComponentMapping {
   bindingProps: Partial<Record<BindingRole, string>>;
 }
 
-const commonComponentMappings: Readonly<Record<string, ComponentMapping>> = {
+export const componentMappings: Readonly<Record<string, ComponentMapping>> = {
+  Alert: {
+    purposeProp: "message",
+    bindingProps: {
+      title: "title",
+      content: "message",
+      status: "status",
+    },
+  },
   Button: {
     purposeProp: "label",
     actionLabelProp: "label",
@@ -21,6 +29,8 @@ const commonComponentMappings: Readonly<Record<string, ComponentMapping>> = {
     bindingProps: {
       title: "title",
       content: "content",
+      collection: "content",
+      status: "status",
     },
   },
   Form: {
@@ -31,13 +41,41 @@ const commonComponentMappings: Readonly<Record<string, ComponentMapping>> = {
   },
   List: {
     bindingProps: {
+      title: "title",
+      content: "items",
       collection: "items",
     },
   },
+  Steps: {
+    bindingProps: {
+      title: "title",
+      content: "steps",
+      collection: "steps",
+      status: "status",
+    },
+  },
+  Table: {
+    bindingProps: {
+      title: "title",
+      content: "rows",
+      collection: "rows",
+      status: "rows",
+    },
+  },
   Text: {
+    purposeProp: "text",
     bindingProps: {
       title: "text",
       content: "text",
+      status: "text",
+    },
+  },
+  Timeline: {
+    bindingProps: {
+      title: "title",
+      content: "items",
+      collection: "items",
+      status: "status",
     },
   },
 };
@@ -57,5 +95,5 @@ export function componentMapping(
 ): ComponentMapping | undefined {
   return component.category === "domain"
     ? domainComponentMapping
-    : commonComponentMappings[component.componentType];
+    : componentMappings[component.componentType];
 }

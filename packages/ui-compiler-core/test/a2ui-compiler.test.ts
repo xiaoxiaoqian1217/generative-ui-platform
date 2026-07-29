@@ -2,7 +2,7 @@ import type { UISurfaceIR } from "@generative-ui/compiler-contract";
 import { validateA2UIOperationSequence } from "@generative-ui/compiler-contract";
 import { describe, expect, it } from "vitest";
 import { compileA2UI } from "../src/a2ui-compiler.js";
-import { selectSummaryComponent } from "../src/component-selection.js";
+import { selectComponents } from "../src/component-selection.js";
 import { validateCompileInput } from "../src/input-validation.js";
 import { buildUIIR } from "../src/ui-ir-builder.js";
 import { expectCoreFailure } from "./assertions.js";
@@ -11,7 +11,7 @@ import { compileOptions, summaryCatalog, summaryRequest } from "./fixtures.js";
 const request = validateCompileInput(summaryRequest, compileOptions.limits);
 const surface = buildUIIR(
   request,
-  [selectSummaryComponent(request, summaryCatalog)],
+  selectComponents(request, summaryCatalog),
   summaryCatalog,
   compileOptions,
 );

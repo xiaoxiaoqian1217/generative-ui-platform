@@ -18,6 +18,7 @@ import { componentMapping } from "./component-mappings.js";
 import type { ComponentSelection } from "./component-selection.js";
 import { fail } from "./failure.js";
 import { resolveJsonPointer } from "./json-pointer.js";
+import { normalizeLayout } from "./layout.js";
 import type { CompileOptions } from "./types.js";
 
 interface LoweredActions {
@@ -163,13 +164,11 @@ function buildComponent(
     props,
     ...(bindings.length > 0 ? { bindings } : {}),
     children: childIds,
-    layout: {
-      flow: selection.region.layout.flow,
-      density: selection.region.layout.density,
-      ...(selection.region.layout.minColumns !== undefined
-        ? { columns: selection.region.layout.minColumns }
-        : {}),
-    },
+    layout: normalizeLayout(
+      selection.region.layout,
+      request.context,
+      selection.regionIndex,
+    ),
     sourceRegionIds: [selection.region.regionId],
   };
 }
@@ -369,6 +368,21 @@ export function buildUIIR(
       path: "/plan/regions",
       constraint: "complete-region-selection",
     });
+  }
+
+  const regionIds = new Set<string>();
+  for (const [regionIndex, region] of request.plan.regions.entries()) {
+    if (regionIds.has(region.regionId)) {
+      fail({
+        code: "NO_COMPATIBLE_COMPOSITION",
+        message: "Plan region IDs must be unique.",
+        stage: "semantic-resolution",
+        retryable: false,
+        path: `/plan/regions/${regionIndex}/regionId`,
+        constraint: "unique-region-id",
+      });
+    }
+    regionIds.add(region.regionId);
   }
 
   const childIds = selections

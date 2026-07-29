@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { selectSummaryComponent } from "../src/component-selection.js";
+import { selectComponents } from "../src/component-selection.js";
 import { validateCompileInput } from "../src/input-validation.js";
 import { expectCoreFailure } from "./assertions.js";
 import { compileOptions, summaryCatalog, summaryRequest } from "./fixtures.js";
@@ -8,7 +8,7 @@ describe("summary component selector", () => {
   it("selects the authorized Card declaration", () => {
     const request = validateCompileInput(summaryRequest, compileOptions.limits);
 
-    expect(selectSummaryComponent(request, summaryCatalog).component).toBe(
+    expect(selectComponents(request, summaryCatalog)[0]?.component).toBe(
       summaryCatalog.components[0],
     );
   });
@@ -35,7 +35,7 @@ describe("summary component selector", () => {
     );
 
     expectCoreFailure(
-      () => selectSummaryComponent(request, summaryCatalog),
+      () => selectComponents(request, summaryCatalog),
       "NO_COMPATIBLE_COMPONENT",
     );
   });
