@@ -1,4 +1,3 @@
-import type { CatalogContentHash } from "@generative-ui/compiler-contract";
 import type { ComponentCatalog } from "@generative-ui/component-catalog-schema";
 import { computeCatalogContentHash } from "@generative-ui/component-catalog-schema";
 import type { CatalogCapabilitySummary } from "./presentation-router.js";
@@ -47,8 +46,8 @@ export function createImmutableCatalogSnapshot(
 
 export function createCatalogCapabilitySummary(
   catalog: ComponentCatalog,
-  catalogContentHash: CatalogContentHash = computeCatalogContentHash(catalog),
 ): CatalogCapabilitySummary {
+  const catalogContentHash = computeCatalogContentHash(catalog);
   return deepFreeze({
     summaryVersion: "1.0",
     catalog: {

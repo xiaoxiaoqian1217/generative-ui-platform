@@ -272,10 +272,7 @@ export function createGenerativeUIPresentationService(
             ...(request.context === undefined
               ? {}
               : { context: request.context }),
-            catalog: createCatalogCapabilitySummary(
-              resolved.catalog,
-              resolved.contentHash,
-            ),
+            catalog: createCatalogCapabilitySummary(resolved.catalog),
           },
           options,
         );
