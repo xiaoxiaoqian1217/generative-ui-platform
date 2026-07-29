@@ -14,6 +14,10 @@ export const MARKDOWN_DIRECT_REASON_WITH_USER_CONTEXT =
   "MARKDOWN_DIRECT_EXPLICIT_CONTENT_WITH_USER_CONTEXT";
 export const MARKDOWN_DIRECT_REASON_WITHOUT_USER_CONTEXT =
   "MARKDOWN_DIRECT_EXPLICIT_CONTENT_WITHOUT_USER_CONTEXT_REDUCED_CONFIDENCE";
+export const STRUCTURED_DATA_DIRECT_REASON_WITH_USER_CONTEXT =
+  "STRUCTURED_DATA_DIRECT_SAFE_REPRESENTATION_WITH_USER_CONTEXT";
+export const STRUCTURED_DATA_DIRECT_REASON_WITHOUT_USER_CONTEXT =
+  "STRUCTURED_DATA_DIRECT_SAFE_REPRESENTATION_WITHOUT_USER_CONTEXT_REDUCED_CONFIDENCE";
 
 export type RoutableAgentContent =
   | {
@@ -111,16 +115,16 @@ export function createPresentationRouter(
 ): PresentationRouter {
   return {
     async route(request) {
-      if (request.content.contentType !== "markdown") {
-        throw new PresentationRoutingError();
-      }
-
       return {
         mode: "markdown",
         reason:
-          request.context?.userMessage === undefined
-            ? MARKDOWN_DIRECT_REASON_WITHOUT_USER_CONTEXT
-            : MARKDOWN_DIRECT_REASON_WITH_USER_CONTEXT,
+          request.content.contentType === "markdown"
+            ? request.context?.userMessage === undefined
+              ? MARKDOWN_DIRECT_REASON_WITHOUT_USER_CONTEXT
+              : MARKDOWN_DIRECT_REASON_WITH_USER_CONTEXT
+            : request.context?.userMessage === undefined
+              ? STRUCTURED_DATA_DIRECT_REASON_WITHOUT_USER_CONTEXT
+              : STRUCTURED_DATA_DIRECT_REASON_WITH_USER_CONTEXT,
       };
     },
   };

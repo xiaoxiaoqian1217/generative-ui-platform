@@ -13,3 +13,7 @@ export {
 } from "./markdown-sanitizer.js";
 export { createMarkdownSanitizer } from "./markdown-sanitizer-definition-aware.js";
 export * from "./presentation-router.js";
+export * from "./safe-markdown-presentation.js";
+export * from "./structured-data-presentation-service.js";
+export * from "./structured-data-serializer.js";
+export * from "./structured-data-validator.js";

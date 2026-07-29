@@ -27,7 +27,7 @@ const forbiddenOutOfScopeIdentifiers = [
   "logContent",
 ] as const;
 
-describe("Markdown direct path dependency boundaries", () => {
+describe("Direct presentation path dependency boundaries", () => {
   it("has no Core, UI IR, A2UI, cache, or logger runtime dependency", () => {
     const declaredDependencies = {
       ...packageJson.dependencies,
