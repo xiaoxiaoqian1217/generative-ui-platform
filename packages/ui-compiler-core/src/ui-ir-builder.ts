@@ -1,4 +1,6 @@
 import type {
+  ActionIR,
+  ComponentActionBindingIR,
   ComponentIR,
   PropBindingIR,
   UICompileRequest,
@@ -6,31 +8,61 @@ import type {
 } from "@generative-ui/compiler-contract";
 import { validateUISurfaceIR } from "@generative-ui/compiler-contract";
 import {
+  type ActionDefinition,
   type ComponentCatalog,
+  validateActionPayload,
   validateComponentProps,
 } from "@generative-ui/component-catalog-schema";
 import type { JsonValue } from "@generative-ui/shared-types";
-import { componentMappings } from "./component-mappings.js";
+import {
+  componentPermitsTargetActions,
+  indexTargetActions,
+  type TargetActions,
+} from "./action-targets.js";
+import { componentMapping } from "./component-mappings.js";
 import type { ComponentSelection } from "./component-selection.js";
 import { fail } from "./failure.js";
 import { resolveJsonPointer } from "./json-pointer.js";
 import { normalizeLayout } from "./layout.js";
 import type { CompileOptions } from "./types.js";
 
+interface LoweredActions {
+  actions: ActionIR[];
+  actionBindings: ComponentActionBindingIR[];
+}
+
 function componentId(regionIndex: number): string {
   return regionIndex === 0 ? "root" : `region-${regionIndex}`;
+}
+
+function actionError(
+  code: "ACTION_BINDING_UNRESOLVED" | "ACTION_PAYLOAD_INVALID",
+  message: string,
+  path: string,
+  constraint: string,
+  stage: "action-binding" | "schema-validation" = "action-binding",
+): never {
+  return fail({
+    code,
+    message,
+    stage,
+    retryable: false,
+    path,
+    constraint,
+  });
 }
 
 function buildComponent(
   request: UICompileRequest,
   selection: ComponentSelection,
   childIds: string[],
+  targetedActions: TargetActions,
   catalog: ComponentCatalog,
   options: CompileOptions,
 ): ComponentIR {
   const props: Record<string, JsonValue> = {};
   const resolvedProps: Record<string, JsonValue> = {};
-  const mapping = componentMappings[selection.component.componentType];
+  const mapping = componentMapping(selection.component);
   if (!mapping) {
     fail({
       code: "NO_COMPATIBLE_COMPONENT",
@@ -81,6 +113,12 @@ function buildComponent(
     });
   }
 
+  const action = targetedActions.get(selection.region.regionId)?.action;
+  if (mapping.actionLabelProp && action) {
+    props[mapping.actionLabelProp] = action.label;
+    resolvedProps[mapping.actionLabelProp] = action.label;
+    boundProps.add(mapping.actionLabelProp);
+  }
   if (mapping.purposeProp && !boundProps.has(mapping.purposeProp)) {
     props[mapping.purposeProp] = selection.region.purpose;
     resolvedProps[mapping.purposeProp] = selection.region.purpose;
@@ -118,11 +156,183 @@ function buildComponent(
   };
 }
 
+function actionDefinition(
+  catalog: ComponentCatalog,
+  actionType: string,
+  path: string,
+): ActionDefinition {
+  const definition = catalog.actions.find(
+    (candidate) => candidate.actionType === actionType,
+  );
+  if (!definition) {
+    actionError(
+      "ACTION_BINDING_UNRESOLVED",
+      "The Action type is not declared by the active Catalog.",
+      path,
+      "catalog-action-type",
+      "schema-validation",
+    );
+  }
+  return definition;
+}
+
+function lowerActions(
+  request: UICompileRequest,
+  selections: ComponentSelection[],
+  targetedActions: TargetActions,
+  catalog: ComponentCatalog,
+  options: CompileOptions,
+): LoweredActions {
+  const actions: ActionIR[] = [];
+  const actionBindings: ComponentActionBindingIR[] = [];
+
+  for (const {
+    action,
+    actionPath,
+    targetRegionId,
+  } of targetedActions.values()) {
+    const target = selections.find(
+      (selection) => selection.region.regionId === targetRegionId,
+    );
+    if (!target) {
+      actionError(
+        "ACTION_BINDING_UNRESOLVED",
+        "The Action target cannot be resolved to a selected component.",
+        `${actionPath}/targetRegionId`,
+        "action-target-component",
+        "schema-validation",
+      );
+    }
+
+    const definition = actionDefinition(
+      catalog,
+      action.actionType,
+      `${actionPath}/actionType`,
+    );
+    if (
+      !componentPermitsTargetActions(
+        targetedActions,
+        targetRegionId,
+        target.component,
+      )
+    ) {
+      actionError(
+        "ACTION_BINDING_UNRESOLVED",
+        "The target component does not permit this Action type.",
+        `${actionPath}/targetRegionId`,
+        "component-action-permission",
+        "schema-validation",
+      );
+    }
+    if (
+      (definition.destructive && !action.destructive) ||
+      (definition.requiresApproval && !action.requiresApproval)
+    ) {
+      actionError(
+        "ACTION_BINDING_UNRESOLVED",
+        "Action safety flags are weaker than the active Catalog.",
+        actionPath,
+        "catalog-action-safety",
+        "schema-validation",
+      );
+    }
+
+    const payload: NonNullable<ActionIR["payload"]> = {};
+    const resolvedPayload: Record<string, JsonValue> = {};
+    for (const [parameterName, parameter] of Object.entries(
+      action.payload ?? {},
+    )) {
+      if (
+        parameterName === "actionId" ||
+        parameterName === "requiresApproval" ||
+        parameterName === "destructive"
+      ) {
+        actionError(
+          "ACTION_PAYLOAD_INVALID",
+          "Action payload uses a reserved Envelope context key.",
+          `${actionPath}/payload/${parameterName}`,
+          "reserved-action-context",
+        );
+      }
+
+      if (parameter.kind === "source-binding") {
+        const resolved = resolveJsonPointer(
+          request.sourceData,
+          parameter.sourcePointer,
+        );
+        if (!resolved.found || resolved.value === undefined) {
+          actionError(
+            "ACTION_PAYLOAD_INVALID",
+            "Action payload binding does not resolve against sourceData.",
+            `${actionPath}/payload/${parameterName}/sourcePointer`,
+            "action-data-binding-reference",
+          );
+        }
+        resolvedPayload[parameterName] = resolved.value;
+        payload[parameterName] = parameter;
+        continue;
+      }
+
+      if (parameter.value === null) {
+        actionError(
+          "ACTION_PAYLOAD_INVALID",
+          "Action literal cannot be represented as an A2UI DynamicValue.",
+          `${actionPath}/payload/${parameterName}/value`,
+          "a2ui-dynamic-value",
+        );
+      }
+      resolvedPayload[parameterName] = parameter.value;
+      payload[parameterName] = {
+        kind: "literal",
+        value: parameter.value,
+      };
+    }
+
+    const payloadResult = validateActionPayload(
+      catalog,
+      action.actionType,
+      resolvedPayload,
+      options.limits.catalogSchema,
+    );
+    if (!payloadResult.success) {
+      fail({
+        code: payloadResult.error.code,
+        message: payloadResult.error.message,
+        stage: "action-binding",
+        retryable: false,
+        path: `${actionPath}/payload${payloadResult.error.path}`,
+        constraint: payloadResult.error.constraint,
+      });
+    }
+
+    actions.push({
+      actionId: action.actionId,
+      actionType: action.actionType,
+      label: action.label,
+      ...(Object.keys(payload).length > 0 ? { payload } : {}),
+      requiresApproval: action.requiresApproval,
+      destructive: action.destructive,
+    });
+    actionBindings.push({
+      componentId: componentId(target.regionIndex),
+      actionId: action.actionId,
+      event:
+        target.component.componentType === "Form" ||
+        action.actionType === "submit"
+          ? "submit"
+          : "click",
+    });
+  }
+
+  return { actions, actionBindings };
+}
+
 export function buildUIIR(
   request: UICompileRequest,
   selections: ComponentSelection[],
   catalog: ComponentCatalog,
   options: CompileOptions,
+  targetedActions: TargetActions = indexTargetActions(request),
 ): UISurfaceIR {
   if (selections.length !== request.plan.regions.length) {
     fail({
@@ -158,9 +368,17 @@ export function buildUIIR(
       request,
       selection,
       selection.regionIndex === 0 ? childIds : [],
+      targetedActions,
       catalog,
       options,
     ),
+  );
+  const loweredActions = lowerActions(
+    request,
+    selections,
+    targetedActions,
+    catalog,
+    options,
   );
 
   const surface = {
@@ -172,8 +390,8 @@ export function buildUIIR(
     dataSources: {
       sourceData: request.sourceData,
     },
-    actions: [],
-    actionBindings: [],
+    actions: loweredActions.actions,
+    actionBindings: loweredActions.actionBindings,
     metadata: {
       scenario: request.plan.scenario,
       ...(request.context?.locale ? { locale: request.context.locale } : {}),

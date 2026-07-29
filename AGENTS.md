@@ -8,10 +8,10 @@
 
 ## Branch and worktree applicability
 
-- 只有以下工作强制使用独立分支和独立 worktree：明确执行一个 Goal、实现或修复一个 GitHub Issue，或者用户明确要求创建分支、提交、发布或 Pull Request。
+- 只有以下工作强制使用独立分支和独立 worktree：明确执行一个 Goal、实现或修复一个 GitHub Issue，或者用户明确要求创建分支或 Pull Request。
 - 只读检查、分析、答疑、状态报告，以及未绑定 Goal 或 Issue 的小型规则调整、文档修正、拼写修正和类似维护工作，不得自动创建新分支或 worktree。
 - 不强制隔离的修改可以在当前 worktree 中进行，但修改前必须检查分支、工作树状态和 worktree 所有权，并且不得混入其他 Goal 或 Issue 的专属 worktree。
-- 如果工作范围扩大为 Goal 或 Issue 实现，或者后续需要提交、发布或创建 Pull Request，必须先停止修改，再按下述规则创建或切换到合规的任务分支和 worktree。
+- 如果工作范围扩大为 Goal 或 Issue 实现，或者后续需要创建 Pull Request，必须先停止修改，再按下述规则创建或切换到合规的任务分支和 worktree。
 
 ## Branch creation rules
 
@@ -46,12 +46,14 @@ git worktree add <absolute-task-worktree-path> codex/issue-N
 
 ## Branch publication rules
 
-- 禁止直接 push 到 `main`，所有需要发布到远端的修改必须先位于合规任务分支，再 push 到同名远端任务分支并通过 Pull Request 合并。
+- 默认不得直接 push 到 `main`，未经用户明确授权的远端发布必须先位于合规任务分支，再 push 到同名远端任务分支并通过 Pull Request 合并。
+- 用户明确要求在 `main` 上修改、提交或直接 push 时，可以在主 worktree 中执行，不得以默认分支策略拒绝。
+- 直接 push `main` 前必须重新获取并验证远端 GitHub `main`，确认当前分支和 worktree 正确、工作树状态符合预期、不存在进行中的 Git 操作，并完成与修改范围相匹配的验证。
 - 任务分支不得将 `origin/main` 配置为 upstream。
 - 第一次 push 必须显式指定本地任务分支和同名远端任务分支，不得使用裸 `git push`。
 - 后续 push 前必须验证 upstream 与当前任务分支同名，并再次确认目标不是 `main`。
 - 除非用户明确要求发布，否则不得 push 任务分支或创建 Pull Request。
-- 如果发现 GitHub `main` 允许直接 push，必须报告分支保护缺口，但不得利用该权限绕过 Pull Request。
+- 未经用户明确授权时，不得因为 GitHub `main` 缺少分支保护而绕过 Pull Request。
 
 安全的第一次 push 方式如下。
 
