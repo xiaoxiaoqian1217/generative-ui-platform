@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --out-dir dist",
-    "test": "pnpm --filter @generative-ui/ui-compiler-core... build && vitest run",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
