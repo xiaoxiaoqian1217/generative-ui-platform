@@ -4,7 +4,12 @@ import type {
   ComponentDefinition,
 } from "@generative-ui/component-catalog-schema";
 import type { JsonValue } from "@generative-ui/shared-types";
-import { componentMappings } from "./component-mappings.js";
+import {
+  componentPermitsTargetActions,
+  indexTargetActions,
+  type TargetActions,
+} from "./action-targets.js";
+import { componentMapping } from "./component-mappings.js";
 import { fail } from "./failure.js";
 import { resolveJsonPointer } from "./json-pointer.js";
 
@@ -16,8 +21,14 @@ const supportedComponents: Partial<
   comparison: new Set(["Table", "Card"]),
   timeline: new Set(["Timeline", "Steps"]),
   detail: new Set(["Card", "List", "Table"]),
+  form: new Set(["Form"]),
+  confirmation: new Set(["Card", "Button"]),
 };
 
+const actionScenarios = new Set<UICompileRequest["plan"]["scenario"]>([
+  "form",
+  "confirmation",
+]);
 const narrowViewportWidth = 640;
 const largeCollectionSize = 5;
 const collectionTableSize = 3;
@@ -38,6 +49,7 @@ interface DataProfile {
 }
 
 interface ScoredCandidate {
+  actionsPermitted: boolean;
   component: ComponentDefinition;
   catalogIndex: number;
   preferenceIndex: number;
@@ -204,13 +216,17 @@ function dataAndViewportScore(
 function candidatesForRegion(
   request: UICompileRequest,
   catalog: ComponentCatalog,
+  targetedActions: TargetActions,
   regionIndex: number,
 ): ScoredCandidate[] {
   const region = request.plan.regions[regionIndex];
   if (!region) {
     return [];
   }
-  if ((region.actions?.length ?? 0) > 0) {
+  if (
+    (region.actions?.length ?? 0) > 0 &&
+    !actionScenarios.has(request.plan.scenario)
+  ) {
     fail({
       code: "NO_COMPATIBLE_COMPOSITION",
       message: "Display-scene lowering does not support Actions.",
@@ -226,7 +242,7 @@ function candidatesForRegion(
   if (!allowedTypes) {
     fail({
       code: "NO_COMPATIBLE_COMPOSITION",
-      message: "The Core does not support this display scenario yet.",
+      message: "The Core does not support this presentation scenario yet.",
       stage: "composition-planning",
       retryable: false,
       path: "/plan/scenario",
@@ -249,10 +265,13 @@ function candidatesForRegion(
     if (!component) {
       continue;
     }
-    if (!allowedTypes.has(preference.componentType)) {
+    if (
+      component.category !== "domain" &&
+      !allowedTypes.has(preference.componentType)
+    ) {
       continue;
     }
-    const mapping = componentMappings[component.componentType];
+    const mapping = componentMapping(component);
     if (!mapping) {
       continue;
     }
@@ -265,6 +284,11 @@ function candidatesForRegion(
     }
 
     candidates.push({
+      actionsPermitted: componentPermitsTargetActions(
+        targetedActions,
+        region.regionId,
+        component,
+      ),
       component,
       catalogIndex,
       preferenceIndex,
@@ -289,6 +313,7 @@ function candidatesForRegion(
 
   return candidates.sort(
     (left, right) =>
+      Number(right.actionsPermitted) - Number(left.actionsPermitted) ||
       right.score - left.score ||
       left.preferenceIndex - right.preferenceIndex ||
       left.catalogIndex - right.catalogIndex ||
@@ -318,9 +343,10 @@ function acceptsChild(
 export function selectComponents(
   request: UICompileRequest,
   catalog: ComponentCatalog,
+  targetedActions: TargetActions = indexTargetActions(request),
 ): ComponentSelection[] {
   const candidateLists = request.plan.regions.map((_region, regionIndex) =>
-    candidatesForRegion(request, catalog, regionIndex),
+    candidatesForRegion(request, catalog, targetedActions, regionIndex),
   );
 
   const missingIndex = candidateLists.findIndex(

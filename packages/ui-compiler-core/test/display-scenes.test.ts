@@ -434,33 +434,6 @@ describe("display scene lowering", () => {
     });
   });
 
-  it.each(["confirmation", "form"] as const)(
-    "keeps the out-of-scope %s scenario on a structured unsupported path",
-    (scenario) => {
-      const outOfScopeRequest = {
-        ...detailRequest,
-        plan: {
-          ...detailRequest.plan,
-          scenario,
-        },
-      };
-
-      expect(compileUI(outOfScopeRequest, displayCompileOptions)).toMatchObject(
-        {
-          success: true,
-          degraded: true,
-          errors: [
-            {
-              code: "NO_COMPATIBLE_COMPOSITION",
-              stage: "composition-planning",
-              constraint: "supported-core-scenario",
-            },
-          ],
-        },
-      );
-    },
-  );
-
   it("returns a structured component error for unsupported preferences", () => {
     const unsupportedComponent = {
       ...statusRequest,

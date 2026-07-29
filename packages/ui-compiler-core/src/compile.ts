@@ -8,6 +8,7 @@ import type {
 } from "@generative-ui/compiler-contract";
 import { validateUICompileResult } from "@generative-ui/compiler-contract";
 import { compileA2UI } from "./a2ui-compiler.js";
+import { indexTargetActions } from "./action-targets.js";
 import { validateInjectedCatalog } from "./catalog-validation.js";
 import { selectComponents } from "./component-selection.js";
 import { CoreCompileFailure } from "./failure.js";
@@ -94,13 +95,16 @@ export function compileUI(
     contentHash = validatedCatalog.contentHash;
     completedStages.push("catalog-validation");
 
-    const selections = selectComponents(request, validatedCatalog.catalog);
+    const targetedActions = indexTargetActions(request);
+    const selections = selectComponents(
+      request,
+      validatedCatalog.catalog,
+      targetedActions,
+    );
     completedStages.push(
       "semantic-resolution",
       "composition-planning",
       "component-selection",
-      "props-resolution",
-      "action-binding",
     );
 
     const surface = buildUIIR(
@@ -108,8 +112,14 @@ export function compileUI(
       selections,
       validatedCatalog.catalog,
       options,
+      targetedActions,
     );
-    completedStages.push("ui-ir-building", "schema-validation");
+    completedStages.push(
+      "props-resolution",
+      "action-binding",
+      "ui-ir-building",
+      "schema-validation",
+    );
 
     const operations = compileA2UI(surface);
     completedStages.push("a2ui-compilation", "a2ui-validation");

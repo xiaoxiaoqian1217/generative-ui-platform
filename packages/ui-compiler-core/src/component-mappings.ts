@@ -1,10 +1,12 @@
 import type { UICompileRequest } from "@generative-ui/compiler-contract";
+import type { ComponentDefinition } from "@generative-ui/component-catalog-schema";
 
 type BindingRole =
   UICompileRequest["plan"]["regions"][number]["bindings"][number]["role"];
 
 export interface ComponentMapping {
   purposeProp?: string;
+  actionLabelProp?: string;
   bindingProps: Partial<Record<BindingRole, string>>;
 }
 
@@ -17,6 +19,11 @@ export const componentMappings: Readonly<Record<string, ComponentMapping>> = {
       status: "status",
     },
   },
+  Button: {
+    purposeProp: "label",
+    actionLabelProp: "label",
+    bindingProps: {},
+  },
   Card: {
     purposeProp: "title",
     bindingProps: {
@@ -24,6 +31,12 @@ export const componentMappings: Readonly<Record<string, ComponentMapping>> = {
       content: "content",
       collection: "content",
       status: "status",
+    },
+  },
+  Form: {
+    actionLabelProp: "submitLabel",
+    bindingProps: {
+      "form-data": "value",
     },
   },
   List: {
@@ -66,3 +79,21 @@ export const componentMappings: Readonly<Record<string, ComponentMapping>> = {
     },
   },
 };
+
+const domainComponentMapping: ComponentMapping = {
+  bindingProps: {
+    title: "title",
+    content: "content",
+    collection: "items",
+    status: "status",
+    "form-data": "value",
+  },
+};
+
+export function componentMapping(
+  component: ComponentDefinition,
+): ComponentMapping | undefined {
+  return component.category === "domain"
+    ? domainComponentMapping
+    : componentMappings[component.componentType];
+}
