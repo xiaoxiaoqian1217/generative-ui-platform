@@ -10,9 +10,56 @@
 
 - 创建任何任务或 Issue 分支前，必须先获取远端 GitHub `main` 的最新状态，并验证本地远端跟踪引用与 GitHub 远端提交一致。
 - 新分支必须直接从已验证的 `origin/main` 创建，禁止从当前本地 `HEAD`、其他本地分支或未经验证的本地 `main` 创建。
+- 任务分支必须使用 `--no-track` 创建，初始状态不得跟踪 `origin/main` 或任何其他远端分支。
+- 创建分支后必须立即验证分支名、起点提交和 upstream 状态，确认任务分支没有 upstream 后才能修改文件。
 - 如果任务依赖尚未合并到远端 GitHub `main` 的前置 Issue，必须暂停并征求用户意见。
 - 在确认依赖的 Issue 已合并到远端 GitHub `main` 并重新验证 `origin/main` 前，禁止创建或实现依赖该 Issue 的后续分支。
 - 不得默认创建 stacked branch。
+
+安全的分支和 worktree 创建方式如下。
+
+```bash
+git fetch origin main
+git ls-remote origin refs/heads/main
+git branch --no-track codex/issue-N origin/main
+git worktree add <absolute-task-worktree-path> codex/issue-N
+```
+
+## Parallel task and worktree rules
+
+- 主 worktree 只用于 `main` 同步、只读检查和任务协调，不得在主 worktree 中实现 Issue。
+- 每个活动 Goal、Issue 或任务必须拥有独立的分支和独立的 worktree，并且从第一次文件修改前开始保持隔离。
+- 一个任务分支和 worktree 在同一时间只能由一个任务拥有，其他任务不得在其中切换分支、重置、提交、合并或 rebase。
+- 执行任何修改、暂存、提交、合并或 rebase 前，必须在目标 worktree 内检查当前分支和工作树状态。
+- 如果当前分支、worktree、Goal 或 Issue 身份不一致，必须立即停止，不得通过 reset、切换分支或移动提交自行修复。
+- 并行任务开始前必须评估预计修改的模块、公共契约和热点文件，并区分执行独立性与集成独立性。
+- 如果两个任务可能修改相同公共契约或编译主链路，可以并行实现，但必须明确串行集成顺序，不得声称它们可以无冲突合并。
+- 如果并行任务中的一个已经进入 `main`，其他任务必须先基于重新验证的 `origin/main` 完成集成、验证和审查，才能发布或合并。
+- 发现其他任务的修改、提交或冲突状态出现在当前 worktree 时，必须停止并报告，不得继续实现或提交。
+
+## Branch publication rules
+
+- 禁止直接 push 到 `main`，所有任务修改必须先 push 到同名远端任务分支，再通过 Pull Request 合并。
+- 任务分支不得将 `origin/main` 配置为 upstream。
+- 第一次 push 必须显式指定本地任务分支和同名远端任务分支，不得使用裸 `git push`。
+- 后续 push 前必须验证 upstream 与当前任务分支同名，并再次确认目标不是 `main`。
+- 除非用户明确要求发布，否则不得 push 任务分支或创建 Pull Request。
+- 如果发现 GitHub `main` 允许直接 push，必须报告分支保护缺口，但不得利用该权限绕过 Pull Request。
+
+安全的第一次 push 方式如下。
+
+```bash
+git push -u origin codex/issue-N:refs/heads/codex/issue-N
+```
+
+## Goal completion and integration rules
+
+- 最终验证和 code-review 前必须重新获取并验证远端 GitHub `main`。
+- 如果 `origin/main` 在任务执行期间发生变化，必须先在任务 worktree 中集成最新 main，并在解决冲突后重新执行完整验证和 code-review。
+- Goal 标记为 complete 前，任务 worktree 必须干净，所有要求的修改必须已经提交，并且不得存在进行中的 merge、rebase、cherry-pick 或 revert。
+- Goal 标记为 complete 前，必须确认当前分支是预期任务分支，并确认该分支没有跟踪 `origin/main`。
+- Goal complete 只代表记录的完成条件在当时成立，不代表分支在 main 后续变化后仍然可直接合并。
+- 创建或更新 Pull Request 前，以及实际合并前，必须再次检查 main 是否变化，并按需重新集成、验证和审查。
 
 ## Architecture rules
 
