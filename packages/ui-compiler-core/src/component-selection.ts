@@ -4,6 +4,11 @@ import type {
   ComponentDefinition,
 } from "@generative-ui/component-catalog-schema";
 import type { JsonValue } from "@generative-ui/shared-types";
+import {
+  componentPermitsTargetActions,
+  indexTargetActions,
+  type TargetActions,
+} from "./action-targets.js";
 import { componentMapping } from "./component-mappings.js";
 import { fail } from "./failure.js";
 import { resolveJsonPointer } from "./json-pointer.js";
@@ -44,6 +49,7 @@ interface DataProfile {
 }
 
 interface ScoredCandidate {
+  actionsPermitted: boolean;
   component: ComponentDefinition;
   catalogIndex: number;
   preferenceIndex: number;
@@ -210,6 +216,7 @@ function dataAndViewportScore(
 function candidatesForRegion(
   request: UICompileRequest,
   catalog: ComponentCatalog,
+  targetedActions: TargetActions,
   regionIndex: number,
 ): ScoredCandidate[] {
   const region = request.plan.regions[regionIndex];
@@ -277,6 +284,11 @@ function candidatesForRegion(
     }
 
     candidates.push({
+      actionsPermitted: componentPermitsTargetActions(
+        targetedActions,
+        region.regionId,
+        component,
+      ),
       component,
       catalogIndex,
       preferenceIndex,
@@ -301,6 +313,7 @@ function candidatesForRegion(
 
   return candidates.sort(
     (left, right) =>
+      Number(right.actionsPermitted) - Number(left.actionsPermitted) ||
       right.score - left.score ||
       left.preferenceIndex - right.preferenceIndex ||
       left.catalogIndex - right.catalogIndex ||
@@ -330,9 +343,10 @@ function acceptsChild(
 export function selectComponents(
   request: UICompileRequest,
   catalog: ComponentCatalog,
+  targetedActions: TargetActions = indexTargetActions(request),
 ): ComponentSelection[] {
   const candidateLists = request.plan.regions.map((_region, regionIndex) =>
-    candidatesForRegion(request, catalog, regionIndex),
+    candidatesForRegion(request, catalog, targetedActions, regionIndex),
   );
 
   const missingIndex = candidateLists.findIndex(

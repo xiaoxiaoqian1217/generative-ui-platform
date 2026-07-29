@@ -389,10 +389,14 @@ function catalogWithComponentOverride(
   } as ComponentCatalog;
 }
 
-function expectDegradedWithCode(
+type ExpectedCompileError = Pick<
+  CompileError,
+  "code" | "stage" | "path" | "constraint"
+>;
+
+function expectDegradedWithError(
   result: ReturnType<typeof compileUI>,
-  code: CompileError["code"],
-  stage?: CompileError["stage"],
+  error: ExpectedCompileError,
 ): void {
   expect(result).toMatchObject({
     success: true,
@@ -402,9 +406,8 @@ function expectDegradedWithCode(
     },
     errors: [
       {
-        code,
+        ...error,
         retryable: false,
-        ...(stage ? { stage } : {}),
       },
     ],
   });
@@ -569,7 +572,12 @@ describe("interactive component tracer bullets", () => {
       compileOptions(interactionCatalog, "surface-19-domain-rejected"),
     );
 
-    expectDegradedWithCode(result, "NO_COMPATIBLE_COMPONENT");
+    expectDegradedWithError(result, {
+      code: "NO_COMPATIBLE_COMPONENT",
+      stage: "component-selection",
+      path: "/plan/regions/0/componentPreferences",
+      constraint: "catalog-display-component",
+    });
   });
 
   it("validates domain component Props through its Catalog Schema", () => {
@@ -592,7 +600,12 @@ describe("interactive component tracer bullets", () => {
       compileOptions(catalog, "surface-19-domain-props"),
     );
 
-    expectDegradedWithCode(result, "COMPONENT_PROPS_INVALID");
+    expectDegradedWithError(result, {
+      code: "COMPONENT_PROPS_INVALID",
+      stage: "props-resolution",
+      path: "/components/root/props/content",
+      constraint: "type",
+    });
   });
 
   it("rejects Props that do not satisfy the selected component Schema", () => {
@@ -614,7 +627,12 @@ describe("interactive component tracer bullets", () => {
       compileOptions(catalog, "surface-19-invalid-props"),
     );
 
-    expectDegradedWithCode(result, "COMPONENT_PROPS_INVALID");
+    expectDegradedWithError(result, {
+      code: "COMPONENT_PROPS_INVALID",
+      stage: "props-resolution",
+      path: "/components/root/props",
+      constraint: "required",
+    });
   });
 
   it("rejects an Action type that is not declared by the active Catalog", () => {
@@ -625,11 +643,12 @@ describe("interactive component tracer bullets", () => {
       compileOptions(interactionCatalog, "surface-19-action-type"),
     );
 
-    expectDegradedWithCode(
-      result,
-      "ACTION_BINDING_UNRESOLVED",
-      "schema-validation",
-    );
+    expectDegradedWithError(result, {
+      code: "ACTION_BINDING_UNRESOLVED",
+      stage: "schema-validation",
+      path: "/plan/regions/0/actions/0/actionType",
+      constraint: "catalog-action-type",
+    });
   });
 
   it("rejects an Action payload that violates its Catalog Schema", () => {
@@ -645,7 +664,12 @@ describe("interactive component tracer bullets", () => {
       compileOptions(interactionCatalog, "surface-19-action-payload"),
     );
 
-    expectDegradedWithCode(result, "ACTION_PAYLOAD_INVALID", "action-binding");
+    expectDegradedWithError(result, {
+      code: "ACTION_PAYLOAD_INVALID",
+      stage: "action-binding",
+      path: "/plan/regions/0/actions/0/payload/formData",
+      constraint: "type",
+    });
   });
 
   it("rejects an Action payload binding that does not resolve", () => {
@@ -661,7 +685,12 @@ describe("interactive component tracer bullets", () => {
       compileOptions(interactionCatalog, "surface-19-action-pointer"),
     );
 
-    expectDegradedWithCode(result, "ACTION_PAYLOAD_INVALID", "action-binding");
+    expectDegradedWithError(result, {
+      code: "ACTION_PAYLOAD_INVALID",
+      stage: "action-binding",
+      path: "/plan/regions/0/actions/0/payload/formData/sourcePointer",
+      constraint: "action-data-binding-reference",
+    });
   });
 
   it("rejects an Action not permitted by its target component", () => {
@@ -674,14 +703,107 @@ describe("interactive component tracer bullets", () => {
       compileOptions(catalog, "surface-19-action-permission"),
     );
 
-    expectDegradedWithCode(
-      result,
-      "ACTION_BINDING_UNRESOLVED",
-      "schema-validation",
-    );
+    expectDegradedWithError(result, {
+      code: "ACTION_BINDING_UNRESOLVED",
+      stage: "schema-validation",
+      path: "/plan/regions/0/actions/0/targetRegionId",
+      constraint: "component-action-permission",
+    });
   });
 
-  it("rejects Action safety flags that disagree with the Catalog", () => {
+  it("selects an Action-compatible domain component through the common flow", () => {
+    const catalog = {
+      ...interactionCatalog,
+      components: [
+        ...interactionCatalog.components.map((component) =>
+          component.componentType === "Form"
+            ? {
+                ...component,
+                allowedActions: [],
+              }
+            : component,
+        ),
+        {
+          componentType: "ProfileEditor",
+          displayName: "Profile Editor",
+          description: "Edits and submits profile values.",
+          category: "domain",
+          domainTags: ["profiles"],
+          propsSchema: {
+            $schema: objectSchemaDialect,
+            type: "object",
+            properties: {
+              value: {
+                type: "object",
+              },
+            },
+            required: ["value"],
+            additionalProperties: false,
+          },
+          allowedActions: ["submit"],
+          nesting: {
+            canHaveChildren: false,
+          },
+        },
+      ],
+    } as const satisfies ComponentCatalog;
+    const request = {
+      ...formRequest,
+      plan: {
+        ...formRequest.plan,
+        regions: [
+          {
+            ...formRequest.plan.regions[0],
+            componentPreferences: [
+              {
+                componentType: "Form",
+              },
+              {
+                componentType: "ProfileEditor",
+              },
+            ],
+          },
+        ],
+      },
+    } as const satisfies UICompileRequest;
+
+    const result = compileUI(
+      request,
+      compileOptions(catalog, "surface-19-domain-action"),
+    );
+
+    expect(result).toMatchObject({
+      success: true,
+      degraded: false,
+      operations: [
+        {},
+        {
+          updateComponents: {
+            components: [
+              {
+                id: "root",
+                component: "ProfileEditor",
+                value: {
+                  path: "/sourceData/profile",
+                },
+                action: {
+                  event: {
+                    name: "submit",
+                    context: {
+                      actionId: "save-profile",
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+        {},
+      ],
+    });
+  });
+
+  it("allows Action safety flags that are stronger than the Catalog", () => {
     const result = compileUI(
       formRequestWithAction({
         destructive: true,
@@ -689,11 +811,57 @@ describe("interactive component tracer bullets", () => {
       compileOptions(interactionCatalog, "surface-19-action-safety"),
     );
 
-    expectDegradedWithCode(
-      result,
-      "ACTION_BINDING_UNRESOLVED",
-      "schema-validation",
+    expect(result).toMatchObject({
+      success: true,
+      degraded: false,
+      operations: [
+        {},
+        {
+          updateComponents: {
+            components: [
+              {
+                action: {
+                  event: {
+                    context: {
+                      actionId: "save-profile",
+                      destructive: true,
+                      requiresApproval: false,
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+        {},
+      ],
+    });
+  });
+
+  it("rejects Action safety flags that are weaker than the Catalog", () => {
+    const catalog = {
+      ...interactionCatalog,
+      actions: interactionCatalog.actions.map((action) =>
+        action.actionType === "submit"
+          ? {
+              ...action,
+              destructive: true,
+            }
+          : action,
+      ),
+    } as ComponentCatalog;
+
+    const result = compileUI(
+      formRequest,
+      compileOptions(catalog, "surface-19-action-safety-weaker"),
     );
+
+    expectDegradedWithError(result, {
+      code: "ACTION_BINDING_UNRESOLVED",
+      stage: "schema-validation",
+      path: "/plan/regions/0/actions/0",
+      constraint: "catalog-action-safety",
+    });
   });
 
   it("rejects an Action target that does not resolve to a plan region", () => {
@@ -704,7 +872,12 @@ describe("interactive component tracer bullets", () => {
       compileOptions(interactionCatalog, "surface-19-action-target"),
     );
 
-    expectDegradedWithCode(result, "UI_PLAN_INVALID");
+    expectDegradedWithError(result, {
+      code: "UI_PLAN_INVALID",
+      stage: "ui-plan-validation",
+      path: "/plan/regions/0/actions/0/targetRegionId",
+      constraint: "action-target-reference",
+    });
   });
 
   it("rejects a confirmation that violates Catalog nesting", () => {
@@ -719,6 +892,11 @@ describe("interactive component tracer bullets", () => {
       compileOptions(catalog, "surface-19-nesting"),
     );
 
-    expectDegradedWithCode(result, "NO_COMPATIBLE_COMPOSITION");
+    expectDegradedWithError(result, {
+      code: "NO_COMPATIBLE_COMPOSITION",
+      stage: "composition-planning",
+      path: "/plan/regions",
+      constraint: "catalog-nesting",
+    });
   });
 });

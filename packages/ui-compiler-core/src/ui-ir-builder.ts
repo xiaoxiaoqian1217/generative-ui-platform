@@ -14,6 +14,11 @@ import {
   validateComponentProps,
 } from "@generative-ui/component-catalog-schema";
 import type { JsonValue } from "@generative-ui/shared-types";
+import {
+  componentPermitsTargetActions,
+  indexTargetActions,
+  type TargetActions,
+} from "./action-targets.js";
 import { componentMapping } from "./component-mappings.js";
 import type { ComponentSelection } from "./component-selection.js";
 import { fail } from "./failure.js";
@@ -47,33 +52,11 @@ function actionError(
   });
 }
 
-function targetAction(
-  request: UICompileRequest,
-  regionId: string,
-):
-  | NonNullable<UICompileRequest["plan"]["regions"][number]["actions"]>[number]
-  | undefined {
-  const actions = request.plan.regions.flatMap((ownerRegion) =>
-    (ownerRegion.actions ?? []).filter(
-      (action) => (action.targetRegionId ?? ownerRegion.regionId) === regionId,
-    ),
-  );
-  if (actions.length > 1) {
-    actionError(
-      "ACTION_BINDING_UNRESOLVED",
-      "A component cannot own more than one Action in the MVP.",
-      "/plan/regions",
-      "single-component-action",
-      "schema-validation",
-    );
-  }
-  return actions[0];
-}
-
 function buildComponent(
   request: UICompileRequest,
   selection: ComponentSelection,
   childIds: string[],
+  targetedActions: TargetActions,
   catalog: ComponentCatalog,
   options: CompileOptions,
 ): ComponentIR {
@@ -130,7 +113,7 @@ function buildComponent(
     });
   }
 
-  const action = targetAction(request, selection.region.regionId);
+  const action = targetedActions.get(selection.region.regionId)?.action;
   if (mapping.actionLabelProp && action) {
     props[mapping.actionLabelProp] = action.label;
     resolvedProps[mapping.actionLabelProp] = action.label;
@@ -196,158 +179,149 @@ function actionDefinition(
 function lowerActions(
   request: UICompileRequest,
   selections: ComponentSelection[],
+  targetedActions: TargetActions,
   catalog: ComponentCatalog,
   options: CompileOptions,
 ): LoweredActions {
   const actions: ActionIR[] = [];
   const actionBindings: ComponentActionBindingIR[] = [];
-  const boundComponents = new Set<string>();
 
-  for (const [
-    ownerRegionIndex,
-    ownerRegion,
-  ] of request.plan.regions.entries()) {
-    for (const [actionIndex, action] of (ownerRegion.actions ?? []).entries()) {
-      const actionPath = `/plan/regions/${ownerRegionIndex}/actions/${actionIndex}`;
-      const targetRegionId = action.targetRegionId ?? ownerRegion.regionId;
-      const target = selections.find(
-        (selection) => selection.region.regionId === targetRegionId,
+  for (const {
+    action,
+    actionPath,
+    targetRegionId,
+  } of targetedActions.values()) {
+    const target = selections.find(
+      (selection) => selection.region.regionId === targetRegionId,
+    );
+    if (!target) {
+      actionError(
+        "ACTION_BINDING_UNRESOLVED",
+        "The Action target cannot be resolved to a selected component.",
+        `${actionPath}/targetRegionId`,
+        "action-target-component",
+        "schema-validation",
       );
-      if (!target) {
-        actionError(
-          "ACTION_BINDING_UNRESOLVED",
-          "The Action target cannot be resolved to a selected component.",
-          `${actionPath}/targetRegionId`,
-          "action-target-component",
-          "schema-validation",
-        );
-      }
+    }
 
-      const definition = actionDefinition(
-        catalog,
-        action.actionType,
-        `${actionPath}/actionType`,
+    const definition = actionDefinition(
+      catalog,
+      action.actionType,
+      `${actionPath}/actionType`,
+    );
+    if (
+      !componentPermitsTargetActions(
+        targetedActions,
+        targetRegionId,
+        target.component,
+      )
+    ) {
+      actionError(
+        "ACTION_BINDING_UNRESOLVED",
+        "The target component does not permit this Action type.",
+        `${actionPath}/targetRegionId`,
+        "component-action-permission",
+        "schema-validation",
       );
-      if (!target.component.allowedActions.includes(action.actionType)) {
-        actionError(
-          "ACTION_BINDING_UNRESOLVED",
-          "The target component does not permit this Action type.",
-          `${actionPath}/targetRegionId`,
-          "component-action-permission",
-          "schema-validation",
-        );
-      }
+    }
+    if (
+      (definition.destructive && !action.destructive) ||
+      (definition.requiresApproval && !action.requiresApproval)
+    ) {
+      actionError(
+        "ACTION_BINDING_UNRESOLVED",
+        "Action safety flags are weaker than the active Catalog.",
+        actionPath,
+        "catalog-action-safety",
+        "schema-validation",
+      );
+    }
+
+    const payload: NonNullable<ActionIR["payload"]> = {};
+    const resolvedPayload: Record<string, JsonValue> = {};
+    for (const [parameterName, parameter] of Object.entries(
+      action.payload ?? {},
+    )) {
       if (
-        action.destructive !== definition.destructive ||
-        action.requiresApproval !== definition.requiresApproval
+        parameterName === "actionId" ||
+        parameterName === "requiresApproval" ||
+        parameterName === "destructive"
       ) {
         actionError(
-          "ACTION_BINDING_UNRESOLVED",
-          "Action safety flags do not match the active Catalog.",
-          actionPath,
-          "catalog-action-safety",
-          "schema-validation",
+          "ACTION_PAYLOAD_INVALID",
+          "Action payload uses a reserved Envelope context key.",
+          `${actionPath}/payload/${parameterName}`,
+          "reserved-action-context",
         );
       }
 
-      const targetComponentId = componentId(target.regionIndex);
-      if (boundComponents.has(targetComponentId)) {
+      if (parameter.kind === "source-binding") {
+        const resolved = resolveJsonPointer(
+          request.sourceData,
+          parameter.sourcePointer,
+        );
+        if (!resolved.found || resolved.value === undefined) {
+          actionError(
+            "ACTION_PAYLOAD_INVALID",
+            "Action payload binding does not resolve against sourceData.",
+            `${actionPath}/payload/${parameterName}/sourcePointer`,
+            "action-data-binding-reference",
+          );
+        }
+        resolvedPayload[parameterName] = resolved.value;
+        payload[parameterName] = parameter;
+        continue;
+      }
+
+      if (parameter.value === null) {
         actionError(
-          "ACTION_BINDING_UNRESOLVED",
-          "A component cannot own more than one Action in the MVP.",
-          `${actionPath}/targetRegionId`,
-          "single-component-action",
-          "schema-validation",
+          "ACTION_PAYLOAD_INVALID",
+          "Action literal cannot be represented as an A2UI DynamicValue.",
+          `${actionPath}/payload/${parameterName}/value`,
+          "a2ui-dynamic-value",
         );
       }
-
-      const payload: NonNullable<ActionIR["payload"]> = {};
-      const resolvedPayload: Record<string, JsonValue> = {};
-      for (const [parameterName, parameter] of Object.entries(
-        action.payload ?? {},
-      )) {
-        if (
-          parameterName === "actionId" ||
-          parameterName === "requiresApproval" ||
-          parameterName === "destructive"
-        ) {
-          actionError(
-            "ACTION_PAYLOAD_INVALID",
-            "Action payload uses a reserved Envelope context key.",
-            `${actionPath}/payload/${parameterName}`,
-            "reserved-action-context",
-          );
-        }
-
-        if (parameter.kind === "source-binding") {
-          const resolved = resolveJsonPointer(
-            request.sourceData,
-            parameter.sourcePointer,
-          );
-          if (!resolved.found || resolved.value === undefined) {
-            actionError(
-              "ACTION_PAYLOAD_INVALID",
-              "Action payload binding does not resolve against sourceData.",
-              `${actionPath}/payload/${parameterName}/sourcePointer`,
-              "action-data-binding-reference",
-            );
-          }
-          resolvedPayload[parameterName] = resolved.value;
-          payload[parameterName] = parameter;
-          continue;
-        }
-
-        if (parameter.value === null) {
-          actionError(
-            "ACTION_PAYLOAD_INVALID",
-            "Action literal cannot be represented as an A2UI DynamicValue.",
-            `${actionPath}/payload/${parameterName}/value`,
-            "a2ui-dynamic-value",
-          );
-        }
-        resolvedPayload[parameterName] = parameter.value;
-        payload[parameterName] = {
-          kind: "literal",
-          value: parameter.value,
-        };
-      }
-
-      const payloadResult = validateActionPayload(
-        catalog,
-        action.actionType,
-        resolvedPayload,
-        options.limits.catalogSchema,
-      );
-      if (!payloadResult.success) {
-        fail({
-          code: payloadResult.error.code,
-          message: payloadResult.error.message,
-          stage: "action-binding",
-          retryable: false,
-          path: `${actionPath}/payload${payloadResult.error.path}`,
-          constraint: payloadResult.error.constraint,
-        });
-      }
-
-      actions.push({
-        actionId: action.actionId,
-        actionType: action.actionType,
-        label: action.label,
-        ...(Object.keys(payload).length > 0 ? { payload } : {}),
-        requiresApproval: action.requiresApproval,
-        destructive: action.destructive,
-      });
-      actionBindings.push({
-        componentId: targetComponentId,
-        actionId: action.actionId,
-        event:
-          target.component.componentType === "Form" ||
-          action.actionType === "submit"
-            ? "submit"
-            : "click",
-      });
-      boundComponents.add(targetComponentId);
+      resolvedPayload[parameterName] = parameter.value;
+      payload[parameterName] = {
+        kind: "literal",
+        value: parameter.value,
+      };
     }
+
+    const payloadResult = validateActionPayload(
+      catalog,
+      action.actionType,
+      resolvedPayload,
+      options.limits.catalogSchema,
+    );
+    if (!payloadResult.success) {
+      fail({
+        code: payloadResult.error.code,
+        message: payloadResult.error.message,
+        stage: "action-binding",
+        retryable: false,
+        path: `${actionPath}/payload${payloadResult.error.path}`,
+        constraint: payloadResult.error.constraint,
+      });
+    }
+
+    actions.push({
+      actionId: action.actionId,
+      actionType: action.actionType,
+      label: action.label,
+      ...(Object.keys(payload).length > 0 ? { payload } : {}),
+      requiresApproval: action.requiresApproval,
+      destructive: action.destructive,
+    });
+    actionBindings.push({
+      componentId: componentId(target.regionIndex),
+      actionId: action.actionId,
+      event:
+        target.component.componentType === "Form" ||
+        action.actionType === "submit"
+          ? "submit"
+          : "click",
+    });
   }
 
   return { actions, actionBindings };
@@ -358,6 +332,7 @@ export function buildUIIR(
   selections: ComponentSelection[],
   catalog: ComponentCatalog,
   options: CompileOptions,
+  targetedActions: TargetActions = indexTargetActions(request),
 ): UISurfaceIR {
   if (selections.length !== request.plan.regions.length) {
     fail({
@@ -393,11 +368,18 @@ export function buildUIIR(
       request,
       selection,
       selection.regionIndex === 0 ? childIds : [],
+      targetedActions,
       catalog,
       options,
     ),
   );
-  const loweredActions = lowerActions(request, selections, catalog, options);
+  const loweredActions = lowerActions(
+    request,
+    selections,
+    targetedActions,
+    catalog,
+    options,
+  );
 
   const surface = {
     irVersion: "1.0",
