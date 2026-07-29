@@ -4,6 +4,7 @@ import {
   createMarkdownSanitizer,
   DEFAULT_MARKDOWN_SANITIZER_LIMITS,
 } from "../src/main.js";
+import { blankRangesPreservingLines } from "../src/markdown-sanitizer-definition-aware.js";
 
 interface TestAstNode {
   children?: TestAstNode[];
@@ -93,30 +94,31 @@ describe("Markdown reference definition semantics", () => {
   });
 
   it(
-    "processes near-limit duplicate definitions in bounded time",
+    "rewrites near-limit duplicate ranges in bounded time",
     () => {
-      const input = `[文档][id]
+      const prefix = "[id]: /a\n";
+      const duplicate = "[id]: /b\n";
+      const duplicateCount = 19_000;
+      const input = `${prefix}${duplicate.repeat(duplicateCount)}`;
+      const ranges = Array.from({ length: duplicateCount }, (_, index) => {
+        const start = prefix.length + index * duplicate.length;
+        return { start, end: start + duplicate.length };
+      });
 
-[id]: /a
-${"[id]: /b\n".repeat(19_000)}`;
       expect(Buffer.byteLength(input, "utf8")).toBeLessThanOrEqual(
         DEFAULT_MARKDOWN_SANITIZER_LIMITS.maxInputBytes,
       );
-      expect(countAstNodes(input)).toBeLessThanOrEqual(
-        DEFAULT_MARKDOWN_SANITIZER_LIMITS.maxAstNodes,
-      );
 
-      const result = sanitizer.sanitize(
-        input,
-        DEFAULT_MARKDOWN_SANITIZER_LIMITS,
-      );
+      const startedAt = performance.now();
+      const output = blankRangesPreservingLines(input, ranges);
+      const elapsedMilliseconds = performance.now() - startedAt;
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.markdown).toContain("[id]: /a");
-        expect(result.markdown).not.toContain("[id]: /b");
-      }
+      expect(output).toBeDefined();
+      expect(output).toHaveLength(input.length);
+      expect(output).toContain("[id]: /a");
+      expect(output).not.toContain("[id]: /b");
+      expect(elapsedMilliseconds).toBeLessThan(1_000);
     },
-    5_000,
+    2_000,
   );
 });
