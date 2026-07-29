@@ -130,7 +130,7 @@ function toDefinition(node: AstNode): Definition | undefined {
   };
 }
 
-function blankRangesPreservingLines(
+export function blankRangesPreservingLines(
   markdown: string,
   ranges: SourceRange[],
 ): string | undefined {
