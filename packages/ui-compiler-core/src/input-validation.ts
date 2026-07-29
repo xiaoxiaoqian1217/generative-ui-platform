@@ -167,6 +167,20 @@ function inputError(
   });
 }
 
+function uiPlanError(
+  message: string,
+  constraint: string,
+): never {
+  return fail({
+    code: "UI_PLAN_INVALID",
+    message,
+    stage: "ui-plan-validation",
+    retryable: false,
+    path: "/plan",
+    constraint,
+  });
+}
+
 function validateLimits(limits: CoreCompileLimits): void {
   if (
     !Number.isInteger(limits.maxDataDepth) ||
@@ -181,6 +195,94 @@ function validateLimits(limits: CoreCompileLimits): void {
       "positive-integer-limits",
     );
   }
+}
+
+function propertyPath(key: string): string {
+  return `/${key.replaceAll("~", "~0").replaceAll("/", "~1")}`;
+}
+
+function prioritizeCompileFields(keys: PropertyKey[]): PropertyKey[] {
+  const priority = new Map<PropertyKey, number>([
+    ["plan", 0],
+    ["sourceData", 1],
+  ]);
+  return keys
+    .map((key, index) => ({ index, key }))
+    .sort((left, right) => {
+      const leftPriority = priority.get(left.key) ?? 2;
+      const rightPriority = priority.get(right.key) ?? 2;
+      return leftPriority - rightPriority || left.index - right.index;
+    })
+    .map(({ key }) => key);
+}
+
+function snapshotCompileInput(input: unknown): unknown {
+  if (typeof input !== "object" || input === null) {
+    return input;
+  }
+
+  let isArray: boolean;
+  try {
+    isArray = Array.isArray(input);
+  } catch {
+    inputError(
+      "UI_COMPILE_REQUEST_INVALID",
+      "UI Compile Request could not be inspected.",
+      "",
+      "readable-object",
+    );
+  }
+  if (isArray) {
+    return input;
+  }
+
+  let keys: PropertyKey[];
+  try {
+    keys = prioritizeCompileFields(Reflect.ownKeys(input));
+  } catch {
+    inputError(
+      "UI_COMPILE_REQUEST_INVALID",
+      "UI Compile Request properties could not be inspected.",
+      "",
+      "readable-properties",
+    );
+  }
+
+  const snapshot: Record<string, unknown> = {};
+  for (const key of keys) {
+    if (typeof key !== "string") {
+      inputError(
+        "UI_COMPILE_REQUEST_INVALID",
+        "UI Compile Request property names must be strings.",
+        "",
+        "string-property-key",
+      );
+    }
+
+    let value: unknown;
+    try {
+      value = Reflect.get(input, key);
+    } catch {
+      if (key === "plan") {
+        uiPlanError("UI Plan Candidate could not be read.", "readable-property");
+      }
+      inputError(
+        "UI_COMPILE_REQUEST_INVALID",
+        "UI Compile Request property could not be read.",
+        propertyPath(key),
+        "readable-property",
+      );
+    }
+
+    Object.defineProperty(snapshot, key, {
+      configurable: true,
+      enumerable: true,
+      value,
+      writable: true,
+    });
+  }
+
+  return snapshot;
 }
 
 function enforceValueLimits(
@@ -209,14 +311,10 @@ function enforceValueLimits(
     );
   }
   if (path === "/plan") {
-    fail({
-      code: "UI_PLAN_INVALID",
-      message: "UI Plan Candidate must be finite acyclic JSON.",
-      stage: "ui-plan-validation",
-      retryable: false,
-      path,
-      constraint: "finite-acyclic-json",
-    });
+    uiPlanError(
+      "UI Plan Candidate must be finite acyclic JSON.",
+      "finite-acyclic-json",
+    );
   }
   inputError(
     "UI_COMPILE_REQUEST_INVALID",
@@ -231,26 +329,24 @@ export function validateCompileInput(
   limits: CoreCompileLimits,
 ): UICompileRequest {
   validateLimits(limits);
+  const snapshot = snapshotCompileInput(input);
 
   if (
-    typeof input === "object" &&
-    input !== null &&
-    !Array.isArray(input) &&
-    "plan" in input
+    typeof snapshot === "object" &&
+    snapshot !== null &&
+    !Array.isArray(snapshot) &&
+    Object.hasOwn(snapshot, "plan")
   ) {
-    enforceValueLimits((input as { plan: unknown }).plan, "/plan", limits);
+    const plan = (snapshot as { plan: unknown }).plan;
+    enforceValueLimits(plan, "/plan", limits);
     let planResult: ReturnType<typeof validateUIPlan>;
     try {
-      planResult = validateUIPlan((input as { plan: unknown }).plan);
+      planResult = validateUIPlan(plan);
     } catch {
-      fail({
-        code: "UI_PLAN_INVALID",
-        message: "UI Plan Candidate does not match its contract.",
-        stage: "ui-plan-validation",
-        retryable: false,
-        path: "/plan",
-        constraint: "finite-acyclic-json",
-      });
+      uiPlanError(
+        "UI Plan Candidate does not match its contract.",
+        "finite-acyclic-json",
+      );
     }
     if (!planResult.success) {
       fail({
@@ -265,13 +361,13 @@ export function validateCompileInput(
   }
 
   if (
-    typeof input === "object" &&
-    input !== null &&
-    !Array.isArray(input) &&
-    "sourceData" in input
+    typeof snapshot === "object" &&
+    snapshot !== null &&
+    !Array.isArray(snapshot) &&
+    Object.hasOwn(snapshot, "sourceData")
   ) {
     enforceValueLimits(
-      (input as { sourceData: unknown }).sourceData,
+      (snapshot as { sourceData: unknown }).sourceData,
       "/sourceData",
       limits,
     );
@@ -279,7 +375,7 @@ export function validateCompileInput(
 
   let requestResult: ReturnType<typeof validateUICompileRequest>;
   try {
-    requestResult = validateUICompileRequest(input);
+    requestResult = validateUICompileRequest(snapshot);
   } catch {
     inputError(
       "UI_COMPILE_REQUEST_INVALID",

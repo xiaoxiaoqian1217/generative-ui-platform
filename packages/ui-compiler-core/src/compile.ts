@@ -24,37 +24,35 @@ const unknownCatalog = {
 const unknownCatalogHash =
   "sha256:0000000000000000000000000000000000000000000000000000000000000000" as const;
 
+function stringFieldFrom(input: unknown, key: string): string | undefined {
+  try {
+    if (typeof input !== "object" || input === null || Array.isArray(input)) {
+      return undefined;
+    }
+    const value = Reflect.get(input, key);
+    return typeof value === "string" && value.length > 0 ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function correlationFrom(input: unknown): {
   requestId: string;
   threadId?: string;
   runId?: string;
 } {
-  if (typeof input !== "object" || input === null || Array.isArray(input)) {
-    return { requestId: "unknown" };
-  }
-  const candidate = input as Record<string, unknown>;
+  const requestId = stringFieldFrom(input, "requestId") ?? "unknown";
+  const threadId = stringFieldFrom(input, "threadId");
+  const runId = stringFieldFrom(input, "runId");
   return {
-    requestId:
-      typeof candidate.requestId === "string" && candidate.requestId.length > 0
-        ? candidate.requestId
-        : "unknown",
-    ...(typeof candidate.threadId === "string" && candidate.threadId.length > 0
-      ? { threadId: candidate.threadId }
-      : {}),
-    ...(typeof candidate.runId === "string" && candidate.runId.length > 0
-      ? { runId: candidate.runId }
-      : {}),
+    requestId,
+    ...(threadId ? { threadId } : {}),
+    ...(runId ? { runId } : {}),
   };
 }
 
 function fallbackFrom(input: unknown): string | undefined {
-  if (typeof input !== "object" || input === null || Array.isArray(input)) {
-    return undefined;
-  }
-  const fallbackMarkdown = (input as Record<string, unknown>).fallbackMarkdown;
-  return typeof fallbackMarkdown === "string" && fallbackMarkdown.length > 0
-    ? fallbackMarkdown
-    : undefined;
+  return stringFieldFrom(input, "fallbackMarkdown");
 }
 
 function metadata(
