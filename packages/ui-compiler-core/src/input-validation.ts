@@ -7,38 +7,148 @@ import { validateUIPlan } from "@generative-ui/presentation-contract";
 import { fail } from "./failure.js";
 import type { CoreCompileLimits } from "./types.js";
 
-interface Measurement {
-  depth: number;
-  items: number;
-}
-
-function measureValue(value: unknown): Measurement | null {
-  let depth = 0;
-  let items = 0;
-  const ancestors = new WeakSet<object>();
-
-  function visit(current: unknown, currentDepth: number): boolean {
-    items += 1;
-    depth = Math.max(depth, currentDepth);
-    if (typeof current !== "object" || current === null) {
-      return typeof current !== "number" || Number.isFinite(current);
+type ValueLimitCheckResult =
+  | {
+      success: true;
     }
-    if (ancestors.has(current)) {
-      return false;
-    }
+  | {
+      success: false;
+      reason: "depth" | "items" | "invalid";
+    };
 
-    ancestors.add(current);
-    const children = Array.isArray(current) ? current : Object.values(current);
-    for (const child of children) {
-      if (!visit(child, currentDepth + 1)) {
-        return false;
+type TraversalFrame =
+  | {
+      depth: number;
+      kind: "value";
+      value: unknown;
+    }
+  | {
+      depth: number;
+      iterator: Iterator<unknown>;
+      kind: "children";
+    }
+  | {
+      kind: "exit";
+      value: object;
+    };
+
+function* jsonChildValues(value: object): Generator<unknown> {
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      if (Object.hasOwn(value, index)) {
+        yield value[index];
+      } else {
+        if (index in value) {
+          throw new TypeError(
+            "JSON arrays must not expose inherited indexed values.",
+          );
+        }
+        yield null;
       }
     }
-    ancestors.delete(current);
-    return true;
+    return;
+  }
+  for (const key in value) {
+    if (!Object.hasOwn(value, key)) {
+      throw new TypeError(
+        "JSON objects must not expose inherited enumerable properties.",
+      );
+    }
+    yield (value as Record<string, unknown>)[key];
+  }
+}
+
+function checkValueLimits(
+  value: unknown,
+  limits: CoreCompileLimits,
+): ValueLimitCheckResult {
+  let items = 0;
+  const stack: TraversalFrame[] = [{ depth: 1, kind: "value", value }];
+  const ancestors = new WeakSet<object>();
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) {
+      break;
+    }
+
+    if (current.kind === "exit") {
+      ancestors.delete(current.value);
+      continue;
+    }
+
+    if (current.kind === "children") {
+      let next: IteratorResult<unknown>;
+      try {
+        next = current.iterator.next();
+      } catch {
+        return { success: false, reason: "invalid" };
+      }
+      if (!next.done) {
+        stack.push(current);
+        stack.push({
+          depth: current.depth + 1,
+          kind: "value",
+          value: next.value,
+        });
+      }
+      continue;
+    }
+
+    if (current.depth > limits.maxDataDepth) {
+      return { success: false, reason: "depth" };
+    }
+
+    items += 1;
+    if (items > limits.maxDataItems) {
+      return { success: false, reason: "items" };
+    }
+
+    if (current.value === null) {
+      continue;
+    }
+
+    const valueType = typeof current.value;
+    if (
+      valueType === "string" ||
+      valueType === "boolean" ||
+      (valueType === "number" && Number.isFinite(current.value))
+    ) {
+      continue;
+    }
+    if (valueType !== "object") {
+      return { success: false, reason: "invalid" };
+    }
+
+    const objectValue = current.value as object;
+    let prototype: object | null;
+    try {
+      prototype = Object.getPrototypeOf(objectValue);
+    } catch {
+      return { success: false, reason: "invalid" };
+    }
+    if (Array.isArray(objectValue)) {
+      if (prototype !== Array.prototype) {
+        return { success: false, reason: "invalid" };
+      }
+    } else {
+      if (prototype !== null && prototype !== Object.prototype) {
+        return { success: false, reason: "invalid" };
+      }
+    }
+    if (ancestors.has(objectValue)) {
+      return { success: false, reason: "invalid" };
+    }
+    ancestors.add(objectValue);
+    stack.push({ kind: "exit", value: objectValue });
+    stack.push({
+      depth: current.depth,
+      iterator: jsonChildValues(objectValue),
+      kind: "children",
+    });
   }
 
-  return visit(value, 1) ? { depth, items } : null;
+  return { success: true };
 }
 
 function inputError(
@@ -73,6 +183,49 @@ function validateLimits(limits: CoreCompileLimits): void {
   }
 }
 
+function enforceValueLimits(
+  value: unknown,
+  path: "/plan" | "/sourceData",
+  limits: CoreCompileLimits,
+): void {
+  const result = checkValueLimits(value, limits);
+  if (result.success) {
+    return;
+  }
+  if (result.reason === "depth") {
+    inputError(
+      "DATA_DEPTH_EXCEEDED",
+      "Compile input exceeds its configured depth limit.",
+      path,
+      "data-depth-limit",
+    );
+  }
+  if (result.reason === "items") {
+    inputError(
+      "DATA_ITEMS_EXCEEDED",
+      "Compile input exceeds its configured item limit.",
+      path,
+      "data-item-limit",
+    );
+  }
+  if (path === "/plan") {
+    fail({
+      code: "UI_PLAN_INVALID",
+      message: "UI Plan Candidate must be finite acyclic JSON.",
+      stage: "ui-plan-validation",
+      retryable: false,
+      path,
+      constraint: "finite-acyclic-json",
+    });
+  }
+  inputError(
+    "UI_COMPILE_REQUEST_INVALID",
+    "Compile input must be finite acyclic JSON.",
+    path,
+    "finite-acyclic-json",
+  );
+}
+
 export function validateCompileInput(
   input: unknown,
   limits: CoreCompileLimits,
@@ -85,6 +238,7 @@ export function validateCompileInput(
     !Array.isArray(input) &&
     "plan" in input
   ) {
+    enforceValueLimits((input as { plan: unknown }).plan, "/plan", limits);
     let planResult: ReturnType<typeof validateUIPlan>;
     try {
       planResult = validateUIPlan((input as { plan: unknown }).plan);
@@ -110,6 +264,19 @@ export function validateCompileInput(
     }
   }
 
+  if (
+    typeof input === "object" &&
+    input !== null &&
+    !Array.isArray(input) &&
+    "sourceData" in input
+  ) {
+    enforceValueLimits(
+      (input as { sourceData: unknown }).sourceData,
+      "/sourceData",
+      limits,
+    );
+  }
+
   let requestResult: ReturnType<typeof validateUICompileRequest>;
   try {
     requestResult = validateUICompileRequest(input);
@@ -128,37 +295,6 @@ export function validateCompileInput(
       requestResult.error.path,
       requestResult.error.constraint,
     );
-  }
-
-  for (const [path, value] of [
-    ["/sourceData", requestResult.value.sourceData],
-    ["/plan", requestResult.value.plan],
-  ] as const) {
-    const measurement = measureValue(value);
-    if (!measurement) {
-      inputError(
-        "UI_COMPILE_REQUEST_INVALID",
-        "Compile input must be finite acyclic JSON.",
-        path,
-        "finite-acyclic-json",
-      );
-    }
-    if (measurement.depth > limits.maxDataDepth) {
-      inputError(
-        "DATA_DEPTH_EXCEEDED",
-        "Compile input exceeds its configured depth limit.",
-        path,
-        "data-depth-limit",
-      );
-    }
-    if (measurement.items > limits.maxDataItems) {
-      inputError(
-        "DATA_ITEMS_EXCEEDED",
-        "Compile input exceeds its configured item limit.",
-        path,
-        "data-item-limit",
-      );
-    }
   }
 
   return requestResult.value;

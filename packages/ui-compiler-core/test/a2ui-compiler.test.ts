@@ -29,6 +29,13 @@ describe("A2UI Compiler", () => {
       "v0.9",
       "v0.9",
     ]);
+    expect(operations.map((operation) => Object.keys(operation)[1])).toEqual([
+      "createSurface",
+      "updateComponents",
+      "updateDataModel",
+    ]);
+    expect(JSON.stringify(operations)).not.toContain("deleteSurface");
+    expect(JSON.stringify(operations)).not.toContain("replaceSurface");
   });
 
   it("rejects output without the required root component", () => {
@@ -42,6 +49,10 @@ describe("A2UI Compiler", () => {
       ],
     } as UISurfaceIR;
 
-    expectCoreFailure(() => compileA2UI(invalidSurface), "A2UI_INVALID");
+    const failure = expectCoreFailure(
+      () => compileA2UI(invalidSurface),
+      "A2UI_INVALID",
+    );
+    expect(failure.compileError.stage).toBe("a2ui-validation");
   });
 });
