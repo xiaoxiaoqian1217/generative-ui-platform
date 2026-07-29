@@ -68,16 +68,6 @@ export interface MarkdownSanitizer {
   ): MarkdownSanitizationResult;
 }
 
-export interface MarkdownSyntaxAdapter {
-  parse(input: string): Root;
-  serialize(root: Root): string;
-}
-
-const commonMarkSyntaxAdapter: MarkdownSyntaxAdapter = {
-  parse: fromMarkdown,
-  serialize: toMarkdown,
-};
-
 interface AstNode {
   type: string;
   children?: AstNode[];
@@ -534,9 +524,7 @@ function canonicalizeMarkdown(markdown: string): string {
   return markdown.replace(/\r\n?/g, "\n").replace(/\n*$/u, "\n");
 }
 
-export function createMarkdownSanitizer(
-  syntax: MarkdownSyntaxAdapter = commonMarkSyntaxAdapter,
-): MarkdownSanitizer {
+export function createMarkdownSanitizer(): MarkdownSanitizer {
   return {
     sanitize(input, limits) {
       if (!areMarkdownSanitizerLimitsValid(limits)) {
@@ -548,7 +536,7 @@ export function createMarkdownSanitizer(
 
       let parsed: Root;
       try {
-        parsed = syntax.parse(input);
+        parsed = fromMarkdown(input);
       } catch {
         return failure("parse-failed");
       }
@@ -572,7 +560,7 @@ export function createMarkdownSanitizer(
 
       let markdown: string;
       try {
-        markdown = canonicalizeMarkdown(syntax.serialize(safeRoot));
+        markdown = canonicalizeMarkdown(toMarkdown(safeRoot));
       } catch {
         return failure("serialize-failed");
       }

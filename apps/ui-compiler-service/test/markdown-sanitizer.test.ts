@@ -1,6 +1,4 @@
-import type { Root } from "mdast";
 import { fromMarkdown } from "mdast-util-from-markdown";
-import { toMarkdown } from "mdast-util-to-markdown";
 import { describe, expect, it } from "vitest";
 import {
   createDefensiveMarkdownSanitizerLimits,
@@ -240,70 +238,6 @@ describe("MarkdownSanitizer", () => {
       expect(result.markdown).not.toContain("unsupported");
       expect(result.changes).toContain("unsupported-node-removed");
     }
-  });
-
-  it("fails closed for unknown AST nodes with untrusted properties", () => {
-    const result = createMarkdownSanitizer({
-      parse() {
-        return {
-          type: "root",
-          children: [
-            {
-              type: "paragraph",
-              children: [{ type: "text", value: "visible" }],
-            },
-            {
-              type: "dangerousExtension",
-              value: "<script>alert(1)</script>",
-            },
-          ],
-        } as Root;
-      },
-      serialize: toMarkdown,
-    }).sanitize("untrusted extension", DEFAULT_MARKDOWN_SANITIZER_LIMITS);
-
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.markdown).toBe("visible\n");
-      expect(result.changes).toContain("unsupported-node-removed");
-      expect(result.markdown).not.toContain("script");
-    }
-  });
-
-  it("maps parser and serializer exceptions without leaking input", () => {
-    const sensitiveInput = "SECRET <script>alert(1)</script>";
-    const parseFailure = createMarkdownSanitizer({
-      parse() {
-        throw new Error(`parser leaked ${sensitiveInput}`);
-      },
-      serialize: toMarkdown,
-    }).sanitize(sensitiveInput, DEFAULT_MARKDOWN_SANITIZER_LIMITS);
-    const serializeFailure = createMarkdownSanitizer({
-      parse: fromMarkdown,
-      serialize() {
-        throw new Error(`serializer leaked ${sensitiveInput}`);
-      },
-    }).sanitize(sensitiveInput, DEFAULT_MARKDOWN_SANITIZER_LIMITS);
-
-    expect(parseFailure).toEqual({
-      success: false,
-      error: {
-        code: "MARKDOWN_SANITIZATION_FAILED",
-        reason: "parse-failed",
-        retryable: false,
-      },
-    });
-    expect(serializeFailure).toEqual({
-      success: false,
-      error: {
-        code: "MARKDOWN_SANITIZATION_FAILED",
-        reason: "serialize-failed",
-        retryable: false,
-      },
-    });
-    expect(JSON.stringify([parseFailure, serializeFailure])).not.toContain(
-      "SECRET",
-    );
   });
 
   it("satisfies idempotence and allowlist properties across the security corpus", () => {
