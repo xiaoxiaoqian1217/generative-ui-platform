@@ -4,14 +4,46 @@ import { computeCatalogContentHash } from "@generative-ui/component-catalog-sche
 import type { CatalogCapabilitySummary } from "./presentation-router.js";
 
 function sorted(values: readonly string[]): string[] {
-  return [...values].sort();
+  return [...values].sort(compareUnicodeCodePoints);
+}
+
+function compareUnicodeCodePoints(left: string, right: string): number {
+  const leftCodePoints = Array.from(left);
+  const rightCodePoints = Array.from(right);
+  const sharedLength = Math.min(leftCodePoints.length, rightCodePoints.length);
+  for (let index = 0; index < sharedLength; index += 1) {
+    const leftCodePoint = leftCodePoints[index]?.codePointAt(0);
+    const rightCodePoint = rightCodePoints[index]?.codePointAt(0);
+    if (leftCodePoint === undefined || rightCodePoint === undefined) {
+      return 0;
+    }
+    const difference = leftCodePoint - rightCodePoint;
+    if (difference !== 0) {
+      return difference;
+    }
+  }
+  return leftCodePoints.length - rightCodePoints.length;
+}
+
+function deepFreeze<T>(value: T): T {
+  if (typeof value !== "object" || value === null || Object.isFrozen(value)) {
+    return value;
+  }
+  for (const child of Object.values(value)) {
+    deepFreeze(child);
+  }
+  return Object.freeze(value);
+}
+
+function immutableCopy<T>(value: T): T {
+  return deepFreeze(structuredClone(value));
 }
 
 export function createCatalogCapabilitySummary(
   catalog: ComponentCatalog,
   catalogContentHash: CatalogContentHash = computeCatalogContentHash(catalog),
 ): CatalogCapabilitySummary {
-  return {
+  return deepFreeze({
     summaryVersion: "1.0",
     catalog: {
       catalogId: catalog.catalogId,
@@ -59,12 +91,12 @@ export function createCatalogCapabilitySummary(
             },
       }))
       .sort((left, right) =>
-        left.componentType.localeCompare(right.componentType, "en"),
+        compareUnicodeCodePoints(left.componentType, right.componentType),
       ),
     actions: catalog.actions
-      .map((action) => ({ ...action }))
+      .map((action) => immutableCopy(action))
       .sort((left, right) =>
-        left.actionType.localeCompare(right.actionType, "en"),
+        compareUnicodeCodePoints(left.actionType, right.actionType),
       ),
-  };
+  });
 }

@@ -120,6 +120,24 @@ export class PresentationDecisionValidationError extends Error {
   }
 }
 
+export class ModelInvocationPolicyConfigurationError extends Error {
+  readonly code = "MODEL_INVOCATION_POLICY_INVALID";
+
+  constructor() {
+    super("Model invocation policy is invalid.");
+    this.name = "ModelInvocationPolicyConfigurationError";
+  }
+}
+
+function isValidModelInvocationPolicy(policy: ModelInvocationPolicy): boolean {
+  return (
+    Number.isSafeInteger(policy.modelTimeoutMs) &&
+    policy.modelTimeoutMs > 0 &&
+    Number.isSafeInteger(policy.modelRetryCount) &&
+    policy.modelRetryCount >= 0
+  );
+}
+
 export function createPresentationRouter(
   _modelAdapter: ModelAdapter,
 ): PresentationRouter {
@@ -144,6 +162,9 @@ export function createModelPresentationRouter(
   modelAdapter: ModelAdapter,
   policy: ModelInvocationPolicy,
 ): PresentationRouter {
+  if (!isValidModelInvocationPolicy(policy)) {
+    throw new ModelInvocationPolicyConfigurationError();
+  }
   return {
     async route(request, options) {
       const candidate =

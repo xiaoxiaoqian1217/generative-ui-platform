@@ -5,6 +5,7 @@ import {
 } from "@generative-ui/component-catalog-schema";
 import { describe, expect, it, vi } from "vitest";
 import {
+  createCatalogCapabilitySummary,
   createGenerativeUIPresentationService,
   createMarkdownSanitizer,
   createModelPresentationRouter,
@@ -15,6 +16,12 @@ import {
   type ModelAdapter,
   type ModelPresentationRequest,
 } from "../src/main.js";
+
+const emptyObjectSchema = {
+  $schema: "http://json-schema.org/draft-07/schema#" as const,
+  type: "object" as const,
+  additionalProperties: false,
+};
 
 const catalog = {
   schemaVersion: "1.0",
@@ -116,6 +123,55 @@ function createService(
 }
 
 describe("Generative UI presentation path", () => {
+  it("creates an immutable Catalog summary in Unicode code-point order", () => {
+    const payloadSchema = {
+      ...emptyObjectSchema,
+      properties: { safe: { type: "string" } },
+    };
+    const summary = createCatalogCapabilitySummary({
+      ...catalog,
+      actions: [
+        {
+          actionType: "z",
+          description: "z",
+          payloadSchema,
+          destructive: false,
+          requiresApproval: false,
+        },
+        {
+          actionType: "A",
+          description: "A",
+          payloadSchema: emptyObjectSchema,
+          destructive: false,
+          requiresApproval: false,
+        },
+        {
+          actionType: "a",
+          description: "a",
+          payloadSchema: emptyObjectSchema,
+          destructive: false,
+          requiresApproval: false,
+        },
+        {
+          actionType: "😀",
+          description: "emoji",
+          payloadSchema: emptyObjectSchema,
+          destructive: false,
+          requiresApproval: false,
+        },
+      ],
+    });
+
+    expect(summary.actions.map((action) => action.actionType)).toEqual([
+      "A",
+      "a",
+      "z",
+      "😀",
+    ]);
+    expect(summary.actions[2]?.payloadSchema).not.toBe(payloadSchema);
+    expect(Object.isFrozen(summary.actions[2]?.payloadSchema)).toBe(true);
+  });
+
   it.each([
     {
       name: "Markdown",
@@ -196,6 +252,79 @@ describe("Generative UI presentation path", () => {
           retryable: false,
         },
       ],
+    });
+  });
+
+  it("serializes valid structured data when a supplied fallback is unsafe", async () => {
+    const generate =
+      vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>();
+    const result = await createService({
+      generatePresentationDecisionCandidate: generate,
+    }).present(
+      {
+        requestId: "unsafe-structured-fallback",
+        content: {
+          contentType: "structured-data",
+          data: { summary: { revenue: 125 } },
+          fallbackMarkdown: "   ",
+        },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: new AbortController().signal },
+    );
+
+    expect(generate).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      status: "degraded",
+      mode: "markdown",
+      errors: [{ code: "MARKDOWN_SANITIZATION_FAILED" }],
+    });
+    if (result.status === "degraded") {
+      expect(result.markdown).toContain('"revenue": 125');
+    }
+  });
+
+  it("degrades safely when Catalog loading fails before model analysis", async () => {
+    const generate =
+      vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>();
+    const service = createGenerativeUIPresentationService({
+      catalogRepository: {
+        load: () => {
+          throw new Error("Catalog provider failed.");
+        },
+      },
+      sanitizer: createMarkdownSanitizer(),
+      structuredDataValidator: createStructuredDataValidator(),
+      structuredDataSerializer: createStructuredDataSerializer(),
+      router: createModelPresentationRouter(
+        { generatePresentationDecisionCandidate: generate },
+        { modelTimeoutMs: 1_000, modelRetryCount: 0 },
+      ),
+      markdownLimits: DEFAULT_MARKDOWN_SANITIZER_LIMITS,
+      structuredDataLimits: DEFAULT_STRUCTURED_DATA_LIMITS,
+      catalogSchemaLimits: defaultCatalogSchemaLimits,
+      coreLimits: {
+        maxDataDepth: 16,
+        maxDataItems: 256,
+        catalogSchema: defaultCatalogSchemaLimits,
+      },
+      createSurfaceId: () => "unused",
+    });
+
+    const result = await service.present(
+      {
+        requestId: "catalog-load-failure",
+        content: { contentType: "markdown", markdown: "Safe source content." },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: new AbortController().signal },
+    );
+
+    expect(generate).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      status: "degraded",
+      mode: "markdown",
+      errors: [{ code: "COMPONENT_CATALOG_INVALID" }],
     });
   });
 });

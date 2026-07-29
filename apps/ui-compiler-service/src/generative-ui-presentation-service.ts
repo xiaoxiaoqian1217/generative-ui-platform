@@ -25,10 +25,11 @@ import {
   compileUI,
 } from "@generative-ui/ui-compiler-core";
 import { createCatalogCapabilitySummary } from "./catalog-capability-summary.js";
-import type {
-  MarkdownSanitizer,
-  MarkdownSanitizerLimits,
-  SanitizedMarkdown,
+import {
+  areMarkdownSanitizerLimitsValid,
+  type MarkdownSanitizer,
+  type MarkdownSanitizerLimits,
+  type SanitizedMarkdown,
 } from "./markdown-sanitizer.js";
 import type {
   PresentationRouteOptions,
@@ -41,11 +42,13 @@ import {
   routingPresentationError,
   sanitizationPresentationError,
 } from "./safe-markdown-presentation.js";
+import { areStructuredDataPresentationLimitsCompatible } from "./structured-data-presentation-service.js";
 import type { StructuredDataSerializer } from "./structured-data-serializer.js";
 import type {
   StructuredDataLimits,
   StructuredDataValidator,
 } from "./structured-data-validator.js";
+import { areStructuredDataLimitsValid } from "./structured-data-validator.js";
 
 const catalogFailureMessage =
   "The requested Component Catalog could not be used.";
@@ -78,6 +81,15 @@ export interface GenerativeUIPresentationService {
   ): Promise<PresentationResult>;
 }
 
+export class GenerativeUIPresentationConfigurationError extends Error {
+  readonly code = "GENERATIVE_UI_PRESENTATION_CONFIGURATION_INVALID";
+
+  constructor() {
+    super("Generative UI presentation service configuration is invalid.");
+    this.name = "GenerativeUIPresentationConfigurationError";
+  }
+}
+
 function error(
   code: string,
   message: string,
@@ -105,21 +117,32 @@ function validatedCatalog(
   reference: CatalogReference,
   repository: CatalogRepository,
   limits: CatalogSchemaLimits,
-): { catalog: ComponentCatalog; contentHash: CatalogContentHash } | undefined {
-  const result = validateComponentCatalog(repository.load(reference), limits);
-  if (!result.success) {
-    return undefined;
+):
+  | {
+      success: true;
+      catalog: ComponentCatalog;
+      contentHash: CatalogContentHash;
+    }
+  | { success: false; code: string } {
+  try {
+    const result = validateComponentCatalog(repository.load(reference), limits);
+    if (!result.success) {
+      return { success: false, code: result.error.code };
+    }
+    if (
+      result.value.catalogId !== reference.catalogId ||
+      result.value.catalogVersion !== reference.catalogVersion
+    ) {
+      return { success: false, code: "CATALOG_REFERENCE_MISMATCH" };
+    }
+    return {
+      success: true,
+      catalog: result.value,
+      contentHash: computeCatalogContentHash(result.value),
+    };
+  } catch {
+    return { success: false, code: "COMPONENT_CATALOG_INVALID" };
   }
-  if (
-    result.value.catalogId !== reference.catalogId ||
-    result.value.catalogVersion !== reference.catalogVersion
-  ) {
-    return undefined;
-  }
-  return {
-    catalog: result.value,
-    contentHash: computeCatalogContentHash(result.value),
-  };
 }
 
 function compileError(result: UICompileResult): PresentationError {
@@ -134,6 +157,16 @@ function compileError(result: UICompileResult): PresentationError {
 export function createGenerativeUIPresentationService(
   dependencies: GenerativeUIPresentationServiceDependencies,
 ): GenerativeUIPresentationService {
+  if (
+    !areMarkdownSanitizerLimitsValid(dependencies.markdownLimits) ||
+    !areStructuredDataLimitsValid(dependencies.structuredDataLimits) ||
+    !areStructuredDataPresentationLimitsCompatible({
+      markdown: dependencies.markdownLimits,
+      structuredData: dependencies.structuredDataLimits,
+    })
+  ) {
+    throw new GenerativeUIPresentationConfigurationError();
+  }
   const compile = dependencies.compile ?? compileUI;
 
   return {
@@ -178,12 +211,28 @@ export function createGenerativeUIPresentationService(
             ),
           ]);
         }
-        const fallback = dependencies.sanitizer.sanitize(
+        const fallbackSource =
           request.content.fallbackMarkdown ??
-            dependencies.structuredDataSerializer.serialize(structured.value),
+          dependencies.structuredDataSerializer.serialize(structured.value);
+        const fallback = dependencies.sanitizer.sanitize(
+          fallbackSource,
           dependencies.markdownLimits,
         );
         if (!fallback.success) {
+          if (request.content.fallbackMarkdown !== undefined) {
+            const serialized = dependencies.sanitizer.sanitize(
+              dependencies.structuredDataSerializer.serialize(structured.value),
+              dependencies.markdownLimits,
+            );
+            if (serialized.success) {
+              return fallbackFor(
+                request.requestId,
+                serialized.markdown,
+                dependencies,
+                [sanitizationPresentationError(fallback.error.reason)],
+              );
+            }
+          }
           return failedPresentationResult(request.requestId, [
             sanitizationPresentationError(fallback.error.reason),
           ]);
@@ -197,13 +246,9 @@ export function createGenerativeUIPresentationService(
         dependencies.catalogRepository,
         dependencies.catalogSchemaLimits,
       );
-      if (!resolved) {
+      if (!resolved.success) {
         return fallbackFor(request.requestId, safeMarkdown, dependencies, [
-          error(
-            "CATALOG_REFERENCE_MISMATCH",
-            catalogFailureMessage,
-            "input-validation",
-          ),
+          error(resolved.code, catalogFailureMessage, "input-validation"),
         ]);
       }
 
