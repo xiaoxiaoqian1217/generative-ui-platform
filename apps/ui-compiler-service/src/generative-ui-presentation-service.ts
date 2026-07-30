@@ -38,7 +38,10 @@ import type {
   PresentationRouteOptions,
   PresentationRouter,
 } from "./presentation-router.js";
-import { PresentationDecisionValidationError } from "./presentation-router.js";
+import {
+  isModelAdapterError,
+  PresentationDecisionValidationError,
+} from "./presentation-router.js";
 import {
   failedPresentationResult,
   finalizeSafeMarkdownPresentation,
@@ -50,6 +53,7 @@ import type { StructuredDataSerializer } from "./structured-data-serializer.js";
 import type {
   StructuredDataLimits,
   StructuredDataValidator,
+  ValidatedStructuredData,
 } from "./structured-data-validator.js";
 import { areStructuredDataLimitsValid } from "./structured-data-validator.js";
 
@@ -57,7 +61,11 @@ const catalogFailureMessage =
   "The requested Component Catalog could not be used.";
 const candidateFailureMessage =
   "Model output could not be used to generate UI.";
+const modelFailureMessage = "Model analysis could not be completed.";
 const compilationFailureMessage = "Generated UI could not be compiled.";
+
+const missingOwnProperty = Symbol("missingOwnProperty");
+const unsafeOwnProperty = Symbol("unsafeOwnProperty");
 
 export interface CatalogRepository {
   load(reference: CatalogReference): unknown;
@@ -116,6 +124,98 @@ function fallbackFor(
   });
 }
 
+function readOwnDataProperty(
+  input: object,
+  key: string,
+): unknown | typeof missingOwnProperty | typeof unsafeOwnProperty {
+  try {
+    const descriptor = Object.getOwnPropertyDescriptor(input, key);
+    if (descriptor === undefined) {
+      return missingOwnProperty;
+    }
+    if (!descriptor.enumerable || !("value" in descriptor)) {
+      return unsafeOwnProperty;
+    }
+    return descriptor.value;
+  } catch {
+    return unsafeOwnProperty;
+  }
+}
+
+function safeRequestId(input: unknown): string {
+  if (typeof input !== "object" || input === null) {
+    return "unknown";
+  }
+  const requestId = readOwnDataProperty(input, "requestId");
+  return typeof requestId === "string" && requestId.length > 0
+    ? requestId
+    : "unknown";
+}
+
+type StructuredDataPrevalidation =
+  | { attempted: false }
+  | {
+      attempted: true;
+      success: true;
+      value: ValidatedStructuredData;
+    }
+  | {
+      attempted: true;
+      success: false;
+      requestId: string;
+      code: string;
+    };
+
+function prevalidateStructuredData(
+  input: unknown,
+  validator: StructuredDataValidator,
+  limits: StructuredDataLimits,
+): StructuredDataPrevalidation {
+  if (typeof input !== "object" || input === null) {
+    return { attempted: false };
+  }
+
+  const content = readOwnDataProperty(input, "content");
+  if (
+    typeof content !== "object" ||
+    content === null ||
+    content === missingOwnProperty ||
+    content === unsafeOwnProperty
+  ) {
+    return { attempted: false };
+  }
+
+  const contentType = readOwnDataProperty(content, "contentType");
+  if (contentType !== "structured-data") {
+    return { attempted: false };
+  }
+
+  const data = readOwnDataProperty(content, "data");
+  if (data === missingOwnProperty || data === unsafeOwnProperty) {
+    return { attempted: false };
+  }
+
+  try {
+    const result = validator.validate(data, limits);
+    if (!result.success) {
+      return {
+        attempted: true,
+        success: false,
+        requestId: safeRequestId(input),
+        code: result.error.code,
+      };
+    }
+    return { attempted: true, success: true, value: result.value };
+  } catch {
+    return {
+      attempted: true,
+      success: false,
+      requestId: safeRequestId(input),
+      code: "STRUCTURED_DATA_INVALID",
+    };
+  }
+}
+
 function validatedCatalog(
   reference: CatalogReference,
   repository: CatalogRepository,
@@ -158,6 +258,18 @@ function compileError(result: UICompileResult): PresentationError {
   );
 }
 
+function modelAnalysisError(caught: unknown): PresentationError | undefined {
+  if (!isModelAdapterError(caught)) {
+    return undefined;
+  }
+  return {
+    code: caught.code,
+    message: modelFailureMessage,
+    stage: "model-analysis",
+    retryable: caught.retryable,
+  };
+}
+
 export function createGenerativeUIPresentationService(
   dependencies: GenerativeUIPresentationServiceDependencies,
 ): GenerativeUIPresentationService {
@@ -175,7 +287,36 @@ export function createGenerativeUIPresentationService(
 
   return {
     async present(input, options) {
-      const requestValidation = validatePresentationRequest(input);
+      const structuredPrevalidation = prevalidateStructuredData(
+        input,
+        dependencies.structuredDataValidator,
+        dependencies.structuredDataLimits,
+      );
+      if (
+        structuredPrevalidation.attempted &&
+        !structuredPrevalidation.success
+      ) {
+        return failedPresentationResult(structuredPrevalidation.requestId, [
+          error(
+            structuredPrevalidation.code,
+            "Structured data could not be safely processed.",
+            "input-validation",
+          ),
+        ]);
+      }
+
+      let requestValidation: ReturnType<typeof validatePresentationRequest>;
+      try {
+        requestValidation = validatePresentationRequest(input);
+      } catch {
+        return failedPresentationResult(safeRequestId(input), [
+          error(
+            "PRESENTATION_REQUEST_INVALID",
+            "Presentation request does not match its contract.",
+            "input-validation",
+          ),
+        ]);
+      }
       if (!requestValidation.success) {
         return failedPresentationResult("unknown", [
           error(
@@ -202,10 +343,18 @@ export function createGenerativeUIPresentationService(
         safeMarkdown = sanitized.markdown;
         sourceData = { markdown: safeMarkdown };
       } else {
-        const structured = dependencies.structuredDataValidator.validate(
-          request.content.data,
-          dependencies.structuredDataLimits,
-        );
+        const prevalidatedData =
+          structuredPrevalidation.attempted &&
+          structuredPrevalidation.success
+            ? structuredPrevalidation.value
+            : undefined;
+        const structured =
+          prevalidatedData === undefined
+            ? dependencies.structuredDataValidator.validate(
+                request.content.data,
+                dependencies.structuredDataLimits,
+              )
+            : { success: true as const, value: prevalidatedData };
         if (!structured.success) {
           return failedPresentationResult(request.requestId, [
             error(
@@ -277,6 +426,7 @@ export function createGenerativeUIPresentationService(
           options,
         );
       } catch (caught) {
+        const adapterError = modelAnalysisError(caught);
         return fallbackFor(request.requestId, safeMarkdown, dependencies, [
           caught instanceof PresentationDecisionValidationError
             ? error(
@@ -284,7 +434,7 @@ export function createGenerativeUIPresentationService(
                 candidateFailureMessage,
                 "ui-plan-validation",
               )
-            : routingPresentationError(),
+            : (adapterError ?? routingPresentationError()),
         ]);
       }
 
@@ -292,41 +442,52 @@ export function createGenerativeUIPresentationService(
         return fallbackFor(request.requestId, safeMarkdown, dependencies, []);
       }
 
-      const result = compile(
-        {
-          requestId: request.requestId,
-          ...(request.threadId === undefined
-            ? {}
-            : { threadId: request.threadId }),
-          ...(request.runId === undefined ? {} : { runId: request.runId }),
-          plan: decision.plan,
-          sourceKind: request.content.contentType,
-          sourceData,
-          fallbackMarkdown: safeMarkdown,
-          catalog: request.catalog,
-          ...(request.context === undefined
-            ? {}
-            : {
-                context: {
-                  ...(request.context.locale === undefined
-                    ? {}
-                    : { locale: request.context.locale }),
-                  ...(request.context.theme === undefined
-                    ? {}
-                    : { theme: request.context.theme }),
-                  ...(request.context.viewport === undefined
-                    ? {}
-                    : { viewport: request.context.viewport }),
-                },
-              }),
-        },
-        {
-          surfaceId: dependencies.createSurfaceId(request),
-          catalog: resolved.catalog,
-          catalogContentHash: resolved.contentHash,
-          limits: dependencies.coreLimits,
-        },
-      );
+      let result: UICompileResult;
+      try {
+        result = compile(
+          {
+            requestId: request.requestId,
+            ...(request.threadId === undefined
+              ? {}
+              : { threadId: request.threadId }),
+            ...(request.runId === undefined ? {} : { runId: request.runId }),
+            plan: decision.plan,
+            sourceKind: request.content.contentType,
+            sourceData,
+            fallbackMarkdown: safeMarkdown,
+            catalog: request.catalog,
+            ...(request.context === undefined
+              ? {}
+              : {
+                  context: {
+                    ...(request.context.locale === undefined
+                      ? {}
+                      : { locale: request.context.locale }),
+                    ...(request.context.theme === undefined
+                      ? {}
+                      : { theme: request.context.theme }),
+                    ...(request.context.viewport === undefined
+                      ? {}
+                      : { viewport: request.context.viewport }),
+                  },
+                }),
+          },
+          {
+            surfaceId: dependencies.createSurfaceId(request),
+            catalog: resolved.catalog,
+            catalogContentHash: resolved.contentHash,
+            limits: dependencies.coreLimits,
+          },
+        );
+      } catch {
+        return fallbackFor(request.requestId, safeMarkdown, dependencies, [
+          error(
+            "UI_COMPILATION_FAILED",
+            compilationFailureMessage,
+            "ui-compilation",
+          ),
+        ]);
+      }
       if (result.success && !result.degraded) {
         return {
           requestId: request.requestId,
