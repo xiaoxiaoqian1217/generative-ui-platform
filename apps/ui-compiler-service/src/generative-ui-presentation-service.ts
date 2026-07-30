@@ -40,6 +40,7 @@ import type {
 } from "./presentation-router.js";
 import {
   isModelAdapterError,
+  ModelAdapterError,
   PresentationDecisionValidationError,
 } from "./presentation-router.js";
 import {
@@ -265,6 +266,12 @@ function modelAnalysisError(caught: unknown): PresentationError | undefined {
     message: modelFailureMessage,
     stage: "model-analysis",
     retryable: caught.retryable,
+    details: {
+      attempts: caught.attempts,
+      ...(caught.lastRetryableCode === undefined
+        ? {}
+        : { lastRetryableCode: caught.lastRetryableCode }),
+    },
   };
 }
 
@@ -342,8 +349,7 @@ export function createGenerativeUIPresentationService(
         sourceData = { markdown: safeMarkdown };
       } else {
         const prevalidatedData =
-          structuredPrevalidation.attempted &&
-          structuredPrevalidation.success
+          structuredPrevalidation.attempted && structuredPrevalidation.success
             ? structuredPrevalidation.value
             : undefined;
         const structured =
@@ -440,8 +446,22 @@ export function createGenerativeUIPresentationService(
         return fallbackFor(request.requestId, safeMarkdown, dependencies, []);
       }
 
+      if (options.signal.aborted) {
+        return fallbackFor(request.requestId, safeMarkdown, dependencies, [
+          modelAnalysisError(new ModelAdapterError("MODEL_CANCELLED", false)) ??
+            routingPresentationError(),
+        ]);
+      }
+
       let result: UICompileResult;
       try {
+        if (options.signal.aborted) {
+          return fallbackFor(request.requestId, safeMarkdown, dependencies, [
+            modelAnalysisError(
+              new ModelAdapterError("MODEL_CANCELLED", false),
+            ) ?? routingPresentationError(),
+          ]);
+        }
         result = compile(
           {
             requestId: request.requestId,
