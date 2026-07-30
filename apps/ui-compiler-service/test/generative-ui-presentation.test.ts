@@ -13,8 +13,10 @@ import {
   createStructuredDataValidator,
   DEFAULT_MARKDOWN_SANITIZER_LIMITS,
   DEFAULT_STRUCTURED_DATA_LIMITS,
+  ModelAdapterError,
   type ModelAdapter,
   type ModelPresentationRequest,
+  PresentationRouterConfigurationError,
 } from "../src/main.js";
 
 const emptyObjectSchema = {
@@ -100,6 +102,9 @@ function createService(
     typeof createGenerativeUIPresentationService
   >[0]["compile"],
   catalogRepository: { load(): unknown } = { load: () => catalog },
+  createSurfaceId: Parameters<
+    typeof createGenerativeUIPresentationService
+  >[0]["createSurfaceId"] = () => "surface-presentation-test",
 ) {
   return createGenerativeUIPresentationService({
     catalogRepository,
@@ -118,9 +123,17 @@ function createService(
       maxDataItems: 256,
       catalogSchema: defaultCatalogSchemaLimits,
     },
-    createSurfaceId: () => "surface-presentation-test",
+    createSurfaceId,
     ...(compile === undefined ? {} : { compile }),
   });
+}
+
+function deeplyNestedData(depth: number): unknown {
+  let value: unknown = "leaf";
+  for (let index = 0; index < depth; index += 1) {
+    value = { child: value };
+  }
+  return value;
 }
 
 describe("Generative UI presentation path", () => {
@@ -250,6 +263,196 @@ describe("Generative UI presentation path", () => {
           code: "PRESENTATION_DECISION_INVALID",
           message: "Model output could not be used to generate UI.",
           stage: "ui-plan-validation",
+          retryable: false,
+        },
+      ],
+    });
+  });
+
+  it.each([
+    {
+      name: "zero timeout",
+      policy: { modelTimeoutMs: 0, modelRetryCount: 0 },
+    },
+    {
+      name: "non-finite timeout",
+      policy: { modelTimeoutMs: Number.POSITIVE_INFINITY, modelRetryCount: 0 },
+    },
+    {
+      name: "negative retries",
+      policy: { modelTimeoutMs: 1_000, modelRetryCount: -1 },
+    },
+    {
+      name: "fractional retries",
+      policy: { modelTimeoutMs: 1_000, modelRetryCount: 0.5 },
+    },
+  ])("rejects $name when creating the model Router", ({ policy }) => {
+    expect(() =>
+      createModelPresentationRouter(
+        {
+          generatePresentationDecisionCandidate: async () => ({
+            mode: "markdown",
+            reason: "unused",
+          }),
+        },
+        policy,
+      ),
+    ).toThrowError(PresentationRouterConfigurationError);
+  });
+
+  it("preserves stable Model Adapter errors during Markdown degradation", async () => {
+    const result = await createService({
+      generatePresentationDecisionCandidate: async () => {
+        throw new ModelAdapterError("MODEL_TIMEOUT", true);
+      },
+    }).present(
+      {
+        requestId: "model-timeout",
+        content: { contentType: "markdown", markdown: "Safe source content." },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: new AbortController().signal },
+    );
+
+    expect(result).toMatchObject({
+      requestId: "model-timeout",
+      status: "degraded",
+      mode: "markdown",
+      errors: [
+        {
+          code: "MODEL_TIMEOUT",
+          stage: "model-analysis",
+          retryable: true,
+        },
+      ],
+    });
+  });
+
+  it("maps unknown Router failures to the generic stable routing error", async () => {
+    const result = await createService({
+      generatePresentationDecisionCandidate: async () => {
+        throw new Error("Unknown provider failure.");
+      },
+    }).present(
+      {
+        requestId: "unknown-router-failure",
+        content: { contentType: "markdown", markdown: "Safe source content." },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: new AbortController().signal },
+    );
+
+    expect(result).toMatchObject({
+      requestId: "unknown-router-failure",
+      status: "degraded",
+      mode: "markdown",
+      errors: [
+        {
+          code: "PRESENTATION_ROUTING_FAILED",
+          stage: "presentation-routing",
+          retryable: false,
+        },
+      ],
+    });
+  });
+
+  it("limits structured data before recursive request-contract validation", async () => {
+    const generate = vi.fn<
+      ModelAdapter["generatePresentationDecisionCandidate"]
+    >();
+    const result = await createService({
+      generatePresentationDecisionCandidate: generate,
+    }).present(
+      {
+        requestId: "deep-structured-data",
+        content: {
+          contentType: "structured-data",
+          data: deeplyNestedData(
+            DEFAULT_STRUCTURED_DATA_LIMITS.maxDataDepth + 1,
+          ),
+        },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: new AbortController().signal },
+    );
+
+    expect(generate).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      requestId: "deep-structured-data",
+      status: "failed",
+      errors: [
+        {
+          code: "DATA_DEPTH_EXCEEDED",
+          message: "Structured data could not be safely processed.",
+          stage: "input-validation",
+          retryable: false,
+        },
+      ],
+    });
+  });
+
+  it("degrades safely when the compiler throws", async () => {
+    const result = await createService(
+      {
+        generatePresentationDecisionCandidate: async (request) =>
+          candidateFor(request),
+      },
+      () => {
+        throw new Error("Compiler failed.");
+      },
+    ).present(
+      {
+        requestId: "compiler-throws",
+        content: { contentType: "markdown", markdown: "Safe source content." },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: new AbortController().signal },
+    );
+
+    expect(result).toMatchObject({
+      requestId: "compiler-throws",
+      status: "degraded",
+      mode: "markdown",
+      errors: [
+        {
+          code: "UI_COMPILATION_FAILED",
+          stage: "ui-compilation",
+          retryable: false,
+        },
+      ],
+    });
+  });
+
+  it("degrades safely when surface ID creation throws", async () => {
+    const compile = vi.fn();
+    const result = await createService(
+      {
+        generatePresentationDecisionCandidate: async (request) =>
+          candidateFor(request),
+      },
+      compile,
+      { load: () => catalog },
+      () => {
+        throw new Error("Surface ID provider failed.");
+      },
+    ).present(
+      {
+        requestId: "surface-id-throws",
+        content: { contentType: "markdown", markdown: "Safe source content." },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: new AbortController().signal },
+    );
+
+    expect(compile).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      requestId: "surface-id-throws",
+      status: "degraded",
+      mode: "markdown",
+      errors: [
+        {
+          code: "UI_COMPILATION_FAILED",
+          stage: "ui-compilation",
           retryable: false,
         },
       ],
