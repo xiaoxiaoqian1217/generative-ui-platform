@@ -1,7 +1,281 @@
 {
   "repo_notes": [
     {
-      "content": "所有文档必须使用简体中文编写。保留代码标识符、接口名称和专业英文术语，并在首次出现时提供中文解释。"
+      "content": "所有文档必须使用简体中文编写。保留代码标识符、接口名称和专业英文术语，并在首次出现时提供中文解释"
+    }
+  ],
+  "pages": [
+    {
+      "title": "Overview",
+      "purpose": "High-level introduction to the Generative UI Platform: its purpose, key concepts, monorepo structure, and how the major subsystems relate. Links to child pages for deeper coverage.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Getting Started",
+      "purpose": "Developer onboarding: prerequisites, repository setup, pnpm workspace commands, bootstrap scripts, and the validation pipeline (pnpm validate / test / build / docs:check).",
+      "parent": "Overview",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Monorepo Architecture and Package Boundaries",
+      "purpose": "Explains the pnpm + Turborepo monorepo layout, the strict dependency hierarchy (shared-types → contracts → core → service), and how the check-dependency-boundaries.mjs script enforces isolation.",
+      "parent": "Overview",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Architectural Decision Records (ADRs)",
+      "purpose": "Catalogue of all 17 ADRs with brief summaries of each decision, rationale, and consequences. Covers monorepo boundaries, A2UI profile, Fastify HTTP lifecycle, TypeBox/Ajv validation, markdown sanitizer, and more.",
+      "parent": "Overview",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Core Architecture and Data Flow",
+      "purpose": "Overview of the end-to-end request pipeline from AgentContent ingestion to PresentationResult output, covering trust boundaries, fallback strategy, and the role of each subsystem. Links to child pages for each stage.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Shared Contract Packages",
+      "purpose": "Detailed reference for the four contract packages: shared-types, presentation-contract, compiler-contract, and component-catalog-schema. Covers TypeBox schemas, Ajv validation, exported types, and the dependency hierarchy.",
+      "parent": "Core Architecture and Data Flow",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Component Catalog Schema",
+      "purpose": "Deep dive into the ComponentCatalog: its structure (ComponentDefinition, ActionSchema, propsSchema, nesting rules), the computeCatalogContentHash function (RFC 8785 + SHA-256), and the validateComponentCatalog pipeline with embedded schema limits.",
+      "parent": "Core Architecture and Data Flow",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Presentation Router and Model Adapter",
+      "purpose": "How the PresentationRouter decides between markdown and generative-ui modes, the ModelAdapter interface, retry/backoff logic, timeout enforcement via AbortSignal, and PresentationDecision validation.",
+      "parent": "Core Architecture and Data Flow",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "UI Compiler Core",
+      "purpose": "Overview of the ui-compiler-core package: its role as the framework-agnostic compilation engine, its public API (compileUI), and how it fits into the broader pipeline. Links to child pages for each internal stage.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Input Validation and Catalog Validation",
+      "purpose": "How compileUI validates the raw unknown input into a UICompileRequest, enforces data depth/item limits, and validates the injected ComponentCatalog (including content hash verification).",
+      "parent": "UI Compiler Core",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Component Selection",
+      "purpose": "The selectComponents function: multi-factor scoring algorithm (base score, description score, data/viewport score), scenario-based preferences, nesting validation, and action compatibility checks.",
+      "parent": "UI Compiler Core",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "UI IR Builder and A2UI Compilation",
+      "purpose": "How buildUIIR assembles the UISurfaceIR (prop resolution via JSON pointers, action binding, slot mapping), and how compileA2UI lowers the IR into the A2UI v0.9 operation sequence (createSurface, updateComponents, updateDataModel).",
+      "parent": "UI Compiler Core",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Action Targets and Interaction Handling",
+      "purpose": "The indexTargetActions function, componentPermitsTargetActions predicate, action payload validation, destructive/requiresApproval safety flags, and source-binding vs. literal payload kinds.",
+      "parent": "UI Compiler Core",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Fallback and Degradation Strategy",
+      "purpose": "How the compiler handles failures: the degraded result state, fallbackMarkdown extraction, CoreCompileFailure error structure, and the guarantee that valid business content is never silently lost.",
+      "parent": "UI Compiler Core",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "UI Compiler Service",
+      "purpose": "Overview of the apps/ui-compiler-service application: its role as the composition root, HTTP API surface, and how it wires together the router, sanitizer, compiler, and catalog repository. Links to child pages for each subsystem.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "GenerativeUIPresentationService",
+      "purpose": "The GenerativeUIPresentationService orchestration layer: dependency injection (catalogRepository, sanitizer, router, compile, limits), the present() pipeline, catalog snapshotting, retry logic, and the fallbackFor helper.",
+      "parent": "UI Compiler Service",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Markdown Sanitization",
+      "purpose": "The MarkdownSanitizer interface, createMarkdownSanitizer (definition-aware), identifier shadowing prevention, definition lifting, blankRangesPreservingLines, AST limits (maxAstNodes, maxAstDepth), and the base sanitizer.",
+      "parent": "UI Compiler Service",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Structured Data Handling",
+      "purpose": "StructuredDataValidator (deep clone, circular reference detection, prototype safety, canonical JSON, depth/item limits), StructuredDataSerializer (code-fence wrapping), StructuredDataPresentationService pipeline, and SafeMarkdownPresentation finalization.",
+      "parent": "UI Compiler Service",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "HTTP Lifecycle and Observability",
+      "purpose": "Fastify 5.10 HTTP adapter: request byte limits, AbortSignal propagation, graceful shutdown, the vendor-neutral Observability Port, safe log field set, sensitive data classification, and stage timing.",
+      "parent": "UI Compiler Service",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "AG-UI Adapter",
+      "purpose": "The ag-ui-adapter package: mapping PresentationResult to AG-UI CUSTOM events, lifecycle event factories (RUN_STARTED, RUN_FINISHED, RUN_ERROR, STEP_STARTED, STEP_FINISHED), parseAGUICompileRequest, and validateAGUIEventSequence state-machine rules.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Testing Strategy",
+      "purpose": "Overview of the multi-layer test approach: unit tests per package, integration tests, contract smoke tests, workspace boundary tests, and human validation checklists. Links to child pages for each layer.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Unit and Integration Tests",
+      "purpose": "Per-package test coverage: ui-compiler-core (display-scenes, negative-compilation, request-isolation, a2ui-compiler, interaction-components), ui-compiler-service (markdown-sanitizer, structured-data, generative-ui-presentation), and shared test fixtures.",
+      "parent": "Testing Strategy",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Contract Package Smoke Tests and Artifact Baseline",
+      "purpose": "The check-contract-package-installation.mjs pipeline (pnpm pack, isolated consumer, smoke.mjs runtime assertions, smoke.ts type-check), artifact size baseline monitoring, and the dependency-boundaries test.",
+      "parent": "Testing Strategy",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Human Validation Checklists",
+      "purpose": "Stage One and Stage Two human validation procedures: what reviewers must manually verify before merging contract changes, catalog updates, or service releases.",
+      "parent": "Testing Strategy",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "CI/CD and Developer Tooling",
+      "purpose": "Overview of GitHub Actions workflows, Changesets versioning, Lefthook git hooks, Biome linting, commitlint, cspell, and the publish scripts. Links to child pages for workflow details and contribution guidelines.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "GitHub Workflows and Branch Protection",
+      "purpose": "CI validate workflow, PR governance (semantic titles, label enforcement), Changesets release automation, security scanning (CodeQL, dependency review), and branch protection rules for main.",
+      "parent": "CI/CD and Developer Tooling",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "AI Agent Contribution Protocol",
+      "purpose": "AGENTS.md rules for AI agents: git worktree isolation, no-track branch policy, Wayfinding system (map issues, frontier tickets, blocking/claiming), triage labels, and the serial integration order for parallel tasks.",
+      "parent": "CI/CD and Developer Tooling",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Glossary",
+      "purpose": "Definitions of all codebase-specific terms, abbreviations, and domain concepts that an onboarding engineer needs to know, with code pointers to the relevant files and types.",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
     }
   ]
 }
