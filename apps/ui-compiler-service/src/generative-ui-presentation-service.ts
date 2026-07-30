@@ -176,12 +176,10 @@ function prevalidateStructuredData(
   }
 
   const content = readOwnDataProperty(input, "content");
-  if (
-    typeof content !== "object" ||
-    content === null ||
-    content === missingOwnProperty ||
-    content === unsafeOwnProperty
-  ) {
+  if (content === missingOwnProperty || content === unsafeOwnProperty) {
+    return { attempted: false };
+  }
+  if (typeof content !== "object" || content === null) {
     return { attempted: false };
   }
 
