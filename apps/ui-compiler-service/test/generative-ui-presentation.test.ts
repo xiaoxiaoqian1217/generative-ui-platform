@@ -1,4 +1,4 @@
-import { request as httpRequest } from "node:http";
+import { Agent as HttpAgent, request as httpRequest } from "node:http";
 import {
   type ComponentCatalog,
   computeCatalogContentHash,
@@ -21,6 +21,7 @@ import {
   type ModelPresentationRequest,
   PresentationRouterConfigurationError,
 } from "../src/main.js";
+import { createJsonLineHttpObservability } from "../src/observability.js";
 
 const emptyObjectSchema = {
   $schema: "http://json-schema.org/draft-07/schema#" as const,
@@ -431,6 +432,7 @@ describe("Generative UI presentation path", () => {
   it("does not invoke the model when the caller signal is already cancelled", async () => {
     const controller = new AbortController();
     controller.abort();
+    const stages: unknown[] = [];
     const generate =
       vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>();
     const result = await createService(
@@ -445,7 +447,12 @@ describe("Generative UI presentation path", () => {
         content: { contentType: "markdown", markdown: "Safe source content." },
         catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
       },
-      { signal: controller.signal },
+      {
+        signal: controller.signal,
+        observation: {
+          recordStageCompletion: (stage) => stages.push(stage),
+        },
+      },
     );
 
     expect(generate).not.toHaveBeenCalled();
@@ -453,6 +460,15 @@ describe("Generative UI presentation path", () => {
       status: "degraded",
       errors: [{ code: "MODEL_CANCELLED", retryable: false }],
     });
+    expect(stages).toContainEqual(
+      expect.objectContaining({
+        stage: "model-analysis",
+        result: "cancelled",
+        modelCalled: false,
+        modelAttemptCount: 0,
+        modelRetried: false,
+      }),
+    );
   });
 
   it("uses the total model deadline across a pending attempt", async () => {
@@ -818,7 +834,75 @@ async function disconnectHttpClient(
   });
 }
 
+async function postWithAgent(
+  url: string,
+  body: unknown,
+  agent: HttpAgent,
+): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const request = httpRequest(url, {
+      method: "POST",
+      agent,
+      headers: { "content-type": "application/json" },
+    });
+    request.once("error", reject);
+    request.once("response", (response) => {
+      response.resume();
+      response.once("end", () => resolve(response.statusCode ?? 0));
+      response.once("error", reject);
+    });
+    request.end(JSON.stringify(body));
+  });
+}
+
 describe("HTTP reliability E2E", () => {
+  it("does not report normal Keep-Alive reuse as a client disconnect", async () => {
+    const observationLines: string[] = [];
+    const server = createHttpServer({
+      configuration: httpE2EConfiguration,
+      presentUseCase: createService({
+        generatePresentationDecisionCandidate: async (request) =>
+          candidateFor(request),
+      }),
+      observability: createJsonLineHttpObservability({
+        write: (line) => observationLines.push(line),
+      }),
+    });
+    const baseUrl = await listenForHttpE2E(server);
+    const agent = new HttpAgent({ keepAlive: true, maxSockets: 1 });
+
+    try {
+      expect(
+        await postWithAgent(
+          `${baseUrl}/api/ui-compiler/present`,
+          presentationRequest("keep-alive-1"),
+          agent,
+        ),
+      ).toBe(200);
+      expect(
+        await postWithAgent(
+          `${baseUrl}/api/ui-compiler/present`,
+          presentationRequest("keep-alive-2"),
+          agent,
+        ),
+      ).toBe(200);
+      const events = observationLines.map((line) => JSON.parse(line));
+      expect(
+        events.filter(
+          (event) => event.eventName === "ui_compiler.http.client_disconnected",
+        ),
+      ).toHaveLength(0);
+      expect(
+        events.filter(
+          (event) => event.eventName === "ui_compiler.http.request_completed",
+        ),
+      ).toHaveLength(2);
+    } finally {
+      agent.destroy();
+      await server.closeGracefully();
+    }
+  });
+
   it("rejects an oversized HTTP request body before the presentation lifecycle starts", async () => {
     let called = false;
     const server = createHttpServer({
@@ -863,8 +947,12 @@ describe("HTTP reliability E2E", () => {
   it("maps the request deadline to REQUEST_TIMEOUT and does not send a late response", async () => {
     let observedSignal: AbortSignal | undefined;
     let resolveLateOperation: (() => void) | undefined;
+    const requestTimeoutObservationLines: string[] = [];
     const server = createHttpServer({
       configuration: { ...httpE2EConfiguration, requestDeadlineMs: 1_000 },
+      observability: createJsonLineHttpObservability({
+        write: (line) => requestTimeoutObservationLines.push(line),
+      }),
       presentUseCase: {
         present: async (_input, options) => {
           observedSignal = options.signal;
@@ -900,11 +988,229 @@ describe("HTTP reliability E2E", () => {
       });
       expect(observedSignal?.aborted).toBe(true);
       expect(responseCount).toBe(1);
+      expect(
+        requestTimeoutObservationLines.map((line) => JSON.parse(line)).at(-1),
+      ).toMatchObject({
+        eventName: "ui_compiler.http.request_timed_out",
+        outcome: "timed-out",
+        requestId: "request-timeout",
+        errorCode: "REQUEST_TIMEOUT",
+        httpStatusCode: 504,
+      });
 
       resolveLateOperation?.();
       await new Promise((resolve) => setTimeout(resolve, 20));
       expect(responseCount).toBe(1);
     } finally {
+      await server.closeGracefully();
+    }
+  });
+
+  it("reports ui-compilation when the request deadline expires during Core", async () => {
+    const observationLines: string[] = [];
+    const service = createService(
+      {
+        generatePresentationDecisionCandidate: async (request) =>
+          candidateFor(request),
+      },
+      async (_input, _options, runtime) => {
+        await waitForAbort(runtime.signal);
+        throw new Error("compile operation was cancelled");
+      },
+      undefined,
+      undefined,
+      { modelTimeoutMs: 1_000, modelRetryCount: 0 },
+      undefined,
+      10_000,
+    );
+    const server = createHttpServer({
+      configuration: {
+        ...httpE2EConfiguration,
+        compileTimeoutMs: 1_000,
+        requestDeadlineMs: 1_100,
+      },
+      presentUseCase: service,
+      observability: createJsonLineHttpObservability({
+        write: (line) => observationLines.push(line),
+      }),
+    });
+    const baseUrl = await listenForHttpE2E(server);
+
+    try {
+      const response = await fetch(`${baseUrl}/api/ui-compiler/present`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(presentationRequest("compile-request-timeout")),
+      });
+      expect(response.status).toBe(504);
+      await expect(response.json()).resolves.toMatchObject({
+        requestId: "compile-request-timeout",
+        errors: [
+          {
+            code: "REQUEST_TIMEOUT",
+            stage: "ui-compilation",
+          },
+        ],
+      });
+      const events = observationLines.map((line) => JSON.parse(line));
+      expect(events.at(-1)).toMatchObject({
+        eventName: "ui_compiler.http.request_timed_out",
+        requestId: "compile-request-timeout",
+        errorCode: "REQUEST_TIMEOUT",
+        errorStage: "ui-compilation",
+      });
+      expect(events.at(-1).compileDurationMs).toBeGreaterThanOrEqual(0);
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          eventName: "ui_compiler.http.stage_completed",
+          stage: "ui-compilation",
+          result: "cancelled",
+          errorCode: "REQUEST_CANCELLED",
+        }),
+      );
+    } finally {
+      await server.closeGracefully();
+    }
+  });
+
+  it("freezes model-analysis when the request deadline wins a late model cancellation", async () => {
+    const observationLines: string[] = [];
+    const service = createService(
+      {
+        generatePresentationDecisionCandidate: async (_request, options) => {
+          await waitForAbort(options.signal);
+          throw new ModelAdapterError("MODEL_CANCELLED", false);
+        },
+      },
+      undefined,
+      undefined,
+      undefined,
+      { modelTimeoutMs: 10_000, modelRetryCount: 0 },
+    );
+    const server = createHttpServer({
+      configuration: {
+        ...httpE2EConfiguration,
+        compileTimeoutMs: 1_000,
+        requestDeadlineMs: 1_100,
+      },
+      presentUseCase: service,
+      observability: createJsonLineHttpObservability({
+        write: (line) => observationLines.push(line),
+      }),
+    });
+    const baseUrl = await listenForHttpE2E(server);
+
+    try {
+      const response = await fetch(`${baseUrl}/api/ui-compiler/present`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(presentationRequest("model-request-timeout")),
+      });
+      expect(response.status).toBe(504);
+      await expect(response.json()).resolves.toMatchObject({
+        requestId: "model-request-timeout",
+        errors: [
+          {
+            code: "REQUEST_TIMEOUT",
+            stage: "model-analysis",
+          },
+        ],
+      });
+      await new Promise((resolve) => setImmediate(resolve));
+      const events = observationLines.map((line) => JSON.parse(line));
+      expect(events.at(-1)).toMatchObject({
+        eventName: "ui_compiler.http.request_timed_out",
+        requestId: "model-request-timeout",
+        errorCode: "REQUEST_TIMEOUT",
+        errorStage: "model-analysis",
+        modelCalled: true,
+        modelAttemptCount: 1,
+        modelRetried: false,
+      });
+      expect(events.at(-1).modelDurationMs).toBeGreaterThanOrEqual(0);
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          eventName: "ui_compiler.http.stage_completed",
+          stage: "model-analysis",
+          result: "cancelled",
+          errorCode: "MODEL_CANCELLED",
+          modelCalled: true,
+          modelAttemptCount: 1,
+        }),
+      );
+      expect(
+        events.filter(
+          (event) =>
+            event.eventName === "ui_compiler.http.stage_completed" &&
+            event.stage === "presentation-routing",
+        ),
+      ).toHaveLength(0);
+    } finally {
+      await server.closeGracefully();
+    }
+  });
+
+  it("records a client disconnect that occurs during delayed serialization", async () => {
+    const observationLines: string[] = [];
+    let markOnSendStarted: (() => void) | undefined;
+    let releaseOnSend: (() => void) | undefined;
+    let markDisconnected: (() => void) | undefined;
+    const onSendStarted = new Promise<void>((resolve) => {
+      markOnSendStarted = resolve;
+    });
+    const onSendRelease = new Promise<void>((resolve) => {
+      releaseOnSend = resolve;
+    });
+    const disconnected = new Promise<void>((resolve) => {
+      markDisconnected = resolve;
+    });
+    const server = createHttpServer({
+      presentUseCase: {
+        present: async () => ({
+          requestId: "disconnect-during-send",
+          status: "completed",
+          mode: "markdown",
+          markdown: "safe response",
+        }),
+      },
+      observability: createJsonLineHttpObservability({
+        write: (line) => {
+          observationLines.push(line);
+          if (line.includes("ui_compiler.http.client_disconnected")) {
+            markDisconnected?.();
+          }
+        },
+      }),
+    });
+    server.addHook("onSend", async (_request, _reply, payload) => {
+      markOnSendStarted?.();
+      await onSendRelease;
+      return payload;
+    });
+    const baseUrl = await listenForHttpE2E(server);
+
+    try {
+      await disconnectHttpClient(
+        `${baseUrl}/api/ui-compiler/present`,
+        presentationRequest("disconnect-during-send"),
+        onSendStarted,
+      );
+      await disconnected;
+      releaseOnSend?.();
+      await new Promise((resolve) => setImmediate(resolve));
+      const events = observationLines.map((line) => JSON.parse(line));
+      expect(
+        events.filter(
+          (event) => event.eventName === "ui_compiler.http.client_disconnected",
+        ),
+      ).toHaveLength(1);
+      expect(
+        events.filter(
+          (event) => event.eventName === "ui_compiler.http.request_completed",
+        ),
+      ).toHaveLength(0);
+    } finally {
+      releaseOnSend?.();
       await server.closeGracefully();
     }
   });
@@ -924,9 +1230,13 @@ describe("HTTP reliability E2E", () => {
       undefined,
       { modelTimeoutMs: 25, modelRetryCount: 0 },
     );
+    const modelTimeoutObservationLines: string[] = [];
     const timeoutServer = createHttpServer({
       configuration: httpE2EConfiguration,
       presentUseCase: timedOutService,
+      observability: createJsonLineHttpObservability({
+        write: (line) => modelTimeoutObservationLines.push(line),
+      }),
     });
     const timeoutUrl = await listenForHttpE2E(timeoutServer);
 
@@ -945,6 +1255,16 @@ describe("HTTP reliability E2E", () => {
       });
       expect(timedOutSignals).toHaveLength(1);
       expect(timedOutSignals[0]?.aborted).toBe(true);
+      expect(
+        modelTimeoutObservationLines.map((line) => JSON.parse(line)).at(-1),
+      ).toMatchObject({
+        eventName: "ui_compiler.http.request_completed",
+        requestId: "model-timeout",
+        degraded: true,
+        degradationReasonCode: "MODEL_TIMEOUT",
+        modelCalled: true,
+        modelAttemptCount: 1,
+      });
     } finally {
       await timeoutServer.closeGracefully();
     }
@@ -962,9 +1282,13 @@ describe("HTTP reliability E2E", () => {
       undefined,
       { modelTimeoutMs: 1_000, modelRetryCount: 2 },
     );
+    const modelRetryObservationLines: string[] = [];
     const retryServer = createHttpServer({
       configuration: httpE2EConfiguration,
       presentUseCase: retryService,
+      observability: createJsonLineHttpObservability({
+        write: (line) => modelRetryObservationLines.push(line),
+      }),
     });
     const retryUrl = await listenForHttpE2E(retryServer);
 
@@ -982,6 +1306,16 @@ describe("HTTP reliability E2E", () => {
         errors: [{ code: "MODEL_RETRY_EXHAUSTED", retryable: true }],
       });
       expect(attempts).toBe(3);
+      expect(
+        modelRetryObservationLines.map((line) => JSON.parse(line)).at(-1),
+      ).toMatchObject({
+        requestId: "model-retry-exhausted",
+        degraded: true,
+        degradationReasonCode: "MODEL_RETRY_EXHAUSTED",
+        modelCalled: true,
+        modelAttemptCount: 3,
+        modelRetried: true,
+      });
     } finally {
       await retryServer.closeGracefully();
     }
@@ -1005,9 +1339,13 @@ describe("HTTP reliability E2E", () => {
       undefined,
       25,
     );
+    const compileTimeoutObservationLines: string[] = [];
     const server = createHttpServer({
       configuration: httpE2EConfiguration,
       presentUseCase: compileTimeoutService,
+      observability: createJsonLineHttpObservability({
+        write: (line) => compileTimeoutObservationLines.push(line),
+      }),
     });
     const baseUrl = await listenForHttpE2E(server);
 
@@ -1025,6 +1363,13 @@ describe("HTTP reliability E2E", () => {
         errors: [{ code: "COMPILE_TIMEOUT" }],
       });
       expect(compileSignal?.aborted).toBe(true);
+      expect(
+        compileTimeoutObservationLines.map((line) => JSON.parse(line)).at(-1),
+      ).toMatchObject({
+        requestId: "compile-timeout",
+        degraded: true,
+        degradationReasonCode: "COMPILE_TIMEOUT",
+      });
     } finally {
       await server.closeGracefully();
     }
@@ -1070,7 +1415,13 @@ describe("HTTP reliability E2E", () => {
         throw new ModelAdapterError("MODEL_CANCELLED", false);
       },
     });
-    const modelServer = createHttpServer({ presentUseCase: modelService });
+    const modelObservationLines: string[] = [];
+    const modelServer = createHttpServer({
+      presentUseCase: modelService,
+      observability: createJsonLineHttpObservability({
+        write: (line) => modelObservationLines.push(line),
+      }),
+    });
     const modelUrl = await listenForHttpE2E(modelServer);
 
     try {
@@ -1081,6 +1432,15 @@ describe("HTTP reliability E2E", () => {
       );
       await waitForAbort(modelSignal ?? new AbortController().signal);
       expect(modelSignal?.aborted).toBe(true);
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(
+        modelObservationLines
+          .map((line) => JSON.parse(line))
+          .filter(
+            (event) =>
+              event.eventName === "ui_compiler.http.client_disconnected",
+          ),
+      ).toHaveLength(1);
     } finally {
       await modelServer.closeGracefully();
     }
@@ -1102,7 +1462,13 @@ describe("HTTP reliability E2E", () => {
         throw new Error("compile operation was aborted");
       },
     );
-    const compileServer = createHttpServer({ presentUseCase: compileService });
+    const compileObservationLines: string[] = [];
+    const compileServer = createHttpServer({
+      presentUseCase: compileService,
+      observability: createJsonLineHttpObservability({
+        write: (line) => compileObservationLines.push(line),
+      }),
+    });
     const compileUrl = await listenForHttpE2E(compileServer);
 
     try {
@@ -1113,6 +1479,15 @@ describe("HTTP reliability E2E", () => {
       );
       await waitForAbort(compileSignal ?? new AbortController().signal);
       expect(compileSignal?.aborted).toBe(true);
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(
+        compileObservationLines
+          .map((line) => JSON.parse(line))
+          .filter(
+            (event) =>
+              event.eventName === "ui_compiler.http.client_disconnected",
+          ),
+      ).toHaveLength(1);
     } finally {
       await compileServer.closeGracefully();
     }

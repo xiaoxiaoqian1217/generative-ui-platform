@@ -39,6 +39,7 @@ const packages = [
 ] as const;
 
 const forbiddenPaths = [
+  "apps/agent-runtime-host",
   "apps/interaction-gateway",
   "packages/component-registry",
   "packages/frontend-runtime",

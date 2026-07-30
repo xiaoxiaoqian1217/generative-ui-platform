@@ -1,9 +1,36 @@
 import { describe, expect, it } from "vitest";
+import type { HttpObservability } from "../src/observability.js";
 import { createRuntimeServer } from "../src/runtime.js";
 import {
   createRuntimeConfiguration,
   RuntimeConfigurationError,
 } from "../src/runtime-configuration.js";
+
+function recordingObservability(
+  events: Array<{ event: string; fields: unknown }>,
+): HttpObservability {
+  return {
+    startHttpRequest: (start) => {
+      events.push({ event: "ui_compiler.http.request_started", fields: start });
+      return {
+        recordStageCompletion: (stage) =>
+          events.push({
+            event: "ui_compiler.http.stage_completed",
+            fields: stage,
+          }),
+        end: (terminal) =>
+          events.push({
+            event:
+              terminal.outcome === "completed" ||
+              terminal.outcome === "rejected"
+                ? "ui_compiler.http.request_completed"
+                : `ui_compiler.http.${terminal.outcome}`,
+            fields: terminal,
+          }),
+      };
+    },
+  };
+}
 
 describe("independent runtime", () => {
   it("uses documented resource defaults", () => {
@@ -51,7 +78,13 @@ describe("independent runtime", () => {
   });
 
   it("assembles the test catalog and adapter for a generative UI response", async () => {
-    const server = createRuntimeServer();
+    const events: Array<{ event: string; fields: unknown }> = [];
+    const observability = recordingObservability(events);
+    const server = createRuntimeServer(
+      createRuntimeConfiguration({}),
+      "test-version",
+      observability,
+    );
     const response = await server.inject({
       method: "POST",
       url: "/api/ui-compiler/present",
@@ -69,6 +102,10 @@ describe("independent runtime", () => {
       requestId: "runtime-1",
       status: "completed",
       mode: "generative-ui",
+    });
+    expect(events).toContainEqual({
+      event: "ui_compiler.http.request_completed",
+      fields: expect.objectContaining({ requestId: "runtime-1" }),
     });
     await server.close();
   });

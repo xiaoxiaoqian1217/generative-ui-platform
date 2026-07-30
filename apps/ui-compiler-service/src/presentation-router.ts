@@ -10,6 +10,13 @@ import type {
 import { validatePresentationDecision } from "@generative-ui/presentation-contract";
 import type { JsonValue } from "@generative-ui/shared-types";
 import type { SanitizedMarkdown } from "./markdown-sanitizer.js";
+import {
+  observationStageDuration,
+  recordStageCompletionSafely,
+  type StageObservationRecorder,
+  setObservationStageSafely,
+  startObservationStage,
+} from "./observability.js";
 
 export const MARKDOWN_DIRECT_REASON_WITH_USER_CONTEXT =
   "MARKDOWN_DIRECT_EXPLICIT_CONTENT_WITH_USER_CONTEXT";
@@ -65,6 +72,7 @@ export interface PresentationRouteRequest {
 
 export interface PresentationRouteOptions {
   signal: AbortSignal;
+  observation?: StageObservationRecorder;
 }
 
 export interface PresentationRouter {
@@ -396,7 +404,7 @@ async function invokeModelAdapter(
   callerSignal: AbortSignal,
   policy: Readonly<ModelInvocationPolicy>,
   runtime: ModelInvocationRuntime,
-): Promise<unknown> {
+): Promise<{ candidate: unknown; attempts: number }> {
   if (callerSignal.aborted) {
     throw new ModelAdapterError("MODEL_CANCELLED", false, 0);
   }
@@ -416,7 +424,7 @@ async function invokeModelAdapter(
 
       attempts += 1;
       try {
-        return await awaitWithAbort(
+        const candidate = await awaitWithAbort(
           modelAdapter.generatePresentationDecisionCandidate(request, {
             signal: AbortSignal.any([callerSignal, deadlineController.signal]),
           }),
@@ -424,6 +432,7 @@ async function invokeModelAdapter(
           deadlineController.signal,
           attempts,
         );
+        return { candidate, attempts };
       } catch (caught) {
         if (callerSignal.aborted || deadlineController.signal.aborted) {
           throw signalError(callerSignal, deadlineController.signal, attempts);
@@ -553,29 +562,90 @@ export function createModelPresentationRouter(
 
   return {
     async route(request, options) {
-      const candidate = await invokeModelAdapter(
-        modelAdapter,
-        {
-          requestId: request.requestId,
-          content: request.content,
-          ...(request.context === undefined
-            ? {}
-            : { context: request.context }),
-          catalog: request.catalog,
-          outputSchema: {
-            schemaId:
-              "https://generative-ui.dev/schemas/presentation/decision/1.0",
-            schemaVersion: "1.0",
+      setObservationStageSafely(options.observation, "model-analysis");
+      const modelStartedAt = startObservationStage();
+      let invocation: { candidate: unknown; attempts: number };
+      try {
+        invocation = await invokeModelAdapter(
+          modelAdapter,
+          {
+            requestId: request.requestId,
+            content: request.content,
+            ...(request.context === undefined
+              ? {}
+              : { context: request.context }),
+            catalog: request.catalog,
+            outputSchema: {
+              schemaId:
+                "https://generative-ui.dev/schemas/presentation/decision/1.0",
+              schemaVersion: "1.0",
+            },
           },
-        },
-        options.signal,
-        stablePolicy,
-        runtime,
-      );
-      const validated = validatePresentationDecision(candidate);
+          options.signal,
+          stablePolicy,
+          runtime,
+        );
+      } catch (caught) {
+        const failure = isModelAdapterError(caught) ? caught : undefined;
+        const modelAttemptCount = failure?.attempts ?? 1;
+        recordStageCompletionSafely(options.observation, {
+          stage: "model-analysis",
+          result:
+            failure?.code === "MODEL_CANCELLED"
+              ? "cancelled"
+              : failure?.code === "MODEL_TIMEOUT"
+                ? "timed-out"
+                : "failed",
+          durationMs: observationStageDuration(modelStartedAt),
+          errorCode: failure?.code ?? "MODEL_PROVIDER_ERROR",
+          modelCalled: modelAttemptCount > 0,
+          modelAttemptCount,
+          modelRetried: modelAttemptCount > 1,
+          requestId: request.requestId,
+          catalogId: request.catalog.catalog.catalogId,
+          catalogVersion: request.catalog.catalog.catalogVersion,
+          catalogContentHash: request.catalog.catalog.catalogContentHash,
+        });
+        throw caught;
+      }
+      recordStageCompletionSafely(options.observation, {
+        stage: "model-analysis",
+        result: "completed",
+        durationMs: observationStageDuration(modelStartedAt),
+        modelCalled: true,
+        modelAttemptCount: invocation.attempts,
+        modelRetried: invocation.attempts > 1,
+        requestId: request.requestId,
+        catalogId: request.catalog.catalog.catalogId,
+        catalogVersion: request.catalog.catalog.catalogVersion,
+        catalogContentHash: request.catalog.catalog.catalogContentHash,
+      });
+
+      setObservationStageSafely(options.observation, "ui-plan-validation");
+      const validationStartedAt = startObservationStage();
+      const validated = validatePresentationDecision(invocation.candidate);
       if (!validated.success) {
+        recordStageCompletionSafely(options.observation, {
+          stage: "ui-plan-validation",
+          result: "failed",
+          durationMs: observationStageDuration(validationStartedAt),
+          errorCode: "PRESENTATION_DECISION_INVALID",
+          requestId: request.requestId,
+          catalogId: request.catalog.catalog.catalogId,
+          catalogVersion: request.catalog.catalog.catalogVersion,
+          catalogContentHash: request.catalog.catalog.catalogContentHash,
+        });
         throw new PresentationDecisionValidationError();
       }
+      recordStageCompletionSafely(options.observation, {
+        stage: "ui-plan-validation",
+        result: "completed",
+        durationMs: observationStageDuration(validationStartedAt),
+        requestId: request.requestId,
+        catalogId: request.catalog.catalog.catalogId,
+        catalogVersion: request.catalog.catalog.catalogVersion,
+        catalogContentHash: request.catalog.catalog.catalogContentHash,
+      });
       return validated.value;
     },
   };
