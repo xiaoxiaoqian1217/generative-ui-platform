@@ -13,8 +13,9 @@ import {
   createStructuredDataValidator,
   DEFAULT_MARKDOWN_SANITIZER_LIMITS,
   DEFAULT_STRUCTURED_DATA_LIMITS,
-  ModelAdapterError,
   type ModelAdapter,
+  ModelAdapterError,
+  type ModelInvocationRuntime,
   type ModelPresentationRequest,
   PresentationRouterConfigurationError,
 } from "../src/main.js";
@@ -105,16 +106,15 @@ function createService(
   createSurfaceId: Parameters<
     typeof createGenerativeUIPresentationService
   >[0]["createSurfaceId"] = () => "surface-presentation-test",
+  policy = { modelTimeoutMs: 1_000, modelRetryCount: 0 },
+  runtime?: ModelInvocationRuntime,
 ) {
   return createGenerativeUIPresentationService({
     catalogRepository,
     sanitizer: createMarkdownSanitizer(),
     structuredDataValidator: createStructuredDataValidator(),
     structuredDataSerializer: createStructuredDataSerializer(),
-    router: createModelPresentationRouter(adapter, {
-      modelTimeoutMs: 1_000,
-      modelRetryCount: 0,
-    }),
+    router: createModelPresentationRouter(adapter, policy, runtime),
     markdownLimits: DEFAULT_MARKDOWN_SANITIZER_LIMITS,
     structuredDataLimits: DEFAULT_STRUCTURED_DATA_LIMITS,
     catalogSchemaLimits: defaultCatalogSchemaLimits,
@@ -328,7 +328,194 @@ describe("Generative UI presentation path", () => {
     });
   });
 
-  it("maps unknown Router failures to the generic stable routing error", async () => {
+  it("retries only declared transient failures and counts physical calls", async () => {
+    const generate = vi
+      .fn<ModelAdapter["generatePresentationDecisionCandidate"]>()
+      .mockRejectedValueOnce(new ModelAdapterError("MODEL_RATE_LIMITED", true))
+      .mockRejectedValueOnce(new ModelAdapterError("MODEL_UNAVAILABLE", true))
+      .mockImplementation(async (request) => candidateFor(request));
+
+    const result = await createService(
+      { generatePresentationDecisionCandidate: generate },
+      undefined,
+      undefined,
+      undefined,
+      { modelTimeoutMs: 1_000, modelRetryCount: 2 },
+    ).present(
+      {
+        requestId: "retries-succeed",
+        content: { contentType: "markdown", markdown: "Safe source content." },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: new AbortController().signal },
+    );
+
+    expect(generate).toHaveBeenCalledTimes(3);
+    expect(result).toMatchObject({
+      status: "completed",
+      mode: "generative-ui",
+    });
+  });
+
+  it("returns MODEL_RETRY_EXHAUSTED after the configured retry limit", async () => {
+    const generate = vi.fn<
+      ModelAdapter["generatePresentationDecisionCandidate"]
+    >(async () => {
+      throw new ModelAdapterError("MODEL_RATE_LIMITED", true);
+    });
+    const result = await createService(
+      { generatePresentationDecisionCandidate: generate },
+      undefined,
+      undefined,
+      undefined,
+      { modelTimeoutMs: 1_000, modelRetryCount: 1 },
+    ).present(
+      {
+        requestId: "retries-exhausted",
+        content: { contentType: "markdown", markdown: "Safe source content." },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: new AbortController().signal },
+    );
+
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({
+      status: "degraded",
+      errors: [
+        {
+          code: "MODEL_RETRY_EXHAUSTED",
+          details: { attempts: 2, lastRetryableCode: "MODEL_RATE_LIMITED" },
+        },
+      ],
+    });
+  });
+
+  it("cancels the active call and does not retry after cancellation", async () => {
+    const controller = new AbortController();
+    let observedSignal: AbortSignal | undefined;
+    const generate = vi.fn<
+      ModelAdapter["generatePresentationDecisionCandidate"]
+    >(async (_request, options) => {
+      observedSignal = options.signal;
+      return new Promise<never>(() => {});
+    });
+    const pending = createService(
+      { generatePresentationDecisionCandidate: generate },
+      undefined,
+      undefined,
+      undefined,
+      { modelTimeoutMs: 1_000, modelRetryCount: 2 },
+    ).present(
+      {
+        requestId: "cancelled-model",
+        content: { contentType: "markdown", markdown: "Safe source content." },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: controller.signal },
+    );
+    controller.abort();
+    const result = await pending;
+
+    expect(observedSignal?.aborted).toBe(true);
+    expect(generate).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({
+      status: "degraded",
+      errors: [{ code: "MODEL_CANCELLED", retryable: false }],
+    });
+  });
+
+  it("does not invoke the model when the caller signal is already cancelled", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const generate =
+      vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>();
+    const result = await createService(
+      { generatePresentationDecisionCandidate: generate },
+      undefined,
+      undefined,
+      undefined,
+      { modelTimeoutMs: 1_000, modelRetryCount: 1 },
+    ).present(
+      {
+        requestId: "already-cancelled",
+        content: { contentType: "markdown", markdown: "Safe source content." },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: controller.signal },
+    );
+
+    expect(generate).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      status: "degraded",
+      errors: [{ code: "MODEL_CANCELLED", retryable: false }],
+    });
+  });
+
+  it("uses the total model deadline across a pending attempt", async () => {
+    let observedSignal: AbortSignal | undefined;
+    const result = await createService(
+      {
+        generatePresentationDecisionCandidate: async (_request, options) => {
+          observedSignal = options.signal;
+          return new Promise<never>(() => {});
+        },
+      },
+      undefined,
+      undefined,
+      undefined,
+      { modelTimeoutMs: 20, modelRetryCount: 0 },
+    ).present(
+      {
+        requestId: "model-deadline",
+        content: { contentType: "markdown", markdown: "Safe source content." },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: new AbortController().signal },
+    );
+
+    expect(observedSignal?.aborted).toBe(true);
+    expect(result).toMatchObject({
+      status: "degraded",
+      errors: [{ code: "MODEL_TIMEOUT", retryable: true }],
+    });
+  });
+
+  it("uses an injected clock to terminate a pending model invocation", async () => {
+    const callbacks: (() => void)[] = [];
+    const runtime: ModelInvocationRuntime = {
+      random: () => 0,
+      schedule: (callback) => {
+        callbacks.push(callback);
+        return callbacks.length as unknown as ReturnType<typeof setTimeout>;
+      },
+      cancel: () => {},
+    };
+    const pending = createService(
+      {
+        generatePresentationDecisionCandidate: async () =>
+          new Promise<never>(() => {}),
+      },
+      undefined,
+      undefined,
+      undefined,
+      { modelTimeoutMs: 1_000, modelRetryCount: 0 },
+      runtime,
+    ).present(
+      {
+        requestId: "injected-clock-timeout",
+        content: { contentType: "markdown", markdown: "Safe source content." },
+        catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+      },
+      { signal: new AbortController().signal },
+    );
+    callbacks[0]?.();
+    await expect(pending).resolves.toMatchObject({
+      status: "degraded",
+      errors: [{ code: "MODEL_TIMEOUT" }],
+    });
+  });
+
+  it("normalizes unknown provider failures to a stable Model Adapter error", async () => {
     const result = await createService({
       generatePresentationDecisionCandidate: async () => {
         throw new Error("Unknown provider failure.");
@@ -348,8 +535,8 @@ describe("Generative UI presentation path", () => {
       mode: "markdown",
       errors: [
         {
-          code: "PRESENTATION_ROUTING_FAILED",
-          stage: "presentation-routing",
+          code: "MODEL_PROVIDER_ERROR",
+          stage: "model-analysis",
           retryable: false,
         },
       ],
@@ -357,9 +544,8 @@ describe("Generative UI presentation path", () => {
   });
 
   it("limits structured data before recursive request-contract validation", async () => {
-    const generate = vi.fn<
-      ModelAdapter["generatePresentationDecisionCandidate"]
-    >();
+    const generate =
+      vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>();
     const result = await createService({
       generatePresentationDecisionCandidate: generate,
     }).present(

@@ -90,6 +90,21 @@ export interface ModelInvocationPolicy {
   modelRetryCount: number;
 }
 
+export interface ModelInvocationRuntime {
+  random(): number;
+  schedule(
+    callback: () => void,
+    delayMs: number,
+  ): ReturnType<typeof setTimeout>;
+  cancel(timer: ReturnType<typeof setTimeout>): void;
+}
+
+const systemModelInvocationRuntime: ModelInvocationRuntime = {
+  random: () => Math.random(),
+  schedule: (callback, delayMs) => setTimeout(callback, delayMs),
+  cancel: (timer) => clearTimeout(timer),
+};
+
 export interface ModelCallOptions {
   signal: AbortSignal;
   policy: Readonly<ModelInvocationPolicy>;
@@ -108,10 +123,32 @@ export type ModelAdapterErrorCode =
   | "MODEL_PROVIDER_ERROR"
   | "MODEL_RETRY_EXHAUSTED";
 
+export type ModelErrorCategory =
+  | "cancelled"
+  | "timeout"
+  | "rate-limited"
+  | "unavailable"
+  | "authentication"
+  | "permission"
+  | "invalid-request"
+  | "content-filtered"
+  | "invalid-response"
+  | "provider-error"
+  | "retry-exhausted";
+
 export interface ModelAdapterFailure {
+  readonly category: ModelErrorCategory;
   readonly code: ModelAdapterErrorCode;
   readonly retryable: boolean;
+  readonly attempts: number;
+  readonly lastRetryableCode?: RetryableModelErrorCode | undefined;
+  readonly transientProviderError?: true | undefined;
 }
+
+export type RetryableModelErrorCode =
+  | "MODEL_RATE_LIMITED"
+  | "MODEL_UNAVAILABLE"
+  | "MODEL_PROVIDER_ERROR";
 
 export interface ModelAdapter {
   generatePresentationDecisionCandidate(
@@ -120,28 +157,42 @@ export interface ModelAdapter {
   ): Promise<unknown>;
 }
 
-const modelAdapterErrorCodes: ReadonlySet<string> = new Set([
-  "MODEL_CANCELLED",
-  "MODEL_TIMEOUT",
-  "MODEL_RATE_LIMITED",
-  "MODEL_UNAVAILABLE",
-  "MODEL_AUTHENTICATION_FAILED",
-  "MODEL_PERMISSION_DENIED",
-  "MODEL_REQUEST_REJECTED",
-  "MODEL_CONTENT_FILTERED",
-  "MODEL_INVALID_RESPONSE",
-  "MODEL_PROVIDER_ERROR",
-  "MODEL_RETRY_EXHAUSTED",
-]);
+const modelErrorDefinitions = {
+  MODEL_CANCELLED: { category: "cancelled", retryable: false },
+  MODEL_TIMEOUT: { category: "timeout", retryable: true },
+  MODEL_RATE_LIMITED: { category: "rate-limited", retryable: true },
+  MODEL_UNAVAILABLE: { category: "unavailable", retryable: true },
+  MODEL_AUTHENTICATION_FAILED: { category: "authentication", retryable: false },
+  MODEL_PERMISSION_DENIED: { category: "permission", retryable: false },
+  MODEL_REQUEST_REJECTED: { category: "invalid-request", retryable: false },
+  MODEL_CONTENT_FILTERED: { category: "content-filtered", retryable: false },
+  MODEL_INVALID_RESPONSE: { category: "invalid-response", retryable: false },
+  MODEL_PROVIDER_ERROR: { category: "provider-error", retryable: false },
+  MODEL_RETRY_EXHAUSTED: { category: "retry-exhausted", retryable: true },
+} as const satisfies Record<
+  ModelAdapterErrorCode,
+  {
+    category: ModelErrorCategory;
+    retryable: boolean;
+  }
+>;
 
 export class ModelAdapterError extends Error implements ModelAdapterFailure {
   constructor(
     readonly code: ModelAdapterErrorCode,
     readonly retryable: boolean,
+    readonly attempts = 1,
+    readonly category: ModelErrorCategory = categoryFor(code),
+    readonly lastRetryableCode?: RetryableModelErrorCode,
+    readonly transientProviderError?: true,
   ) {
     super("Model analysis failed.");
     this.name = "ModelAdapterError";
   }
+}
+
+function categoryFor(code: ModelAdapterErrorCode): ModelErrorCategory {
+  return modelErrorDefinitions[code].category;
 }
 
 export function isModelAdapterError(
@@ -154,17 +205,217 @@ export function isModelAdapterError(
   try {
     const code = Object.getOwnPropertyDescriptor(value, "code");
     const retryable = Object.getOwnPropertyDescriptor(value, "retryable");
+    const attempts = Object.getOwnPropertyDescriptor(value, "attempts");
+    const category = Object.getOwnPropertyDescriptor(value, "category");
+    const name = Object.getOwnPropertyDescriptor(value, "name");
+    const lastRetryableCode = Object.getOwnPropertyDescriptor(
+      value,
+      "lastRetryableCode",
+    );
     return (
       code !== undefined &&
       "value" in code &&
       typeof code.value === "string" &&
-      modelAdapterErrorCodes.has(code.value) &&
+      code.value in modelErrorDefinitions &&
+      (value instanceof ModelAdapterError ||
+        (name !== undefined &&
+          "value" in name &&
+          name.value === "ModelAdapterError")) &&
       retryable !== undefined &&
       "value" in retryable &&
-      typeof retryable.value === "boolean"
+      typeof retryable.value === "boolean" &&
+      attempts !== undefined &&
+      "value" in attempts &&
+      Number.isSafeInteger(attempts.value) &&
+      attempts.value >= 0 &&
+      category !== undefined &&
+      "value" in category &&
+      category.value === categoryFor(code.value as ModelAdapterErrorCode) &&
+      retryable.value ===
+        modelErrorDefinitions[code.value as ModelAdapterErrorCode].retryable &&
+      (code.value !== "MODEL_RETRY_EXHAUSTED" ||
+        (lastRetryableCode !== undefined &&
+          "value" in lastRetryableCode &&
+          retryableModelErrorCodes.has(
+            lastRetryableCode.value as RetryableModelErrorCode,
+          ))) &&
+      (code.value === "MODEL_RETRY_EXHAUSTED" ||
+        lastRetryableCode === undefined ||
+        ("value" in lastRetryableCode && lastRetryableCode.value === undefined))
     );
   } catch {
     return false;
+  }
+}
+
+const retryableModelErrorCodes: ReadonlySet<RetryableModelErrorCode> = new Set([
+  "MODEL_RATE_LIMITED",
+  "MODEL_UNAVAILABLE",
+  "MODEL_PROVIDER_ERROR",
+]);
+
+function isRetryableModelError(
+  error: ModelAdapterFailure,
+): error is ModelAdapterFailure & { code: RetryableModelErrorCode } {
+  return (
+    (error.retryable &&
+      retryableModelErrorCodes.has(error.code as RetryableModelErrorCode)) ||
+    (error.code === "MODEL_PROVIDER_ERROR" &&
+      error.transientProviderError === true)
+  );
+}
+
+function signalError(
+  callerSignal: AbortSignal,
+  deadlineSignal: AbortSignal,
+  attempts: number,
+): ModelAdapterError {
+  if (callerSignal.aborted) {
+    return new ModelAdapterError("MODEL_CANCELLED", false, attempts);
+  }
+  if (deadlineSignal.aborted) {
+    return new ModelAdapterError("MODEL_TIMEOUT", true, attempts);
+  }
+  return new ModelAdapterError("MODEL_CANCELLED", false, attempts);
+}
+
+function awaitWithAbort<T>(
+  operation: Promise<T>,
+  callerSignal: AbortSignal,
+  deadlineSignal: AbortSignal,
+  attempts: number,
+): Promise<T> {
+  if (callerSignal.aborted || deadlineSignal.aborted) {
+    return Promise.reject(signalError(callerSignal, deadlineSignal, attempts));
+  }
+
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => {
+      cleanup();
+      reject(signalError(callerSignal, deadlineSignal, attempts));
+    };
+    const cleanup = () => {
+      callerSignal.removeEventListener("abort", onAbort);
+      deadlineSignal.removeEventListener("abort", onAbort);
+    };
+    callerSignal.addEventListener("abort", onAbort, { once: true });
+    deadlineSignal.addEventListener("abort", onAbort, { once: true });
+    operation.then(
+      (value) => {
+        cleanup();
+        resolve(value);
+      },
+      (error: unknown) => {
+        cleanup();
+        reject(error);
+      },
+    );
+  });
+}
+
+function retryDelayMs(
+  retryIndex: number,
+  runtime: ModelInvocationRuntime,
+): number {
+  const boundedExponential = Math.min(100 * 2 ** retryIndex, 1_000);
+  return Math.floor(boundedExponential * (0.75 + runtime.random() * 0.25));
+}
+
+function waitForRetry(
+  delayMs: number,
+  callerSignal: AbortSignal,
+  deadlineSignal: AbortSignal,
+  attempts: number,
+  runtime: ModelInvocationRuntime,
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const timer = runtime.schedule(() => {
+      cleanup();
+      resolve();
+    }, delayMs);
+    const onAbort = () => {
+      runtime.cancel(timer);
+      cleanup();
+      reject(signalError(callerSignal, deadlineSignal, attempts));
+    };
+    const cleanup = () => {
+      callerSignal.removeEventListener("abort", onAbort);
+      deadlineSignal.removeEventListener("abort", onAbort);
+    };
+    callerSignal.addEventListener("abort", onAbort, { once: true });
+    deadlineSignal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+async function invokeModelAdapter(
+  modelAdapter: ModelAdapter,
+  request: ModelPresentationRequest,
+  callerSignal: AbortSignal,
+  policy: Readonly<ModelInvocationPolicy>,
+  runtime: ModelInvocationRuntime,
+): Promise<unknown> {
+  if (callerSignal.aborted) {
+    throw new ModelAdapterError("MODEL_CANCELLED", false, 0);
+  }
+
+  const deadlineController = new AbortController();
+  const deadlineTimer = runtime.schedule(
+    () => deadlineController.abort(),
+    policy.modelTimeoutMs,
+  );
+  let attempts = 0;
+  try {
+    for (;;) {
+      if (callerSignal.aborted || deadlineController.signal.aborted) {
+        throw signalError(callerSignal, deadlineController.signal, attempts);
+      }
+      attempts += 1;
+      try {
+        return await awaitWithAbort(
+          modelAdapter.generatePresentationDecisionCandidate(request, {
+            signal: AbortSignal.any([callerSignal, deadlineController.signal]),
+            policy,
+          }),
+          callerSignal,
+          deadlineController.signal,
+          attempts,
+        );
+      } catch (caught) {
+        if (callerSignal.aborted || deadlineController.signal.aborted) {
+          throw signalError(callerSignal, deadlineController.signal, attempts);
+        }
+        if (!isModelAdapterError(caught)) {
+          throw new ModelAdapterError("MODEL_PROVIDER_ERROR", false, attempts);
+        }
+        if (!isRetryableModelError(caught)) {
+          throw new ModelAdapterError(
+            caught.code,
+            caught.retryable,
+            attempts,
+            caught.category,
+            caught.lastRetryableCode,
+          );
+        }
+        if (attempts > policy.modelRetryCount) {
+          throw new ModelAdapterError(
+            "MODEL_RETRY_EXHAUSTED",
+            true,
+            attempts,
+            "retry-exhausted",
+            caught.code,
+          );
+        }
+        await waitForRetry(
+          retryDelayMs(attempts - 1, runtime),
+          callerSignal,
+          deadlineController.signal,
+          attempts,
+          runtime,
+        );
+      }
+    }
+  } finally {
+    runtime.cancel(deadlineTimer);
   }
 }
 
@@ -195,6 +446,12 @@ export class PresentationRouterConfigurationError extends Error {
   }
 }
 
+export const MODEL_INVOCATION_POLICY_VERSION = "1.0";
+export const MODEL_INVOCATION_POLICY_LIMITS = Object.freeze({
+  maxModelTimeoutMs: 300_000,
+  maxModelRetryCount: 3,
+});
+
 function createStableModelInvocationPolicy(
   policy: ModelInvocationPolicy,
 ): Readonly<ModelInvocationPolicy> {
@@ -202,8 +459,12 @@ function createStableModelInvocationPolicy(
     if (
       Number.isSafeInteger(policy.modelTimeoutMs) &&
       policy.modelTimeoutMs > 0 &&
+      policy.modelTimeoutMs <=
+        MODEL_INVOCATION_POLICY_LIMITS.maxModelTimeoutMs &&
       Number.isSafeInteger(policy.modelRetryCount) &&
-      policy.modelRetryCount >= 0
+      policy.modelRetryCount >= 0 &&
+      policy.modelRetryCount <=
+        MODEL_INVOCATION_POLICY_LIMITS.maxModelRetryCount
     ) {
       return Object.freeze({
         modelTimeoutMs: policy.modelTimeoutMs,
@@ -240,31 +501,31 @@ export function createPresentationRouter(
 export function createModelPresentationRouter(
   modelAdapter: ModelAdapter,
   policy: ModelInvocationPolicy,
+  runtime: ModelInvocationRuntime = systemModelInvocationRuntime,
 ): PresentationRouter {
   const stablePolicy = createStableModelInvocationPolicy(policy);
 
   return {
     async route(request, options) {
-      const candidate =
-        await modelAdapter.generatePresentationDecisionCandidate(
-          {
-            requestId: request.requestId,
-            content: request.content,
-            ...(request.context === undefined
-              ? {}
-              : { context: request.context }),
-            catalog: request.catalog,
-            outputSchema: {
-              schemaId:
-                "https://generative-ui.dev/schemas/presentation/decision/1.0",
-              schemaVersion: "1.0",
-            },
+      const candidate = await invokeModelAdapter(
+        modelAdapter,
+        {
+          requestId: request.requestId,
+          content: request.content,
+          ...(request.context === undefined
+            ? {}
+            : { context: request.context }),
+          catalog: request.catalog,
+          outputSchema: {
+            schemaId:
+              "https://generative-ui.dev/schemas/presentation/decision/1.0",
+            schemaVersion: "1.0",
           },
-          {
-            signal: options.signal,
-            policy: stablePolicy,
-          },
-        );
+        },
+        options.signal,
+        stablePolicy,
+        runtime,
+      );
       const validated = validatePresentationDecision(candidate);
       if (!validated.success) {
         throw new PresentationDecisionValidationError();
