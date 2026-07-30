@@ -1,6 +1,17 @@
+import { existsSync } from "node:fs";
 import { createServer, type ServerResponse } from "node:http";
+import { fileURLToPath } from "node:url";
 import { loadRuntimeHostConfig } from "./config.js";
-import { createAgentRuntimeHost } from "./runtime.js";
+import {
+  createAgentRuntimeHost,
+  isRuntimeRequestPath,
+} from "./runtime.js";
+
+const envFilePath = fileURLToPath(new URL("../.env", import.meta.url));
+
+if (existsSync(envFilePath)) {
+  process.loadEnvFile(envFilePath);
+}
 
 const config = loadRuntimeHostConfig();
 const { nodeHandler } = createAgentRuntimeHost(config);
@@ -27,13 +38,11 @@ const server = createServer((request, response) => {
       status: "ok",
       service: "agent-runtime-host",
       runtimePath: config.basePath,
-      defaultAgent: "default",
-      model: config.model,
     });
     return;
   }
 
-  if (requestUrl.pathname.startsWith(config.basePath)) {
+  if (isRuntimeRequestPath(requestUrl.pathname, config.basePath)) {
     void nodeHandler(request, response);
     return;
   }
