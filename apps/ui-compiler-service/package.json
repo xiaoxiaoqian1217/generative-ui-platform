@@ -15,6 +15,7 @@
     "@generative-ui/presentation-contract": "workspace:*",
     "@generative-ui/shared-types": "workspace:*",
     "@generative-ui/ui-compiler-core": "workspace:*",
+    "fastify": "5.10.0",
     "mdast-util-from-markdown": "2.0.3",
     "mdast-util-to-markdown": "2.1.2",
     "micromark-util-sanitize-uri": "2.0.1"

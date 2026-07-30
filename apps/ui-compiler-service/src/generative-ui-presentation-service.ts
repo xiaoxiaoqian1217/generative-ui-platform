@@ -1,15 +1,5 @@
-import type {
-  CatalogContentHash,
-  UICompileResult,
-} from "@generative-ui/compiler-contract";
-import type {
-  CatalogSchemaLimits,
-  ComponentCatalog,
-} from "@generative-ui/component-catalog-schema";
-import {
-  computeCatalogContentHash,
-  validateComponentCatalog,
-} from "@generative-ui/component-catalog-schema";
+import type { UICompileResult } from "@generative-ui/compiler-contract";
+import type { CatalogSchemaLimits } from "@generative-ui/component-catalog-schema";
 import type {
   CatalogReference,
   PresentationDecision,
@@ -24,10 +14,7 @@ import {
   type CoreCompileLimits,
   compileUI,
 } from "@generative-ui/ui-compiler-core";
-import {
-  createCatalogCapabilitySummary,
-  createImmutableCatalogSnapshot,
-} from "./catalog-capability-summary.js";
+import { createCatalogCapabilitySummary } from "./catalog-capability-summary.js";
 import {
   areMarkdownSanitizerLimitsValid,
   type MarkdownSanitizer,
@@ -57,6 +44,7 @@ import type {
   ValidatedStructuredData,
 } from "./structured-data-validator.js";
 import { areStructuredDataLimitsValid } from "./structured-data-validator.js";
+import { createVerifiedCatalogCache } from "./verified-catalog-cache.js";
 
 const catalogFailureMessage =
   "The requested Component Catalog could not be used.";
@@ -83,7 +71,12 @@ export interface GenerativeUIPresentationServiceDependencies {
   catalogSchemaLimits: CatalogSchemaLimits;
   coreLimits: CoreCompileLimits;
   createSurfaceId(request: PresentationRequest): string;
-  compile?(input: unknown, options: CompileOptions): UICompileResult;
+  compile?(
+    input: unknown,
+    options: CompileOptions,
+    runtime: { signal: AbortSignal },
+  ): UICompileResult | Promise<UICompileResult>;
+  compileTimeoutMs?: number;
 }
 
 export interface GenerativeUIPresentationService {
@@ -215,39 +208,6 @@ function prevalidateStructuredData(
   }
 }
 
-function validatedCatalog(
-  reference: CatalogReference,
-  repository: CatalogRepository,
-  limits: CatalogSchemaLimits,
-):
-  | {
-      success: true;
-      catalog: ComponentCatalog;
-      contentHash: CatalogContentHash;
-    }
-  | { success: false; code: string } {
-  try {
-    const result = validateComponentCatalog(repository.load(reference), limits);
-    if (!result.success) {
-      return { success: false, code: result.error.code };
-    }
-    if (
-      result.value.catalogId !== reference.catalogId ||
-      result.value.catalogVersion !== reference.catalogVersion
-    ) {
-      return { success: false, code: "CATALOG_REFERENCE_MISMATCH" };
-    }
-    const catalog = createImmutableCatalogSnapshot(result.value);
-    return {
-      success: true,
-      catalog,
-      contentHash: computeCatalogContentHash(catalog),
-    };
-  } catch {
-    return { success: false, code: "COMPONENT_CATALOG_INVALID" };
-  }
-}
-
 function compileError(result: UICompileResult): PresentationError {
   const first = "errors" in result ? result.errors[0] : undefined;
   return error(
@@ -275,6 +235,48 @@ function modelAnalysisError(caught: unknown): PresentationError | undefined {
   };
 }
 
+function compileTimeoutError(): PresentationError {
+  return error("COMPILE_TIMEOUT", compilationFailureMessage, "ui-compilation");
+}
+
+class CompileDeadlineExceeded {
+  readonly code = "COMPILE_TIMEOUT";
+}
+
+class CompileCancelled {
+  readonly code = "COMPILE_CANCELLED";
+}
+
+async function compileWithinDeadline(
+  compile: NonNullable<GenerativeUIPresentationServiceDependencies["compile"]>,
+  input: unknown,
+  options: CompileOptions,
+  callerSignal: AbortSignal,
+  timeoutMs: number,
+): Promise<UICompileResult> {
+  const deadline = new AbortController();
+  const timer = setTimeout(() => deadline.abort(), timeoutMs);
+  const signal = AbortSignal.any([callerSignal, deadline.signal]);
+  try {
+    const operation = Promise.resolve(compile(input, options, { signal }));
+    const aborted = new Promise<never>((_, reject) => {
+      signal.addEventListener(
+        "abort",
+        () =>
+          reject(
+            deadline.signal.aborted
+              ? new CompileDeadlineExceeded()
+              : new CompileCancelled(),
+          ),
+        { once: true },
+      );
+    });
+    return await Promise.race([operation, aborted]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function createGenerativeUIPresentationService(
   dependencies: GenerativeUIPresentationServiceDependencies,
 ): GenerativeUIPresentationService {
@@ -289,6 +291,14 @@ export function createGenerativeUIPresentationService(
     throw new GenerativeUIPresentationConfigurationError();
   }
   const compile = dependencies.compile ?? compileUI;
+  const compileTimeoutMs = dependencies.compileTimeoutMs ?? 10_000;
+  if (!Number.isSafeInteger(compileTimeoutMs) || compileTimeoutMs <= 0) {
+    throw new GenerativeUIPresentationConfigurationError();
+  }
+  const catalogCache = createVerifiedCatalogCache(
+    dependencies.catalogRepository,
+    dependencies.catalogSchemaLimits,
+  );
 
   return {
     async present(input, options) {
@@ -398,11 +408,7 @@ export function createGenerativeUIPresentationService(
         sourceData = structured.value.data;
       }
 
-      const resolved = validatedCatalog(
-        request.catalog,
-        dependencies.catalogRepository,
-        dependencies.catalogSchemaLimits,
-      );
+      const resolved = catalogCache.load(request.catalog);
       if (!resolved.success) {
         return fallbackFor(request.requestId, safeMarkdown, dependencies, [
           error(resolved.code, catalogFailureMessage, "input-validation"),
@@ -425,7 +431,7 @@ export function createGenerativeUIPresentationService(
             ...(request.context === undefined
               ? {}
               : { context: request.context }),
-            catalog: createCatalogCapabilitySummary(resolved.catalog),
+            catalog: createCatalogCapabilitySummary(resolved.value.catalog),
           },
           options,
         );
@@ -462,7 +468,8 @@ export function createGenerativeUIPresentationService(
             ) ?? routingPresentationError(),
           ]);
         }
-        result = compile(
+        result = await compileWithinDeadline(
+          compile,
           {
             requestId: request.requestId,
             ...(request.threadId === undefined
@@ -492,18 +499,22 @@ export function createGenerativeUIPresentationService(
           },
           {
             surfaceId: dependencies.createSurfaceId(request),
-            catalog: resolved.catalog,
-            catalogContentHash: resolved.contentHash,
+            catalog: resolved.value.catalog,
+            catalogContentHash: resolved.value.contentHash,
             limits: dependencies.coreLimits,
           },
+          options.signal,
+          compileTimeoutMs,
         );
-      } catch {
+      } catch (caught) {
         return fallbackFor(request.requestId, safeMarkdown, dependencies, [
-          error(
-            "UI_COMPILATION_FAILED",
-            compilationFailureMessage,
-            "ui-compilation",
-          ),
+          caught instanceof CompileDeadlineExceeded
+            ? compileTimeoutError()
+            : error(
+                "UI_COMPILATION_FAILED",
+                compilationFailureMessage,
+                "ui-compilation",
+              ),
         ]);
       }
       if (result.success && !result.degraded) {
