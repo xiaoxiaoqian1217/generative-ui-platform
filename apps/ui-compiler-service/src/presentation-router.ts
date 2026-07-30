@@ -369,7 +369,6 @@ function waitForRetry(
   }
 
   return new Promise<void>((resolve, reject) => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
     const cleanup = () => {
       callerSignal.removeEventListener("abort", onAbort);
       deadlineSignal.removeEventListener("abort", onAbort);
@@ -384,7 +383,7 @@ function waitForRetry(
 
     callerSignal.addEventListener("abort", onAbort, { once: true });
     deadlineSignal.addEventListener("abort", onAbort, { once: true });
-    timer = runtime.schedule(() => {
+    const timer = runtime.schedule(() => {
       cleanup();
       resolve();
     }, delayMs);
@@ -419,10 +418,7 @@ async function invokeModelAdapter(
       try {
         return await awaitWithAbort(
           modelAdapter.generatePresentationDecisionCandidate(request, {
-            signal: AbortSignal.any([
-              callerSignal,
-              deadlineController.signal,
-            ]),
+            signal: AbortSignal.any([callerSignal, deadlineController.signal]),
           }),
           callerSignal,
           deadlineController.signal,
