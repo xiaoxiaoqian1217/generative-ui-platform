@@ -385,8 +385,6 @@ export function createGenerativeUIPresentationService(
       const request = requestValidation.value;
       const requestObservationFields = {
         requestId: request.requestId,
-        catalogId: request.catalog.catalogId,
-        catalogVersion: request.catalog.catalogVersion,
       } as const;
       recordStageCompletionSafely(options.observation, {
         stage: "input-validation",
@@ -519,6 +517,8 @@ export function createGenerativeUIPresentationService(
       }
       const verifiedObservationFields = {
         ...requestObservationFields,
+        catalogId: resolved.value.catalog.catalogId,
+        catalogVersion: resolved.value.catalog.catalogVersion,
         catalogContentHash: resolved.value.contentHash,
       } as const;
       recordStageCompletionSafely(options.observation, {

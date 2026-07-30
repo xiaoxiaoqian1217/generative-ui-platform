@@ -535,6 +535,8 @@ export function createTrackedHttpRequestObservation(
   let modelCalled = false;
   let modelAttemptCount = 0;
   let modelRetried = false;
+  let catalogId: string | undefined;
+  let catalogVersion: string | undefined;
   let catalogContentHash: `sha256:${string}` | undefined;
   let currentStage: ObservationStage | undefined = "http-receive";
   const completedStages = new Set<ObservationStage>();
@@ -573,11 +575,31 @@ export function createTrackedHttpRequestObservation(
         } else if (input.stage === "ui-compilation") {
           compileDurationMs = input.durationMs;
         }
-        if (input.catalogContentHash !== undefined) {
+        if (
+          input.stage === "catalog-resolution" &&
+          input.result === "completed" &&
+          input.catalogId !== undefined &&
+          input.catalogVersion !== undefined &&
+          input.catalogContentHash !== undefined
+        ) {
+          catalogId = input.catalogId;
+          catalogVersion = input.catalogVersion;
           catalogContentHash = input.catalogContentHash;
         }
+        const {
+          catalogId: _unverifiedCatalogId,
+          catalogVersion: _unverifiedCatalogVersion,
+          catalogContentHash: _unverifiedCatalogContentHash,
+          ...stageWithoutCatalog
+        } = input;
+        const safeInput: SafeStageObservation = {
+          ...stageWithoutCatalog,
+          ...(catalogId === undefined ? {} : { catalogId }),
+          ...(catalogVersion === undefined ? {} : { catalogVersion }),
+          ...(catalogContentHash === undefined ? {} : { catalogContentHash }),
+        };
         completedStages.add(input.stage);
-        observation.recordStageCompletion(input);
+        observation.recordStageCompletion(safeInput);
       } catch {
         // Observability must not alter request behavior.
       }
@@ -601,22 +623,28 @@ export function createTrackedHttpRequestObservation(
   const createTerminal = (
     input: TrackedRequestTerminal,
     httpStatusCode?: number,
-  ): SafeRequestObservationTerminal => ({
-    ...input,
-    ...(httpStatusCode === undefined ? {} : { httpStatusCode }),
-    totalDurationMs: safeDuration(startedAt, monotonicNow),
-    ...(routeDurationMs === undefined ? {} : { routeDurationMs }),
-    ...(modelDurationMs === undefined ? {} : { modelDurationMs }),
-    ...(compileDurationMs === undefined ? {} : { compileDurationMs }),
-    ...(input.catalogContentHash !== undefined
-      ? {}
-      : catalogContentHash === undefined
-        ? {}
-        : { catalogContentHash }),
-    modelCalled,
-    modelAttemptCount,
-    modelRetried,
-  });
+  ): SafeRequestObservationTerminal => {
+    const {
+      catalogId: _unverifiedCatalogId,
+      catalogVersion: _unverifiedCatalogVersion,
+      catalogContentHash: _unverifiedCatalogContentHash,
+      ...safeInput
+    } = input;
+    return {
+      ...safeInput,
+      ...(httpStatusCode === undefined ? {} : { httpStatusCode }),
+      totalDurationMs: safeDuration(startedAt, monotonicNow),
+      ...(routeDurationMs === undefined ? {} : { routeDurationMs }),
+      ...(modelDurationMs === undefined ? {} : { modelDurationMs }),
+      ...(compileDurationMs === undefined ? {} : { compileDurationMs }),
+      ...(catalogId === undefined ? {} : { catalogId }),
+      ...(catalogVersion === undefined ? {} : { catalogVersion }),
+      ...(catalogContentHash === undefined ? {} : { catalogContentHash }),
+      modelCalled,
+      modelAttemptCount,
+      modelRetried,
+    };
+  };
   const flush = (httpStatusCode?: number): void => {
     if (flushed || sealedInput === undefined) return;
     flushed = true;

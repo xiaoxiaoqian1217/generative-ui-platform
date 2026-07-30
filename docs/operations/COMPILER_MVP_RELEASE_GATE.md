@@ -44,7 +44,7 @@ UI Compiler Service 不提供 AG-UI、SSE 或 WebSocket Endpoint，也不拥有 
 
 阶段证据覆盖 HTTP 接收、输入校验、内容序列化、Catalog 解析、展示路由、模型分析、Plan 校验和 UI 编译。
 
-`apps/ui-compiler-service/test/observability.test.ts`、`http-server.test.ts`、`runtime.test.ts`、`generative-ui-presentation.test.ts` 和 `security-concurrency-e2e.test.ts` 验证精确字段白名单、非负耗时、模型尝试计数、运行时接线、终局幂等、真实客户端断开、Sink 故障隔离、未验证 `requestId` 隔离和敏感数据哨兵不泄漏。
+`apps/ui-compiler-service/test/observability.test.ts`、`http-server.test.ts`、`runtime.test.ts`、`generative-ui-presentation.test.ts` 和 `security-concurrency-e2e.test.ts` 验证精确字段白名单、非负耗时、模型尝试计数、运行时接线、终局幂等、真实客户端断开、Sink 故障隔离、未验证 `requestId` 隔离、未授权 Catalog 身份隔离和敏感数据哨兵不泄漏。
 
 真实 Socket 回归覆盖正常 Keep-Alive 复用、模型和编译期间断开，以及延迟响应序列化期间断开。
 

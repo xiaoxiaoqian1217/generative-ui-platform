@@ -278,6 +278,61 @@ describe("security and concurrency HTTP E2E", () => {
     await app.close();
   });
 
+  it("does not log caller-supplied Catalog identity before authorization", async () => {
+    const catalogIdSecret = "UNAUTHORIZED_CATALOG_ID_SECRET";
+    const catalogVersionSecret = "UNAUTHORIZED_CATALOG_VERSION_SECRET";
+    const lines: string[] = [];
+    const model = vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>(
+      async (request) => candidate(request),
+    );
+    const { app } = createE2EServer(
+      { generatePresentationDecisionCandidate: model },
+      createJsonLineHttpObservability({
+        write: (line) => lines.push(line),
+      }),
+    );
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/ui-compiler/present",
+      payload: {
+        requestId: "unauthorized-catalog",
+        content: { contentType: "markdown", markdown: "# safe" },
+        catalog: {
+          catalogId: catalogIdSecret,
+          catalogVersion: catalogVersionSecret,
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      requestId: "unauthorized-catalog",
+      status: "degraded",
+      mode: "markdown",
+    });
+    expect(model).not.toHaveBeenCalled();
+    const serializedLogs = lines.join("\n");
+    expect(serializedLogs).not.toContain(catalogIdSecret);
+    expect(serializedLogs).not.toContain(catalogVersionSecret);
+    const events = lines.map((line) => JSON.parse(line));
+    const catalogResolution = events.find(
+      (event) =>
+        event.eventName === "ui_compiler.http.stage_completed" &&
+        event.stage === "catalog-resolution",
+    );
+    expect(catalogResolution).toMatchObject({
+      result: "failed",
+      errorCode: "CATALOG_REFERENCE_MISMATCH",
+      requestId: "unauthorized-catalog",
+    });
+    expect(catalogResolution).not.toHaveProperty("catalogId");
+    expect(catalogResolution).not.toHaveProperty("catalogVersion");
+    expect(events.at(-1)).not.toHaveProperty("catalogId");
+    expect(events.at(-1)).not.toHaveProperty("catalogVersion");
+    await app.close();
+  });
+
   it("sanitizes hostile Markdown before model, Core, output, and logs", async () => {
     const secret = "E2E_SECRET_MUST_NOT_ESCAPE";
     const model = vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>(

@@ -117,11 +117,7 @@ function presentationErrorStage(
 
 type ValidatedObservationFields = Pick<
   TrackedRequestTerminal,
-  | "requestId"
-  | "catalogId"
-  | "catalogVersion"
-  | "hasPresentationContext"
-  | "hasUserMessage"
+  "requestId" | "hasPresentationContext" | "hasUserMessage"
 >;
 
 function validatedObservationFields(
@@ -132,8 +128,6 @@ function validatedObservationFields(
     if (!validated.success) return undefined;
     return {
       requestId: validated.value.requestId,
-      catalogId: validated.value.catalog.catalogId,
-      catalogVersion: validated.value.catalog.catalogVersion,
       hasPresentationContext: validated.value.context !== undefined,
       hasUserMessage:
         validated.value.context?.userMessage !== undefined &&
@@ -397,8 +391,6 @@ export function createHttpServer(
             ? {}
             : {
                 requestId: validated.requestId,
-                catalogId: validated.catalogId,
-                catalogVersion: validated.catalogVersion,
               }),
         });
         scheduleResponseTerminal(request, {
@@ -421,8 +413,6 @@ export function createHttpServer(
           ? {}
           : {
               requestId: validated.requestId,
-              catalogId: validated.catalogId,
-              catalogVersion: validated.catalogVersion,
             }),
       });
       const controller = new AbortController();
