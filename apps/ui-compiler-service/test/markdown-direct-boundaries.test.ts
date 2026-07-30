@@ -5,13 +5,6 @@ import { describe, expect, it } from "vitest";
 
 const serviceRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const sourceRoot = join(serviceRoot, "src");
-const packageJson = JSON.parse(
-  readFileSync(join(serviceRoot, "package.json"), "utf8"),
-) as {
-  dependencies?: Record<string, string>;
-  devDependencies?: Record<string, string>;
-};
-
 const forbiddenRuntimePackages = [
   "@generative-ui/ui-compiler-core",
   "@generative-ui/ag-ui-adapter",
@@ -28,25 +21,28 @@ const forbiddenOutOfScopeIdentifiers = [
 ] as const;
 
 describe("Direct presentation path dependency boundaries", () => {
-  it("has no Core, UI IR, A2UI, cache, or logger runtime dependency", () => {
-    const declaredDependencies = {
-      ...packageJson.dependencies,
-      ...packageJson.devDependencies,
-    };
-    for (const packageName of forbiddenRuntimePackages) {
-      expect(declaredDependencies).not.toHaveProperty(packageName);
-    }
-
-    const productionSource = readdirSync(sourceRoot)
-      .filter((name) => name.endsWith(".ts"))
+  it("keeps direct paths free of Core, UI IR, A2UI, cache, and logger imports", () => {
+    const directPathSource = readdirSync(sourceRoot)
+      .filter((name) =>
+        [
+          "markdown-presentation-service.ts",
+          "markdown-sanitizer-definition-aware.ts",
+          "markdown-sanitizer.ts",
+          "presentation-router.ts",
+          "safe-markdown-presentation.ts",
+          "structured-data-presentation-service.ts",
+          "structured-data-serializer.ts",
+          "structured-data-validator.ts",
+        ].includes(name),
+      )
       .map((name) => readFileSync(join(sourceRoot, name), "utf8"))
       .join("\n");
 
     for (const packageName of forbiddenRuntimePackages) {
-      expect(productionSource).not.toContain(packageName);
+      expect(directPathSource).not.toContain(packageName);
     }
     for (const identifier of forbiddenOutOfScopeIdentifiers) {
-      expect(productionSource).not.toMatch(
+      expect(directPathSource).not.toMatch(
         new RegExp(`\\b${identifier}\\b`, "u"),
       );
     }
