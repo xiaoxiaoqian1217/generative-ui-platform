@@ -1,9 +1,11 @@
+import { request as httpRequest } from "node:http";
 import {
   type ComponentCatalog,
   computeCatalogContentHash,
   defaultCatalogSchemaLimits,
 } from "@generative-ui/component-catalog-schema";
 import { describe, expect, it, vi } from "vitest";
+import { createHttpServer } from "../src/http-server.js";
 import {
   createCatalogCapabilitySummary,
   createGenerativeUIPresentationService,
@@ -108,6 +110,7 @@ function createService(
   >[0]["createSurfaceId"] = () => "surface-presentation-test",
   policy = { modelTimeoutMs: 1_000, modelRetryCount: 0 },
   runtime?: ModelInvocationRuntime,
+  compileTimeoutMs?: number,
 ) {
   return createGenerativeUIPresentationService({
     catalogRepository,
@@ -124,6 +127,7 @@ function createService(
       catalogSchema: defaultCatalogSchemaLimits,
     },
     createSurfaceId,
+    ...(compileTimeoutMs === undefined ? {} : { compileTimeoutMs }),
     ...(compile === undefined ? {} : { compile }),
   });
 }
@@ -746,5 +750,371 @@ describe("Generative UI presentation path", () => {
       status: "completed",
       mode: "generative-ui",
     });
+  });
+});
+
+async function listenForHttpE2E(
+  server: ReturnType<typeof createHttpServer>,
+): Promise<string> {
+  await server.listen({ host: "127.0.0.1", port: 0 });
+  const address = server.server.address();
+  if (address === null || typeof address === "string") {
+    throw new Error("The HTTP E2E server did not expose a TCP address.");
+  }
+  return `http://127.0.0.1:${address.port}`;
+}
+
+function presentationRequest(requestId: string) {
+  return {
+    requestId,
+    content: {
+      contentType: "markdown" as const,
+      markdown: "# A safe response that can be degraded",
+    },
+    catalog: { catalogId: "summary", catalogVersion: "1.0.0" },
+  };
+}
+
+function waitForAbort(signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.resolve();
+  return new Promise((resolve) => {
+    signal.addEventListener("abort", () => resolve(), { once: true });
+  });
+}
+
+const httpE2EConfiguration = {
+  compileTimeoutMs: 25,
+  httpConnectionsCheckingIntervalMs: 1_000,
+  httpHeadersTimeoutMs: 1_000,
+  httpRequestBodyTimeoutMs: 1_000,
+  requestDeadlineMs: 2_000,
+} as const;
+
+async function disconnectHttpClient(
+  url: string,
+  body: unknown,
+  started: Promise<void>,
+): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const request = httpRequest(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+    });
+    request.once("error", (error: NodeJS.ErrnoException) => {
+      if (
+        error.code === "ECONNRESET" ||
+        error.code === "ERR_STREAM_DESTROYED"
+      ) {
+        resolve();
+        return;
+      }
+      reject(error);
+    });
+    request.end(JSON.stringify(body));
+    void started.then(() => {
+      request.destroy();
+      resolve();
+    }, reject);
+  });
+}
+
+describe("HTTP reliability E2E", () => {
+  it("rejects an oversized HTTP request body before the presentation lifecycle starts", async () => {
+    let called = false;
+    const server = createHttpServer({
+      configuration: { ...httpE2EConfiguration, maxRequestBytes: 1_024 },
+      presentUseCase: {
+        present: async () => {
+          called = true;
+          return {
+            requestId: "oversized-request",
+            status: "completed",
+            mode: "markdown",
+            markdown: "unexpected",
+          };
+        },
+      },
+    });
+    const baseUrl = await listenForHttpE2E(server);
+
+    try {
+      const response = await fetch(`${baseUrl}/api/ui-compiler/present`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...presentationRequest("oversized-request"),
+          content: {
+            contentType: "markdown",
+            markdown: "x".repeat(2_000),
+          },
+        }),
+      });
+      expect(response.status).toBe(413);
+      await expect(response.json()).resolves.toMatchObject({
+        status: "failed",
+        errors: [{ code: "REQUEST_BODY_TOO_LARGE" }],
+      });
+      expect(called).toBe(false);
+    } finally {
+      await server.closeGracefully();
+    }
+  });
+
+  it("maps the request deadline to REQUEST_TIMEOUT and does not send a late response", async () => {
+    let observedSignal: AbortSignal | undefined;
+    let resolveLateOperation: (() => void) | undefined;
+    const server = createHttpServer({
+      configuration: { ...httpE2EConfiguration, requestDeadlineMs: 1_000 },
+      presentUseCase: {
+        present: async (_input, options) => {
+          observedSignal = options.signal;
+          await new Promise<void>((resolve) => {
+            resolveLateOperation = resolve;
+          });
+          return {
+            requestId: "request-timeout",
+            status: "completed",
+            mode: "markdown",
+            markdown: "late response",
+          };
+        },
+      },
+    });
+    let responseCount = 0;
+    server.addHook("onResponse", async () => {
+      responseCount += 1;
+    });
+    const baseUrl = await listenForHttpE2E(server);
+
+    try {
+      const response = await fetch(`${baseUrl}/api/ui-compiler/present`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(presentationRequest("request-timeout")),
+      });
+      expect(response.status).toBe(504);
+      await expect(response.json()).resolves.toMatchObject({
+        requestId: "request-timeout",
+        status: "failed",
+        errors: [{ code: "REQUEST_TIMEOUT" }],
+      });
+      expect(observedSignal?.aborted).toBe(true);
+      expect(responseCount).toBe(1);
+
+      resolveLateOperation?.();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(responseCount).toBe(1);
+    } finally {
+      await server.closeGracefully();
+    }
+  });
+
+  it("returns stable model timeout and retry exhaustion errors with exact provider calls", async () => {
+    const timedOutSignals: AbortSignal[] = [];
+    const timedOutService = createService(
+      {
+        generatePresentationDecisionCandidate: async (_request, options) => {
+          timedOutSignals.push(options.signal);
+          await waitForAbort(options.signal);
+          throw new ModelAdapterError("MODEL_CANCELLED", false);
+        },
+      },
+      undefined,
+      undefined,
+      undefined,
+      { modelTimeoutMs: 25, modelRetryCount: 0 },
+    );
+    const timeoutServer = createHttpServer({
+      configuration: httpE2EConfiguration,
+      presentUseCase: timedOutService,
+    });
+    const timeoutUrl = await listenForHttpE2E(timeoutServer);
+
+    try {
+      const response = await fetch(`${timeoutUrl}/api/ui-compiler/present`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(presentationRequest("model-timeout")),
+      });
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toMatchObject({
+        requestId: "model-timeout",
+        status: "degraded",
+        mode: "markdown",
+        errors: [{ code: "MODEL_TIMEOUT", retryable: true }],
+      });
+      expect(timedOutSignals).toHaveLength(1);
+      expect(timedOutSignals[0]?.aborted).toBe(true);
+    } finally {
+      await timeoutServer.closeGracefully();
+    }
+
+    let attempts = 0;
+    const retryService = createService(
+      {
+        generatePresentationDecisionCandidate: async () => {
+          attempts += 1;
+          throw new ModelAdapterError("MODEL_UNAVAILABLE", true);
+        },
+      },
+      undefined,
+      undefined,
+      undefined,
+      { modelTimeoutMs: 1_000, modelRetryCount: 2 },
+    );
+    const retryServer = createHttpServer({
+      configuration: httpE2EConfiguration,
+      presentUseCase: retryService,
+    });
+    const retryUrl = await listenForHttpE2E(retryServer);
+
+    try {
+      const response = await fetch(`${retryUrl}/api/ui-compiler/present`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(presentationRequest("model-retry-exhausted")),
+      });
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toMatchObject({
+        requestId: "model-retry-exhausted",
+        status: "degraded",
+        mode: "markdown",
+        errors: [{ code: "MODEL_RETRY_EXHAUSTED", retryable: true }],
+      });
+      expect(attempts).toBe(3);
+    } finally {
+      await retryServer.closeGracefully();
+    }
+  }, 10_000);
+
+  it("degrades compile timeouts but returns a complete failure when no safe content exists", async () => {
+    let compileSignal: AbortSignal | undefined;
+    const compileTimeoutService = createService(
+      {
+        generatePresentationDecisionCandidate: async (request) =>
+          candidateFor(request),
+      },
+      async (_input, _options, runtime) => {
+        compileSignal = runtime.signal;
+        await waitForAbort(runtime.signal);
+        throw new Error("compile operation was aborted");
+      },
+      undefined,
+      undefined,
+      { modelTimeoutMs: 1_000, modelRetryCount: 0 },
+      undefined,
+      25,
+    );
+    const server = createHttpServer({
+      configuration: httpE2EConfiguration,
+      presentUseCase: compileTimeoutService,
+    });
+    const baseUrl = await listenForHttpE2E(server);
+
+    try {
+      const response = await fetch(`${baseUrl}/api/ui-compiler/present`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(presentationRequest("compile-timeout")),
+      });
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toMatchObject({
+        requestId: "compile-timeout",
+        status: "degraded",
+        mode: "markdown",
+        errors: [{ code: "COMPILE_TIMEOUT" }],
+      });
+      expect(compileSignal?.aborted).toBe(true);
+    } finally {
+      await server.closeGracefully();
+    }
+
+    const failureServer = createHttpServer({
+      presentUseCase: createService({
+        generatePresentationDecisionCandidate: async (request) =>
+          candidateFor(request),
+      }),
+    });
+    const failureUrl = await listenForHttpE2E(failureServer);
+    try {
+      const response = await fetch(`${failureUrl}/api/ui-compiler/present`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ...presentationRequest("no-content"),
+          content: { contentType: "markdown", markdown: "" },
+        }),
+      });
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toMatchObject({
+        requestId: "unknown",
+        status: "failed",
+        errors: [{ code: "PRESENTATION_REQUEST_INVALID" }],
+      });
+    } finally {
+      await failureServer.closeGracefully();
+    }
+  });
+
+  it("propagates a real client disconnect to the Router, Model Adapter, and compiler without a late response", async () => {
+    let startModel: (() => void) | undefined;
+    let modelSignal: AbortSignal | undefined;
+    const modelStarted = new Promise<void>((resolve) => {
+      startModel = resolve;
+    });
+    const modelService = createService({
+      generatePresentationDecisionCandidate: async (_request, options) => {
+        modelSignal = options.signal;
+        startModel?.();
+        await waitForAbort(options.signal);
+        throw new ModelAdapterError("MODEL_CANCELLED", false);
+      },
+    });
+    const modelServer = createHttpServer({ presentUseCase: modelService });
+    const modelUrl = await listenForHttpE2E(modelServer);
+
+    try {
+      await disconnectHttpClient(
+        `${modelUrl}/api/ui-compiler/present`,
+        presentationRequest("model-disconnect"),
+        modelStarted,
+      );
+      await waitForAbort(modelSignal ?? new AbortController().signal);
+      expect(modelSignal?.aborted).toBe(true);
+    } finally {
+      await modelServer.closeGracefully();
+    }
+
+    let startCompile: (() => void) | undefined;
+    let compileSignal: AbortSignal | undefined;
+    const compileStarted = new Promise<void>((resolve) => {
+      startCompile = resolve;
+    });
+    const compileService = createService(
+      {
+        generatePresentationDecisionCandidate: async (request) =>
+          candidateFor(request),
+      },
+      async (_input, _options, runtime) => {
+        compileSignal = runtime.signal;
+        startCompile?.();
+        await waitForAbort(runtime.signal);
+        throw new Error("compile operation was aborted");
+      },
+    );
+    const compileServer = createHttpServer({ presentUseCase: compileService });
+    const compileUrl = await listenForHttpE2E(compileServer);
+
+    try {
+      await disconnectHttpClient(
+        `${compileUrl}/api/ui-compiler/present`,
+        presentationRequest("compile-disconnect"),
+        compileStarted,
+      );
+      await waitForAbort(compileSignal ?? new AbortController().signal);
+      expect(compileSignal?.aborted).toBe(true);
+    } finally {
+      await compileServer.closeGracefully();
+    }
   });
 });

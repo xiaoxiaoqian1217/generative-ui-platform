@@ -6,7 +6,9 @@
 
 矩阵只记录当前仓库可离线验证的 Compiler MVP 证据。
 
-HTTP 功能 E2E、可靠性 E2E、安全和并发 E2E、Docker 最终发布门禁分别由 #33 至 #36 负责。
+HTTP 功能 E2E、安全和并发 E2E、Docker 最终发布门禁分别由 #33、#35 和 #36 负责。
+
+可靠性 E2E 已由 #34 完成，并记录在本文的 Issue #34 HTTP 可靠性 E2E 证据章节。
 
 `ag-ui-adapter` 是可选协议工具包，不是 Compiler MVP 发布阻断项。
 
@@ -63,7 +65,24 @@ Issue #47 的 Schema 深度和节点上限回归由同文件的嵌入 Schema 限
 | 18.2 Plan lowering、七场景、A2UI、非法 Catalog 或组件及降级 | `packages/ui-compiler-core/test/display-scenes.test.ts`、`interaction-components.test.ts`、`negative-compilation.test.ts` | 已映射 |
 | 18.2 Core 依赖边界 | `tests/workspace/dependency-boundaries.test.ts`、`pnpm check:boundaries` | 已映射 |
 | 18.3 Markdown、结构化数据、generative UI、HTTP、health 和 version | `apps/ui-compiler-service/test/markdown-direct.test.ts`、`structured-data-direct.test.ts`、`generative-ui-presentation.test.ts`、`http-server.test.ts`、`runtime.test.ts` | 已映射 |
-| 18.3 HTTP 功能 E2E、可靠性、取消、安全、并发、Docker 发布门禁 | #33、#34、#35、#36 | 后续 E2E |
+| 18.3 HTTP 功能 E2E、安全、并发、Docker 发布门禁 | #33、#35、#36 | 后续 E2E |
+| 18.3 HTTP 可靠性、取消、超时、重试和降级 | `apps/ui-compiler-service/test/generative-ui-presentation.test.ts` 的 `HTTP reliability E2E` | #34 已映射 |
+
+## Issue #34 HTTP 可靠性 E2E 证据
+
+`apps/ui-compiler-service/test/generative-ui-presentation.test.ts` 的 `HTTP reliability E2E` 套件通过真实 TCP HTTP Server 和客户端连接验证可靠性边界。
+
+该套件验证超出 `maxRequestBytes` 的 HTTP 请求在进入展示生命周期前返回稳定的 `REQUEST_BODY_TOO_LARGE`。
+
+该套件验证请求总超时返回稳定的 `REQUEST_TIMEOUT`，并在异步操作迟到完成后不发送第二个响应。
+
+该套件验证 `MODEL_TIMEOUT` 和 `MODEL_RETRY_EXHAUSTED` 的稳定错误代码，并精确断言可重试 `MODEL_UNAVAILABLE` 的三次调用上限。
+
+该套件验证 `COMPILE_TIMEOUT` 会在安全 Markdown 可用时返回 degraded 结果，而无可消费内容时返回 failed 结果。
+
+该套件使用真实客户端断开验证请求级 AbortSignal 经 Presentation Router 传播到 Model Adapter 和编译操作。
+
+该套件不把 AG-UI 事件或 Run 生命周期纳入 Compiler HTTP E2E 条件。
 
 ## Definition of Done 证据
 
@@ -72,7 +91,7 @@ Issue #47 的 Schema 深度和节点上限回归由同文件的嵌入 Schema 限
 | 1 至 3 模块职责、依赖和共享类型 | `docs/ARCHITECTURE.md`、`docs/CONTRACTS.md`、`tests/workspace/dependency-boundaries.test.ts` |
 | 4 输入输出 Schema 校验 | `packages/*-contract/test/index.test.ts`、`packages/component-catalog-schema/test/index.test.ts` |
 | 5 稳定错误代码 | 三个必需契约包的 validation 测试和 Core 负向测试 |
-| 6 requestId 日志 | 当前只有 `docs/adr/0017-http-observability-and-sensitive-data.md` 的设计约束，尚无可验证实现证据；由 #34 验证 |
+| 6 requestId 日志 | 当前只有 `docs/adr/0017-http-observability-and-sensitive-data.md` 的设计约束，尚无独立可验证实现证据；#34 验证的是可靠性 E2E，不将其伪装为日志实现证据 |
 | 7 至 8 单元、契约和集成测试 | 本文矩阵与 `packages/ui-compiler-core/test`、`apps/ui-compiler-service/test` |
 | 9 文档同步 | 本文、`docs/CONTRACTS.md` 和运行手册 |
 | 10 范围外系统隔离 | `docs/ARCHITECTURE.md`、ADR-0003、ADR-0013、依赖边界测试 |
@@ -91,6 +110,6 @@ Issue #47 的 Schema 深度和节点上限回归由同文件的嵌入 Schema 限
 
 ## 未覆盖项和剩余风险
 
-本矩阵不把 #33 至 #36 的 E2E 责任伪装为当前已完成。
+本矩阵不把 #33、#35 和 #36 的 E2E 责任伪装为当前已完成。
 
 这些 Issue 仍需在真实 HTTP、生命周期、并发和容器边界上重新验证相应验收项。
