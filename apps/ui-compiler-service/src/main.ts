@@ -18,6 +18,8 @@ export {
 export { createMarkdownSanitizer } from "./markdown-sanitizer-definition-aware.js";
 export * from "./observability.js";
 export * from "./presentation-router.js";
+export * from "./runtime.js";
+export * from "./runtime-configuration.js";
 export * from "./safe-markdown-presentation.js";
 export * from "./structured-data-presentation-service.js";
 export * from "./structured-data-serializer.js";

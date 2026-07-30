@@ -19,6 +19,7 @@
     "docs:spell": "cspell \"**/*.md\" --no-progress",
     "docs:check": "pnpm docs:lint && pnpm docs:spell",
     "validate": "pnpm lint && pnpm check:boundaries && pnpm typecheck && pnpm test && pnpm build && pnpm docs:check",
+    "test:docker": "node scripts/smoke-ui-compiler-service-container.mjs",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "prepare": "lefthook install",

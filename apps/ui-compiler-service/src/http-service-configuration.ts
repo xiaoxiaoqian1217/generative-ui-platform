@@ -5,6 +5,7 @@ export interface HttpServiceConfiguration {
   httpHeadersTimeoutMs: number;
   httpRequestBodyTimeoutMs: number;
   httpConnectionsCheckingIntervalMs: number;
+  shutdownGraceMs: number;
 }
 
 export const DEFAULT_HTTP_SERVICE_CONFIGURATION: Readonly<HttpServiceConfiguration> =
@@ -15,6 +16,7 @@ export const DEFAULT_HTTP_SERVICE_CONFIGURATION: Readonly<HttpServiceConfigurati
     httpHeadersTimeoutMs: 5_000,
     httpRequestBodyTimeoutMs: 10_000,
     httpConnectionsCheckingIntervalMs: 1_000,
+    shutdownGraceMs: 30_000,
   });
 
 export class HttpServiceConfigurationError extends Error {
@@ -43,6 +45,8 @@ export function createHttpServiceConfiguration(
     value.requestDeadlineMs < value.httpRequestBodyTimeoutMs ||
     value.httpRequestBodyTimeoutMs < value.httpHeadersTimeoutMs ||
     value.httpHeadersTimeoutMs < value.httpConnectionsCheckingIntervalMs ||
+    value.shutdownGraceMs < 1_000 ||
+    value.shutdownGraceMs > 120_000 ||
     value.compileTimeoutMs >= value.requestDeadlineMs
   )
     throw new HttpServiceConfigurationError();
