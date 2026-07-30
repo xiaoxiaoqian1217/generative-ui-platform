@@ -5,6 +5,7 @@ on:
     paths:
       - apps/agent-runtime-host/package.json
       - pnpm-lock.yaml
+      - pnpm-workspace.yaml
       - .github/workflows/generate-agent-runtime-lockfile.yml
 
 permissions:
