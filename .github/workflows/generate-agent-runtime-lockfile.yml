@@ -1,0 +1,39 @@
+name: Generate agent runtime lockfile
+
+on:
+  pull_request:
+    paths:
+      - apps/agent-runtime-host/package.json
+      - pnpm-lock.yaml
+      - .github/workflows/generate-agent-runtime-lockfile.yml
+
+permissions:
+  contents: read
+
+jobs:
+  generate-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Generate lockfile
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+
+      - name: Upload lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-pnpm-lock
+          path: pnpm-lock.yaml
+          if-no-files-found: error
