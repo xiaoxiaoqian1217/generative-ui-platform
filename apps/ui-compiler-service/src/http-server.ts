@@ -204,7 +204,7 @@ export function createHttpServer(
           .code(200)
           .header("x-request-id", result.requestId)
           .send(result);
-      } catch {
+      } catch (caught) {
         if (caught instanceof RequestDeadlineExceeded) {
           const body = errorBody(
             requestId,
