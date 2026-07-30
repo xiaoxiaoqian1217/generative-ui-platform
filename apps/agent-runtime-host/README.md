@@ -20,6 +20,8 @@
 
 声明式 UI 仍由 `ui-compiler-service` 统一生成和校验，因此当前没有启用 CopilotKit 的自动 A2UI 生成中间件。
 
+当前注册的 `BuiltInAgent` 仅作为连通性验证桩，用于验证 Runtime、AG-UI 流式通信和 Vue Headless 接入。接入正式业务能力时，应使用远程业务 Agent 或自定义 Agent Adapter 替换，不能在验证 Agent 中继续堆叠业务逻辑。
+
 ## 本地启动
 
 仓库要求 Node.js 24 或更高版本、pnpm 10.13.1。
@@ -30,12 +32,14 @@ cp apps/agent-runtime-host/.env.example apps/agent-runtime-host/.env
 pnpm --filter @generative-ui/agent-runtime-host dev
 ```
 
+Runtime Host 会在启动时自动加载 `apps/agent-runtime-host/.env`；如果文件不存在，则继续使用当前进程已经注入的环境变量。
+
 默认地址：
 
 - Runtime：`http://localhost:8200/api/copilotkit`
 - 健康检查：`http://localhost:8200/health`
 
-使用默认 OpenAI 模型时，需要在 `.env` 中配置 `OPENAI_API_KEY`。
+使用默认 OpenAI 模型时，需要在 `.env` 或部署环境中配置 `OPENAI_API_KEY`。
 
 ## 环境变量
 
@@ -44,7 +48,7 @@ pnpm --filter @generative-ui/agent-runtime-host dev
 | `HOST` | `0.0.0.0` | HTTP 服务监听地址 |
 | `PORT` | `8200` | HTTP 服务端口 |
 | `COPILOTKIT_BASE_PATH` | `/api/copilotkit` | CopilotKit Runtime 路径 |
-| `COPILOTKIT_MODEL` | `openai:gpt-5-mini` | 默认验证 Agent 使用的模型 |
+| `COPILOTKIT_MODEL` | `openai:gpt-5-mini` | 验证 Agent 使用的模型 |
 | `OPENAI_API_KEY` | 空 | OpenAI API 密钥 |
 | `CORS_ENABLED` | `true` | 是否开启 Runtime CORS |
 | `COPILOTKIT_TELEMETRY_DISABLED` | `true` | 是否关闭 CopilotKit 匿名遥测 |
@@ -63,8 +67,8 @@ pnpm --filter @generative-ui/agent-runtime-host dev
 
 ## 后续集成顺序
 
-1. 使用当前默认 Agent 验证 Vue Headless、AG-UI 消息和流式响应。
-2. 新增 `BusinessAgentClient`，接入真实业务 Agent。
+1. 使用当前验证 Agent 验证 Vue Headless、AG-UI 消息和流式响应。
+2. 新增 `BusinessAgentClient`，接入真实业务 Agent，并替换验证 Agent。
 3. 新增 `UICompilerClient`，把业务结果转换为 `PresentationRequest`。
 4. 新增 `PresentationResultAdapter`，将 Markdown 或 A2UI 结果映射回前端事件。
 5. 验证稳定后，再增加认证、线程持久化和多 Agent 路由。
