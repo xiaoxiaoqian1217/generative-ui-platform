@@ -105,9 +105,9 @@ const systemModelInvocationRuntime: ModelInvocationRuntime = {
   cancel: (timer) => clearTimeout(timer),
 };
 
+/** Options for one physical provider request attempt. */
 export interface ModelCallOptions {
   signal: AbortSignal;
-  policy: Readonly<ModelInvocationPolicy>;
 }
 
 export type ModelAdapterErrorCode =
@@ -150,6 +150,10 @@ export type RetryableModelErrorCode =
   | "MODEL_UNAVAILABLE"
   | "MODEL_PROVIDER_ERROR";
 
+/**
+ * Executes exactly one physical provider request attempt.
+ * Timeout, backoff, and retry orchestration are owned by the Router wrapper.
+ */
 export interface ModelAdapter {
   generatePresentationDecisionCandidate(
     request: ModelPresentationRequest,
@@ -176,6 +180,12 @@ const modelErrorDefinitions = {
     retryable: boolean;
   }
 >;
+
+const retryableModelErrorCodes: ReadonlySet<RetryableModelErrorCode> = new Set([
+  "MODEL_RATE_LIMITED",
+  "MODEL_UNAVAILABLE",
+  "MODEL_PROVIDER_ERROR",
+]);
 
 export class ModelAdapterError extends Error implements ModelAdapterFailure {
   constructor(
@@ -212,54 +222,76 @@ export function isModelAdapterError(
       value,
       "lastRetryableCode",
     );
-    return (
-      code !== undefined &&
-      "value" in code &&
-      typeof code.value === "string" &&
-      code.value in modelErrorDefinitions &&
-      (value instanceof ModelAdapterError ||
-        (name !== undefined &&
-          "value" in name &&
-          name.value === "ModelAdapterError")) &&
+    const transientProviderError = Object.getOwnPropertyDescriptor(
+      value,
+      "transientProviderError",
+    );
+
+    if (
+      code === undefined ||
+      !("value" in code) ||
+      typeof code.value !== "string" ||
+      !(code.value in modelErrorDefinitions)
+    ) {
+      return false;
+    }
+
+    const stableCode = code.value as ModelAdapterErrorCode;
+    const validName =
+      value instanceof ModelAdapterError ||
+      (name !== undefined &&
+        "value" in name &&
+        name.value === "ModelAdapterError");
+    const validRetryable =
       retryable !== undefined &&
       "value" in retryable &&
-      typeof retryable.value === "boolean" &&
+      retryable.value === modelErrorDefinitions[stableCode].retryable;
+    const validAttempts =
       attempts !== undefined &&
       "value" in attempts &&
       Number.isSafeInteger(attempts.value) &&
-      attempts.value >= 0 &&
+      attempts.value >= 0;
+    const validCategory =
       category !== undefined &&
       "value" in category &&
-      category.value === categoryFor(code.value as ModelAdapterErrorCode) &&
-      retryable.value ===
-        modelErrorDefinitions[code.value as ModelAdapterErrorCode].retryable &&
-      (code.value !== "MODEL_RETRY_EXHAUSTED" ||
-        (lastRetryableCode !== undefined &&
+      category.value === categoryFor(stableCode);
+    const validLastRetryableCode =
+      stableCode === "MODEL_RETRY_EXHAUSTED"
+        ? lastRetryableCode !== undefined &&
           "value" in lastRetryableCode &&
           retryableModelErrorCodes.has(
             lastRetryableCode.value as RetryableModelErrorCode,
-          ))) &&
-      (code.value === "MODEL_RETRY_EXHAUSTED" ||
-        lastRetryableCode === undefined ||
-        ("value" in lastRetryableCode && lastRetryableCode.value === undefined))
+          )
+        : lastRetryableCode === undefined ||
+          ("value" in lastRetryableCode &&
+            lastRetryableCode.value === undefined);
+    const validTransientProviderFlag =
+      transientProviderError === undefined ||
+      ("value" in transientProviderError &&
+        transientProviderError.value === undefined) ||
+      (stableCode === "MODEL_PROVIDER_ERROR" &&
+        "value" in transientProviderError &&
+        transientProviderError.value === true);
+
+    return (
+      validName &&
+      validRetryable &&
+      validAttempts &&
+      validCategory &&
+      validLastRetryableCode &&
+      validTransientProviderFlag
     );
   } catch {
     return false;
   }
 }
 
-const retryableModelErrorCodes: ReadonlySet<RetryableModelErrorCode> = new Set([
-  "MODEL_RATE_LIMITED",
-  "MODEL_UNAVAILABLE",
-  "MODEL_PROVIDER_ERROR",
-]);
-
 function isRetryableModelError(
   error: ModelAdapterFailure,
 ): error is ModelAdapterFailure & { code: RetryableModelErrorCode } {
   return (
-    (error.retryable &&
-      retryableModelErrorCodes.has(error.code as RetryableModelErrorCode)) ||
+    error.code === "MODEL_RATE_LIMITED" ||
+    error.code === "MODEL_UNAVAILABLE" ||
     (error.code === "MODEL_PROVIDER_ERROR" &&
       error.transientProviderError === true)
   );
@@ -301,9 +333,9 @@ function awaitWithAbort<T>(
     callerSignal.addEventListener("abort", onAbort, { once: true });
     deadlineSignal.addEventListener("abort", onAbort, { once: true });
     operation.then(
-      (value) => {
+      (result) => {
         cleanup();
-        resolve(value);
+        resolve(result);
       },
       (error: unknown) => {
         cleanup();
@@ -318,7 +350,11 @@ function retryDelayMs(
   runtime: ModelInvocationRuntime,
 ): number {
   const boundedExponential = Math.min(100 * 2 ** retryIndex, 1_000);
-  return Math.floor(boundedExponential * (0.75 + runtime.random() * 0.25));
+  const random = runtime.random();
+  const boundedRandom = Number.isFinite(random)
+    ? Math.min(1, Math.max(0, random))
+    : 0;
+  return Math.floor(boundedExponential * (0.75 + boundedRandom * 0.25));
 }
 
 function waitForRetry(
@@ -328,22 +364,30 @@ function waitForRetry(
   attempts: number,
   runtime: ModelInvocationRuntime,
 ): Promise<void> {
+  if (callerSignal.aborted || deadlineSignal.aborted) {
+    return Promise.reject(signalError(callerSignal, deadlineSignal, attempts));
+  }
+
   return new Promise<void>((resolve, reject) => {
-    const timer = runtime.schedule(() => {
-      cleanup();
-      resolve();
-    }, delayMs);
-    const onAbort = () => {
-      runtime.cancel(timer);
-      cleanup();
-      reject(signalError(callerSignal, deadlineSignal, attempts));
-    };
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const cleanup = () => {
       callerSignal.removeEventListener("abort", onAbort);
       deadlineSignal.removeEventListener("abort", onAbort);
     };
+    const onAbort = () => {
+      if (timer !== undefined) {
+        runtime.cancel(timer);
+      }
+      cleanup();
+      reject(signalError(callerSignal, deadlineSignal, attempts));
+    };
+
     callerSignal.addEventListener("abort", onAbort, { once: true });
     deadlineSignal.addEventListener("abort", onAbort, { once: true });
+    timer = runtime.schedule(() => {
+      cleanup();
+      resolve();
+    }, delayMs);
   });
 }
 
@@ -364,17 +408,21 @@ async function invokeModelAdapter(
     policy.modelTimeoutMs,
   );
   let attempts = 0;
+
   try {
     for (;;) {
       if (callerSignal.aborted || deadlineController.signal.aborted) {
         throw signalError(callerSignal, deadlineController.signal, attempts);
       }
+
       attempts += 1;
       try {
         return await awaitWithAbort(
           modelAdapter.generatePresentationDecisionCandidate(request, {
-            signal: AbortSignal.any([callerSignal, deadlineController.signal]),
-            policy,
+            signal: AbortSignal.any([
+              callerSignal,
+              deadlineController.signal,
+            ]),
           }),
           callerSignal,
           deadlineController.signal,
@@ -394,6 +442,7 @@ async function invokeModelAdapter(
             attempts,
             caught.category,
             caught.lastRetryableCode,
+            caught.transientProviderError,
           );
         }
         if (attempts > policy.modelRetryCount) {
@@ -405,6 +454,7 @@ async function invokeModelAdapter(
             caught.code,
           );
         }
+
         await waitForRetry(
           retryDelayMs(attempts - 1, runtime),
           callerSignal,
