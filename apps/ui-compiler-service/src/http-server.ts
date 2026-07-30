@@ -21,6 +21,11 @@ export interface HttpServerDependencies {
   presentUseCase: PresentUseCase;
   configuration?: Partial<HttpServiceConfiguration>;
   observability?: HttpObservability;
+  version?: string;
+}
+
+export interface ManagedHttpServer extends FastifyInstance {
+  closeGracefully(): Promise<void>;
 }
 
 type ErrorBody = {
@@ -97,7 +102,7 @@ function requestIdFrom(body: unknown, fallback: string): string {
 
 export function createHttpServer(
   dependencies: HttpServerDependencies,
-): FastifyInstance {
+): ManagedHttpServer {
   const configuration = createHttpServiceConfiguration(
     dependencies.configuration,
   );
@@ -114,6 +119,29 @@ export function createHttpServer(
     onProtoPoisoning: "error",
     onConstructorPoisoning: "error",
   });
+  let closing = false;
+  const activeRequests = new Set<AbortController>();
+  app.addHook("onRequest", (request, reply, done) => {
+    if (closing && request.url !== "/health") {
+      reply
+        .header("connection", "close")
+        .code(503)
+        .send(
+          errorBody(
+            request.id,
+            "SERVICE_SHUTTING_DOWN",
+            "Service is shutting down.",
+          ),
+        );
+      return;
+    }
+    done();
+  });
+  app.get("/health", async () => ({ status: closing ? "closing" : "ok" }));
+  app.get("/version", async () => ({
+    service: "ui-compiler-service",
+    version: dependencies.version ?? "0.1.0",
+  }));
   app.server.headersTimeout = configuration.httpHeadersTimeoutMs;
   app.server.requestTimeout = configuration.httpRequestBodyTimeoutMs;
   app.addHook("onRequest", (request, reply, done) => {
@@ -165,6 +193,7 @@ export function createHttpServer(
         return reply.code(415).header("x-request-id", requestId).send(body);
       }
       const controller = new AbortController();
+      activeRequests.add(controller);
       const deadline = setTimeout(
         () => controller.abort("request-timeout"),
         configuration.requestDeadlineMs,
@@ -240,6 +269,7 @@ export function createHttpServer(
         clearTimeout(deadline);
         request.raw.removeListener("close", onRequestClose);
         reply.raw.removeListener("close", onReplyClose);
+        activeRequests.delete(controller);
       }
     },
   );
@@ -277,5 +307,26 @@ export function createHttpServer(
         );
     },
   );
-  return app;
+  const managed = app as unknown as ManagedHttpServer;
+  managed.closeGracefully = async () => {
+    if (closing) return;
+    closing = true;
+    app.server.closeIdleConnections();
+    const closePromise = app.close();
+    const cancellationTimer = setTimeout(() => {
+      for (const controller of activeRequests)
+        controller.abort("service-shutdown");
+    }, configuration.shutdownGraceMs);
+    const forceCloseTimer = setTimeout(
+      () => app.server.closeAllConnections(),
+      configuration.shutdownGraceMs + 1_000,
+    );
+    try {
+      await closePromise;
+    } finally {
+      clearTimeout(cancellationTimer);
+      clearTimeout(forceCloseTimer);
+    }
+  };
+  return managed;
 }

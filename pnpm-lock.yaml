@@ -65,6 +65,12 @@ importers:
       '@generative-ui/ui-compiler-core':
         specifier: workspace:*
         version: link:../../packages/ui-compiler-core
+      '@sinclair/typebox':
+        specifier: ^0.34.52
+        version: 0.34.52
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
       fastify:
         specifier: 5.10.0
         version: 5.10.0
