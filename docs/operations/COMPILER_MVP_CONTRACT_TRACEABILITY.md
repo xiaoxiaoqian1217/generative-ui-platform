@@ -44,12 +44,12 @@ Issue #47 的 Schema 深度和节点上限回归由同文件的嵌入 Schema 限
 | 17.3.3 至 17.3.4 Markdown 或结构化数据经 Router、Plan、Core 到 A2UI | `apps/ui-compiler-service/test/generative-ui-presentation.test.ts` | 已映射 |
 | 17.3.5 至 17.3.6 路由失败或非法 Plan 的安全 Markdown 降级 | `apps/ui-compiler-service/test/generative-ui-presentation.test.ts` | 已映射 |
 | 17.3.7 HTTP 到 PresentationResult | `apps/ui-compiler-service/test/http-server.test.ts` | 已映射 |
-| 17.3.8 至 17.3.9 Catalog、组件、Props、Action 和 nesting 降级 | `packages/ui-compiler-core/test/negative-compilation.test.ts`、`interaction-components.test.ts` | 已映射 |
+| 17.3.8 至 17.3.9 Catalog、组件、Props、Action 和 nesting 降级 | `packages/ui-compiler-core/test/negative-compilation.test.ts`、`interaction-components.test.ts`、`apps/ui-compiler-service/test/security-concurrency-e2e.test.ts` | 已映射 |
 | 17.3.10 模型超时、编译超时和请求取消 | `apps/ui-compiler-service/test/generative-ui-presentation.test.ts` | 已映射 |
 | 17.3.11 至 17.3.12 合法和未声明领域组件 | `packages/ui-compiler-core/test/interaction-components.test.ts` | 已映射 |
-| 17.3.13 结构化输入资源限制和零模型调用 | `apps/ui-compiler-service/test/structured-data-validator.test.ts` | 已映射 |
-| 17.3.14 原始 Markdown 不进入下游边界 | `apps/ui-compiler-service/test/markdown-direct-boundaries.test.ts` | 已映射 |
-| 17.3.15 并发请求隔离 | `packages/ui-compiler-core/test/request-isolation.test.ts` | 已映射 |
+| 17.3.13 结构化输入资源限制和零模型调用 | `apps/ui-compiler-service/test/structured-data-validator.test.ts`、`apps/ui-compiler-service/test/security-concurrency-e2e.test.ts` | 已映射 |
+| 17.3.14 原始 Markdown 不进入下游边界 | `apps/ui-compiler-service/test/markdown-direct-boundaries.test.ts`、`apps/ui-compiler-service/test/security-concurrency-e2e.test.ts` | 已映射 |
+| 17.3.15 并发请求隔离 | `packages/ui-compiler-core/test/request-isolation.test.ts`、`apps/ui-compiler-service/test/security-concurrency-e2e.test.ts` | 已映射 |
 | 17.3.16 A2UI 使用 `version = "v0.9"` | `packages/compiler-contract/test/index.test.ts`、`packages/ui-compiler-core/test/a2ui-compiler.test.ts` | 已映射 |
 | 17.4 基础和领域 Catalog、Plan、非法输入与资源限制 Fixture | `packages/ui-compiler-core/test/fixtures.ts`、`packages/presentation-contract/test/fixtures`、`packages/compiler-contract/test/fixtures`、`apps/ui-compiler-service/test/fixtures` | 已映射 |
 
