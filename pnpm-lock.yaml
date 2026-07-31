@@ -6627,7 +6627,7 @@ snapshots:
       lefthook-windows-arm64: 1.11.14
       lefthook-windows-x64: 1.11.14
 
-  libphonenumber-js@1.13.10: {}
+  libphonenumber-js@1.13.9: {}
 
   light-my-request@6.6.0:
     dependencies:

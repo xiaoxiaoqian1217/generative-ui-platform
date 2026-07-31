@@ -1,12 +1,14 @@
 # Agent Runtime Host
 
-CopilotKit Runtime integration layer for the Generative UI Platform.
+`agent-runtime-host` 是 Generative UI Platform 的 CopilotKit Runtime 集成层。
+它位于前端和兼容 AG-UI 的远程业务 Agent 之间。
 
-## Responsibility
+## 职责边界
 
-The runtime host sits between the frontend and an AG-UI-compatible business
-agent. It provides the CopilotKit runtime endpoint and must not contain UI
-planning or UI compilation logic.
+Runtime Host 提供 CopilotKit 运行时端点，并把 AG-UI 请求转发给远程业务 Agent。
+它使用 `HttpAgent` 将业务 Agent 注册到 CopilotKit 的 Agent 注册表中。
+`BUSINESS_AGENT_ID` 是前端可选择的业务 Agent 标识。
+`default` 是同一远程业务 Agent 的默认别名。
 
 ```text
 Vue + CopilotKit Headless
@@ -15,64 +17,55 @@ Vue + CopilotKit Headless
           v
 Agent Runtime Host
           |
+          | AG-UI
           v
 Business Agent
+          |
+          | Markdown 或 JSON
+          v
+UI Compiler Service
 ```
 
-The UI Compiler remains an independent service. A later integration adapter can
-call it after the business agent produces Markdown or structured data.
+Runtime Host 不直接配置或调用模型。
+Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI 编译逻辑。
+UI Compiler Service 在需要展示语义分析时，通过可替换的 Model Adapter 配置和调用模型。
+业务 Agent、UI Compiler Service 与 Runtime Host 的集成应通过显式 Adapter 完成。
 
-## Requirements
+## 运行要求
 
-- Node.js 24 or newer
-- pnpm 10.13.1
-- An AG-UI-compatible business agent endpoint
+- Node.js 24 或更高版本。
+- pnpm 10.13.1。
+- 一个兼容 AG-UI 的远程业务 Agent 端点。
 
-## Configuration
+## 配置
 
-Copy `.env.example` values into the environment used to start the process.
-Environment files are not loaded automatically by the application.
+将 `.env.example` 中的值复制到启动进程的环境变量中。
+应用不会自动加载 `.env` 文件。
 
-| Variable | Default | Description |
+| 变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `HOST` | `0.0.0.0` | Listen address |
-| `PORT` | `8200` | Listen port |
-| `COPILOTKIT_ENDPOINT` | `/api/copilotkit` | Frontend runtime endpoint |
-| `BUSINESS_AGENT_ID` | `business-agent` | Agent identifier exposed to the frontend |
-| `BUSINESS_AGENT_URL` | `http://localhost:8000/ag-ui` | Remote AG-UI agent endpoint |
+| `HOST` | `0.0.0.0` | HTTP 监听地址。 |
+| `PORT` | `8200` | HTTP 监听端口。 |
+| `COPILOTKIT_ENDPOINT` | `/api/copilotkit` | 面向前端的 CopilotKit Runtime 路径。 |
+| `BUSINESS_AGENT_ID` | `business-agent` | 面向前端暴露的业务 Agent 标识。 |
+| `BUSINESS_AGENT_URL` | `http://localhost:8000/ag-ui` | 远程业务 Agent 的 AG-UI 端点。 |
+| `COPILOTKIT_TELEMETRY_DISABLED` | `true` | 是否关闭 CopilotKit 匿名遥测。 |
 
-## Run
+## 启动
 
-From the repository root:
+在仓库根目录执行：
 
 ```bash
 pnpm install
 pnpm --filter @generative-ui/agent-runtime-host dev
 ```
 
-Health check:
+健康检查地址为 `http://localhost:8200/health`。
 
-```bash
-curl http://localhost:8200/health
-```
+前端应使用 `http://localhost:8200/api/copilotkit` 作为 Runtime URL，并选择 `business-agent` 或默认 Agent。
 
-CopilotKit frontend configuration:
+## 当前范围
 
-```text
-runtimeUrl: http://localhost:8200/api/copilotkit
-agent: business-agent
-```
-
-## Current boundary
-
-This initialization intentionally does not include:
-
-- business-agent implementation
-- UI Compiler invocation
-- thread persistence
-- authentication
-- frontend tools or approval handlers
-- CopilotKit automatic A2UI generation
-
-These capabilities should be introduced through explicit adapters after the
-basic AG-UI connection is verified.
+当前 Host 不实现业务 Agent、UI Compiler 调用、线程持久化、认证、前端工具或审批处理。
+当前 Host 不启用 CopilotKit 自动 A2UI 生成功能。
+这些能力必须在边界和契约明确后，以独立 Adapter 接入。
