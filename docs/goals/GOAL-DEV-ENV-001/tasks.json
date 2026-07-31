@@ -11,7 +11,8 @@
     "model_adapter_location": "Presentation Pipeline logical boundary, running in Agent Runtime Host process",
     "model_adapter_output": "untrusted PresentationDecision candidate; generative-ui mode contains UI Plan Candidate",
     "trusted_a2ui_producer": "UI Compiler Core",
-    "excluded_deployment": "independent UI Compiler HTTP Service"
+    "excluded_deployment": "independent UI Compiler HTTP Service",
+    "excluded_runtime_contract": "UI Compiler network client or remote mode"
   },
   "presentation_model_providers": [
     "fixture",
@@ -49,7 +50,7 @@
     {
       "id": "TASK-004",
       "title": "Presentation Model Adapter 多模型接入",
-      "depends_on": ["TASK-013"]
+      "depends_on": ["TASK-001", "TASK-013"]
     },
     {
       "id": "TASK-005",
