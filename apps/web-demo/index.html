@@ -58,6 +58,25 @@
         line-height: 1.6;
       }
 
+      .transport-switch {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .transport-switch button {
+        min-width: 110px;
+        border: 1px solid #d0d5dd;
+        background: #ffffff;
+        color: #344054;
+      }
+
+      .transport-switch button.active {
+        border-color: #175cd3;
+        background: #eff4ff;
+        color: #175cd3;
+      }
+
       .status {
         display: flex;
         align-items: center;
@@ -73,7 +92,8 @@
         background: #98a2b3;
       }
 
-      .status.connected .status-dot {
+      .status.connected .status-dot,
+      .status.ready .status-dot {
         background: #12b76a;
       }
 
@@ -234,25 +254,47 @@
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script>
-      const { computed, createApp, nextTick, onBeforeUnmount, onMounted, ref } = Vue;
+      const {
+        computed,
+        createApp,
+        nextTick,
+        onBeforeUnmount,
+        onMounted,
+        ref,
+        watch,
+      } = Vue;
 
       createApp({
         setup() {
+          const query = new URLSearchParams(window.location.search);
+          const transport = ref(query.get("transport") === "http" ? "http" : "websocket");
           const socket = ref(null);
-          const connectionState = ref("disconnected");
+          const connectionState = ref(transport.value === "http" ? "ready" : "disconnected");
           const errorMessage = ref("");
           const input = ref("");
           const messages = ref([]);
           const messageList = ref(null);
-          const runtimeUrl = new URLSearchParams(window.location.search).get("ws") ||
-            "ws://localhost:8200/ws/demo";
+          const sending = ref(false);
+          const websocketUrl = query.get("ws") || "ws://localhost:8200/ws/demo";
+          const httpUrl = query.get("http") || "http://localhost:8200/api/demo/message";
 
           const statusLabel = computed(() => ({
-            connected: "已连接",
-            connecting: "连接中",
-            disconnected: "未连接",
-            error: "连接失败",
+            connected: "WebSocket 已连接",
+            connecting: transport.value === "http" ? "HTTP 请求中" : "WebSocket 连接中",
+            disconnected: "WebSocket 未连接",
+            error: transport.value === "http" ? "HTTP 请求失败" : "WebSocket 连接失败",
+            ready: "HTTP 请求模式",
           })[connectionState.value]);
+
+          const runtimeUrl = computed(() =>
+            transport.value === "http" ? httpUrl : websocketUrl,
+          );
+
+          const sendDisabled = computed(() =>
+            !input.value.trim() ||
+            sending.value ||
+            (transport.value === "websocket" && connectionState.value !== "connected"),
+          );
 
           function appendMessage(message) {
             messages.value.push(message);
@@ -263,26 +305,47 @@
             });
           }
 
+          function appendRuntimeMessage(message) {
+            const isError = message.type === "error_message";
+            if (isError) {
+              errorMessage.value = message.content || "Runtime Host 返回错误。";
+            }
+
+            appendMessage({
+              id: message.messageId || crypto.randomUUID(),
+              role: message.type === "system_message" || isError ? "system" : "agent",
+              content: message.content || "收到无法识别的空消息",
+            });
+          }
+
+          function closeSocket() {
+            const currentSocket = socket.value;
+            socket.value = null;
+            currentSocket?.close();
+          }
+
           function connect() {
-            socket.value?.close();
-            connectionState.value = "connecting";
+            closeSocket();
             errorMessage.value = "";
 
-            const nextSocket = new WebSocket(runtimeUrl);
+            if (transport.value === "http") {
+              connectionState.value = "ready";
+              return;
+            }
+
+            connectionState.value = "connecting";
+            const nextSocket = new WebSocket(websocketUrl);
             socket.value = nextSocket;
 
             nextSocket.addEventListener("open", () => {
-              connectionState.value = "connected";
+              if (socket.value === nextSocket) {
+                connectionState.value = "connected";
+              }
             });
 
             nextSocket.addEventListener("message", (event) => {
               try {
-                const message = JSON.parse(event.data);
-                appendMessage({
-                  id: message.messageId || crypto.randomUUID(),
-                  role: message.type === "system_message" ? "system" : "agent",
-                  content: message.content || "收到无法识别的空消息",
-                });
+                appendRuntimeMessage(JSON.parse(event.data));
               } catch (error) {
                 errorMessage.value = "Runtime Host 返回了无法解析的消息。";
                 console.error(error);
@@ -290,20 +353,22 @@
             });
 
             nextSocket.addEventListener("close", () => {
-              if (socket.value === nextSocket) {
+              if (socket.value === nextSocket && transport.value === "websocket") {
                 connectionState.value = "disconnected";
               }
             });
 
             nextSocket.addEventListener("error", () => {
-              connectionState.value = "error";
-              errorMessage.value = "无法连接 Agent Runtime Host，请确认服务已启动。";
+              if (socket.value === nextSocket) {
+                connectionState.value = "error";
+                errorMessage.value = "无法连接 Agent Runtime Host，请确认服务已启动。";
+              }
             });
           }
 
-          function sendMessage() {
+          async function sendMessage() {
             const content = input.value.trim();
-            if (!content || socket.value?.readyState !== WebSocket.OPEN) {
+            if (!content || sendDisabled.value) {
               return;
             }
 
@@ -315,8 +380,39 @@
             };
 
             appendMessage({ id: messageId, role: "user", content });
-            socket.value.send(JSON.stringify(message));
             input.value = "";
+            errorMessage.value = "";
+
+            if (transport.value === "websocket") {
+              socket.value.send(JSON.stringify(message));
+              return;
+            }
+
+            sending.value = true;
+            connectionState.value = "connecting";
+
+            try {
+              const response = await fetch(httpUrl, {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify(message),
+              });
+              const result = await response.json();
+
+              if (!response.ok) {
+                throw new Error(result.content || `HTTP ${response.status}`);
+              }
+
+              appendRuntimeMessage(result);
+              connectionState.value = "ready";
+            } catch (error) {
+              connectionState.value = "error";
+              errorMessage.value = error instanceof Error
+                ? error.message
+                : "HTTP 请求失败，请确认 Agent Runtime Host 已启动。";
+            } finally {
+              sending.value = false;
+            }
           }
 
           function handleKeyboard(event) {
@@ -326,8 +422,9 @@
             }
           }
 
+          watch(transport, connect);
           onMounted(connect);
-          onBeforeUnmount(() => socket.value?.close());
+          onBeforeUnmount(closeSocket);
 
           return {
             connect,
@@ -338,8 +435,11 @@
             messageList,
             messages,
             runtimeUrl,
+            sendDisabled,
             sendMessage,
+            sending,
             statusLabel,
+            transport,
           };
         },
         template: `
@@ -348,7 +448,15 @@
               <header class="header">
                 <div>
                   <h1>Generative UI Platform Web Demo</h1>
-                  <p class="description">验证 Vue Web 与 Agent Runtime Host 的 WebSocket 文本消息闭环。</p>
+                  <p class="description">验证 Vue Web 与 Agent Runtime Host 的 WebSocket / HTTP 完整文本消息闭环。</p>
+                  <div class="transport-switch">
+                    <button :class="{ active: transport === 'websocket' }" @click="transport = 'websocket'">
+                      WebSocket
+                    </button>
+                    <button :class="{ active: transport === 'http' }" @click="transport = 'http'">
+                      HTTP POST
+                    </button>
+                  </div>
                 </div>
                 <div class="status" :class="connectionState">
                   <span class="status-dot"></span>
@@ -357,11 +465,11 @@
               </header>
 
               <p class="notice">
-                当前未接入真实 Business Agent。返回内容由 Runtime Host 的 Mock WebSocket 通道生成。
+                当前未接入真实 Business Agent。返回内容由 Runtime Host 的 Mock WebSocket 或 HTTP 接口生成。
               </p>
 
               <div ref="messageList" class="messages">
-                <div v-if="messages.length === 0" class="empty">发送一条消息开始验证</div>
+                <div v-if="messages.length === 0" class="empty">选择传输方式并发送一条消息开始验证</div>
                 <article v-for="message in messages" :key="message.id" class="message" :class="message.role">
                   <div class="message-meta">
                     {{ message.role === 'user' ? '用户' : message.role === 'system' ? '系统' : 'Runtime Host' }}
@@ -375,21 +483,28 @@
               <div class="composer">
                 <textarea
                   v-model="input"
-                  :disabled="connectionState !== 'connected'"
+                  :disabled="sending || (transport === 'websocket' && connectionState !== 'connected')"
                   placeholder="输入要发送给 Runtime Host 的文本"
                   @keydown="handleKeyboard"
                 ></textarea>
                 <div class="actions">
-                  <button class="primary" :disabled="connectionState !== 'connected' || !input.trim()" @click="sendMessage">
-                    发送
+                  <button class="primary" :disabled="sendDisabled" @click="sendMessage">
+                    {{ sending ? '发送中' : '发送' }}
                   </button>
-                  <button class="secondary" :disabled="connectionState === 'connecting'" @click="connect">
+                  <button
+                    v-if="transport === 'websocket'"
+                    class="secondary"
+                    :disabled="connectionState === 'connecting'"
+                    @click="connect"
+                  >
                     重新连接
                   </button>
                 </div>
               </div>
 
-              <div class="endpoint">WebSocket：{{ runtimeUrl }}</div>
+              <div class="endpoint">
+                {{ transport === 'http' ? 'HTTP POST' : 'WebSocket' }}：{{ runtimeUrl }}
+              </div>
             </section>
           </main>
         `,
