@@ -1,5 +1,7 @@
+import { createServer } from "node:http";
 import express from "express";
 import { loadConfig } from "./config.js";
+import { attachDemoSocket, DEMO_SOCKET_PATH } from "./demo-socket.js";
 import { createRuntimeHost } from "./runtime.js";
 
 const config = loadConfig();
@@ -15,6 +17,8 @@ app.get("/health", (_request, response) => {
     service: "agent-runtime-host",
     agentId: config.agentId,
     endpoint: config.endpoint,
+    demoSocketPath: DEMO_SOCKET_PATH,
+    businessAgentConnected: false,
   });
 });
 
@@ -35,8 +39,14 @@ app.use(
   },
 );
 
-app.listen(config.port, config.host, () => {
+const server = createServer(app);
+attachDemoSocket(server);
+
+server.listen(config.port, config.host, () => {
   console.log(
     `Agent Runtime Host listening at http://${config.host}:${config.port}${config.endpoint}`,
+  );
+  console.log(
+    `Mock WebSocket demo listening at ws://${config.host}:${config.port}${DEMO_SOCKET_PATH}`,
   );
 });
