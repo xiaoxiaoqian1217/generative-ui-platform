@@ -1,18 +1,21 @@
 # Web Demo
 
 Minimal Vue browser demo for validating complete text messages with Agent Runtime
-Host.
+Host over WebSocket and HTTP.
 
 ## Current scope
 
-The demo validates this temporary development path:
+The demo validates two temporary development paths:
 
 ```text
 Vue Web Demo
      |
-     | WebSocket complete text message
-     v
-Agent Runtime Host Mock Socket
+     +-- WebSocket complete text message --> /ws/demo
+     |
+     +-- HTTP POST complete text message --> /api/demo/message
+                                                |
+                                                v
+                                   Agent Runtime Host Mock
 ```
 
 A real Business Agent is not connected yet. Business Agent implementations do
@@ -36,14 +39,30 @@ Start the Web demo in another terminal:
 pnpm dev:web-demo
 ```
 
-Open `http://localhost:5173`.
+Open `http://localhost:5173` and select `WebSocket` or `HTTP POST`.
 
-The default socket is `ws://localhost:8200/ws/demo`. Override it with a query
-parameter when necessary:
+Default endpoints:
+
+- WebSocket: `ws://localhost:8200/ws/demo`
+- HTTP: `http://localhost:8200/api/demo/message`
+
+Override them with query parameters when necessary:
 
 ```text
-http://localhost:5173/?ws=ws://127.0.0.1:8200/ws/demo
+http://localhost:5173/?transport=http&http=http://127.0.0.1:8200/api/demo/message
+http://localhost:5173/?transport=websocket&ws=ws://127.0.0.1:8200/ws/demo
 ```
+
+## HTTP request example
+
+```bash
+curl -X POST http://localhost:8200/api/demo/message \
+  -H "content-type: application/json" \
+  -d '{"type":"user_message","messageId":"demo-1","content":"查询设备状态"}'
+```
+
+Both transports use complete request and response messages. Neither endpoint
+provides token-level streaming.
 
 ## Build and test
 
