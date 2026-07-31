@@ -15,6 +15,7 @@
     "check:boundaries": "node scripts/check-dependency-boundaries.mjs",
     "typecheck": "turbo run typecheck && node --check apps/web-demo/scripts.mjs && node --check apps/web-demo/test.mjs && node --check scripts/e2e-web-demo.mjs",
     "test": "pnpm build && vitest run tests/workspace && node scripts/check-contract-package-installation.mjs && turbo run test && pnpm test:web-demo && pnpm test:e2e:web-demo",
+    "test:e2e:http": "pnpm --filter @generative-ui/ui-compiler-service test:e2e:http",
     "test:web-demo": "node apps/web-demo/test.mjs",
     "test:e2e:web-demo": "node scripts/e2e-web-demo.mjs",
     "lint": "biome lint .",
