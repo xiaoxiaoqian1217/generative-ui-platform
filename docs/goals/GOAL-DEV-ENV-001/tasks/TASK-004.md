@@ -6,12 +6,14 @@
 
 候选选择 `generative-ui` 时必须包含 UI Plan Candidate；候选也可以选择 Markdown。
 
+TASK-013 必须先提供可供 Runtime Fixture 全链路使用的最小确定性 Fixture Adapter。本任务负责在该基线上增加可配置故障模拟、Provider Registry 和真实模型接入，不得成为 TASK-005 的前置阻塞。
+
 ## 实施前审计
 
 先检查当前：
 
 - `ModelAdapter` 接口和 `generatePresentationDecisionCandidate` 语义。
-- Fixture / test Model Adapter。
+- TASK-013 提取后的 Fixture / test Model Adapter。
 - ModelPresentationRequest 和输出 Schema。
 - PresentationDecision 校验。
 - Timeout、Retry、AbortSignal 和错误分类。
@@ -21,14 +23,14 @@
 
 ## 工作项
 
-- 将测试 Fixture 提炼为可配置的开发 Fixture Adapter。
+- 在最小 Fixture Adapter 基础上增加可配置的超时、限流、非法候选和 Provider 失败模拟。
 - 实现或完善 OpenAI-compatible Provider 基础适配。
 - 实现 Provider Registry 和配置校验。
 - 支持配置 Kimi、豆包、GLM 和通义千问 Provider。
 - 明确 Provider 与 Model Name 分离，模型名、Base URL、Endpoint ID 和 API Key 全部配置化。
 - 支持 Timeout、Abort 和有限 Retry。
 - 复用现有稳定错误码并归一化 Provider 错误。
-- 解析安全的 Usage、延迟和响应 ID 摘要。
+- 解析安全、供应商无关的 Usage、延迟和响应 ID 摘要。
 - 强制校验 PresentationDecision；`generative-ui` 模式继续校验 UI Plan Candidate。
 - 增加 Provider Contract Test 和按需执行的真实 Provider Smoke Test。
 
@@ -39,12 +41,14 @@
 - 不用于 Business Agent 业务推理或业务工具调用。
 - Provider 输出始终是不可信候选。
 - 不直接生成可信 A2UI、HTML、Vue 或任意可执行代码。
-- API Key、Authorization 和敏感 Prompt 不进入浏览器或日志。
+- API Key、Authorization、完整 Prompt 和 Provider 原始响应不进入浏览器或日志。
 - Router 继续负责 Timeout、Retry 和候选验证时，不得在 Adapter 内重复实现冲突策略。
+- 不新增独立 Model Adapter 服务、UI Compiler Service 或远程调用模式。
 
 ## 验收
 
-- Fixture 模式确定性通过，并可模拟超时、限流和非法候选。
+- TASK-013 提供的最小 Fixture 模式保持确定性通过。
+- 扩展 Fixture 可模拟超时、限流、非法候选和 Provider 失败。
 - Kimi、豆包、GLM 和通义千问均可通过配置注册。
 - 至少一个真实 Provider Smoke Test 通过。
 - 更换 Provider 不修改 UI Compiler Core 或 Runtime Orchestrator。
