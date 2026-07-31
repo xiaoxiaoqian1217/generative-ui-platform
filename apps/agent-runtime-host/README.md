@@ -76,3 +76,4 @@ This initialization intentionally does not include:
 
 These capabilities should be introduced through explicit adapters after the
 basic AG-UI connection is verified.
+
