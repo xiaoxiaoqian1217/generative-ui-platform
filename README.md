@@ -121,18 +121,18 @@ Core 不决定是否生成 UI，也不直接依赖模型 SDK 或具体模型供�
 UI Compiler Core 已实现输入和 Catalog 校验、UI IR lowering、A2UI 0.9.1 Profile 编译和 Markdown 降级。
 UI Compiler Service 已实现 Markdown Sanitizer、结构化数据资源校验、确定性 Markdown 直出和 HTTP 调用入口。
 
-`apps/web-demo` 提供一个最小 Vue 浏览器演示页面，通过 WebSocket 与 Agent Runtime Host 的 `/ws/demo` Mock 通道交换完整文本消息。
-该通道只用于验证 Web 与 Runtime Host 的连接、发送、推送和错误展示，不提供 Token 级流式输出。
+`apps/web-demo` 提供一个最小 Vue 浏览器演示页面，可通过 HTTP POST 或 WebSocket 与 Agent Runtime Host 的 Mock 接口交换完整文本消息。
+两个通道只用于验证 Web 与 Runtime Host 的连接、请求、推送和错误展示，不提供 Token 级流式输出。
 
 当前尚未接入真实 Business Agent。
-Web Demo 收到的文本由 Runtime Host Mock 通道生成，不能用于证明真实业务任务已经可执行。
+Web Demo 收到的文本由 Runtime Host Mock 接口生成，不能用于证明真实业务任务已经可执行。
 下一阶段应在 Agent Runtime Host 内新增明确的 Business Agent Adapter，而不是要求 Business Agent 改造为 AG-UI Agent。
 当前也尚未完成 UI Compiler、Runtime Host 与 Web Renderer 的平台级运行闭环。
 
 当前阶段继续维护需求、架构、ADR、领域语言和仓库级工程基础设施。
 依赖边界检查用于阻止应用反向依赖、Core 依赖协议 Adapter 等违规方向。
 
-## WebSocket 演示验证
+## HTTP / WebSocket 演示验证
 
 启动 Agent Runtime Host：
 
@@ -146,7 +146,15 @@ pnpm --filter @generative-ui/agent-runtime-host dev
 pnpm dev:web-demo
 ```
 
-打开 `http://localhost:5173`，发送文本后，Runtime Host 会一次性推送完整的 Mock 文本结果。
+打开 `http://localhost:5173`，选择 `WebSocket` 或 `HTTP POST`，发送文本后 Runtime Host 会返回完整的 Mock 文本结果。
+
+HTTP 接口也可以直接调用：
+
+```bash
+curl -X POST http://localhost:8200/api/demo/message \
+  -H "content-type: application/json" \
+  -d '{"type":"user_message","messageId":"demo-1","content":"查询设备状态"}'
+```
 
 ## 文档入口
 
