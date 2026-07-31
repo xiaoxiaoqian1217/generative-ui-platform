@@ -2,6 +2,7 @@
   "version": "0.2",
   "language": "en,en-GB",
   "ignorePaths": ["node_modules", "dist", ".turbo", "pnpm-lock.yaml"],
+  "ignoreRegExpList": ["/K.mi/g"],
   "words": [
     "A2UI",
     "Actionable",
