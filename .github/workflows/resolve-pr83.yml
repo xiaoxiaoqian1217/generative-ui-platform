@@ -1,0 +1,38 @@
+name: Resolve PR 83 Branch
+
+on:
+  push:
+    branches:
+      - agent/init-web-demo
+    paths:
+      - .github/workflows/resolve-pr83.yml
+
+permissions:
+  contents: write
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/init-web-demo
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Enable pnpm
+        run: corepack enable && corepack prepare pnpm@10.13.1 --activate
+      - name: Merge main and restore the consistent lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          branch_head="$(git rev-parse HEAD)"
+          git merge --no-edit origin/main
+          git checkout "$branch_head" -- pnpm-lock.yaml
+          pnpm install --frozen-lockfile
+          git add pnpm-lock.yaml
+          git commit --amend --no-edit
+          git push origin HEAD:agent/init-web-demo
