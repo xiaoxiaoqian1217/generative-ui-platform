@@ -18,6 +18,13 @@ ADR 可以属于以下范围：
 Compiler MVP 形成时期的 ADR 继续约束 Compiler 子系统。
 平台级 ADR 不得无意放宽 Compiler 已接受的输入信任、Catalog、Model Adapter、UI Plan Candidate 和 A2UI 编译边界。
 
+## 当前平台后端决策
+
+当前目标架构不再把 UI Compiler 作为独立部署服务。
+Agent Runtime Host 是平台统一后端入口和应用组合根。
+原 UI Compiler Service 的展示应用能力迁移为独立 `presentation-pipeline` Package，并嵌入 Agent Runtime Host 运行。
+UI Compiler Core、Presentation Router、Model Adapter、Catalog 和公共契约继续保持独立 Package 边界。
+
 ## 关键决策入口
 
 | ADR | 状态 | 适用范围 | 说明 |
@@ -27,11 +34,12 @@ Compiler MVP 形成时期的 ADR 继续约束 Compiler 子系统。
 | [ADR-0007](./0007-compile-data-and-catalog-injection.md) | 已接受 | Compiler | 编译数据所有权和 Catalog 注入 |
 | [ADR-0008](./0008-a2ui-0.9.1-profile.md) | 已接受 | Compiler | 锁定当前 A2UI Profile |
 | [ADR-0012](./0012-typebox-and-ajv-schema-validation.md) | 已接受 | 公共契约 | TypeBox 和 Ajv Schema 校验 |
-| [ADR-0014](./0014-markdown-sanitizer.md) | 已接受 | UI Compiler Service | Markdown 清理边界 |
-| [ADR-0015](./0015-presentation-router-and-model-adapter.md) | 已接受 | UI Compiler Service | Presentation Router 和 Model Adapter 边界 |
-| [ADR-0016](./0016-fastify-http-lifecycle.md) | 已接受 | UI Compiler Service | HTTP 生命周期与取消语义 |
-| [ADR-0017](./0017-http-observability-and-sensitive-data.md) | 已接受 | UI Compiler Service | HTTP 可观测性和敏感数据策略 |
-| [ADR-0018](./0018-expand-repository-scope-to-platform-validation-environment.md) | 已接受 | 仓库级平台 | 将仓库范围扩展为平台全链路开发验证环境 |
+| [ADR-0014](./0014-markdown-sanitizer.md) | 已接受 | Presentation Pipeline | Markdown 清理边界继续有效，运行宿主由 ADR-0019 调整 |
+| [ADR-0015](./0015-presentation-router-and-model-adapter.md) | 已接受 | Presentation Pipeline | Presentation Router 和 Model Adapter 边界继续有效 |
+| [ADR-0016](./0016-fastify-http-lifecycle.md) | 部分被 ADR-0019 取代 | HTTP 生命周期 | 独立 Compiler HTTP 所有权被取消；取消、超时和关闭语义迁移到 Runtime Host |
+| [ADR-0017](./0017-http-observability-and-sensitive-data.md) | 部分被 ADR-0019 取代 | 可观测性 | 独立 Compiler HTTP 终局被取消；安全字段和敏感数据策略继续有效 |
+| [ADR-0018](./0018-expand-repository-scope-to-platform-validation-environment.md) | 部分被 ADR-0019 取代 | 仓库级平台 | 仓库范围扩展为平台全链路验证环境；独立 Compiler 部署结论被调整 |
+| [ADR-0019](./0019-embed-presentation-pipeline-in-agent-runtime-host.md) | 已接受 | 平台后端与 Compiler | 取消独立 UI Compiler Service 应用，将 Presentation Pipeline 嵌入 Runtime Host |
 
 以上表格突出当前跨模块和平台范围决策。
 完整 ADR 集合以本目录中的全部编号文件为准。
@@ -42,7 +50,7 @@ Compiler MVP 形成时期的 ADR 继续约束 Compiler 子系统。
 - ADR 编号在仓库中必须唯一，已经使用的编号不得复用。
 - 创建 ADR 前必须扫描本目录中的全部编号文件，使用当前最大编号加一。
 - 被拒绝、废弃或被取代的 ADR 仍然保留原文件和编号。
-- 当前最新编号为 `0018`。
+- 当前最新编号为 `0019`。
 
 ## 状态规则
 
@@ -84,8 +92,8 @@ Compiler MVP 形成时期的 ADR 继续约束 Compiler 子系统。
 
 ## 后续预计决策
 
-以下决策应在对应实现开始前分别评审，而不是提前合并进 ADR-0018：
+以下决策应在对应实现开始前分别评审：
 
 - Runtime Host 与 Business Agent Adapter 的稳定边界；
 - Frontend Runtime、Component Registry 和 A2UI Renderer 的信任边界；
-- Action、安全审批和跨服务状态所有权。
+- Action、安全审批和跨模块状态所有权。
