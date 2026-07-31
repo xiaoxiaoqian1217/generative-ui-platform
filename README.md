@@ -27,7 +27,8 @@ Generative UI Workbench
 → Markdown / Structured Data
 → UI Compiler Service
 → Presentation Router / Model Adapter
-→ UI Plan Candidate
+→ untrusted PresentationDecision Candidate
+→ UI Plan Candidate when generative-ui is selected
 → UI Compiler Core
 → Markdown / A2UI
 → Frontend Runtime
@@ -40,7 +41,7 @@ Generative UI Workbench
 - Business Agent 只输出 Markdown 或结构化业务数据。
 - Business Agent 不需要支持 AG-UI、A2UI 或前端组件协议。
 - Model Adapter 位于 UI Compiler Service。
-- Model Adapter 输出展示决策或 UI Plan Candidate。
+- Model Adapter 输出不可信的展示决策候选；选择 generative-ui 时包含 UI Plan Candidate。
 - UI Plan Candidate 始终是不可信输入。
 - UI Compiler Core 是唯一可信 A2UI 生产者。
 - Runtime Host 不承担 UI 规划和 UI 编译。
@@ -78,6 +79,7 @@ Generative UI Workbench
 - [全链路开发验证环境](./docs/platform/DEVELOPMENT_ENVIRONMENT.md)
 - [平台范围调整决策](./docs/platform/SCOPE_DECISION.md)
 - [当前开发环境 Goal](./docs/goals/GOAL-DEV-ENV-001.md)
+- [当前 Goal 子任务包](./docs/goals/GOAL-DEV-ENV-001/README.md)
 
 ### Compiler MVP 子系统基线
 
@@ -98,6 +100,8 @@ Generative UI Workbench
 
 - 跨子系统关系和平台范围以 `docs/platform/` 为准。
 - Compiler 内部实现继续以原 Compiler MVP 文档为准。
+- 当前 Goal 的总目标以 `docs/goals/GOAL-DEV-ENV-001.md` 为准。
+- 可执行子任务以 `docs/goals/GOAL-DEV-ENV-001/tasks/` 为准。
 - 当前阶段执行内容必须由 Goal、Issue 或范围决策明确授权。
 - Roadmap 不自动授权实现。
 
