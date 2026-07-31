@@ -14,6 +14,10 @@ const applications = [
     name: "@generative-ui/ui-compiler-service",
     path: "apps/ui-compiler-service",
   },
+  {
+    name: "@generative-ui/web-demo",
+    path: "apps/web-demo",
+  },
 ] as const;
 const packages = [
   {
@@ -70,8 +74,8 @@ function readManifest(relativePath: string): PackageManifest {
 }
 
 describe("workspace contract", () => {
-  it("contains two applications and six shared packages", () => {
-    expect(applications).toHaveLength(2);
+  it("contains three applications and six shared packages", () => {
+    expect(applications).toHaveLength(3);
     expect(packages).toHaveLength(6);
 
     for (const project of [...applications, ...packages]) {
