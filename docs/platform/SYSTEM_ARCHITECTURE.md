@@ -10,7 +10,7 @@ Workbench
 → Business Agent Adapter
 → Reference Business Agent
 → AgentContent
-→ UI Compiler Service
+→ Embedded Presentation Pipeline
 → Model Adapter
 → UI Plan Candidate
 → UI Compiler Core
@@ -22,7 +22,7 @@ Workbench
 
 - Workbench 只连接 Agent Runtime Host。
 - Business Agent 只输出 Markdown 或结构化数据。
-- Model Adapter 位于 UI Compiler Service。
+- Model Adapter 位于 Presentation Pipeline。
 - Runtime Host 不生成 A2UI。
 - UI Compiler Core 是唯一可信 A2UI 生产者。
 - Frontend Runtime 负责 Markdown 和 A2UI 渲染。
@@ -36,7 +36,7 @@ Frontend Runtime
 → Business Agent Adapter
 → Business Agent Resume
 → New AgentContent
-→ UI Compiler Service
+→ Embedded Presentation Pipeline
 → New PresentationResult
 ```
 

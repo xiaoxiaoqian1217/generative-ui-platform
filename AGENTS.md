@@ -40,8 +40,8 @@ git push -u origin codex/issue-N:refs/heads/codex/issue-N
 - Business Agent MUST NOT output UI Plan Candidate, A2UI, HTML, Vue, React, or component selections.
 - Business Agent Adapter MUST isolate Runtime Host from concrete Business Agent protocols.
 - Agent Runtime Host owns Run and Action orchestration but MUST NOT perform UI planning or A2UI compilation.
-- UI Compiler Service owns presentation routing and concrete Model Adapters.
-- Model Adapter belongs to UI Compiler Service and MUST NOT be used for Business Agent reasoning.
+- Presentation Pipeline owns presentation routing and concrete Model Adapters.
+- Model Adapter belongs to Presentation Pipeline and MUST NOT be used for Business Agent reasoning.
 - Model Adapter output remains untrusted until validated and compiled.
 - UI Compiler Core is the only trusted A2UI producer.
 - `packages/ui-compiler-core` MUST remain framework-, transport-, Agent-framework-, and vendor-neutral.

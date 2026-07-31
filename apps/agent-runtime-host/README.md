@@ -20,16 +20,12 @@ Agent Runtime Host
           | AG-UI
           v
 Business Agent
-          |
-          | Markdown 或 JSON
-          v
-UI Compiler Service
 ```
 
 Runtime Host 不直接配置或调用模型。
 Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI 编译逻辑。
-UI Compiler Service 在需要展示语义分析时，通过可替换的 Model Adapter 配置和调用模型。
-业务 Agent、UI Compiler Service 与 Runtime Host 的集成应通过显式 Adapter 完成。
+当前实现只提供远程 Business Agent 的 AG-UI 转发和 Demo 端点，不包含 Presentation Pipeline。
+目标架构中，Runtime Host 通过显式 Adapter 集成 Business Agent，并在进程内组装 Presentation Pipeline。
 
 ## 运行要求
 
@@ -66,6 +62,6 @@ pnpm --filter @generative-ui/agent-runtime-host dev
 
 ## 当前范围
 
-当前 Host 不实现业务 Agent、UI Compiler 调用、线程持久化、认证、前端工具或审批处理。
+当前 Host 不实现业务 Agent、Presentation Pipeline、线程持久化、认证、前端工具或审批处理。
 当前 Host 不启用 CopilotKit 自动 A2UI 生成功能。
 这些能力必须在边界和契约明确后，以独立 Adapter 接入。

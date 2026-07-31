@@ -10,7 +10,7 @@
 _Avoid_: 使用 Generative UI Compiler 指代完整平台
 
 **Generative UI Compiler**:
-平台核心子系统，包含 UI Compiler Service、Presentation Router、Model Adapter 和 UI Compiler Core。
+平台核心子系统，包含 Presentation Pipeline、Presentation Router、Model Adapter 和 UI Compiler Core。
 原 Compiler MVP 文档继续作为该子系统基线。
 _Avoid_: 完整平台、Business Agent、Frontend Runtime
 
@@ -22,7 +22,7 @@ _Avoid_: 企业产品、正式业务系统
 **Generative UI Workbench**:
 Frontend Runtime 参考实现和开发验证工作台。
 它只连接 Agent Runtime Host，渲染 Markdown 和 A2UI。
-_Avoid_: Business Agent、UI Compiler Service
+_Avoid_: Business Agent、Presentation Pipeline
 
 **Reference Business Agent**:
 用于全链路验证的参考业务 Agent，优先采用 TypeScript LangGraph。
@@ -35,15 +35,15 @@ _Avoid_: Model Adapter、Business Agent
 
 **Agent Runtime Host**:
 平台前端统一入口。
-它调用 Business Agent，并将业务结果提交给 UI Compiler Service。
-_Avoid_: UI Compiler Service、Frontend Runtime
+它调用 Business Agent，并将业务结果提交给嵌入式 Presentation Pipeline。
+_Avoid_: Presentation Pipeline、Frontend Runtime
 
 **AgentContent**:
 Business Agent 返回的 Markdown 或 JSON 结构化业务内容。
 _Avoid_: UI Plan Candidate、A2UI
 
 **Presentation Request**:
-提交给 UI Compiler Service 的 AgentContent、Catalog 引用和可选展示上下文。
+提交给 Presentation Pipeline 的 AgentContent、Catalog 引用和可选展示上下文。
 _Avoid_: Business Agent Request、A2UI
 
 **Presentation Router**:
@@ -51,7 +51,7 @@ _Avoid_: Business Agent Request、A2UI
 _Avoid_: Business Agent Router、UI Compiler Core
 
 **Model Adapter**:
-UI Compiler Service 中供 Presentation Router 调用的模型供应商适配实现。
+Presentation Pipeline 中供 Presentation Router 调用的模型供应商适配实现。
 它用于生成展示决策或 UI Plan Candidate，不用于 Business Agent 业务推理。
 _Avoid_: Business Agent Adapter、UI Compiler Core
 
@@ -77,7 +77,7 @@ _Avoid_: Component Registry、组件实现
 
 **Frontend Runtime**:
 消费 PresentationResult，并通过 Markdown Renderer、A2UI Renderer 和 Component Registry 转换为真实界面。
-_Avoid_: Agent Runtime Host、UI Compiler Service
+_Avoid_: Agent Runtime Host、Presentation Pipeline
 
 **Component Registry**:
 Frontend Runtime 中从组件类型映射到真实组件实现的能力。

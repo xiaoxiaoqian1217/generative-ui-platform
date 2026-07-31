@@ -16,7 +16,7 @@
 → Business Agent Adapter
 → Reference Business Agent
 → AgentContent
-→ UI Compiler Service
+→ Embedded Presentation Pipeline
 → UI Plan Candidate
 → UI Compiler Core
 → Markdown / A2UI
@@ -30,8 +30,8 @@
 - Generative UI Workbench；
 - Agent Runtime Host；
 - TypeScript LangGraph Reference Business Agent；
-- UI Compiler Service；
-- UI Compiler Model Adapter Fixture 和真实供应商配置；
+- 嵌入 Agent Runtime Host 的 Presentation Pipeline；
+- Presentation Model Adapter Fixture 和真实供应商配置；
 - Vue A2UI Renderer；
 - Component Registry 参考实现；
 - Playwright E2E；
@@ -43,7 +43,6 @@
 Workbench              http://localhost:5173
 Agent Runtime Host     http://localhost:8200
 Reference Agent        http://localhost:8300
-UI Compiler Service    http://localhost:3000
 ```
 
 ## 5. 开发模式
@@ -51,7 +50,7 @@ UI Compiler Service    http://localhost:3000
 默认使用确定性的 Fixture 模式。
 Fixture 模式不需要模型密钥，不产生模型费用，并作为 CI 的标准验证方式。
 
-真实模型模式只用于 UI Compiler Model Adapter Smoke Test。
+真实模型模式只用于 Presentation Model Adapter Smoke Test。
 模型供应商、模型名称、Base URL 和认证配置必须通过环境变量提供。
 
 ## 6. 统一命令目标
@@ -75,7 +74,7 @@ pnpm verify:platform
 - 点击确认操作；
 - 恢复 LangGraph 流程；
 - 切换 HTTP 和 WebSocket；
-- 验证 UI Compiler Model Adapter Fixture；
+- 验证 Presentation Model Adapter Fixture；
 - 至少验证一个真实模型供应商；
 - 查看完整安全诊断链路。
 

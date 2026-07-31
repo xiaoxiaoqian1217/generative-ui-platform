@@ -12,7 +12,7 @@ Generative UI Workbench
 → Reference Business Agent
 → Markdown / Structured Data
 → Agent Runtime Host
-→ UI Compiler Service
+→ Embedded Presentation Pipeline
 → Presentation Router / Model Adapter
 → UI Plan Candidate
 → UI Compiler Core
@@ -26,11 +26,11 @@ Generative UI Workbench
 ## 2. 子系统职责
 
 - Workbench 是 Frontend Runtime 参考实现，只连接 Agent Runtime Host。
-- Agent Runtime Host 管理 Run、调用 Business Agent、调用 UI Compiler，并校验 Action。
+- Agent Runtime Host 管理 Run、调用 Business Agent、在进程内组装 Presentation Pipeline，并校验 Action。
 - Business Agent Adapter 隔离 Runtime Host 与具体 Agent 协议。
 - Reference Business Agent 负责业务工具、状态和恢复，只输出 Markdown 或结构化数据。
-- UI Compiler Service 负责展示路由、Model Adapter 组装和 Compiler 调用。
-- Model Adapter 位于 UI Compiler Service，输出受 Schema 约束但仍不可信的展示决策或 UI Plan Candidate。
+- Presentation Pipeline 负责展示路由、Model Adapter 组装和 Compiler 调用。
+- Model Adapter 位于 Presentation Pipeline，输出受 Schema 约束但仍不可信的展示决策或 UI Plan Candidate。
 - UI Compiler Core 校验 Candidate 和 Catalog，构建 UI IR 并编译 A2UI。
 - Frontend Runtime 维护 Component Registry，渲染 Markdown 或 A2UI，并产生 Action Event。
 
@@ -54,7 +54,6 @@ UI Compiler Core 是唯一可信 A2UI 生产者。
 Workbench              5173
 Agent Runtime Host     8200
 Reference Agent        8300
-UI Compiler Service    3000
 ```
 
 ## 6. 安全原则

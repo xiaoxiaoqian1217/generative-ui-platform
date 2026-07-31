@@ -74,7 +74,7 @@ Generative UI Workbench
           ▼
 Agent Runtime Host
           ├── Business Agent Adapter ──> Business Agent
-          └── UI Compiler Service
+          └── Embedded Presentation Pipeline
           │
           ▼
 Generative UI Workbench
