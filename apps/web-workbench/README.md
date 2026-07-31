@@ -4,6 +4,14 @@
 
 当前提交只初始化工作目录和职责边界，不引入前端依赖，不修改 `pnpm-lock.yaml`，也不影响现有 `apps/web-demo` 的构建和测试。
 
+## 与开发验证环境任务包的关系
+
+- `apps/web-workbench` 是 Web Workbench 唯一的长期工作目录；
+- `apps/generative-ui-platform-dev-env-goal-package-v3/tasks/TASK-006.md` 是本工程的工程化实施任务，不是另一套 Web 工程；
+- `docs/WEB_WORKBENCH_SRS.md` 是本工程的需求基线；
+- 后续 Vue A2UI Renderer、Action 回传、诊断和验收任务继续在本目录中扩展；
+- 不应在 Goal 包目录或其他位置创建平行的 Web Workbench 实现。
+
 ## 产品背景
 
 公司正在建设智慧安防、空地多智能体协同巡防指挥等 Agent 应用。
@@ -106,12 +114,12 @@ apps/web-workbench/
 
 正式工程初始化时应遵守：
 
-1. 优先复用仓库现有 pnpm、TypeScript、Vitest、Biome 和 Turbo 工具链。
-2. 前端框架和 Renderer 依赖必须经过单独技术决策后再写入锁文件。
+1. 基础技术栈采用 Vue 3、Vite 和 TypeScript，并优先复用仓库现有 pnpm、Vitest、Biome 和 Turbo 工具链。
+2. Renderer、Markdown、安全处理、状态管理、路由和 E2E 等具体依赖必须经过单独技术决策后再写入锁文件。
 3. 不得复制 `apps/web-demo` 的单文件实现作为长期架构。
 4. 不得在浏览器端增加 Business Agent 私有协议适配器。
 5. 不得将智慧安防领域类型写入通用 Runtime Client、Renderer 或 Registry 核心。
-6. 第一阶段以 `docs/WEB_WORKBENCH_SRS.md` 为需求基线。
+6. 第一阶段以 `docs/WEB_WORKBENCH_SRS.md` 和 `TASK-006.md` 为实施基线。
 
 ## 当前状态
 
@@ -119,7 +127,8 @@ apps/web-workbench/
 - [x] 初始化工作目录；
 - [x] 明确产品背景、目的、定位和目标用户；
 - [x] 明确 Workbench 与 Runtime Host 的职责边界；
-- [ ] 确定正式前端技术栈和包依赖；
+- [x] 确定基础技术栈为 Vue 3 + Vite + TypeScript；
+- [ ] 确定 Renderer、Markdown、状态管理、路由和测试等具体包依赖；
 - [ ] 初始化可运行应用；
 - [ ] 接入 Runtime Host；
 - [ ] 接入 Markdown Renderer 和 A2UI Renderer；
