@@ -8,6 +8,7 @@
 |---|---|---|
 | Generative UI Platform | 长期平台名称 | 持续使用 |
 | Generative UI Compiler | 当前 MVP 产品 | 本期实现 |
+| Generative UI Workbench | Frontend Runtime 参考实现与开发验收工作台 | 需求和目录已初始化 |
 | Interaction Gateway | 未来 Agent 协作扩展能力 | 不属于当前 MVP |
 
 仓库名称使用 Generative UI Platform，不代表当前已经实现完整 Agent 平台能力。
@@ -105,6 +106,13 @@ Core 不决定是否生成 UI，也不直接依赖模型 SDK 或具体模型供�
 - 不要求 Business Agent 自身支持 AG-UI 或 CopilotKit。
 - 不承担 UI 规划和 UI 编译职责。
 
+### Generative UI Workbench
+
+- 连接 Agent Runtime Host，不直接连接 Business Agent。
+- 作为 Frontend Runtime 参考实现渲染 Markdown 和 A2UI。
+- 提供开发联调、运行诊断、案例验收和版本回归能力。
+- 通过智慧安防场景包验证空地多智能体巡防指挥流程。
+
 ## 安全边界
 
 - 模型输出始终是不可信输入。
@@ -124,14 +132,12 @@ UI Compiler Service 已实现 Markdown Sanitizer、结构化数据资源校验�
 `apps/web-demo` 提供一个最小 Vue 浏览器演示页面，可通过 HTTP POST 或 WebSocket 与 Agent Runtime Host 的 Mock 接口交换完整文本消息。
 两个通道只用于验证 Web 与 Runtime Host 的连接、请求、推送和错误展示，不提供 Token 级流式输出。
 
-`apps/web-workbench` 已初始化为后续生成式 UI 开发、联调、诊断和验收工作台目录。
-Workbench 只连接 Agent Runtime Host，不直接接入 Business Agent，也不实现 Business Agent Adapter。
-当前仅建立需求基线和目录职责，尚未引入正式前端依赖。
-
 当前尚未接入真实 Business Agent。
 Web Demo 收到的文本由 Runtime Host Mock 接口生成，不能用于证明真实业务任务已经可执行。
 下一阶段应在 Agent Runtime Host 内新增明确的 Business Agent Adapter，而不是要求 Business Agent 改造为 AG-UI Agent。
 当前也尚未完成 UI Compiler、Runtime Host 与 Web Renderer 的平台级运行闭环。
+
+`apps/web-workbench` 已初始化需求和目录边界，后续将作为可发布的 Frontend Runtime 参考实现和开发验收工作台。Workbench 只连接 Agent Runtime Host；Business Agent Adapter、Run 编排和后端业务工具仍由 Runtime Host 负责。
 
 当前阶段继续维护需求、架构、ADR、领域语言和仓库级工程基础设施。
 依赖边界检查用于阻止应用反向依赖、Core 依赖协议 Adapter 等违规方向。
@@ -162,8 +168,8 @@ curl -X POST http://localhost:8200/api/demo/message \
 
 ## 文档入口
 
-- [Generative UI Compiler 需求规格说明书](./docs/REQUIREMENTS.md)
-- [Generative UI Workbench 需求规格说明书](./docs/WEB_WORKBENCH_SRS.md)
+- [需求规格说明书](./docs/REQUIREMENTS.md)
+- [Generative UI Workbench 软件需求规格说明书](./docs/WEB_WORKBENCH_SRS.md)
 - [系统设计说明书](./docs/Generative_UI_Compiler_Design.md)
 - [架构说明](./docs/ARCHITECTURE.md)
 - [数据契约](./docs/CONTRACTS.md)
