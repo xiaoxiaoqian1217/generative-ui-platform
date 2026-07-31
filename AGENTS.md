@@ -2,9 +2,14 @@
 
 ## Source of truth
 
-1. Read `docs/REQUIREMENTS.md` before modifying architecture or public contracts.
-2. Read `docs/ARCHITECTURE.md` and relevant ADRs before adding dependencies.
-3. Do not expand MVP scope without an issue or ADR.
+1. Read `docs/platform/REQUIREMENTS.md` before modifying repository-level scope, public contracts, or platform behavior.
+2. Read `docs/platform/ARCHITECTURE.md` before adding cross-application dependencies or changing the platform call chain.
+3. Read the active Goal under `docs/goals/` before implementing stage-specific work.
+4. Read `docs/compiler/README.md` and the original Compiler documents before modifying UI Compiler internals.
+5. Read relevant ADRs before changing an accepted decision.
+6. Roadmap content does not authorize implementation.
+
+When documents conflict, use the priority defined in `docs/README.md`.
 
 ## Branch and worktree applicability
 
@@ -70,18 +75,51 @@ git push -u origin codex/issue-N:refs/heads/codex/issue-N
 - Goal complete 只代表记录的完成条件在当时成立，不代表分支在 main 后续变化后仍然可直接合并。
 - 创建或更新 Pull Request 前，以及实际合并前，必须再次检查 main 是否变化，并按需重新集成、验证和审查。
 
-## Architecture rules
+## Platform architecture rules
 
-- `packages/ui-compiler-core` MUST remain framework-, transport-, and vendor-neutral.
+- Web Workbench MUST connect only to Agent Runtime Host.
+- Web MUST NOT directly call Business Agent, UI Compiler Service, or model providers.
+- Business Agent MUST output Markdown or structured business data through the shared contract.
+- Business Agent MUST NOT output UI Plan Candidate, A2UI, HTML, Vue, React, or arbitrary frontend code.
+- Business Agent Adapter owns protocol adaptation and result normalization, not UI planning or compilation.
 - UI Compiler Service owns presentation routing and concrete model adapters.
+- UI Compiler Model Adapter processes AgentContent and produces an untrusted UI Plan Candidate.
+- UI Compiler Model Adapter MUST NOT be reused as the Business Agent reasoning layer.
+- UI Compiler Core MUST remain framework-, transport-, Agent-framework-, and vendor-neutral.
 - UI Compiler Core MUST NOT choose a presentation mode or call a model.
 - A Schema-valid UI Plan Candidate remains untrusted until Core validates and lowers it to UI IR.
+- UI Compiler Core is the only trusted A2UI producer.
+- A2UI Renderer MUST render only registered components.
+- Action payloads are untrusted and MUST be validated by Runtime Host.
 - Apps may depend on packages; packages MUST NOT depend on apps.
-- Current MVP MUST NOT create or implement `apps/interaction-gateway`.
-- Future Gateway work requires an explicit scope-change issue and a new ADR.
-- Roadmap content does not authorize implementation.
 - Shared contracts belong in the matching contract package; do not duplicate types.
-- External systems (frontend, Copilot Runtime, real business agents) are out of scope; use mocks.
+
+## Current stage authorization
+
+The accepted platform Goal allows implementation of:
+
+- `apps/business-agent-langgraph` as a reference Business Agent.
+- Business Agent Adapter in Agent Runtime Host.
+- Runtime Run and Action orchestration.
+- UI Compiler Model Adapter provider validation.
+- `apps/web-workbench` as the Frontend Runtime reference implementation.
+- A2UI Renderer and Component Registry.
+- Action feedback and LangGraph resume.
+- Full-chain HTTP, WebSocket, and Playwright E2E.
+
+The following remain out of scope unless a new ADR explicitly authorizes them:
+
+- `apps/interaction-gateway`.
+- Dynamic multi-Business-Agent routing.
+- Autonomous multi-Agent collaboration.
+- Production business databases, permissions, billing, and real device control.
+- Arbitrary frontend code generation.
+
+## Compiler subsystem rules
+
+- The original `docs/REQUIREMENTS.md`, `docs/ARCHITECTURE.md`, and `docs/Generative_UI_Compiler_Design.md` remain the Compiler subsystem baseline.
+- Their old repository-level scope statements are superseded by `docs/platform/` and ADR-0007.
+- Their internal Compiler safety, dependency, Catalog, UI IR, and A2UI constraints remain active unless explicitly replaced.
 
 ## Commands
 
@@ -93,7 +131,9 @@ pnpm build
 pnpm docs:check
 ```
 
-Run `pnpm validate` after all changes. Documentation-only changes must run `pnpm docs:check`.
+Run `pnpm validate` after code changes.
+
+Documentation-only changes must run `pnpm docs:check`.
 
 ## Coding standards
 
@@ -124,14 +164,17 @@ PR descriptions must include: scope, rationale, architecture impact, validation,
 ### Issue tracker
 
 Issue 使用 GitHub Issues 跟踪。
+
 详见 `docs/agents/issue-tracker.md`。
 
 ### Triage labels
 
 Triage 使用五种默认角色标签。
+
 详见 `docs/agents/triage-labels.md`。
 
 ### Domain docs
 
 领域文档使用 single-context 布局。
+
 详见 `docs/agents/domain.md`。
