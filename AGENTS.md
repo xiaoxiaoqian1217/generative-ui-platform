@@ -2,88 +2,56 @@
 
 ## Source of truth
 
-1. Read `docs/REQUIREMENTS.md` before modifying architecture or public contracts.
-2. Read `docs/ARCHITECTURE.md` and relevant ADRs before adding dependencies.
-3. Do not expand MVP scope without an issue or ADR.
+根据修改范围读取规范：
 
-## Branch and worktree applicability
+- 平台范围：`docs/platform/REQUIREMENTS.md`。
+- 平台架构：`docs/platform/ARCHITECTURE.md`。
+- 开发验证环境：`docs/platform/DEVELOPMENT_ENVIRONMENT.md`。
+- 当前 Goal：`docs/goals/GOAL-DEV-ENV-001.md`。
+- Compiler 内部需求：`docs/REQUIREMENTS.md`。
+- Compiler 内部架构与设计：`docs/ARCHITECTURE.md`、`docs/Generative_UI_Compiler_Design.md`。
+- 范围决策：`docs/platform/SCOPE_DECISION.md` 和相关 ADR。
 
-- 只有以下工作强制使用独立分支和独立 worktree：明确执行一个 Goal、实现或修复一个 GitHub Issue，或者用户明确要求创建分支或 Pull Request。
-- 只读检查、分析、答疑、状态报告，以及未绑定 Goal 或 Issue 的小型规则调整、文档修正、拼写修正和类似维护工作，不得自动创建新分支或 worktree。
-- 不强制隔离的修改可以在当前 worktree 中进行，但修改前必须检查分支、工作树状态和 worktree 所有权，并且不得混入其他 Goal 或 Issue 的专属 worktree。
-- 如果工作范围扩大为 Goal 或 Issue 实现，或者后续需要创建 Pull Request，必须先停止修改，再按下述规则创建或切换到合规的任务分支和 worktree。
+旧 Compiler MVP 文档必须保留。
+它们继续约束 Compiler 子系统，但不再单独代表整个仓库范围。
+Roadmap 不自动授权实现。
 
-## Branch creation rules
+## Branch and worktree
 
-- 创建任何 Goal、Issue 或发布分支前，必须先获取远端 GitHub `main` 的最新状态，并验证本地远端跟踪引用与 GitHub 远端提交一致。
-- 新分支必须直接从已验证的 `origin/main` 创建，禁止从当前本地 `HEAD`、其他本地分支或未经验证的本地 `main` 创建。
-- 任务分支必须使用 `--no-track` 创建，初始状态不得跟踪 `origin/main` 或任何其他远端分支。
-- 创建分支后必须立即验证分支名、起点提交和 upstream 状态，确认任务分支没有 upstream 后才能修改文件。
-- 如果任务依赖尚未合并到远端 GitHub `main` 的前置 Issue，必须暂停并征求用户意见。
-- 在确认依赖的 Issue 已合并到远端 GitHub `main` 并重新验证 `origin/main` 前，禁止创建或实现依赖该 Issue 的后续分支。
-- 不得默认创建 stacked branch。
-
-安全的分支和 worktree 创建方式如下。
+- Goal、Issue 或用户要求 Pull Request 时，必须使用从最新 `origin/main` 创建的独立任务分支和 worktree。
+- 任务分支使用 `--no-track`，不得跟踪 `origin/main`。
+- 小型只读检查和文档维护可以不创建 worktree，但必须先检查分支和工作树状态。
+- 任务依赖未合并到远端 `main` 时必须暂停。
+- 并行任务不得共享分支或 worktree。
+- 最终验证、发布和合并前必须重新集成并验证最新 `main`。
+- 默认不得直接 push 到 `main`。
 
 ```bash
 git fetch origin main
-git ls-remote origin refs/heads/main
 git branch --no-track codex/issue-N origin/main
 git worktree add <absolute-task-worktree-path> codex/issue-N
-```
-
-## Parallel task and worktree rules
-
-- 主 worktree 用于 `main` 同步、只读检查、任务协调和不强制隔离的小型维护，不得在主 worktree 中实现 Goal 或 Issue。
-- 每个活动 Goal 或 Issue 实现任务必须拥有独立的分支和独立的 worktree，并且从第一次文件修改前开始保持隔离。
-- 一个任务分支和 worktree 在同一时间只能由一个任务拥有，其他任务不得在其中切换分支、重置、提交、合并或 rebase。
-- 执行任何修改、暂存、提交、合并或 rebase 前，必须在目标 worktree 内检查当前分支和工作树状态。
-- 对 Goal 或 Issue 实现任务，如果当前分支、worktree、Goal 或 Issue 身份不一致，必须立即停止，不得通过 reset、切换分支或移动提交自行修复。
-- 并行任务开始前必须评估预计修改的模块、公共契约和热点文件，并区分执行独立性与集成独立性。
-- 如果两个任务可能修改相同公共契约或编译主链路，可以并行实现，但必须明确串行集成顺序，不得声称它们可以无冲突合并。
-- 如果并行任务中的一个已经进入 `main`，其他任务必须先基于重新验证的 `origin/main` 完成集成、验证和审查，才能发布或合并。
-- 发现其他任务的修改、提交或冲突状态出现在当前 worktree 时，必须停止并报告，不得继续实现或提交。
-
-## Branch publication rules
-
-- 默认不得直接 push 到 `main`，未经用户明确授权的远端发布必须先位于合规任务分支，再 push 到同名远端任务分支并通过 Pull Request 合并。
-- 用户明确要求在 `main` 上修改、提交或直接 push 时，可以在主 worktree 中执行，不得以默认分支策略拒绝。
-- 直接 push `main` 前必须重新获取并验证远端 GitHub `main`，确认当前分支和 worktree 正确、工作树状态符合预期、不存在进行中的 Git 操作，并完成与修改范围相匹配的验证。
-- 任务分支不得将 `origin/main` 配置为 upstream。
-- 第一次 push 必须显式指定本地任务分支和同名远端任务分支，不得使用裸 `git push`。
-- 后续 push 前必须验证 upstream 与当前任务分支同名，并再次确认目标不是 `main`。
-- 除非用户明确要求发布，否则不得 push 任务分支或创建 Pull Request。
-- 未经用户明确授权时，不得因为 GitHub `main` 缺少分支保护而绕过 Pull Request。
-
-安全的第一次 push 方式如下。
-
-```bash
 git push -u origin codex/issue-N:refs/heads/codex/issue-N
 ```
 
-## Goal completion and integration rules
-
-- 最终验证和 code-review 前必须重新获取并验证远端 GitHub `main`。
-- 如果 `origin/main` 在任务执行期间发生变化，必须先在任务 worktree 中集成最新 main，并在解决冲突后重新执行完整验证和 code-review。
-- Goal 标记为 complete 前，任务 worktree 必须干净，所有要求的修改必须已经提交，并且不得存在进行中的 merge、rebase、cherry-pick 或 revert。
-- Goal 标记为 complete 前，必须确认当前分支是预期任务分支，并确认该分支没有跟踪 `origin/main`。
-- Goal complete 只代表记录的完成条件在当时成立，不代表分支在 main 后续变化后仍然可直接合并。
-- 创建或更新 Pull Request 前，以及实际合并前，必须再次检查 main 是否变化，并按需重新集成、验证和审查。
-
 ## Architecture rules
 
-- `packages/ui-compiler-core` MUST remain framework-, transport-, and vendor-neutral.
-- UI Compiler Service owns presentation routing and concrete model adapters.
-- UI Compiler Core MUST NOT choose a presentation mode or call a model.
-- A Schema-valid UI Plan Candidate remains untrusted until Core validates and lowers it to UI IR.
+- Web MUST connect only to Agent Runtime Host.
+- Business Agent MUST output only Markdown or structured business data.
+- Business Agent MUST NOT output UI Plan Candidate, A2UI, HTML, Vue, React, or component selections.
+- Business Agent Adapter MUST isolate Runtime Host from concrete Business Agent protocols.
+- Agent Runtime Host owns Run and Action orchestration but MUST NOT perform UI planning or A2UI compilation.
+- UI Compiler Service owns presentation routing and concrete Model Adapters.
+- Model Adapter belongs to UI Compiler Service and MUST NOT be used for Business Agent reasoning.
+- Model Adapter output remains untrusted until validated and compiled.
+- UI Compiler Core is the only trusted A2UI producer.
+- `packages/ui-compiler-core` MUST remain framework-, transport-, Agent-framework-, and vendor-neutral.
+- UI Compiler Core MUST NOT choose presentation mode or call a model.
 - Apps may depend on packages; packages MUST NOT depend on apps.
-- Current MVP MUST NOT create or implement `apps/interaction-gateway`.
-- Future Gateway work requires an explicit scope-change issue and a new ADR.
-- Roadmap content does not authorize implementation.
-- Shared contracts belong in the matching contract package; do not duplicate types.
-- External systems (frontend, Copilot Runtime, real business agents) are out of scope; use mocks.
+- Shared contracts belong in matching contract packages; do not duplicate types.
+- The current Goal MAY implement Reference Business Agent, Business Agent Adapter, Runtime orchestration, Workbench, A2UI Renderer, and Action feedback.
+- Current scope MUST NOT implement `apps/interaction-gateway` or multi-Agent routing.
 
-## Commands
+## Validation
 
 ```bash
 pnpm install
@@ -93,45 +61,31 @@ pnpm build
 pnpm docs:check
 ```
 
-Run `pnpm validate` after all changes. Documentation-only changes must run `pnpm docs:check`.
+Documentation-only changes must run `pnpm docs:check`.
+Code changes must run validation matching the affected scope.
 
 ## Coding standards
 
-- TypeScript strict mode.
-- ESM only.
+- TypeScript strict mode and ESM only.
 - Prefer pure functions and explicit interfaces.
-- Validate all external input at boundaries.
-- Use stable error codes; do not rely on error text.
+- Validate external input at boundaries.
+- Use stable error codes.
 - Do not execute model-generated code.
 - Do not log secrets or raw sensitive payloads.
 
 ## Output requirements
 
-- Respond in Simplified Chinese unless the user explicitly requests another language.
-- By default, all AI-generated content written into documentation MUST use Simplified Chinese, regardless of the language already used in the file, unless the user explicitly requests another language.
-- Lead with the result, then list changed files, validation performed, and any remaining risks or follow-up work.
-- Keep output concise, specific, and verifiable.
-- Do not claim that a command, test, commit, push, or deployment succeeded unless it was actually completed.
-- Use only the ASCII hyphen `-`; do not use non-ASCII dash characters.
-- When writing or heavily editing long Markdown files, put each complete sentence on its own physical line.
+- 默认使用简体中文。
+- 先给结果，再列修改文件、验证和剩余风险。
+- 不得声称未实际完成的测试、提交、push 或部署成功。
+- 长 Markdown 文件中，每个完整句子单独占一行。
 
 ## Pull requests
 
-PR descriptions must include: scope, rationale, architecture impact, validation, risks, and documentation changes.
+PR 描述必须包含范围、原因、架构影响、验证、风险和文档变化。
 
 ## Agent skills
 
-### Issue tracker
-
-Issue 使用 GitHub Issues 跟踪。
-详见 `docs/agents/issue-tracker.md`。
-
-### Triage labels
-
-Triage 使用五种默认角色标签。
-详见 `docs/agents/triage-labels.md`。
-
-### Domain docs
-
-领域文档使用 single-context 布局。
-详见 `docs/agents/domain.md`。
+- Issue：`docs/agents/issue-tracker.md`。
+- Triage：`docs/agents/triage-labels.md`。
+- Domain docs：`docs/agents/domain.md`。
