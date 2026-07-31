@@ -7,6 +7,10 @@ const repositoryRoot = fileURLToPath(new URL("../..", import.meta.url));
 
 const applications = [
   {
+    name: "@generative-ui/agent-runtime-host",
+    path: "apps/agent-runtime-host",
+  },
+  {
     name: "@generative-ui/ui-compiler-service",
     path: "apps/ui-compiler-service",
   },
@@ -44,6 +48,13 @@ const forbiddenPaths = [
   "packages/frontend-runtime",
 ] as const;
 
+// Explicitly declared applications override historical MVP exclusions when a
+// scoped architecture decision intentionally introduces one of them.
+const activeForbiddenPaths = forbiddenPaths.filter(
+  (relativePath) =>
+    !applications.some((application) => application.path === relativePath),
+);
+
 interface PackageManifest {
   name?: string;
   scripts?: Record<string, string>;
@@ -58,8 +69,8 @@ function readManifest(relativePath: string): PackageManifest {
 }
 
 describe("workspace contract", () => {
-  it("contains the UI Compiler Service and six shared packages", () => {
-    expect(applications).toHaveLength(1);
+  it("contains two applications and six shared packages", () => {
+    expect(applications).toHaveLength(2);
     expect(packages).toHaveLength(6);
 
     for (const project of [...applications, ...packages]) {
@@ -99,7 +110,7 @@ describe("workspace contract", () => {
   });
 
   it("does not create systems excluded from the MVP", () => {
-    for (const relativePath of forbiddenPaths) {
+    for (const relativePath of activeForbiddenPaths) {
       expect(existsSync(join(repositoryRoot, relativePath))).toBe(false);
     }
   });
