@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -18,29 +18,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
-          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: 24
           package-manager-cache: false
       - name: Enable pnpm
         run: corepack enable && corepack prepare pnpm@10.13.1 --activate
-      - name: Install dependencies and refresh lockfile
-        run: pnpm install --no-frozen-lockfile
-      - name: Validate workspace
-        run: pnpm validate
-      - name: Commit generated lockfile
-        if: github.event_name == 'pull_request' && github.head_ref == 'agent/init-copilotkit-runtime-host'
+      - name: Install dependencies
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin main
-          git show origin/main:.github/workflows/ci.yml > .github/workflows/ci.yml
-          git add pnpm-lock.yaml .github/workflows/ci.yml
-          if git diff --cached --quiet; then
-            exit 0
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+          else
+            pnpm install --no-frozen-lockfile
           fi
-          git -c core.hooksPath=/dev/null commit -m "chore: update pnpm lockfile"
-          git push origin HEAD:agent/init-copilotkit-runtime-host
+      - run: pnpm validate
