@@ -73,6 +73,7 @@ Generative UI Workbench
 
 ### 平台级规范
 
+- [完整文档导航](./docs/README.md)
 - [平台文档索引](./docs/platform/README.md)
 - [平台级需求](./docs/platform/REQUIREMENTS.md)
 - [平台系统架构](./docs/platform/SYSTEM_ARCHITECTURE.md)
