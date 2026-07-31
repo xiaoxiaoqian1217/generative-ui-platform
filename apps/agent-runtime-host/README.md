@@ -1,39 +1,57 @@
 # Agent Runtime Host
 
-Protocol and runtime integration layer for the Generative UI Platform.
+`agent-runtime-host` 是 Generative UI Platform 的 CopilotKit Runtime 集成层。
+它位于前端和兼容 AG-UI 的远程业务 Agent 之间。
 
-## Responsibility
+这里的“兼容 AG-UI”只描述当前 `/api/copilotkit` 兼容入口所使用的 `HttpAgent` 实现，
+不是平台对所有 Business Agent 的统一要求。后续 Business Agent 可以继续使用自身协议，
+由 Runtime Host 内的显式 Adapter 负责适配。
 
-Agent Runtime Host sits between the frontend and Business Agents. It exposes a
-stable frontend-facing interaction boundary and adapts each Business Agent's
-existing protocol when that integration is introduced.
+## 职责边界
 
-Business Agents do not need to implement AG-UI or CopilotKit directly.
+Runtime Host 提供 CopilotKit 运行时端点，并把 AG-UI 请求转发给远程业务 Agent。
+它使用 `HttpAgent` 将业务 Agent 注册到 CopilotKit 的 Agent 注册表中。
+`BUSINESS_AGENT_ID` 是前端可选择的业务 Agent 标识。
+`default` 是同一远程业务 Agent 的默认别名。
+
+同时，Runtime Host 可以为前端提供统一的 HTTP 或 WebSocket 交互入口，
+并在未来通过 Adapter 对接不支持 AG-UI 的 Business Agent。
 
 ```text
-Vue Web
-   |
-   | HTTP or WebSocket
-   v
+Vue + CopilotKit Headless
+          |
+          | AG-UI
+          v
 Agent Runtime Host
-   |
-   | Business Agent adapter
-   v
+          |
+          | 当前兼容入口：AG-UI
+          | 未来业务入口：Business Agent Adapter
+          v
 Business Agent
+          |
+          | Markdown 或 JSON
+          v
+UI Compiler Service
 ```
 
-UI planning and UI compilation do not belong in this host. UI Compiler remains
-an independent service and can be composed into a later platform workflow.
+Runtime Host 不直接配置或调用模型。
+Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI 编译逻辑。
+UI Compiler Service 在需要展示语义分析时，通过可替换的 Model Adapter 配置和调用模型。
+业务 Agent、UI Compiler Service 与 Runtime Host 的集成应通过显式 Adapter 完成。
 
-## Current endpoints
+## 演示接口
 
-### Mock HTTP demo
+当前尚未接入真实 Business Agent。以下两个接口只用于验证 Web 与 Runtime Host 的通信闭环，
+均返回一次性完整文本，不提供 Token 级流式输出。
 
-`POST /api/demo/message` is a development-only HTTP endpoint used by
-`apps/web-demo`. It accepts one complete JSON message and returns one complete
-mock JSON response.
+### HTTP Mock
 
-Request:
+```http
+POST /api/demo/message
+Content-Type: application/json
+```
+
+请求示例：
 
 ```json
 {
@@ -43,61 +61,52 @@ Request:
 }
 ```
 
-The endpoint returns `400` for an invalid message and enables CORS for the local
-browser demo.
+非法消息返回 `400`。该接口允许本地 Web Demo 跨域调用。
 
-### Mock WebSocket demo
+### WebSocket Mock
 
-`/ws/demo` is a development-only WebSocket endpoint used by `apps/web-demo`.
-It accepts one complete text message and pushes one complete mock text response.
+```text
+/ws/demo
+```
 
-Neither Mock endpoint calls a real Business Agent or provides token streaming.
+连接建立后，前端发送一条完整 `user_message`，Runtime Host 推送一条完整
+`agent_message`。该接口不调用真实 Business Agent。
 
-### CopilotKit compatibility endpoint
+## 运行要求
 
-`/api/copilotkit` is the existing CopilotKit Runtime endpoint. Its current
-implementation uses an `HttpAgent` compatibility adapter and therefore expects
-an AG-UI-compatible upstream URL. This is an implementation detail of that
-adapter, not a platform requirement for future Business Agents.
+- Node.js 24 或更高版本。
+- pnpm 10.13.1。
+- 一个兼容 AG-UI 的远程业务 Agent 端点。
 
-## Requirements
+最后一项只在使用现有 `/api/copilotkit` 兼容入口时需要；HTTP 和 WebSocket Mock
+演示不依赖真实 `BUSINESS_AGENT_URL`。
 
-- Node.js 24 or newer
-- pnpm 10.13.1
+## 配置
 
-## Configuration
+将 `.env.example` 中的值复制到启动进程的环境变量中。
+应用不会自动加载 `.env` 文件。
 
-Copy `.env.example` values into the environment used to start the process.
-Environment files are not loaded automatically by the application.
-
-| Variable | Default | Description |
+| 变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `HOST` | `0.0.0.0` | Listen address |
-| `PORT` | `8200` | Listen port |
-| `COPILOTKIT_ENDPOINT` | `/api/copilotkit` | Existing compatibility endpoint |
-| `BUSINESS_AGENT_ID` | `business-agent` | Compatibility adapter identifier |
-| `BUSINESS_AGENT_URL` | `http://localhost:8000/ag-ui` | Compatibility adapter upstream URL |
+| `HOST` | `0.0.0.0` | HTTP 监听地址。 |
+| `PORT` | `8200` | HTTP 监听端口。 |
+| `COPILOTKIT_ENDPOINT` | `/api/copilotkit` | 面向前端的 CopilotKit Runtime 路径。 |
+| `BUSINESS_AGENT_ID` | `business-agent` | 面向前端暴露的业务 Agent 标识。 |
+| `BUSINESS_AGENT_URL` | `http://localhost:8000/ag-ui` | 当前兼容 Adapter 使用的远程 AG-UI 端点。 |
+| `COPILOTKIT_TELEMETRY_DISABLED` | `true` | 是否关闭 CopilotKit 匿名遥测。 |
 
-The Mock HTTP and WebSocket endpoints can run without a live service at
-`BUSINESS_AGENT_URL`.
+## 启动
 
-## Run
-
-From the repository root:
+在仓库根目录执行：
 
 ```bash
 pnpm install
 pnpm --filter @generative-ui/agent-runtime-host dev
 ```
 
-Health check:
+健康检查地址为 `http://localhost:8200/health`。
 
-```bash
-curl http://localhost:8200/health
-```
-
-The response explicitly reports both demo transports and that a real Business
-Agent is not connected:
+健康检查会明确返回演示接口以及真实 Business Agent 未连接状态：
 
 ```json
 {
@@ -109,34 +118,21 @@ Agent is not connected:
 }
 ```
 
-HTTP request example:
-
-```bash
-curl -X POST http://localhost:8200/api/demo/message \
-  -H "content-type: application/json" \
-  -d '{"type":"user_message","messageId":"demo-1","content":"查询设备状态"}'
-```
-
-Start the browser demo in another terminal:
+在另一个终端启动 Web Demo：
 
 ```bash
 pnpm dev:web-demo
 ```
 
-Then open `http://localhost:5173` and select `WebSocket` or `HTTP POST`.
+打开 `http://localhost:5173`，可选择 `WebSocket` 或 `HTTP POST`。
 
-## Current boundary
+前端使用现有 CopilotKit 兼容入口时，应将
+`http://localhost:8200/api/copilotkit` 配置为 Runtime URL，并选择
+`business-agent` 或默认 Agent。
 
-This stage intentionally does not include:
+## 当前范围
 
-- real Business Agent integration
-- token-level streaming
-- UI Compiler invocation
-- thread persistence
-- authentication
-- frontend tools or approval handlers
-- A2UI generation or rendering
-
-The next Business Agent integration should be introduced through an explicit
-adapter inside Agent Runtime Host without requiring the Business Agent to adopt
-AG-UI.
+当前 Host 不实现真实 Business Agent、UI Compiler 调用、线程持久化、认证、
+前端工具或审批处理。
+当前 Host 不启用 CopilotKit 自动 A2UI 生成功能。
+这些能力必须在边界和契约明确后，以独立 Adapter 接入。
