@@ -21,6 +21,14 @@ import {
   type MarkdownSanitizerLimits,
   type SanitizedMarkdown,
 } from "./markdown-sanitizer.js";
+import {
+  isStableObservationErrorCode,
+  observationStageDuration,
+  recordStageCompletionSafely,
+  type StableObservationErrorCode,
+  setObservationStageSafely,
+  startObservationStage,
+} from "./observability.js";
 import type {
   PresentationRouteOptions,
   PresentationRouter,
@@ -239,6 +247,13 @@ function compileTimeoutError(): PresentationError {
   return error("COMPILE_TIMEOUT", compilationFailureMessage, "ui-compilation");
 }
 
+function observationErrorCode(
+  code: unknown,
+  fallback: StableObservationErrorCode,
+): StableObservationErrorCode {
+  return isStableObservationErrorCode(code) ? code : fallback;
+}
+
 class CompileDeadlineExceeded {
   readonly code = "COMPILE_TIMEOUT";
 }
@@ -302,6 +317,8 @@ export function createGenerativeUIPresentationService(
 
   return {
     async present(input, options) {
+      setObservationStageSafely(options.observation, "input-validation");
+      const validationStartedAt = startObservationStage();
       const structuredPrevalidation = prevalidateStructuredData(
         input,
         dependencies.structuredDataValidator,
@@ -311,6 +328,15 @@ export function createGenerativeUIPresentationService(
         structuredPrevalidation.attempted &&
         !structuredPrevalidation.success
       ) {
+        recordStageCompletionSafely(options.observation, {
+          stage: "input-validation",
+          result: "failed",
+          durationMs: observationStageDuration(validationStartedAt),
+          errorCode: observationErrorCode(
+            structuredPrevalidation.code,
+            "STRUCTURED_DATA_INVALID",
+          ),
+        });
         return failedPresentationResult(structuredPrevalidation.requestId, [
           error(
             structuredPrevalidation.code,
@@ -324,6 +350,12 @@ export function createGenerativeUIPresentationService(
       try {
         requestValidation = validatePresentationRequest(input);
       } catch {
+        recordStageCompletionSafely(options.observation, {
+          stage: "input-validation",
+          result: "failed",
+          durationMs: observationStageDuration(validationStartedAt),
+          errorCode: "PRESENTATION_REQUEST_INVALID",
+        });
         return failedPresentationResult(safeRequestId(input), [
           error(
             "PRESENTATION_REQUEST_INVALID",
@@ -333,6 +365,15 @@ export function createGenerativeUIPresentationService(
         ]);
       }
       if (!requestValidation.success) {
+        recordStageCompletionSafely(options.observation, {
+          stage: "input-validation",
+          result: "failed",
+          durationMs: observationStageDuration(validationStartedAt),
+          errorCode: observationErrorCode(
+            requestValidation.error.code,
+            "PRESENTATION_REQUEST_INVALID",
+          ),
+        });
         return failedPresentationResult("unknown", [
           error(
             requestValidation.error.code,
@@ -342,7 +383,18 @@ export function createGenerativeUIPresentationService(
         ]);
       }
       const request = requestValidation.value;
+      const requestObservationFields = {
+        requestId: request.requestId,
+      } as const;
+      recordStageCompletionSafely(options.observation, {
+        stage: "input-validation",
+        result: "completed",
+        durationMs: observationStageDuration(validationStartedAt),
+        ...requestObservationFields,
+      });
 
+      setObservationStageSafely(options.observation, "content-serialization");
+      const serializationStartedAt = startObservationStage();
       let safeMarkdown: SanitizedMarkdown;
       let sourceData: JsonValue;
       if (request.content.contentType === "markdown") {
@@ -351,6 +403,13 @@ export function createGenerativeUIPresentationService(
           dependencies.markdownLimits,
         );
         if (!sanitized.success) {
+          recordStageCompletionSafely(options.observation, {
+            stage: "content-serialization",
+            result: "failed",
+            durationMs: observationStageDuration(serializationStartedAt),
+            errorCode: "MARKDOWN_SANITIZATION_FAILED",
+            ...requestObservationFields,
+          });
           return failedPresentationResult(request.requestId, [
             sanitizationPresentationError(sanitized.error.reason),
           ]);
@@ -370,6 +429,16 @@ export function createGenerativeUIPresentationService(
               )
             : { success: true as const, value: prevalidatedData };
         if (!structured.success) {
+          recordStageCompletionSafely(options.observation, {
+            stage: "content-serialization",
+            result: "failed",
+            durationMs: observationStageDuration(serializationStartedAt),
+            errorCode: observationErrorCode(
+              structured.error.code,
+              "STRUCTURED_DATA_INVALID",
+            ),
+            ...requestObservationFields,
+          });
           return failedPresentationResult(request.requestId, [
             error(
               structured.error.code,
@@ -392,6 +461,13 @@ export function createGenerativeUIPresentationService(
               dependencies.markdownLimits,
             );
             if (serialized.success) {
+              recordStageCompletionSafely(options.observation, {
+                stage: "content-serialization",
+                result: "failed",
+                durationMs: observationStageDuration(serializationStartedAt),
+                errorCode: "MARKDOWN_SANITIZATION_FAILED",
+                ...requestObservationFields,
+              });
               return fallbackFor(
                 request.requestId,
                 serialized.markdown,
@@ -400,6 +476,13 @@ export function createGenerativeUIPresentationService(
               );
             }
           }
+          recordStageCompletionSafely(options.observation, {
+            stage: "content-serialization",
+            result: "failed",
+            durationMs: observationStageDuration(serializationStartedAt),
+            errorCode: "MARKDOWN_SANITIZATION_FAILED",
+            ...requestObservationFields,
+          });
           return failedPresentationResult(request.requestId, [
             sanitizationPresentationError(fallback.error.reason),
           ]);
@@ -407,14 +490,46 @@ export function createGenerativeUIPresentationService(
         safeMarkdown = fallback.markdown;
         sourceData = structured.value.data;
       }
+      recordStageCompletionSafely(options.observation, {
+        stage: "content-serialization",
+        result: "completed",
+        durationMs: observationStageDuration(serializationStartedAt),
+        ...requestObservationFields,
+      });
 
+      setObservationStageSafely(options.observation, "catalog-resolution");
+      const catalogStartedAt = startObservationStage();
       const resolved = catalogCache.load(request.catalog);
       if (!resolved.success) {
+        recordStageCompletionSafely(options.observation, {
+          stage: "catalog-resolution",
+          result: "failed",
+          durationMs: observationStageDuration(catalogStartedAt),
+          errorCode: observationErrorCode(
+            resolved.code,
+            "COMPONENT_CATALOG_INVALID",
+          ),
+          ...requestObservationFields,
+        });
         return fallbackFor(request.requestId, safeMarkdown, dependencies, [
           error(resolved.code, catalogFailureMessage, "input-validation"),
         ]);
       }
+      const verifiedObservationFields = {
+        ...requestObservationFields,
+        catalogId: resolved.value.catalog.catalogId,
+        catalogVersion: resolved.value.catalog.catalogVersion,
+        catalogContentHash: resolved.value.contentHash,
+      } as const;
+      recordStageCompletionSafely(options.observation, {
+        stage: "catalog-resolution",
+        result: "completed",
+        durationMs: observationStageDuration(catalogStartedAt),
+        ...verifiedObservationFields,
+      });
 
+      setObservationStageSafely(options.observation, "presentation-routing");
+      const routingStartedAt = startObservationStage();
       let decision: PresentationDecision;
       try {
         decision = await dependencies.router.route(
@@ -437,6 +552,24 @@ export function createGenerativeUIPresentationService(
         );
       } catch (caught) {
         const adapterError = modelAnalysisError(caught);
+        const routingCode = observationErrorCode(
+          caught instanceof PresentationDecisionValidationError
+            ? "PRESENTATION_DECISION_INVALID"
+            : adapterError?.code,
+          "PRESENTATION_ROUTING_FAILED",
+        );
+        recordStageCompletionSafely(options.observation, {
+          stage: "presentation-routing",
+          result:
+            routingCode === "MODEL_CANCELLED"
+              ? "cancelled"
+              : routingCode === "MODEL_TIMEOUT"
+                ? "timed-out"
+                : "failed",
+          durationMs: observationStageDuration(routingStartedAt),
+          errorCode: routingCode,
+          ...verifiedObservationFields,
+        });
         return fallbackFor(request.requestId, safeMarkdown, dependencies, [
           caught instanceof PresentationDecisionValidationError
             ? error(
@@ -447,6 +580,12 @@ export function createGenerativeUIPresentationService(
             : (adapterError ?? routingPresentationError()),
         ]);
       }
+      recordStageCompletionSafely(options.observation, {
+        stage: "presentation-routing",
+        result: "completed",
+        durationMs: observationStageDuration(routingStartedAt),
+        ...verifiedObservationFields,
+      });
 
       if (decision.mode === "markdown") {
         return fallbackFor(request.requestId, safeMarkdown, dependencies, []);
@@ -460,6 +599,8 @@ export function createGenerativeUIPresentationService(
       }
 
       let result: UICompileResult;
+      setObservationStageSafely(options.observation, "ui-compilation");
+      const compileStartedAt = startObservationStage();
       try {
         if (options.signal.aborted) {
           return fallbackFor(request.requestId, safeMarkdown, dependencies, [
@@ -507,6 +648,24 @@ export function createGenerativeUIPresentationService(
           compileTimeoutMs,
         );
       } catch (caught) {
+        const compileCode =
+          caught instanceof CompileDeadlineExceeded
+            ? "COMPILE_TIMEOUT"
+            : caught instanceof CompileCancelled
+              ? "REQUEST_CANCELLED"
+              : "UI_COMPILE_REQUEST_INVALID";
+        recordStageCompletionSafely(options.observation, {
+          stage: "ui-compilation",
+          result:
+            caught instanceof CompileDeadlineExceeded
+              ? "timed-out"
+              : caught instanceof CompileCancelled
+                ? "cancelled"
+                : "failed",
+          durationMs: observationStageDuration(compileStartedAt),
+          errorCode: compileCode,
+          ...verifiedObservationFields,
+        });
         return fallbackFor(request.requestId, safeMarkdown, dependencies, [
           caught instanceof CompileDeadlineExceeded
             ? compileTimeoutError()
@@ -518,6 +677,12 @@ export function createGenerativeUIPresentationService(
         ]);
       }
       if (result.success && !result.degraded) {
+        recordStageCompletionSafely(options.observation, {
+          stage: "ui-compilation",
+          result: "completed",
+          durationMs: observationStageDuration(compileStartedAt),
+          ...verifiedObservationFields,
+        });
         return {
           requestId: request.requestId,
           status: "completed",
@@ -526,8 +691,19 @@ export function createGenerativeUIPresentationService(
           operations: result.operations,
         };
       }
+      const compilationError = compileError(result);
+      recordStageCompletionSafely(options.observation, {
+        stage: "ui-compilation",
+        result: "failed",
+        durationMs: observationStageDuration(compileStartedAt),
+        errorCode: observationErrorCode(
+          compilationError.code,
+          "UI_COMPILE_REQUEST_INVALID",
+        ),
+        ...verifiedObservationFields,
+      });
       return fallbackFor(request.requestId, safeMarkdown, dependencies, [
-        compileError(result),
+        compilationError,
       ]);
     },
   };

@@ -8,6 +8,10 @@ import { createHttpServer } from "./http-server.js";
 import { DEFAULT_MARKDOWN_SANITIZER_LIMITS } from "./markdown-sanitizer.js";
 import { createMarkdownSanitizer } from "./markdown-sanitizer-definition-aware.js";
 import {
+  createJsonLineHttpObservability,
+  type HttpObservability,
+} from "./observability.js";
+import {
   createModelPresentationRouter,
   type ModelAdapter,
   type ModelPresentationRequest,
@@ -76,6 +80,7 @@ const testModelAdapter: ModelAdapter = Object.freeze({
 export function createRuntimeServer(
   configuration: RuntimeConfiguration = createRuntimeConfiguration(),
   version = "0.1.0",
+  observability: HttpObservability = createJsonLineHttpObservability(),
 ) {
   const presentUseCase = createGenerativeUIPresentationService({
     catalogRepository: { load: () => TEST_CATALOG },
@@ -107,6 +112,7 @@ export function createRuntimeServer(
   return createHttpServer({
     presentUseCase,
     configuration: httpConfiguration,
+    observability,
     version,
   });
 }

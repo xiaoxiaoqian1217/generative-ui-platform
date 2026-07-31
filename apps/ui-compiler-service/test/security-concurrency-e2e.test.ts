@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createGenerativeUIPresentationService,
   createHttpServer,
+  createJsonLineHttpObservability,
   createMarkdownSanitizer,
   createModelPresentationRouter,
   createStructuredDataSerializer,
@@ -124,15 +125,226 @@ function structuredRequest(requestId: string, data: unknown) {
 }
 
 describe("security and concurrency HTTP E2E", () => {
+  it("records every executed Compiler stage and a complete safe terminal event", async () => {
+    const lines: string[] = [];
+    const model = vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>(
+      async (request) => candidate(request),
+    );
+    const { app } = createE2EServer(
+      { generatePresentationDecisionCandidate: model },
+      createJsonLineHttpObservability({
+        now: () => 123,
+        write: (line) => lines.push(line),
+      }),
+    );
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/ui-compiler/present",
+      payload: structuredRequest("observed-request", {
+        summary: { value: "safe" },
+      }),
+    });
+
+    expect(response.statusCode).toBe(200);
+    const events = lines.map((line) => JSON.parse(line));
+    expect(events.map((event) => event.eventName)).toEqual([
+      "ui_compiler.http.request_started",
+      "ui_compiler.http.stage_completed",
+      "ui_compiler.http.stage_completed",
+      "ui_compiler.http.stage_completed",
+      "ui_compiler.http.stage_completed",
+      "ui_compiler.http.stage_completed",
+      "ui_compiler.http.stage_completed",
+      "ui_compiler.http.stage_completed",
+      "ui_compiler.http.stage_completed",
+      "ui_compiler.http.request_completed",
+    ]);
+    expect(
+      events
+        .filter(
+          (event) => event.eventName === "ui_compiler.http.stage_completed",
+        )
+        .map((event) => event.stage),
+    ).toEqual([
+      "http-receive",
+      "input-validation",
+      "content-serialization",
+      "catalog-resolution",
+      "model-analysis",
+      "ui-plan-validation",
+      "presentation-routing",
+      "ui-compilation",
+    ]);
+    expect(events.at(-1)).toMatchObject({
+      requestId: "observed-request",
+      catalogId: "e2e",
+      catalogVersion: "1.0.0",
+      hasPresentationContext: false,
+      hasUserMessage: false,
+      finalMode: "generative-ui",
+      degraded: false,
+      modelCalled: true,
+      modelAttemptCount: 1,
+      modelRetried: false,
+    });
+    expect(events.at(-1).routeDurationMs).toBeGreaterThanOrEqual(0);
+    expect(events.at(-1).modelDurationMs).toBeGreaterThanOrEqual(0);
+    expect(events.at(-1).compileDurationMs).toBeGreaterThanOrEqual(0);
+    await app.close();
+  });
+
+  it("keeps every ADR sensitive-data category out of serialized logs", async () => {
+    const sentinels = {
+      rawMarkdown: "RAW_MARKDOWN_SECRET",
+      sanitizedMarkdown: "SANITIZED_MARKDOWN_SECRET",
+      structuredData: "STRUCTURED_DATA_SECRET",
+      userMessage: "USER_MESSAGE_SECRET",
+      fallback: "FALLBACK_MARKDOWN_SECRET",
+      uiPlan: "UI_PLAN_SECRET",
+      catalog: "CATALOG_DESCRIPTION_SECRET",
+      modelResponse: "MODEL_RESPONSE_SECRET",
+      authorization: "AUTHORIZATION_HEADER_SECRET",
+    } as const;
+    const sensitiveCatalog = {
+      ...catalog,
+      components: catalog.components.map((component) => ({
+        ...component,
+        description: sentinels.catalog,
+      })),
+    } as ComponentCatalog;
+    const lines: string[] = [];
+    const { app } = createE2EServer(
+      {
+        generatePresentationDecisionCandidate: async (request) => {
+          const valid = candidate(request);
+          const region = valid.plan.regions[0];
+          if (region === undefined) {
+            throw new Error("Candidate fixture has no region.");
+          }
+          return {
+            ...valid,
+            reason: sentinels.modelResponse,
+            plan: {
+              ...valid.plan,
+              regions: [{ ...region, purpose: sentinels.uiPlan }],
+            },
+          };
+        },
+      },
+      createJsonLineHttpObservability({
+        write: (line) => lines.push(line),
+      }),
+      DEFAULT_STRUCTURED_DATA_LIMITS,
+      { load: () => sensitiveCatalog },
+    );
+
+    const markdownResponse = await app.inject({
+      method: "POST",
+      url: "/api/ui-compiler/present",
+      headers: { authorization: `Bearer ${sentinels.authorization}` },
+      payload: {
+        requestId: "sensitive-markdown-categories",
+        content: {
+          contentType: "markdown",
+          markdown: `${sentinels.sanitizedMarkdown}<script>${sentinels.rawMarkdown}</script>`,
+        },
+        context: { userMessage: sentinels.userMessage },
+        catalog: { catalogId: "e2e", catalogVersion: "1.0.0" },
+      },
+    });
+    const structuredResponse = await app.inject({
+      method: "POST",
+      url: "/api/ui-compiler/present",
+      headers: { authorization: `Bearer ${sentinels.authorization}` },
+      payload: {
+        requestId: "sensitive-structured-categories",
+        content: {
+          contentType: "structured-data",
+          data: { summary: sentinels.structuredData },
+          fallbackMarkdown: sentinels.fallback,
+        },
+        context: { userMessage: sentinels.userMessage },
+        catalog: { catalogId: "e2e", catalogVersion: "1.0.0" },
+      },
+    });
+
+    expect(markdownResponse.statusCode).toBe(200);
+    expect(structuredResponse.statusCode).toBe(200);
+    const serializedLogs = lines.join("\n");
+    for (const sentinel of Object.values(sentinels)) {
+      expect(serializedLogs).not.toContain(sentinel);
+    }
+    await app.close();
+  });
+
+  it("does not log caller-supplied Catalog identity before authorization", async () => {
+    const catalogIdSecret = "UNAUTHORIZED_CATALOG_ID_SECRET";
+    const catalogVersionSecret = "UNAUTHORIZED_CATALOG_VERSION_SECRET";
+    const lines: string[] = [];
+    const model = vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>(
+      async (request) => candidate(request),
+    );
+    const { app } = createE2EServer(
+      { generatePresentationDecisionCandidate: model },
+      createJsonLineHttpObservability({
+        write: (line) => lines.push(line),
+      }),
+    );
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/ui-compiler/present",
+      payload: {
+        requestId: "unauthorized-catalog",
+        content: { contentType: "markdown", markdown: "# safe" },
+        catalog: {
+          catalogId: catalogIdSecret,
+          catalogVersion: catalogVersionSecret,
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      requestId: "unauthorized-catalog",
+      status: "degraded",
+      mode: "markdown",
+    });
+    expect(model).not.toHaveBeenCalled();
+    const serializedLogs = lines.join("\n");
+    expect(serializedLogs).not.toContain(catalogIdSecret);
+    expect(serializedLogs).not.toContain(catalogVersionSecret);
+    const events = lines.map((line) => JSON.parse(line));
+    const catalogResolution = events.find(
+      (event) =>
+        event.eventName === "ui_compiler.http.stage_completed" &&
+        event.stage === "catalog-resolution",
+    );
+    expect(catalogResolution).toMatchObject({
+      result: "failed",
+      errorCode: "CATALOG_REFERENCE_MISMATCH",
+      requestId: "unauthorized-catalog",
+    });
+    expect(catalogResolution).not.toHaveProperty("catalogId");
+    expect(catalogResolution).not.toHaveProperty("catalogVersion");
+    expect(events.at(-1)).not.toHaveProperty("catalogId");
+    expect(events.at(-1)).not.toHaveProperty("catalogVersion");
+    await app.close();
+  });
+
   it("sanitizes hostile Markdown before model, Core, output, and logs", async () => {
     const secret = "E2E_SECRET_MUST_NOT_ESCAPE";
     const model = vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>(
       async (request) => candidate(request),
     );
-    const events: unknown[] = [];
+    const lines: string[] = [];
     const { app, compile } = createE2EServer(
       { generatePresentationDecisionCandidate: model },
-      { record: (event, fields) => events.push({ event, fields }) },
+      createJsonLineHttpObservability({
+        now: () => 123,
+        write: (line) => lines.push(line),
+      }),
     );
 
     const response = await app.inject({
@@ -154,7 +366,7 @@ describe("security and concurrency HTTP E2E", () => {
     expect(JSON.stringify(model.mock.calls)).not.toContain(secret);
     expect(compile).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(compile.mock.calls)).not.toContain(secret);
-    expect(JSON.stringify(events)).not.toContain(secret);
+    expect(lines.join("\n")).not.toContain(secret);
     await app.close();
   });
 
@@ -469,14 +681,17 @@ describe("security and concurrency HTTP E2E", () => {
 
   it("does not expose sensitive model failures through HTTP output or logs", async () => {
     const secret = "E2E_MODEL_FAILURE_SECRET";
-    const events: unknown[] = [];
+    const lines: string[] = [];
     const { app } = createE2EServer(
       {
         generatePresentationDecisionCandidate: async () => {
           throw new Error(`${secret}\ninternal stack marker`);
         },
       },
-      { record: (event, fields) => events.push({ event, fields }) },
+      createJsonLineHttpObservability({
+        now: () => 123,
+        write: (line) => lines.push(line),
+      }),
     );
 
     const response = await app.inject({
@@ -495,8 +710,16 @@ describe("security and concurrency HTTP E2E", () => {
     });
     expect(response.body).not.toContain(secret);
     expect(response.body).not.toContain("internal stack marker");
-    expect(JSON.stringify(events)).not.toContain(secret);
-    expect(JSON.stringify(events)).not.toContain("internal stack marker");
+    expect(lines.join("\n")).not.toContain(secret);
+    expect(lines.join("\n")).not.toContain("internal stack marker");
+    expect(JSON.parse(lines.at(-1) ?? "{}")).toMatchObject({
+      requestId: "sensitive-model-failure",
+      finalMode: "markdown",
+      degraded: true,
+      degradationReasonCode: "MODEL_PROVIDER_ERROR",
+      modelCalled: true,
+      modelAttemptCount: 1,
+    });
     await app.close();
   });
 
