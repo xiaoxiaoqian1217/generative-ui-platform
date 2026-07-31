@@ -24,8 +24,9 @@
 
 ## 架构限制
 
-- Web 只连接 Runtime Host。
-- 不直接调用 Business Agent、UI Compiler 或 Model Provider。
+- Web 只连接 Agent Runtime Host。
+- 不直接调用 Business Agent、Presentation Pipeline、UI Compiler Core 或 Model Provider。
+- 不感知 Presentation Pipeline 的进程内装配细节，不配置独立 Compiler 地址。
 - 不硬编码 localhost。
 - Workbench 是 Frontend Runtime 参考实现与开发工作台，不是正式业务产品。
 
@@ -33,6 +34,7 @@
 
 - HTTP 和 WebSocket 可切换。
 - 页面刷新、连接失败和服务恢复场景表现明确。
+- 仅配置 Runtime Host 地址即可运行，不存在 UI Compiler URL 配置。
 - 构建产物可以发布到测试环境。
 - Workbench 基础 E2E 通过。
 - 现有 Web Demo 的迁移或保留决策有明确记录。
