@@ -1,13 +1,13 @@
 # Generative UI Workbench 软件需求规格说明书
 
-**文档版本：** 0.1  
+**文档版本：** 0.2  
 **项目阶段：** MVP 规划  
 **所属项目：** Generative UI Platform  
 **产品名称：** Generative UI Workbench  
 **中文名称：** 生成式 UI 开发与验收工作台  
 **首个参考领域：** 智慧安防  
 **首个参考场景：** 空地多智能体协同巡防指挥  
-**目标读者：** 产品负责人、架构师、开发人员、测试人员和编码 Agent
+**目标读者：** 产品负责人、架构师、平台开发者、Business Agent 开发者、前端组件开发者、测试人员和编码 Agent
 
 ---
 
@@ -20,7 +20,7 @@
 - **可以（MAY）**：可选能力，不属于当前阶段强制范围。
 - **禁止（MUST NOT）**：不得实现或不得形成该依赖关系。
 
-需求编号使用以下前缀：
+需求编号约定：
 
 | 前缀 | 含义 |
 |---|---|
@@ -33,556 +33,717 @@
 | AC | 架构和实现约束 |
 | AR | 验收需求 |
 
-出现需求冲突时，优先级依次为：
+发生冲突时，优先级依次为：
 
-1. 系统边界与职责划分；
+1. 系统边界与职责；
 2. 安全和控制边界；
-3. 架构约束；
+3. 业务需求；
 4. 功能需求；
-5. 页面和交互建议。
+5. 建议性页面和目录结构。
 
 ---
 
 ## 2. 编写目的
 
-本文用于明确 Generative UI Workbench 的建设原因、产品定位、系统边界、目标用户、功能需求、接口需求、数据要求、质量属性、实现约束和验收标准。
+本文档用于明确 Generative UI Workbench：
 
-本文是以下工作的共同依据：
+- 为什么建设；
+- 服务哪些用户；
+- 解决哪些用户问题；
+- 在 Generative UI Platform 中承担什么职责；
+- 与 Agent Runtime Host、Business Agent 和 UI Compiler 的边界；
+- MVP 必须提供哪些能力；
+- 以什么业务场景验证其价值；
+- 达到什么条件才可以验收。
+
+本文档是以下工作的共同基线：
 
 - 产品范围确认；
 - 系统架构设计；
-- 开发任务拆分；
 - Runtime Host 接口设计；
-- Frontend Runtime 和组件实现；
+- Frontend Runtime 和组件开发；
 - 智慧安防参考场景建设；
 - 测试用例设计；
 - 阶段验收和版本回归。
 
-本文定义系统必须具备什么能力，不替代详细架构设计、接口详细设计和组件视觉设计。
+本文档描述“系统必须具备什么能力及满足什么条件”，不替代详细架构设计、接口定义和页面视觉设计。
 
 ---
 
-## 3. 项目背景
+## 3. 产品背景
 
-Generative UI Platform 已逐步形成以下基础能力：
+### 3.1 公司业务背景
 
+公司正在建设智慧安防、空地多智能体协同巡防指挥等 Agent 应用。
+
+典型业务链路包括：
+
+1. 用户以自然语言提出巡防或处置要求；
+2. Business Agent 查询区域、设备和任务状态；
+3. Agent 生成一个或多个候选方案；
+4. 系统展示设备编组、路线、风险和执行约束；
+5. 用户比较方案并作出选择；
+6. 高风险操作经过人工确认；
+7. Runtime Host 调用后端业务工具；
+8. 页面持续展示执行状态、异常和处理结果。
+
+这类业务结果不只是普通文本，还可能包含：
+
+- 多个候选方案；
+- 设备状态列表；
+- 任务草稿；
+- 风险提示；
+- 地图区域和路线；
+- 审批操作；
+- 实时状态和异常信息。
+
+仅使用固定聊天气泡或 Markdown，难以稳定承载复杂的比较、确认、操作和状态展示。
+
+### 3.2 平台技术背景
+
+Generative UI Platform 已逐步形成以下能力：
+
+- Agent Runtime Host；
+- Business Agent Adapter 扩展位置；
 - UI Compiler Service；
 - Presentation Router；
 - UI Compiler Core；
 - Presentation Request 和 Presentation Result 契约；
-- Component Catalog Schema；
 - UI Plan Candidate；
 - UI IR；
 - A2UI 编译；
-- Markdown 安全清理；
-- Agent Runtime Host；
-- 最小 Web Demo。
+- Component Catalog Schema；
+- Markdown 安全处理；
+- Schema 校验和降级机制。
 
-当前最小 Web Demo 主要用于验证浏览器与 Agent Runtime Host 之间的 HTTP 和 WebSocket 通信，尚不能证明以下平台级闭环已经形成：
+现有 `apps/web-demo` 主要用于验证浏览器与 Runtime Host 之间的 HTTP 或 WebSocket 基础通信。
 
-- Runtime Host 是否能够稳定适配 Business Agent；
-- Agent 业务结果是否能够进入展示决策和 UI 编译流程；
-- Markdown 与生成式 UI 是否能够正确分流；
-- A2UI 是否能够映射为真实前端组件；
-- 用户操作是否能够通过 Runtime Host 回传；
-- 高风险业务操作是否能够经过用户确认；
-- 错误是否能够定位到具体阶段；
-- 平台升级后是否能够重复执行标准案例。
+它不能作为长期开发和验收环境，原因包括：
 
-如果继续只维护一次性的 Web Demo，将产生以下问题：
+- 主要返回 Mock 文本，不能证明完整业务链路；
+- 缺少正式 Frontend Runtime 和 Component Registry；
+- 缺少 Markdown 与生成式 UI 的完整渲染闭环；
+- 缺少 Action 执行和回传；
+- 缺少展示决策、UI Plan、UI IR、A2UI 等诊断信息；
+- 缺少标准业务案例和版本回归能力；
+- 缺少可持续部署和维护的产品结构。
 
-- 每次联调都需要临时增加页面和测试代码；
-- Agent、Runtime、Compiler 和 Renderer 的问题难以区分；
-- 业务组件缺少统一验证入口；
-- 生成式 UI 的业务价值缺少真实场景证明；
-- 平台修改缺少稳定回归基线；
-- 演示代码容易与正式开发能力混合。
+### 3.3 当前协作方式的问题
 
-因此，需要建设一个可独立部署、可持续维护、面向开发联调和质量验收的 Web 工作台。
+没有统一 Workbench 时，各角色通常通过临时页面、接口工具、日志或各模块测试分别验证能力：
+
+```text
+Agent 开发者验证 Agent
+Runtime 开发者验证 Runtime
+Compiler 开发者验证 Compiler
+前端开发者验证组件
+测试人员人工拼接完整流程
+```
+
+这种方式无法稳定回答：
+
+- Runtime Host 是否正确适配了 Business Agent；
+- Agent 结果为什么被展示为 Markdown；
+- UI Plan 为什么没有通过校验；
+- 某个组件为什么没有被选择或渲染；
+- 某个 Action 为什么不能执行；
+- 用户确认是否真正阻止了高风险操作；
+- Compiler 或 Catalog 升级后哪些场景发生了退化；
+- 平台是否已经具备可用于真实业务的完整闭环。
+
+因此，需要建设统一、可部署、可重复使用的开发与验收工作台。
 
 ---
 
-## 4. 产品定位
+## 4. 产品目的
 
-### 4.1 核心定位
+### 4.1 总体目的
+
+Generative UI Workbench 的建设目的为：
+
+> 为 Generative UI Platform 提供统一的 Frontend Runtime 参考实现，以及面向 Runtime Host 的开发、联调、诊断、验收和回归环境。
+
+Workbench 应将以下分散能力组成可运行闭环：
+
+```text
+用户输入
+  ↓
+Generative UI Workbench
+  ↓
+Agent Runtime Host
+  ├── Business Agent Adapter → Business Agent
+  └── UI Compiler Service
+          ↓
+    Markdown / A2UI
+          ↓
+Generative UI Workbench
+  ↓
+用户操作与 Action 结果
+  ↓
+Agent Runtime Host
+```
+
+### 4.2 业务目的
+
+Workbench 应通过智慧安防参考场景证明：
+
+- Agent 的复杂业务结果能够被转换为清晰、受控的交互界面；
+- 用户能够比较方案，而不是只阅读长文本；
+- 高风险业务操作能够在执行前获得明确确认；
+- 地图、面板和组件操作能够通过受控 Action 完成；
+- UI 生成失败时仍能保留有效业务内容；
+- 生成式 UI 对真实业务流程具有可验证价值。
+
+### 4.3 工程目的
+
+Workbench 应建立统一的：
+
+- Runtime Host 联调入口；
+- Frontend Runtime 参考实现；
+- Component Registry；
+- Action Registry；
+- 编译链路诊断入口；
+- 标准案例执行入口；
+- 版本回归环境；
+- 平台验收证据。
+
+### 4.4 非目的
+
+Workbench 的目的不是：
+
+- 建设完整智慧安防生产系统；
+- 代替 Agent Runtime Host；
+- 直接适配 Business Agent 私有协议；
+- 承担 Agent Run 编排；
+- 直接调用后端业务工具；
+- 保存权威业务任务状态；
+- 建设通用低代码平台；
+- 允许模型生成并执行任意前端代码；
+- 建设面向市场宣传的产品门户。
+
+---
+
+## 5. 产品定位
+
+### 5.1 核心定位
 
 Generative UI Workbench 定位为：
 
-> 面向 Agent 应用的生成式 UI 开发、联调、诊断和验收工作台。
+> 面向 Generative UI Platform 开发者和接入团队的、可发布的生成式 UI 开发与验收工作台。
 
-Workbench 是 Generative UI Platform 的官方 Frontend Runtime 参考实现和端到端验证环境，用于验证从 Runtime Host 接收运行结果，到 Markdown 或生成式 UI 渲染，再到用户操作回传的完整前端闭环。
+它同时是：
 
-Workbench 主要承担以下角色：
+- Generative UI Platform 的官方 Frontend Runtime 参考实现；
+- Runtime Host 的统一 Web 联调客户端；
+- Markdown 和 A2UI 的运行与渲染环境；
+- Component Catalog 和 Action 的验证环境；
+- 完整链路的诊断环境；
+- 标准业务场景的验收和回归环境。
 
-- **参考实现**：展示 Frontend Runtime、Component Registry 和 Action Registry 的推荐实现方式；
-- **联调环境**：为 Runtime Host、UI Compiler 和业务场景组件提供统一联调入口；
-- **诊断工具**：查看由 Runtime Host 暴露的运行阶段、编译结果、错误和降级信息；
-- **验收平台**：执行标准场景和边界案例，判断平台能力是否达到要求；
-- **回归环境**：在协议、Catalog、Compiler、Renderer 或 Runtime 变化后重复验证。
+它不是：
 
-### 4.2 一句话价值
+- Business Agent；
+- Agent Runtime Host；
+- UI Compiler；
+- 最终智慧安防生产系统；
+- 单纯的组件展示站；
+- 一次性演示 Demo；
+- 面向公众的营销门户。
 
-> 让生成式 UI 从“各模块能够独立运行”，转变为“完整链路可连接、可观察、可交互、可验收、可回归”。
+### 5.2 产品方案
 
-### 4.3 参考业务定位
+产品采用：
 
-Workbench 采用以下产品方案：
+> **通用 Workbench 核心 + 智慧安防场景包 + 空地多智能体巡防指挥参考实现。**
 
-> 通用工作台核心 + 智慧安防领域场景包 + 空地多智能体协同巡防指挥参考实现。
+其中：
 
-智慧安防场景用于证明生成式 UI 能够支持真实业务中的设备状态展示、方案比较、地图协同、任务确认和异常处理，但不得成为 Workbench 的唯一业务边界。
+- 通用 Workbench 核心负责 Runtime 通信、渲染、诊断、案例和配置；
+- 智慧安防场景包负责领域组件、前端 Action、示例数据和验收案例；
+- Agent Runtime Host 负责 Business Agent Adapter、Run 生命周期、Compiler 调用和后端工具；
+- UI Compiler 负责展示决策和受控 UI 编译。
 
-### 4.4 产品性质
+### 5.3 一句话价值
 
-Workbench 是可发布和可部署的工程产品，但其主要用户是研发、测试和架构人员，而不是最终巡防指挥业务用户。
-
-Workbench 不以营销展示、官网介绍或完整生产业务运营为首要目标。
-
----
-
-## 5. 核心决策与选择理由
-
-### 5.1 决策一：不建设纯通用 Playground
-
-纯通用 Playground 只能证明卡片、表格和表单可以生成，无法证明平台能够支持真实任务、地图操作、人工审批和 Action 回传。
-
-因此，MVP 必须包含至少一个真实或准真实业务闭环。
-
-### 5.2 决策二：不将 Workbench 建设为智慧安防生产系统
-
-如果直接将无人机、无人车、巡防路线和告警规则写入通用核心，会导致：
-
-- Frontend Runtime 与具体业务模型耦合；
-- Component Catalog 退化为安防专用组件集合；
-- Compiler 或协议出现领域特判；
-- 后续增加其他领域时需要修改核心；
-- Workbench 无法继续作为平台级参考实现。
-
-因此，智慧安防能力必须通过独立场景包、领域组件和测试案例扩展。
-
-### 5.3 决策三：Workbench 不直接接入 Business Agent
-
-Business Agent 的技术接入属于 Agent Runtime Host 和 Business Agent Adapter 的职责。
-
-Workbench 只能通过 Runtime Host 暴露的统一接口进行通信，并验证 Runtime Host 对 Business Agent 的适配结果。
-
-该决策避免：
-
-- Web 前端依赖不同 Agent 的私有协议；
-- Agent Adapter 散落在浏览器端；
-- 前端承担 Agent Run 编排；
-- Business Agent 被迫实现 AG-UI、CopilotKit 或浏览器协议；
-- 同一 Agent 在不同前端中重复适配。
-
-### 5.4 决策四：运行链路只通过 Runtime Host
-
-Workbench 的运行请求、状态事件、Presentation Result、Action 回传和诊断数据必须通过 Agent Runtime Host 交换。
-
-Workbench 不应在正式运行链路中绕过 Runtime Host，直接调用 Business Agent 或 UI Compiler Service。
-
-如需独立验证 Compiler，应该由测试工具或 Runtime Host 的诊断接口提供，不应改变正式运行边界。
-
-### 5.5 决策五：场景包不包含 Business Agent Adapter
-
-Workbench 场景包可以包含：
-
-- 场景说明；
-- 示例问题；
-- 前端组件注册；
-- 前端 Action 注册；
-- 示例和测试数据；
-- 内置验收案例；
-- 预期结果规则。
-
-Business Agent Adapter 的实现和注册必须位于 Agent Runtime Host 一侧。
+> 让生成式 UI 从“各模块能够独立运行”，变成“完整链路可联调、问题可定位、能力可验收、版本可回归”。
 
 ---
 
-## 6. 系统上下文与职责边界
+## 6. 目标用户及其核心问题
 
-### 6.1 总体关系
+### 6.1 用户问题总览
+
+| 用户 | 当前主要问题 | Workbench 提供的价值 |
+|---|---|---|
+| 平台开发者 | 模块分别可测，但完整链路难以验证；错误跨模块，定位成本高 | 展示完整链路、阶段状态、中间结果、错误和降级原因 |
+| Business Agent 开发者 | 不清楚 Agent 经 Runtime Host 接入后最终如何展示；经常需要临时测试页面 | 提供统一运行入口，验证 Agent 结果、展示模式和交互闭环 |
+| 前端组件开发者 | 缺少统一环境验证 Catalog、Props、数据状态和 Action | 提供组件目录、预览、Schema 错误和 Action 运行环境 |
+| 测试人员 | 缺少稳定案例、预期结果和可重复执行入口 | 提供案例保存、重放、差异比较和通过/失败结果 |
+| 架构师和技术负责人 | 难以判断平台是否形成真实闭环，架构边界是否被遵守 | 提供端到端证据、职责边界和平台级验收结果 |
+| 业务场景开发团队 | 难以验证生成式 UI 是否真正改善复杂业务交互 | 通过巡防方案、地图联动和任务确认形成参考实现 |
+
+### 6.2 平台开发者
+
+#### 用户问题
+
+- Runtime、Compiler 和 Renderer 分别通过测试，但无法证明组合后可用；
+- 失败信息分散在多个服务和日志中；
+- 很难判断失败发生在 Agent 输出、展示决策、编译、渲染还是 Action；
+- 缺少升级后的标准回归入口。
+
+#### 用户需求
+
+- 查看请求从 Workbench 到 Runtime Host 再返回页面的完整过程；
+- 查看 Runtime Host 暴露的 Agent 输出、Presentation Decision、UI Plan、UI IR 和 A2UI；
+- 查看每个阶段的耗时、错误和降级原因；
+- 重新运行相同案例并比较结果。
+
+### 6.3 Business Agent 开发者
+
+#### 用户问题
+
+- 每个 Agent 都需要临时搭建测试页面；
+- 不确定 Agent 返回 Markdown 或结构化数据后会产生什么页面；
+- 不清楚为何某次结果只展示 Markdown；
+- 不清楚 Action 是否正确回到 Runtime Host；
+- 容易把 Business Agent 协议适配错误归因到前端或 Compiler。
+
+#### 用户需求
+
+- 使用 Runtime Host 公开的统一协议运行 Agent；
+- 选择或查看 Runtime Host 暴露的 Agent 配置；
+- 查看 Agent 原始业务结果及最终展示结果；
+- 验证用户操作、人工确认和 Action 回传；
+- 不要求 Business Agent 直接实现 A2UI、AG-UI 或 Workbench 私有协议。
+
+### 6.4 前端组件开发者
+
+#### 用户问题
+
+- 组件已经开发，但缺少真实 A2UI 数据验证；
+- Props Schema、空状态、错误状态和边界数据容易遗漏；
+- Action 参数和注册关系难以统一验证；
+- 领域组件容易与通用 Runtime 强耦合。
+
+#### 用户需求
+
+- 查看当前场景加载的 Component Catalog；
+- 使用示例数据独立预览组件；
+- 查看 Props 和 Action Schema；
+- 验证合法、非法、缺失和边界数据；
+- 验证组件只能通过 Registry 注册和加载。
+
+### 6.5 测试人员
+
+#### 用户问题
+
+- 验收依赖人工输入和肉眼判断；
+- 缺少输入、预期组件、预期 Action 和预期降级的统一记录；
+- 平台版本升级后难以确认哪些场景发生回归；
+- 很难复现模型或协议相关问题。
+
+#### 用户需求
+
+- 保存和重放标准案例；
+- 对比预期与实际展示模式、组件和 Action；
+- 查看失败阶段和差异；
+- 执行正常、异常、安全和降级案例；
+- 对关键业务流程形成可重复验收证据。
+
+### 6.6 架构师和技术负责人
+
+#### 用户问题
+
+- 无法仅凭模块完成度判断平台是否真正可用；
+- 难以确认 Business Agent、Runtime Host、Compiler 和 Workbench 的边界是否被破坏；
+- 缺少真实业务场景证明平台通用机制有效；
+- 缺少阶段性交付的客观验收依据。
+
+#### 用户需求
+
+- 查看端到端闭环；
+- 验证新增业务场景不需要修改 UI Compiler Core；
+- 验证 Workbench 不直接适配 Business Agent；
+- 查看标准场景通过率、降级情况和未完成能力。
+
+---
+
+## 7. 系统边界与职责
+
+### 7.1 正式运行关系
 
 ```text
 Generative UI Workbench
-          │
-          │ HTTP / WebSocket / AG-UI compatible events
+          │ HTTP / WebSocket / AG-UI Adapter
           ▼
 Agent Runtime Host
-          │
           ├── Business Agent Adapter ──> Business Agent
-          │
-          └── Presentation Request ────> UI Compiler Service
-                                            │
-                                            └── Presentation Result
-          │
-          └── Runtime events / Presentation Result / diagnostics
+          ├── Run 生命周期和上下文编排
+          ├── 后端业务工具调用
+          └── UI Compiler Service
+                    │
+                    ├── Markdown
+                    └── A2UI / Fallback
           ▼
 Generative UI Workbench
-          │
           ├── Markdown Renderer
-          ├── A2UI Renderer + Component Registry
-          └── Action Registry ──────────> Agent Runtime Host
+          ├── A2UI Renderer
+          ├── Component Registry
+          ├── Frontend Action Registry
+          └── 人工确认与操作回传
 ```
 
-### 6.2 Workbench 职责
+### 7.2 Workbench 职责
 
 Workbench 必须负责：
 
 - 连接 Agent Runtime Host；
-- 发送用户输入；
-- 展示运行状态；
-- 展示 Runtime Host 返回的 Markdown 或生成式 UI；
-- 维护前端 Component Registry；
-- 执行已注册的前端 Action；
+- 发送用户输入、取消请求和前端事件；
+- 展示 Runtime Host 返回的运行状态；
+- 渲染安全 Markdown；
+- 渲染 A2UI；
+- 维护 Frontend Component Registry；
+- 维护 Frontend Action Registry；
+- 展示 Runtime Host 提供的诊断数据；
 - 展示人工确认界面；
+- 执行已注册且通过校验的前端 Action；
 - 将用户选择和 Action 结果回传 Runtime Host；
-- 展示 Runtime Host 提供的诊断信息；
-- 管理内置案例和执行结果；
 - 加载前端场景包；
-- 为平台能力提供参考实现。
+- 保存、执行和比较验收案例；
+- 支持独立构建和部署。
 
-Workbench 禁止负责：
+### 7.3 Workbench 非职责
 
-- 直接调用 Business Agent；
+Workbench 禁止承担：
+
+- 直接连接 Business Agent；
 - 实现 Business Agent Adapter；
 - 适配 Business Agent 私有协议；
-- 选择应由哪个 Business Agent 处理请求；
-- 编排 Agent Run 生命周期；
-- 维护 Agent 权威会话和任务状态；
-- 执行业务后端工具；
-- 直接控制真实设备；
-- 代替 UI Compiler 规划或编译 UI；
+- 选择由哪个 Business Agent 处理请求；
+- 编排 Agent Run；
+- 管理 Agent Checkpoint 或长期记忆；
+- 直接调用后端业务工具；
+- 保存权威设备、任务或审批状态；
+- 决定 Agent 业务结果是否正确；
+- 生成 UI Plan；
+- 将 UI Plan 编译为 A2UI；
 - 执行模型生成的任意代码。
 
-### 6.3 Agent Runtime Host 职责
+### 7.4 Agent Runtime Host 职责
 
 Agent Runtime Host 负责：
 
-- 向 Workbench 提供统一通信入口；
-- 管理会话和 Agent Run 生命周期；
-- 通过 Business Agent Adapter 调用业务 Agent；
-- 适配业务 Agent 原有协议；
-- 聚合 Agent 输出和运行事件；
+- 向 Workbench 提供统一交互协议；
+- 维护 Run 生命周期、线程和上下文；
+- 注册和调用 Business Agent Adapter；
+- 适配不同 Business Agent 原有协议；
+- 调用 Business Agent；
+- 聚合运行事件；
 - 调用 UI Compiler Service；
-- 将 Presentation Result 映射为前端事件；
-- 接收 Workbench 的用户选择和 Action 结果；
-- 调用后端业务工具或继续 Agent Run；
-- 暴露经过控制的诊断信息。
+- 将 Markdown、A2UI、诊断和错误映射给 Workbench；
+- 接收 Workbench Action 结果；
+- 调用后端业务工具；
+- 维护需要后端权威控制的任务状态。
 
-### 6.4 UI Compiler Service 职责
+### 7.5 UI Compiler 职责
 
-UI Compiler Service 负责：
+UI Compiler 负责：
 
-- 接收 Presentation Request；
-- 执行展示模式决策；
-- 对 Markdown 进行安全处理；
-- 对 UI Plan Candidate 进行受控编译；
-- 生成 UI IR 和 A2UI；
-- 在失败时生成安全降级结果；
-- 返回协议无关的 Presentation Result。
-
-### 6.5 Business Agent 职责
-
-Business Agent 负责：
-
-- 业务理解和推理；
-- 查询业务数据；
-- 调用业务工具；
-- 维护权威业务状态；
-- 生成 Markdown 或 JSON 结构化业务结果。
-
-Business Agent 不需要输出 Workbench 专用页面结构，也不需要直接连接 Workbench。
+- 判断 Agent 业务内容应使用 Markdown 还是生成式 UI；
+- 生成或接收 UI Plan Candidate；
+- 校验 Component Catalog、Props、Action 和结构；
+- 将 UI Plan Candidate 转换为 UI IR；
+- 将 UI IR 编译为 A2UI；
+- 失败时返回安全降级结果；
+- 不承担 Business Agent 路由、Run 编排和真实组件渲染。
 
 ---
 
-## 7. 建设目标
+## 8. 建设目标
 
-系统必须实现以下目标：
+### 8.1 核心目标
 
-1. 提供可独立部署的 Web 工作台。
-2. 通过 Runtime Host 运行 Mock、测试或真实业务 Agent 场景。
-3. 渲染安全 Markdown 和受控 A2UI。
-4. 展示运行阶段和 UI 编译诊断数据。
-5. 支持已注册前端 Action 的执行和结果回传。
-6. 支持高风险操作的人工确认。
-7. 提供标准案例和重复执行能力。
-8. 以智慧安防巡防指挥验证完整业务闭环。
-9. 保持通用工作台与具体业务领域解耦。
-10. 为后续其他业务场景提供可复制的接入样板。
+MVP 必须实现：
 
----
+1. 建立可独立部署的 Web Workbench；
+2. 打通 Workbench 与 Runtime Host 的统一通信；
+3. 打通 Markdown 和 A2UI 的完整渲染；
+4. 打通用户 Action 到 Runtime Host 的回传；
+5. 提供 Runtime Host 输出的链路诊断信息；
+6. 提供标准案例保存、重放和结果比较；
+7. 建立智慧安防参考场景；
+8. 完成设备查询、方案生成和任务确认三个连续流程；
+9. 保持 Workbench、Runtime Host、Compiler 和场景包的职责边界；
+10. 为后续新增业务场景提供可复制的参考结构。
 
-## 8. 非目标
+### 8.2 非目标
 
-MVP 不建设以下能力：
+MVP 不建设：
 
-- 完整 Interaction Gateway；
-- 多 Business Agent 自动路由和协作；
-- Business Agent Adapter 的前端实现；
-- 完整智慧安防生产系统；
-- 真实大规模设备控制；
-- 完整 GIS 指挥平台；
-- 完整任务调度中心；
-- 完整告警处置中心；
-- 多租户和商业化计费；
-- 开放用户注册；
+- 完整生产级智慧安防应用；
+- 大规模真实设备控制；
+- 多租户、计费和开放注册；
 - 通用低代码页面设计器；
-- 拖拽式 UI 编排；
 - 任意 HTML、CSS、JavaScript、Vue 或 React 代码生成；
-- 完整模型管理平台；
-- 完整 Prompt 管理平台；
-- 生产级测试管理系统；
-- 大规模并发压测平台。
+- 完整模型管理和 Prompt 管理平台；
+- 完整自动化测试管理平台；
+- 生产级长期会话和业务状态存储；
+- 面向公众的营销和产品介绍门户。
 
 ---
 
-## 9. 目标用户
+## 9. 业务需求
 
-### 9.1 平台开发者
+### BR-001 完整链路验证
 
-平台开发者需要：
-
-- 验证 Runtime、Compiler 和 Renderer 的完整链路；
-- 查看请求阶段、耗时、错误和降级原因；
-- 调试协议和数据契约；
-- 验证 Component Catalog 和 Action Registry；
-- 在平台升级后执行回归案例。
-
-### 9.2 Runtime Host 和 Agent Adapter 开发者
-
-该角色需要：
-
-- 验证 Runtime Host 是否正确适配 Business Agent；
-- 查看 Runtime Host 暴露的 Agent 配置；
-- 验证业务结果是否正确进入 UI Compiler；
-- 验证 Action 结果能否返回 Agent Run；
-- 定位 Agent、Runtime 或 Compiler 的责任边界。
-
-### 9.3 前端组件开发者
-
-前端组件开发者需要：
-
-- 注册真实 Vue 组件；
-- 验证 Props 和 Action Schema；
-- 测试组件的加载、渲染和错误边界；
-- 验证基础组件与领域组件的兼容性；
-- 查看场景组件的示例数据和运行结果。
-
-### 9.4 测试人员
-
-测试人员需要：
-
-- 执行内置正常、异常和降级案例；
-- 比较预期结果和实际结果；
-- 验证非法组件、非法 Props 和非法 Action 被阻止；
-- 验证用户取消、超时和后端工具失败；
-- 对版本修改执行重复验证。
-
-### 9.5 架构师和项目负责人
-
-该角色需要：
-
-- 判断平台级闭环是否形成；
-- 查看核心职责是否越界；
-- 验证业务场景与通用核心是否解耦；
-- 根据验收结果判断阶段目标是否完成。
-
----
-
-## 10. 业务需求
-
-### BR-001 完整前端运行闭环
-
-系统必须验证从 Runtime Host 接收运行结果，到 Markdown 或 A2UI 渲染，再到用户操作回传 Runtime Host 的完整闭环。
+系统必须提供统一环境，验证用户输入、Runtime Host、Business Agent、UI Compiler、Frontend Runtime 和 Action 回传形成完整闭环。
 
 ### BR-002 统一联调入口
 
-系统必须为 Runtime Host、UI Compiler、Frontend Runtime 和业务组件提供统一联调入口，避免重复建设临时页面。
+系统必须为平台开发者和 Agent 开发者提供统一 Web 联调入口，避免为每个 Agent 重复建设测试页面。
 
-### BR-003 问题责任定位
+### BR-003 可诊断
 
-系统必须帮助用户判断问题发生在 Agent、Runtime Host、Presentation Router、UI Compiler、Renderer、Component Registry 或 Action 执行阶段。
+系统必须使用户能够判断请求当前状态、失败阶段、错误路径和降级原因。
 
-### BR-004 标准验收基线
+### BR-004 可验收
 
-系统必须将代表性业务流程和边界条件转化为可重复执行的验收案例。
+系统必须将平台能力和参考业务场景转化为具有预期结果的标准验收案例。
 
-### BR-005 版本回归验证
+### BR-005 可回归
 
-当协议、Catalog、Compiler、Renderer、Runtime Host 或场景组件变化时，系统应该支持重复执行已有案例。
+系统必须支持在 Runtime、Compiler、Catalog、Renderer 或场景包变化后重新执行已有案例。
 
 ### BR-006 业务价值验证
 
-系统必须通过真实或准真实巡防场景，证明生成式 UI 能够支持复杂状态展示、方案比较、地图联动、人工审批和操作回传。
+系统必须通过真实巡防业务流程验证生成式 UI 对方案比较、地图协同、人工确认和状态展示的价值。
 
-### BR-007 平台领域解耦
+### BR-007 领域解耦
 
-通用工作台核心必须独立于智慧安防领域，领域能力必须通过场景包和注册机制扩展。
+系统必须以场景包提供智慧安防领域组件和案例，不得将领域概念写入通用 Workbench 核心或 UI Compiler Core。
 
-### BR-008 可发布开发环境
+### BR-008 可发布运行
 
-系统必须能够部署为长期可访问的开发和测试环境，而不是只能在开发者本机运行的一次性 Demo。
-
----
-
-## 11. 用户需求
-
-### UR-001
-
-平台开发者必须能够从一次运行中查看最终结果和主要处理阶段。
-
-### UR-002
-
-Runtime Host 开发者必须能够选择或查看 Runtime Host 暴露的运行配置，但 Workbench 不实现对应 Agent Adapter。
-
-### UR-003
-
-组件开发者必须能够确认 A2UI 中的组件类型是否成功映射为真实前端组件。
-
-### UR-004
-
-测试人员必须能够执行内置案例并判断是否通过。
-
-### UR-005
-
-用户必须能够在任务创建或设备控制前查看操作内容并确认或取消。
-
-### UR-006
-
-用户必须能够在 UI 生成失败时继续查看有效业务内容。
-
-### UR-007
-
-开发者必须能够在不同 Runtime Host 环境之间切换，而无需重新构建前端代码。
+Workbench 必须能够部署为稳定的开发、联调和验收网站，而不是只能在开发人员本地运行的一次性 Demo。
 
 ---
 
-## 12. 总体运行流程
+## 10. 用户需求
 
-### 12.1 正常运行流程
+### UR-001 平台开发者查看链路
 
-1. 用户在 Workbench 选择环境和场景。
-2. Workbench 从 Runtime Host 获取可用运行配置。
-3. 用户输入自然语言请求。
-4. Workbench 将请求发送给 Runtime Host。
-5. Runtime Host 通过已注册 Adapter 调用 Business Agent。
-6. Runtime Host 将 Agent 结果发送给 UI Compiler Service。
-7. Runtime Host 将运行事件和 Presentation Result 返回 Workbench。
-8. Workbench 根据结果类型渲染 Markdown 或 A2UI。
-9. 用户触发组件 Action 或确认操作。
-10. Workbench 校验前端 Action 并发送结果给 Runtime Host。
-11. Runtime Host 调用后端工具或继续 Agent Run。
-12. Workbench 展示后续状态和最终结果。
+平台开发者必须能够查看 Runtime Host 返回的主要运行阶段、输入输出摘要、耗时、错误和降级原因。
 
-### 12.2 降级流程
+### UR-002 Agent 开发者验证展示结果
 
-1. Runtime Host、Router、Compiler 或 Renderer 发生错误。
-2. 系统记录错误阶段和错误标识。
-3. 有效 Agent 内容不得丢失。
-4. Runtime Host 优先返回安全 Markdown 降级结果。
-5. Workbench明确显示已发生降级。
-6. 用户可以查看诊断信息并重新执行。
+Agent 开发者必须能够通过 Runtime Host 运行指定 Agent 配置，并查看 Agent 业务结果最终被展示为 Markdown 还是生成式 UI。
 
-### 12.3 用户确认流程
+### UR-003 组件开发者验证 Catalog
 
-1. Runtime Host 返回需要用户批准的操作请求。
-2. Workbench 展示操作目标、关键参数、影响范围和风险。
-3. 用户选择确认、取消或返回修改。
-4. Workbench 将用户决策返回 Runtime Host。
-5. Runtime Host 根据决策调用后端工具或终止操作。
-6. Workbench 不直接执行后端业务工具。
+组件开发者必须能够查看组件定义、Props Schema、Action Schema、示例数据和渲染预览。
+
+### UR-004 测试人员执行案例
+
+测试人员必须能够运行标准案例，并比较预期与实际展示模式、组件、Action 和降级结果。
+
+### UR-005 架构人员确认职责边界
+
+架构人员必须能够从文档、配置和运行链路确认 Workbench 没有直接连接 Business Agent，也没有承担 Compiler 和后端工具职责。
+
+### UR-006 业务团队验证参考场景
+
+业务团队应该能够使用预设场景验证设备查询、巡防方案和任务确认是否满足基本交互目标。
 
 ---
 
-## 13. 功能范围与页面模块
+## 11. 主要使用场景
 
-建议 Workbench 包含以下逻辑模块：
+### 11.1 场景一：设备状态查询
+
+用户输入：
 
 ```text
-/workbench
-├── /playground
-├── /inspect
-├── /cases
-├── /catalog
-├── /scenarios
-└── /settings
+查看当前可用的无人机和无人车。
 ```
 
-页面路径是建议，不构成强制路由实现要求。
+系统应通过 Runtime Host 获取业务结果，并展示：
 
-### 13.1 Playground
+- 可用设备数量；
+- 设备类型；
+- 在线状态；
+- 电量；
+- 当前任务状态；
+- 位置摘要。
 
-用于输入请求、观察运行状态并操作最终 UI。
+该场景验证：
 
-### 13.2 Inspect
+- 结构化数据展示；
+- Markdown 与生成式 UI 分流；
+- 设备组件 Catalog；
+- 缺失字段和非法组件降级。
 
-用于查看 Runtime Host 暴露的运行轨迹、Presentation Result、编译诊断、Action 和错误信息。
+### 11.2 场景二：巡防方案生成与比较
 
-### 13.3 Cases
+用户输入：
 
-用于查看、执行和比较内置验收案例。
+```text
+使用一架无人机和两台无人车巡查 A 区域。
+```
 
-### 13.4 Catalog
+系统应展示：
 
-用于查看当前场景对应的 Component Catalog 和前端 Component Registry 映射状态。
+- 一个或多个候选方案；
+- 设备编组；
+- 巡防路线摘要；
+- 预计时长；
+- 风险与限制；
+- 方案选择操作。
 
-### 13.5 Scenarios
+该场景验证：
 
-用于查看和切换可用前端场景包。
+- 多方案生成式 UI；
+- 地图前端 Action；
+- 组件组合；
+- Action 参数校验；
+- 选择结果回传 Runtime Host。
 
-### 13.6 Settings
+### 11.3 场景三：任务草稿确认
 
-用于配置 Runtime Host 地址、通信模式、请求超时和调试显示选项。
+用户输入：
+
+```text
+采用方案二并创建巡防任务。
+```
+
+系统必须先展示任务草稿和人工确认界面。
+
+用户确认后，Workbench 只将确认事件回传 Runtime Host，由 Runtime Host 调用后端任务创建工具。
+
+该场景验证：
+
+- 人机协作状态；
+- 高风险操作控制边界；
+- 用户确认；
+- 后端工具调用职责；
+- 创建失败后的草稿保留和恢复提示。
 
 ---
 
-## 14. 功能需求
+## 12. 功能需求
 
 ### FR-001 Runtime Host 连接
 
-Workbench 必须连接 Agent Runtime Host，不得直接连接 Business Agent。
+系统必须支持通过配置连接 Agent Runtime Host。
 
-Workbench 应支持通过部署配置设置 Runtime Host 地址。
+系统不得要求浏览器配置 Business Agent 私有地址或密钥。
 
-### FR-002 通信模式
+### FR-002 用户输入与请求控制
 
-MVP 必须支持以下至少一种正式通信模式，并保留另一种兼容能力：
+系统必须支持：
 
-- HTTP；
-- WebSocket。
+- 输入并发送消息；
+- 查看请求状态；
+- 取消请求；
+- 重新执行；
+- 防止重复提交。
 
-如 Runtime Host 使用 AG-UI 兼容事件，Workbench 应通过协议适配层消费事件，不应将协议细节散落到页面组件中。
+### FR-003 通信模式
 
-### FR-003 运行配置发现
+MVP 必须支持仓库当前约定的 HTTP 和 WebSocket 通信。
 
-Workbench 应能够读取 Runtime Host 暴露的运行配置元数据，例如：
+未来可以通过 Runtime Adapter 支持 AG-UI 等协议，但不得影响页面和 Renderer 核心。
 
-- 配置标识；
-- 配置名称；
-- Mock、Test 或 Business 类型；
-- 可用状态；
-- 支持的能力；
-- 所属场景。
+### FR-004 Runtime 配置展示
 
-Workbench 只负责选择或展示运行配置，不负责实现 Adapter。
+Workbench 应允许选择或查看 Runtime Host 暴露的：
 
-### FR-004 用户消息输入
+- 环境；
+- Agent 配置标识；
+- 场景标识；
+- 通信模式；
+- 调试能力。
 
-Workbench 必须支持：
+Workbench 不实现对应 Business Agent Adapter。
 
-- 输入用户消息；
-- 发送请求；
-- 防止空消息提交；
-- 显示发送状态；
-- 在允许时取消请求；
-- 重新执行最近请求。
+### FR-005 结果渲染
 
-### FR-005 运行状态展示
+系统必须支持：
 
-Workbench 应支持展示以下状态：
+- 安全 Markdown；
+- A2UI；
+- Fallback Markdown；
+- Error。
 
-- 未开始；
-- 正在连接；
+页面必须明确展示当前结果类型和是否发生降级。
+
+### FR-006 Markdown 安全
+
+Markdown 必须经过安全处理，禁止执行：
+
+- 脚本；
+- 危险 HTML；
+- 未授权嵌入；
+- 危险链接协议。
+
+### FR-007 A2UI 渲染
+
+A2UI Renderer 必须：
+
+- 只从 Component Registry 加载组件；
+- 校验组件类型；
+- 使用受控 Props；
+- 不执行模型生成代码；
+- 对未知组件提供明确错误或安全降级。
+
+### FR-008 Component Registry
+
+Workbench 必须维护前端组件类型到真实组件实现的映射。
+
+智慧安防领域组件必须通过场景包注册，不得写入通用 Renderer 判断分支。
+
+### FR-009 Frontend Action Registry
+
+Workbench 必须维护已允许的前端 Action。
+
+每个 Action 至少定义：
+
+- 名称；
+- 参数 Schema；
+- 风险级别；
+- 执行器；
+- 是否需要用户确认；
+- 执行结果 Schema。
+
+### FR-010 Action 执行和回传
+
+系统必须：
+
+1. 校验 Action 名称；
+2. 校验参数；
+3. 检查风险和确认要求；
+4. 执行已注册前端能力；
+5. 记录执行结果；
+6. 将结果回传 Runtime Host。
+
+### FR-011 人工确认
+
+涉及任务创建、设备控制或其他高风险行为时，Workbench 必须展示：
+
+- 操作名称；
+- 目标对象；
+- 关键参数；
+- 影响范围；
+- 风险提示；
+- 确认和取消操作。
+
+Workbench 不得在用户确认前触发后端业务工具。
+
+### FR-012 运行状态
+
+Workbench 至少应支持展示：
+
+- 等待发送；
+- 已发送；
 - Agent 运行中；
 - 展示决策中；
 - UI 编译中；
@@ -594,863 +755,580 @@ Workbench 应支持展示以下状态：
 - 已失败；
 - 已降级。
 
-状态名称可以根据实际协议映射，但不得混淆运行中、失败和降级。
+状态来源由 Runtime Host 协议和前端渲染过程共同提供。
 
-### FR-006 Presentation Result 渲染
+### FR-013 诊断查看
 
-Workbench 必须支持以下结果类型：
-
-- 安全 Markdown；
-- Generative UI；
-- Fallback Markdown；
-- Error。
-
-页面必须明确标识最终展示模式。
-
-### FR-007 Markdown 渲染
-
-Workbench 必须使用安全 Markdown Renderer。
-
-必须阻止：
-
-- 未授权脚本；
-- 危险 HTML；
-- 危险协议链接；
-- 任意嵌入代码执行。
-
-### FR-008 A2UI 渲染
-
-Workbench 必须通过 A2UI Renderer 和 Component Registry 渲染生成式 UI。
-
-Workbench 禁止：
-
-- 执行模型生成代码；
-- 加载未注册组件；
-- 绕过 Props Schema；
-- 绕过 Action Schema；
-- 根据任意字符串动态导入组件文件。
-
-### FR-009 Component Registry
-
-Workbench 必须维护组件类型到真实前端组件实现的受控映射。
-
-每个组件映射至少应包含：
-
-- 组件类型；
-- 组件实现；
-- 支持版本；
-- Props Schema 标识；
-- 支持的 Action；
-- 所属基础或领域场景。
-
-### FR-010 Catalog 兼容状态
-
-Workbench 应能够展示当前 Component Catalog 与 Component Registry 的映射状态，包括：
-
-- 已实现组件；
-- 缺失实现组件；
-- 版本不兼容组件；
-- Schema 不一致组件；
-- 未使用组件。
-
-### FR-011 前端 Action Registry
-
-Workbench 必须通过 Action Registry 执行前端 Action。
-
-前端 Action 示例包括：
-
-- 地图定位；
-- 路线显示；
-- 区域高亮；
-- 设备高亮；
-- 打开详情面板；
-- 选择候选方案。
-
-### FR-012 Action 校验
-
-Action 执行前必须校验：
-
-- Action 名称已注册；
-- 参数符合 Schema；
-- 当前场景允许该 Action；
-- 当前运行状态允许执行；
-- 操作风险等级满足要求。
-
-### FR-013 Action 结果回传
-
-Workbench 必须将用户操作和前端 Action 结果返回 Runtime Host。
-
-Workbench 不得直接调用 Business Agent 或后端业务工具。
-
-### FR-014 用户确认
-
-对于任务创建、任务下发、设备控制等高风险操作，Workbench 必须展示人工确认界面。
-
-确认界面至少包含：
-
-- 操作名称；
-- 操作目标；
-- 关键参数；
-- 影响范围；
-- 风险提示；
-- 确认操作；
-- 取消操作。
-
-### FR-015 重复提交保护
-
-Workbench 必须阻止相同确认操作被重复提交。
-
-在 Runtime Host 返回最终状态前，确认按钮应进入不可重复触发状态。
-
-### FR-016 运行诊断
-
-Workbench 应展示 Runtime Host 返回的诊断数据。
-
-诊断阶段可以包括：
+系统必须展示 Runtime Host 提供的诊断信息，包括可用时的：
 
 - 用户输入；
-- Runtime 请求；
-- Agent Adapter 状态；
-- Agent 原始结果摘要；
+- Agent 原始结果；
 - Presentation Decision；
 - UI Plan Candidate；
 - Schema 校验结果；
 - UI IR；
 - A2UI；
 - Renderer 状态；
-- Action 事件；
-- Runtime 回传结果。
+- Action 请求与结果；
+- 错误和降级信息；
+- 各阶段耗时。
 
-Workbench 不要求 Runtime Host 暴露敏感推理过程、密钥或受保护业务数据。
+Workbench 不直接进入 Runtime Host 或 Compiler 内部读取数据。
 
-### FR-017 诊断详情
+### FR-014 错误展示
 
-每个可用诊断阶段应展示：
+错误至少应包含：
 
-- 阶段名称；
-- 阶段状态；
-- 开始和结束时间；
-- 执行耗时；
-- 输入摘要；
-- 输出摘要；
-- 错误标识；
-- 降级原因。
-
-### FR-018 Schema 错误展示
-
-Schema 错误应尽可能展示：
-
+- requestId；
 - 错误阶段；
+- 错误代码；
+- 用户可理解说明；
+- 开发诊断信息；
 - 字段路径；
-- 预期类型或约束；
-- 实际值摘要；
-- 可理解的错误说明。
+- 是否已降级；
+- 建议恢复操作。
 
-### FR-019 诊断数据操作
+### FR-015 Component Catalog 页面
 
-诊断数据应支持：
+系统应提供 Catalog 查看能力，包括：
 
-- 展开和折叠；
-- 格式化查看；
-- 复制；
-- 下载脱敏后的 JSON；
-- 按阶段筛选。
+- 组件名称和标识；
+- 所属场景；
+- 版本；
+- Props Schema；
+- Action 定义；
+- 示例数据；
+- 渲染预览；
+- 可用状态。
 
-### FR-020 场景包加载
+### FR-016 场景包
 
-Workbench 必须支持通过注册机制加载前端场景包。
+Workbench 必须支持加载前端场景包。
 
-场景包可以提供：
+场景包可以包含：
 
-- 场景元数据；
-- 示例问题；
-- Component Registry 扩展；
-- 前端 Action 扩展；
-- 内置案例；
-- Mock 展示数据；
-- 预期验收规则。
+- 领域组件注册；
+- 前端 Action 注册；
+- 示例输入；
+- Mock 或固定验收数据；
+- 验收案例；
+- 场景说明。
 
-场景包不得包含 Business Agent Adapter 实现。
+场景包不得包含 Business Agent Adapter 或后端工具实现。
 
-### FR-021 场景切换
+### FR-017 测试案例保存
 
-Workbench 应允许用户切换可用场景。
+系统应支持保存运行案例，至少包含：
 
-场景切换后应同步更新：
+- 案例名称；
+- 场景标识；
+- 用户输入；
+- Runtime 配置标识；
+- 可选固定 Agent 结果；
+- 预期结果类型；
+- 预期组件；
+- 预期 Action；
+- 预期错误或降级；
+- 实际结果。
 
-- 示例问题；
-- 可用运行配置；
-- Component Registry；
-- Action Registry；
-- 内置案例；
-- Catalog 映射状态。
+### FR-018 测试案例重放
 
-### FR-022 内置案例
+系统应支持：
 
-MVP 必须提供至少 10 个内置案例，覆盖：
+- 运行单个案例；
+- 重新运行；
+- 查看通过或失败；
+- 比较预期和实际结果；
+- 查看最后执行时间；
+- 保存失败诊断。
+
+### FR-019 内置案例
+
+MVP 至少提供 10 个内置案例，覆盖：
 
 - Markdown 直出；
-- 正常生成式 UI；
-- 设备状态展示；
-- 多方案比较；
-- 前端地图 Action；
-- 用户确认；
+- 设备状态 UI；
+- 多方案 UI；
+- 地图 Action；
+- 任务确认；
 - 用户取消；
 - 非法组件；
-- Props 校验失败；
-- UI 编译失败并降级；
-- Runtime Host 超时；
+- 非法 Props；
+- 非法 Action；
+- Compiler 失败后降级；
 - 后端工具失败。
 
-单个案例可以覆盖多个条件。
+### FR-020 环境配置
 
-### FR-023 案例执行
+Workbench 必须支持开发、测试和发布环境配置。
 
-用户必须能够运行单个内置案例，并查看：
-
-- 案例说明；
-- 输入；
-- 运行配置；
-- 预期结果；
-- 实际结果；
-- 是否通过；
-- 差异信息。
-
-### FR-024 案例重放
-
-Workbench 应支持重新执行已运行案例。
-
-MVP 可以使用仓库内置案例，不强制建设完整数据库和案例管理服务。
-
-### FR-025 当前运行保存
-
-Workbench 可以将一次运行导出为脱敏案例文件。
-
-将自定义案例持久化到服务端不属于 MVP 强制要求。
-
-### FR-026 环境配置
-
-Workbench 必须支持通过构建或运行时配置设置：
+至少包括：
 
 - Runtime Host 地址；
 - HTTP 或 WebSocket 模式；
-- 请求超时时间；
-- 默认场景；
-- 是否显示诊断面板；
-- 环境名称。
-
-### FR-027 环境切换
-
-如果部署环境允许，Workbench 应支持在已授权的 Runtime Host 环境之间切换。
-
-敏感地址、令牌和密钥不得硬编码在前端仓库中。
-
-### FR-028 请求取消和超时
-
-Workbench 必须处理：
-
-- 用户主动取消；
+- 场景；
 - 请求超时；
-- WebSocket 断开；
-- Runtime Host 不可用；
-- 重复请求；
-- 页面刷新后的非权威状态丢失。
+- 调试信息开关；
+- 是否允许固定 Mock 案例。
 
-### FR-029 错误边界
+敏感密钥不得进入浏览器公开构建产物。
 
-单个生成组件渲染失败时，Workbench 应优先：
+### FR-021 可部署网站
 
-1. 隔离失败组件；
-2. 展示可理解错误；
-3. 保留其他有效内容；
-4. 在可能时展示 Markdown 降级内容。
+Workbench 必须：
 
-### FR-030 发布形态
-
-Workbench 必须能够构建为可部署 Web 应用，并支持：
-
-- 静态资源部署；
-- Nginx 部署；
-- 容器化部署；
-- 开发、测试和演示环境隔离。
-
-此处的“演示环境”指可访问的产品能力验证环境，不要求建设营销门户。
+- 独立构建；
+- 生成可部署资源；
+- 支持 Nginx 或容器托管；
+- 支持外部环境配置；
+- 提供健康检查或可用性验证方式；
+- 与本地一次性 Demo 区分。
 
 ---
 
-## 15. 智慧安防参考场景
-
-### 15.1 场景目标
-
-智慧安防场景用于验证以下能力：
-
-- 自然语言任务输入；
-- 结构化设备状态展示；
-- 多方案生成和比较；
-- 地图前端 Action；
-- 人机共享任务草稿；
-- 人工审批；
-- 后端工具调用结果展示；
-- 异常、超时和降级处理。
-
-### 15.2 场景一：设备状态查询
-
-用户输入示例：
+## 13. 页面与信息架构建议
 
 ```text
-查看当前可用的无人机和无人车。
+/workbench
+├── /playground
+├── /inspect
+├── /cases
+├── /catalog
+├── /scenarios
+└── /settings
 ```
 
-预期展示内容：
+### 13.1 Playground
 
-- 可用设备总数；
-- 设备类型；
-- 在线状态；
-- 电量；
-- 当前任务状态；
-- 位置摘要。
+用于输入请求、查看运行状态和最终 Markdown 或生成式 UI。
 
-建议组件：
+### 13.2 Inspect
 
-- `DeviceSummary`；
-- `DeviceStatusList`；
-- `DeviceStatusCard`。
+用于查看 Runtime Host 返回的完整诊断链路。
 
-验收重点：
+### 13.3 Cases
 
-- 结构化数据能够生成受控 UI；
-- 缺失必要字段时能够明确报错或降级；
-- 不支持的组件不能被渲染；
-- Workbench 不直接查询设备接口。
+用于保存、运行和比较验收案例。
 
-### 15.3 场景二：巡防方案生成与比较
+### 13.4 Catalog
 
-用户输入示例：
+用于查看和预览当前 Component Catalog。
 
-```text
-使用一架无人机和两台无人车巡查 A 区域。
-```
+### 13.5 Scenarios
 
-预期展示内容：
+用于查看通用场景和智慧安防场景包。
 
-- 巡防方案概要；
-- 设备编组；
-- 路线摘要；
-- 预计时长；
-- 风险提示；
-- 一个或多个候选方案。
+### 13.6 Settings
 
-建议组件：
+用于配置 Runtime Host、通信方式、超时和调试选项。
 
-- `PatrolPlanCard`；
-- `PatrolPlanComparison`；
-- `DeviceFormation`；
-- `RouteSummary`；
-- `RiskNotice`；
-- `MapView`。
-
-前端 Action 示例：
-
-- `map.focusArea`；
-- `map.showRoute`；
-- `map.highlightDevice`；
-- `panel.openPlanDetail`；
-- `plan.select`。
-
-验收重点：
-
-- 多方案能够对比；
-- 用户能够选择方案；
-- 地图 Action 通过前端 Action Registry 执行；
-- Action 结果返回 Runtime Host；
-- Workbench 不负责生成业务巡防方案。
-
-### 15.4 场景三：任务草稿确认
-
-用户输入示例：
-
-```text
-采用方案二并创建巡防任务。
-```
-
-预期流程：
-
-1. Business Agent 通过 Runtime Host 形成任务草稿；
-2. Runtime Host 返回需要用户批准的展示结果；
-3. Workbench 展示任务确认组件；
-4. 用户确认、取消或返回修改；
-5. Workbench 将决策返回 Runtime Host；
-6. Runtime Host 调用任务创建工具；
-7. Workbench 展示执行结果。
-
-任务草稿至少包含：
-
-- 任务名称；
-- 巡防区域；
-- 设备编组；
-- 巡防路线；
-- 执行时间；
-- 风险提示。
-
-建议组件：
-
-- `TaskDraft`；
-- `TaskConfirmation`；
-- `ApprovalPanel`；
-- `ExecutionResult`；
-- `ErrorNotice`。
-
-用户操作示例：
-
-- `task.confirm`；
-- `task.cancel`；
-- `task.edit`；
-- `plan.back`。
-
-验收重点：
-
-- 用户确认前 Runtime Host 不得执行任务创建工具；
-- 用户取消后不得创建任务；
-- 重复确认必须被阻止；
-- 创建失败时应保留任务草稿；
-- Workbench 不直接调用任务创建接口。
+页面结构属于建议性要求，可以在详细设计阶段调整，但不得删除对应能力。
 
 ---
 
-## 16. 外部接口需求
+## 14. 外部接口需求
 
 ### IR-001 Workbench 与 Runtime Host
 
-Workbench 的唯一正式后端运行入口是 Agent Runtime Host。
+Workbench 必须只通过 Runtime Host 的公开协议交换：
 
-接口必须支持：
-
-- 获取运行配置元数据；
-- 发送用户消息；
-- 接收运行状态；
-- 接收 Presentation Result；
-- 发送取消请求；
-- 发送用户确认结果；
-- 发送前端 Action 结果；
-- 接收错误和降级信息；
-- 在调试模式下接收诊断数据。
+- 用户消息；
+- 请求取消；
+- 运行状态；
+- Markdown 或 A2UI 结果；
+- 诊断数据；
+- Action 请求；
+- Action 结果；
+- 用户确认结果；
+- 错误和降级信息。
 
 ### IR-002 Runtime Host 与 Business Agent
 
 该接口不属于 Workbench 实现范围。
 
-Workbench 只验证 Runtime Host 对该接口的最终适配结果。
+Workbench 只显示 Runtime Host 暴露的 Agent 配置标识和运行结果，不感知 Business Agent 私有协议。
 
-### IR-003 Runtime Host 与 UI Compiler Service
+### IR-003 Runtime Host 与 UI Compiler
 
-该接口不属于 Workbench 的直接调用接口。
+该接口不属于 Workbench 直接调用范围。
 
-Workbench 可以展示 Runtime Host 返回的 Presentation Decision、UI Plan Candidate、UI IR 或 A2UI 诊断信息，但不得依赖 UI Compiler Service 的私有网络接口。
+Runtime Host 负责调用 UI Compiler Service，并将结果映射为 Workbench 可消费的协议。
 
-### IR-004 Renderer 与 Component Registry
+### IR-004 Renderer 与 Registry
 
-A2UI Renderer 必须通过受控 Component Registry 查找真实组件实现。
+Renderer 必须通过 Component Registry 和 Action Registry 使用真实组件和前端能力，不得直接根据字符串执行任意模块或函数。
 
-### IR-005 Renderer 与 Action Registry
+### IR-005 场景包接口
 
-组件 Action 必须通过 Action Registry 执行，不得从声明式数据直接解析并执行任意函数。
+场景包接口应明确：
 
-### IR-006 部署配置
-
-Workbench 应支持使用环境变量、构建配置或外部运行时配置文件注入 Runtime Host 地址和非敏感环境信息。
-
----
-
-## 17. 数据与契约需求
-
-### DR-001 基础契约
-
-Workbench 应使用或适配仓库共享契约，不得在页面中重复定义语义相同的公共类型。
-
-涉及的数据包括：
-
-- Runtime Message；
-- Runtime Event；
-- Presentation Result；
-- A2UI Operations；
+- 场景元数据；
 - Component Catalog；
-- Action Request；
-- Action Result；
-- Validation Error；
-- Runtime Error；
-- Scenario Metadata；
-- Test Case；
-- Test Run Result。
-
-### DR-002 运行标识
-
-每次运行至少应具备：
-
-- `requestId` 或 `runId`；
-- `sessionId`；
-- `scenarioId`；
-- `runtimeProfileId`；
-- 开始时间；
-- 当前状态。
-
-### DR-003 Action 数据
-
-Action 回传至少应包含：
-
-- 运行标识；
-- Action 标识；
-- Action 名称；
-- Action 参数；
-- 用户决策；
-- 执行状态；
-- 前端执行结果或错误。
-
-### DR-004 诊断数据
-
-诊断数据必须与正常业务结果分离，避免业务页面依赖诊断字段运行。
-
-### DR-005 数据脱敏
-
-导出诊断数据和测试案例时必须支持移除：
-
-- 认证信息；
-- 密钥和令牌；
-- 敏感人员信息；
-- 受保护设备标识；
-- 不允许外泄的业务数据。
-
-### DR-006 契约版本
-
-Workbench 应识别关键契约版本，并在版本不兼容时提供明确错误，不得静默使用不兼容数据。
+- Component Registry 扩展；
+- Frontend Action 扩展；
+- 示例和验收案例。
 
 ---
 
-## 18. 非功能需求
+## 15. 数据与契约需求
 
-### NFR-PERF-001 页面性能
+### DR-001 通信契约
 
-在目标开发设备和正常网络条件下，页面首次可交互时间应该不超过 3 秒。
+系统应复用或扩展仓库共享契约，禁止在 Workbench 内重复定义与 Runtime Host 不一致的公共类型。
 
-### NFR-PERF-002 状态反馈
+### DR-002 核心数据
 
-用户发送请求后，Workbench 应在 500 毫秒内显示已发送或正在连接状态，不要求 Agent 在该时间内返回业务结果。
+Workbench 需要消费或维护：
 
-### NFR-PERF-003 大型诊断数据
+- UserMessage；
+- RuntimeEvent；
+- RuntimeStatus；
+- PresentationResult；
+- MarkdownResult；
+- A2UI Operations；
+- DiagnosticTrace；
+- Component Catalog；
+- Frontend Component Registry；
+- Frontend Action Definition；
+- ActionRequest；
+- ActionResult；
+- ConfirmationRequest；
+- ConfirmationResult；
+- TestCase；
+- TestRunResult。
 
-大型 JSON 和运行轨迹应采用延迟展开、分页或虚拟化方式，避免阻塞主渲染。
+### DR-003 运行时校验
 
-### NFR-REL-001 有效内容保留
+来自 Runtime Host、场景包、案例文件和持久化存储的数据必须进行运行时校验。
 
-UI 编译或组件渲染失败不得导致有效 Agent 业务内容全部丢失。
+### DR-004 版本信息
 
-### NFR-REL-002 断线处理
+以下数据应具备可追踪版本：
 
-WebSocket 断开时必须显示明确状态，并允许用户重新连接或重新执行。
+- Runtime 协议；
+- Presentation 契约；
+- A2UI Profile；
+- Component Catalog；
+- 场景包；
+- 测试案例格式。
 
-### NFR-REL-003 状态权威性
+### DR-005 诊断脱敏
 
-Workbench 中的运行状态属于展示状态，Runtime Host 或后端业务系统持有权威运行和任务状态。
+诊断数据不得默认展示：
 
-### NFR-SEC-001 不可信输入
+- 模型或业务系统密钥；
+- 用户认证令牌；
+- 不应暴露的设备控制凭证；
+- 后端内部敏感配置。
 
-模型输出、Agent 输出中的 UI 建议和外部 A2UI 数据必须视为不可信输入。
+---
 
-### NFR-SEC-002 任意代码禁止
+## 16. 非功能需求
 
-Workbench 禁止执行模型或 Agent 生成的任意 HTML 脚本、JavaScript、Vue、React 或其他可执行代码。
+### NFR-SEC-001 安全性
 
-### NFR-SEC-003 组件和 Action 白名单
+- 模型和 Agent 输出必须视为不可信输入；
+- 不得执行任意模型生成代码；
+- 未注册组件不得渲染；
+- 未注册 Action 不得执行；
+- Props 和 Action 参数必须校验；
+- 高风险操作必须确认；
+- Markdown 必须安全处理；
+- 浏览器不得持有后端敏感密钥。
 
-组件和 Action 必须来自当前受控 Registry，并通过 Schema 校验。
+### NFR-REL-001 可靠性
 
-### NFR-SEC-004 高风险确认
-
-任务创建、设备控制和其他高风险操作必须经过明确人工确认。
-
-### NFR-SEC-005 凭据保护
-
-密钥、令牌和服务端凭据不得写入浏览器构建产物或仓库代码。
-
-### NFR-MAINT-001 模块边界
-
-Workbench 应至少区分以下职责：
-
-- 应用外壳；
-- Runtime Client；
-- Renderer；
-- Component Registry；
-- Action Registry；
-- Diagnostics；
-- Cases；
-- Scenario Loader；
-- Settings。
-
-### NFR-MAINT-002 领域隔离
-
-通用模块不得直接判断无人机、无人车、巡防区域或告警等级等领域类型。
-
-### NFR-EXT-001 新场景扩展
-
-新增场景应主要通过场景包、组件注册、Action 注册和案例实现，不应修改 UI Compiler Core。
-
-### NFR-TEST-001 自动化测试
-
-Workbench 必须具备：
-
-- 核心工具单元测试；
-- Renderer 和 Registry 测试；
-- Action 校验测试；
-- Runtime Client 集成测试；
-- 至少一个完整端到端测试。
+- UI 编译或渲染失败不得导致有效业务内容丢失；
+- WebSocket 断开必须显示明确状态；
+- 请求失败后应允许重试；
+- Action 应防止重复提交；
+- 用户取消后不得继续执行受控操作。
 
 ### NFR-OBS-001 可观察性
 
-Workbench 应关联显示运行标识、阶段耗时、最终状态、错误阶段和降级原因。
+每次运行至少应具备：
+
+- requestId；
+- sessionId 或 threadId；
+- scenarioId；
+- runtimeConfigId；
+- 各阶段状态和耗时；
+- 最终结果类型；
+- 错误阶段；
+- 降级原因。
+
+### NFR-EXT-001 可扩展性
+
+新增第二个业务场景时，主要工作应是：
+
+- 新增场景包；
+- 注册组件；
+- 注册前端 Action；
+- 增加案例；
+- 在 Runtime Host 注册对应 Agent 配置。
+
+不得修改 UI Compiler Core 的领域逻辑。
+
+### NFR-MAINT-001 可维护性
+
+通用 Runtime Client、Renderer、Registry、诊断、案例和场景加载应职责分离。
+
+不得将智慧安防业务类型直接写入通用核心。
+
+### NFR-TEST-001 可测试性
+
+必须支持：
+
+- Registry 和 Schema 单元测试；
+- Runtime Client 集成测试；
+- Renderer 集成测试；
+- Action 回传测试；
+- 关键业务场景端到端测试；
+- 标准案例重复执行。
 
 ### NFR-DEPLOY-001 可部署性
 
-Workbench 必须能够独立构建和部署，并支持开发、测试和稳定演示环境。
+- 支持独立构建；
+- 支持 Nginx 或容器部署；
+- 支持外部环境配置；
+- 测试和发布环境应隔离；
+- 构建产物不应包含开发环境密钥。
 
-### NFR-COMP-001 浏览器兼容
+### NFR-USABILITY-001 易用性
+
+用户无需阅读服务端原始日志即可判断：
+
+- 请求是否成功；
+- 当前处于什么阶段；
+- 最终展示模式；
+- 是否发生降级；
+- 失败发生在哪一层；
+- 可采取什么恢复操作。
+
+### NFR-PERF-001 性能
+
+MVP 建议目标：
+
+- 页面首次可交互时间不超过 3 秒；
+- 本地或测试环境发送请求后 500 毫秒内出现状态反馈；
+- 大型诊断 JSON 延迟展开或虚拟化；
+- 诊断面板不得阻塞主要结果渲染。
+
+### NFR-COMP-001 兼容性
 
 MVP 优先支持：
 
 - Chrome 最新稳定版本；
 - Edge 最新稳定版本；
-- Windows 11 开发和测试环境。
-
-### NFR-USE-001 可理解性
-
-开发者无需阅读完整服务端日志，即可判断：
-
-- 请求是否成功；
-- 当前处于哪个阶段；
-- 最终采用何种展示模式；
-- 是否发生降级；
-- 失败可能属于哪个模块。
+- Windows 11 开发与测试环境。
 
 ---
 
-## 19. 架构和实现约束
+## 17. 架构和实现约束
 
 ### AC-001
 
-Workbench 必须只通过 Agent Runtime Host 参与正式运行链路。
+Workbench 必须只连接 Agent Runtime Host，不得直接连接 Business Agent。
 
 ### AC-002
 
-Workbench 禁止直接调用 Business Agent。
+Business Agent Adapter、Run 编排、后端业务工具和权威业务状态属于 Runtime Host 或 Business Agent 后端。
 
 ### AC-003
 
-Business Agent Adapter 的实现和注册必须位于 Agent Runtime Host 一侧。
+UI Plan、UI IR 和 A2UI 编译属于 UI Compiler，不得在 Workbench 重复实现。
 
 ### AC-004
 
-Workbench 不负责 Agent Run 编排、业务工具调用和权威任务状态维护。
+真实前端组件必须通过 Component Registry 注册。
 
 ### AC-005
 
-Workbench 禁止直接调用 UI Compiler Service 的私有接口完成正式业务运行。
+前端 Action 必须通过 Action Registry 注册并校验。
 
 ### AC-006
 
-业务组件必须通过 Component Registry 注册。
+地图定位、路线显示、区域高亮和打开面板属于前端 Action。
 
 ### AC-007
 
-前端 Action 必须通过 Action Registry 注册和校验。
+查询权威设备数据、创建任务和调用真实设备属于后端业务工具。
 
 ### AC-008
 
-地图定位、路线显示、区域高亮和打开面板属于前端 Action。
+任务创建和设备控制必须经过用户确认。
 
 ### AC-009
 
-查询设备、创建任务和控制设备属于后端工具，由 Runtime Host 和 Business Agent 侧处理。
+智慧安防领域能力必须位于场景包或领域组件包，不得进入通用 Workbench 核心。
 
 ### AC-010
 
-任务创建和设备控制必须经过用户确认。
+移除智慧安防场景包后，Workbench 的通用通信、渲染、诊断和案例能力仍必须可运行。
 
 ### AC-011
 
-智慧安防场景包不得改变 Presentation Result、UI IR 或 A2UI 的基础语义。
+Workbench 的诊断能力不得成为未来生产业务前端运行的强制依赖。
 
 ### AC-012
 
-移除智慧安防场景后，Workbench 的通用运行、渲染和诊断能力仍必须可以工作。
-
-### AC-013
-
-Workbench 的诊断模块不得成为正式业务渲染的强制依赖。
-
-### AC-014
-
-有效业务内容不得因生成式 UI 失败而丢失。
-
-### AC-015
-
-初始化 Workbench 工程时应优先复用仓库现有工具链和共享契约，不得无必要引入第二套工程体系。
+有效 Agent 业务内容不得因 UI 编译或渲染失败而丢失。
 
 ---
 
-## 20. 验收需求
+## 18. 验收需求
 
-### 20.1 平台级验收
+### AR-001 可部署
 
-MVP 完成时必须满足：
+Workbench 可以独立构建，并部署为可访问的测试网站。
 
-1. Workbench 可以独立构建和部署。
-2. Workbench 只连接 Runtime Host，不直接连接 Business Agent。
-3. Workbench 可以获取 Runtime Host 暴露的运行配置。
-4. Workbench 可以发送用户消息并显示运行状态。
-5. Workbench 可以正确展示安全 Markdown。
-6. Workbench 可以使用真实前端组件渲染至少一种 A2UI 结果。
-7. Workbench 可以展示最终展示模式。
-8. Workbench 可以展示 Runtime Host 提供的主要诊断阶段。
-9. Workbench 可以显示 Schema 错误字段路径。
-10. Workbench 可以识别缺失组件和版本不兼容组件。
-11. Workbench 可以执行已注册前端 Action。
-12. Workbench 可以将用户操作和 Action 结果返回 Runtime Host。
-13. 非法组件和非法 Action 可以被阻止。
-14. 高风险操作必须展示确认界面。
-15. UI 生成失败时可以展示安全降级内容。
-16. Workbench 可以运行和重放内置测试案例。
-17. 智慧安防能力通过独立场景包加载。
-18. 移除智慧安防场景后通用功能仍可运行。
+### AR-002 Runtime 通信
 
-### 20.2 智慧安防场景验收
+Workbench 可以通过 HTTP 和 WebSocket 与 Runtime Host 通信。
 
-| 案例 | 预期结果 |
-|---|---|
-| 查询可用设备 | 展示设备状态列表或卡片 |
-| 生成巡防方案 | 展示方案、设备编组和路线摘要 |
-| 对比多个方案 | 展示差异并允许选择 |
-| 查看地图路线 | 通过前端 Action Registry 展示路线 |
-| 选择候选方案 | 选择结果返回 Runtime Host |
-| 创建巡防任务 | 先展示任务草稿并要求确认 |
-| 用户取消任务 | Runtime Host 不调用任务创建工具 |
-| 重复点击确认 | Workbench 阻止重复提交 |
-| Agent 返回非法组件 | 拒绝渲染并安全降级 |
-| Props 不符合 Schema | 显示字段级错误 |
-| Compiler 失败 | 保留有效 Markdown |
-| 后端工具失败 | 保留任务草稿并展示恢复路径 |
+### AR-003 Markdown
 
-### 20.3 架构边界验收
+Workbench 可以安全展示 Markdown 结果。
 
-必须通过以下检查：
+### AR-004 A2UI
 
-- Workbench 源码不存在 Business Agent 私有协议适配实现；
-- Workbench 源码不存在后端任务创建和设备控制调用；
-- 场景包不包含 Runtime Host 的 Business Agent Adapter；
-- 通用模块不直接依赖智慧安防领域类型；
-- UI Compiler Core 不因 Workbench 或智慧安防场景增加领域依赖。
+Workbench 可以通过 Component Registry 渲染至少一组 A2UI 组件。
 
----
+### AR-005 Action
 
-## 21. 成功指标
+Workbench 可以执行至少一个地图前端 Action，并将结果回传 Runtime Host。
 
-### 21.1 链路完整性
+### AR-006 人工确认
 
-- 至少通过 Runtime Host 运行一个准真实 Business Agent Adapter；
-- 至少完成设备查询、方案生成和任务确认三个连续场景；
-- 至少完成一次前端 Action 回传；
-- 至少完成一次人工确认后的后端工具调用。
+任务创建流程在用户确认前不得触发 Runtime Host 的后端创建操作。
 
-### 21.2 可诊断性
+### AR-007 诊断
 
-- 所有标准失败案例都能够识别主要失败阶段；
-- Schema 错误能够定位到具体字段路径；
-- 所有降级案例都能够显示降级原因。
+失败请求可以识别失败阶段；Schema 错误可以定位字段路径；降级结果可以显示原因。
 
-### 21.3 可回归性
+### AR-008 案例
 
-- 至少维护 10 个内置案例；
-- 核心案例能够重复执行；
-- Runtime、Compiler、Catalog 或 Renderer 修改后能够重新运行案例。
+系统至少提供 10 个内置案例，并支持单案例重放和结果比较。
 
-### 21.4 可扩展性
+### AR-009 智慧安防闭环
 
-- 智慧安防通过独立前端场景包加载；
-- 新增第二个场景不需要修改 UI Compiler Core；
-- 新增 Business Agent Adapter 不需要修改 Workbench 核心页面。
+至少完成以下连续流程：
+
+1. 查询可用设备；
+2. 生成并比较巡防方案；
+3. 选择方案并确认任务草稿；
+4. 将确认结果回传 Runtime Host；
+5. 展示创建结果或失败恢复信息。
+
+### AR-010 职责边界
+
+验收时必须确认：
+
+- Workbench 未直接连接 Business Agent；
+- Workbench 中不存在 Business Agent Adapter；
+- Workbench 未直接调用后端业务工具；
+- 智慧安防组件通过场景包注册；
+- UI Compiler Core 未增加智慧安防领域判断。
 
 ---
 
-## 22. 开发优先级
+## 19. 成功指标
 
-### P0：工程和运行基础
+### 19.1 用户价值
 
-- 初始化 `apps/web-workbench`；
-- 建立 Runtime Client；
-- 建立应用外壳和基础路由；
-- 实现 Markdown Renderer；
-- 实现 A2UI Renderer 接入；
-- 建立 Component Registry；
-- 建立 Action Registry；
-- 实现错误和降级展示。
+- Agent 开发者不再需要为每个 Agent 临时创建联调页面；
+- 平台开发者可以从一个界面定位主要失败阶段；
+- 测试人员可以重复运行标准案例；
+- 架构人员可以依据完整链路进行阶段验收。
+
+### 19.2 平台能力
+
+- 打通 Runtime Host、Compiler、Renderer 和 Action 回传；
+- 至少接入一个由 Runtime Host 适配的准真实 Business Agent；
+- 至少完成三个智慧安防连续场景；
+- UI 失败时能够稳定降级；
+- 新增场景不需要修改 Compiler Core。
+
+### 19.3 质量基线
+
+- 核心案例可以重复执行；
+- 所有失败案例具有明确错误阶段；
+- 所有高风险操作具有人工确认；
+- 非法组件和 Action 均被拒绝；
+- Workbench 可在测试环境持续发布。
+
+---
+
+## 20. 开发优先级
+
+### P0：运行闭环
+
+- Workbench 应用基础；
+- Runtime Client；
+- Markdown Renderer；
+- A2UI Renderer；
+- Component Registry；
+- Action Registry；
+- 状态和错误展示。
 
 ### P0：首个业务闭环
 
 - 设备状态查询；
-- 巡防方案生成和比较；
-- 地图前端 Action；
+- 巡防方案生成与比较；
+- 地图 Action；
 - 任务草稿确认；
-- 用户决策回传 Runtime Host。
+- 确认结果回传。
 
-### P1：诊断和验收
+### P1：诊断与验收
 
-- Inspect 页面；
-- Catalog 映射状态；
-- 内置案例；
-- 单案例执行和重放；
-- 场景切换；
+- Inspect；
+- Catalog；
+- 测试案例保存和重放；
+- 智慧安防场景包；
 - 环境配置。
 
 ### P2：增强能力
 
-- 批量案例执行；
+- 批量案例运行；
 - 版本差异比较；
-- 视觉截图回归；
-- 多 Runtime 环境结果对比；
-- 运行统计和性能分析；
-- 案例服务端持久化。
+- 截图回归；
+- 运行统计；
+- 链路性能分析；
+- 多场景管理。
 
 ---
 
-## 23. 需求追踪矩阵
+## 21. 需求追踪矩阵
 
-| 业务需求 | 主要功能需求 | 主要验收需求 |
-|---|---|---|
-| BR-001 完整前端运行闭环 | FR-001～FR-015 | 平台验收 1～15 |
-| BR-002 统一联调入口 | FR-001～FR-006、FR-016 | 平台验收 2～8 |
-| BR-003 问题责任定位 | FR-016～FR-019 | 平台验收 8～10 |
-| BR-004 标准验收基线 | FR-022～FR-025 | 平台验收 16 |
-| BR-005 版本回归验证 | FR-023～FR-025 | 可回归性指标 |
-| BR-006 业务价值验证 | 第 15 节 | 智慧安防场景验收 |
-| BR-007 平台领域解耦 | FR-020～FR-021、AC-011～AC-012 | 架构边界验收 |
-| BR-008 可发布开发环境 | FR-026～FR-030 | 平台验收 1 |
-
----
-
-## 24. MVP 完成定义
-
-只有同时满足以下条件，Generative UI Workbench MVP 才视为完成：
-
-1. 已形成可独立部署的 Web 工程，而不是单文件 Demo；
-2. 已通过 Runtime Host 打通至少一个完整运行链路；
-3. 已实现安全 Markdown 和真实组件 A2UI 渲染；
-4. 已实现用户 Action 返回 Runtime Host；
-5. 已实现至少一个需要人工确认的业务流程；
-6. 已提供可定位主要失败阶段的诊断能力；
-7. 已提供不少于 10 个内置验收案例；
-8. 已完成设备查询、巡防方案和任务确认三个参考场景；
-9. 已证明 Workbench 不直接接入 Business Agent；
-10. 已证明智慧安防场景可以从通用工作台中移除或替换。
+| 业务需求 | 主要用户 | 对应需求 | 主要验收 |
+|---|---|---|---|
+| BR-001 完整链路验证 | 平台开发者、架构师 | FR-001～FR-013 | AR-002～AR-007 |
+| BR-002 统一联调入口 | Agent 开发者 | FR-001～FR-005 | AR-002～AR-004 |
+| BR-003 可诊断 | 平台开发者 | FR-012～FR-014 | AR-007 |
+| BR-004 可验收 | 测试人员 | FR-017～FR-019 | AR-008 |
+| BR-005 可回归 | 测试人员、平台开发者 | FR-018、FR-019 | AR-008 |
+| BR-006 业务价值验证 | 业务团队、架构师 | 第 11 节 | AR-009 |
+| BR-007 领域解耦 | 架构师 | FR-016、AC-009、AC-010 | AR-010 |
+| BR-008 可发布运行 | 所有目标用户 | FR-020、FR-021 | AR-001 |
 
 ---
 
-## 25. 最终产品定义
+## 22. 最终产品决策
 
-> Generative UI Workbench 是 Generative UI Platform 的官方 Frontend Runtime 参考实现和端到端开发验收环境。它只通过 Agent Runtime Host 参与运行链路，负责生成式 UI 的展示、前端交互、诊断和验收，不承担 Business Agent 接入、Agent Run 编排或后端业务工具调用。平台以空地多智能体协同巡防指挥作为首个领域参考场景，在保持 Runtime、Compiler 和 Renderer 领域独立性的前提下，验证设备状态、方案比较、地图协同、用户审批和操作回传的完整闭环。
+Generative UI Workbench 采用：
+
+> **通用平台核心 + 智慧安防场景包 + 空地多智能体巡防指挥参考实现。**
+
+采用该方案的原因：
+
+1. 纯通用 Playground 无法证明生成式 UI 的真实业务价值；
+2. 直接将 Workbench 建成智慧安防业务系统会破坏平台通用性；
+3. 真实场景可以形成明确、连续、可重复的验收标准；
+4. 场景包可以隔离通用机制和领域能力；
+5. 巡防场景能够覆盖地图、设备、方案、任务、审批、状态和工具调用；
+6. Workbench 可以成为后续业务接入的 Frontend Runtime 参考实现；
+7. Runtime Host 继续负责 Business Agent 接入和运行编排，避免前端与业务 Agent 协议耦合。
+
+最终定义：
+
+> Generative UI Workbench 是 Generative UI Platform 的官方 Frontend Runtime 参考实现和端到端开发验收环境。它连接 Agent Runtime Host，渲染 Markdown 和受控生成式 UI，执行前端 Action，展示诊断信息并运行标准验收案例；它不直接连接 Business Agent，不承担 Agent 编排、UI 编译或后端业务工具职责。平台以空地多智能体巡防指挥作为首个参考场景，验证生成式 UI 在复杂业务展示、方案比较、地图协同、人工确认和操作回传中的价值。
