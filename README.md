@@ -124,6 +124,10 @@ UI Compiler Service 已实现 Markdown Sanitizer、结构化数据资源校验�
 `apps/web-demo` 提供一个最小 Vue 浏览器演示页面，可通过 HTTP POST 或 WebSocket 与 Agent Runtime Host 的 Mock 接口交换完整文本消息。
 两个通道只用于验证 Web 与 Runtime Host 的连接、请求、推送和错误展示，不提供 Token 级流式输出。
 
+`apps/web-workbench` 已初始化为后续生成式 UI 开发、联调、诊断和验收工作台目录。
+Workbench 只连接 Agent Runtime Host，不直接接入 Business Agent，也不实现 Business Agent Adapter。
+当前仅建立需求基线和目录职责，尚未引入正式前端依赖。
+
 当前尚未接入真实 Business Agent。
 Web Demo 收到的文本由 Runtime Host Mock 接口生成，不能用于证明真实业务任务已经可执行。
 下一阶段应在 Agent Runtime Host 内新增明确的 Business Agent Adapter，而不是要求 Business Agent 改造为 AG-UI Agent。
@@ -158,7 +162,8 @@ curl -X POST http://localhost:8200/api/demo/message \
 
 ## 文档入口
 
-- [需求规格说明书](./docs/REQUIREMENTS.md)
+- [Generative UI Compiler 需求规格说明书](./docs/REQUIREMENTS.md)
+- [Generative UI Workbench 需求规格说明书](./docs/WEB_WORKBENCH_SRS.md)
 - [系统设计说明书](./docs/Generative_UI_Compiler_Design.md)
 - [架构说明](./docs/ARCHITECTURE.md)
 - [数据契约](./docs/CONTRACTS.md)
