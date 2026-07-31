@@ -1,32 +1,49 @@
 # Agent Runtime Host
 
-CopilotKit Runtime integration layer for the Generative UI Platform.
+Protocol and runtime integration layer for the Generative UI Platform.
 
 ## Responsibility
 
-The runtime host sits between the frontend and an AG-UI-compatible business
-agent. It provides the CopilotKit runtime endpoint and must not contain UI
-planning or UI compilation logic.
+Agent Runtime Host sits between the frontend and Business Agents. It exposes a
+stable frontend-facing interaction boundary and adapts each Business Agent's
+existing protocol when that integration is introduced.
+
+Business Agents do not need to implement AG-UI or CopilotKit directly.
 
 ```text
-Vue + CopilotKit Headless
-          |
-          | AG-UI
-          v
+Vue Web
+   |
+   | frontend interaction protocol
+   v
 Agent Runtime Host
-          |
-          v
+   |
+   | Business Agent adapter
+   v
 Business Agent
 ```
 
-The UI Compiler remains an independent service. A later integration adapter can
-call it after the business agent produces Markdown or structured data.
+UI planning and UI compilation do not belong in this host. UI Compiler remains
+an independent service and can be composed into a later platform workflow.
+
+## Current endpoints
+
+### Mock WebSocket demo
+
+`/ws/demo` is a development-only WebSocket endpoint used by `apps/web-demo`.
+It accepts one complete text message and pushes one complete mock text response.
+It does not call a real Business Agent and does not provide token streaming.
+
+### CopilotKit compatibility endpoint
+
+`/api/copilotkit` is the existing CopilotKit Runtime endpoint. Its current
+implementation uses an `HttpAgent` compatibility adapter and therefore expects
+an AG-UI-compatible upstream URL. This is an implementation detail of that
+adapter, not a platform requirement for future Business Agents.
 
 ## Requirements
 
 - Node.js 24 or newer
 - pnpm 10.13.1
-- An AG-UI-compatible business agent endpoint
 
 ## Configuration
 
@@ -37,9 +54,12 @@ Environment files are not loaded automatically by the application.
 | --- | --- | --- |
 | `HOST` | `0.0.0.0` | Listen address |
 | `PORT` | `8200` | Listen port |
-| `COPILOTKIT_ENDPOINT` | `/api/copilotkit` | Frontend runtime endpoint |
-| `BUSINESS_AGENT_ID` | `business-agent` | Agent identifier exposed to the frontend |
-| `BUSINESS_AGENT_URL` | `http://localhost:8000/ag-ui` | Remote AG-UI agent endpoint |
+| `COPILOTKIT_ENDPOINT` | `/api/copilotkit` | Existing compatibility endpoint |
+| `BUSINESS_AGENT_ID` | `business-agent` | Compatibility adapter identifier |
+| `BUSINESS_AGENT_URL` | `http://localhost:8000/ag-ui` | Compatibility adapter upstream URL |
+
+The Mock WebSocket demo can run without a live service at
+`BUSINESS_AGENT_URL`.
 
 ## Run
 
@@ -56,23 +76,37 @@ Health check:
 curl http://localhost:8200/health
 ```
 
-CopilotKit frontend configuration:
+The response explicitly reports that a real Business Agent is not connected:
 
-```text
-runtimeUrl: http://localhost:8200/api/copilotkit
-agent: business-agent
+```json
+{
+  "status": "ok",
+  "service": "agent-runtime-host",
+  "demoSocketPath": "/ws/demo",
+  "businessAgentConnected": false
+}
 ```
+
+Start the browser demo in another terminal:
+
+```bash
+pnpm dev:web-demo
+```
+
+Then open `http://localhost:5173`.
 
 ## Current boundary
 
-This initialization intentionally does not include:
+This stage intentionally does not include:
 
-- business-agent implementation
+- real Business Agent integration
+- token-level streaming
 - UI Compiler invocation
 - thread persistence
 - authentication
 - frontend tools or approval handlers
-- CopilotKit automatic A2UI generation
+- A2UI generation or rendering
 
-These capabilities should be introduced through explicit adapters after the
-basic AG-UI connection is verified.
+The next Business Agent integration should be introduced through an explicit
+adapter inside Agent Runtime Host without requiring the Business Agent to adopt
+AG-UI.
