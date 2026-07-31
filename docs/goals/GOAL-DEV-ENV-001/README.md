@@ -21,9 +21,11 @@ ADR-0019 关于 Embedded Presentation Pipeline 的决策优先于旧任务包中
 - 每个任务实施前必须重新检查仓库现状，不能把任务文档当成代码现状。
 - 优先复用现有契约和实现，禁止创建平行体系。
 - 当前后端目标是 Agent Runtime Host + Embedded Presentation Pipeline，不建设独立 UI Compiler HTTP Service。
-- Fixture 全链路优先，真实模型 Provider 接入不得阻塞基础集成验证。
+- 必须区分跨进程协议与进程内 Package 契约，禁止把 PresentationRequest / PresentationResult 再包装成内部 HTTP 服务。
+- Fixture 全链路优先：TASK-013 提供最小可运行 Fixture，TASK-004 负责真实 Provider 和扩展故障模拟。
 - `TASK-010` 一键环境应在 `TASK-009` 完整 E2E 前完成。
-- `TASK-011` 可观测性是横切任务，应随各任务增量建设。
+- `TASK-011` 可观测性是横切任务，应随各任务增量建设，并遵守“不记录完整业务内容”的限制。
+- Pipeline、Catalog 和 Fixture Adapter 是 Runtime 进程内能力，不得被描述为独立运行服务。
 
 ## 推荐顺序
 
@@ -34,7 +36,7 @@ TASK-001
 └── TASK-013
 
 TASK-002 → TASK-003
-TASK-013 → TASK-004
+TASK-001 + TASK-013 → TASK-004
 TASK-003 + TASK-013 → TASK-005
 TASK-006 → TASK-007
 TASK-005 + TASK-007 → TASK-008
@@ -43,3 +45,13 @@ TASK-004 + TASK-008 + TASK-010 → TASK-009
 TASK-011 贯穿全过程
 TASK-012 最终收口
 ```
+
+## ADR-0019 完成状态检查
+
+任务包执行完成时必须满足：
+
+- Runtime Host 直接依赖 `packages/presentation-pipeline`。
+- 运行拓扑只有 Workbench、Runtime Host 和 Reference Business Agent 三个服务。
+- 不存在独立 UI Compiler 端口、Client、`UI_COMPILER_URL` 或 Remote Mode。
+- Action Resume 后重新经过同一 Embedded Presentation Pipeline。
+- 日志、Trace 和 Workbench 诊断不包含完整用户请求、AgentContent、Provider 原始响应或未脱敏 Action Payload。
