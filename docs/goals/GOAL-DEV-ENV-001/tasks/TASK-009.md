@@ -15,13 +15,13 @@
 - A2UI 路径。
 - HTTP 路径。
 - WebSocket 路径。
-- Business Agent 不可用。
-- UI Compiler 不可用。
+- Reference Business Agent 不可用。
+- Embedded Presentation Pipeline 内部失败。
 - Model Adapter 超时、限流和非法 PresentationDecision 候选。
 - generative-ui 候选包含非法 UI Plan Candidate。
 - 非法 A2UI。
 - 非法、过期和重复 Action。
-- Compiler 降级和 Runtime 稳定错误。
+- Pipeline 安全 Markdown 降级。
 
 ## 模型测试
 
@@ -31,15 +31,27 @@ CI 默认使用 Fixture Model Adapter。
 
 - PresentationDecision 候选满足 Schema。
 - generative-ui 模式的 UI Plan Candidate 满足 Schema 和 Catalog 约束。
-- Compiler 成功、正确降级或返回稳定失败。
+- Pipeline 成功、正确降级或返回稳定失败。
 - 产生的 A2UI 可以渲染。
 - 不断言固定自然语言或完全相同的组件选择。
+
+## 运行拓扑
+
+E2E 启动三个服务：
+
+```text
+Web Workbench
+Agent Runtime Host + Embedded Presentation Pipeline
+Reference Business Agent
+```
+
+不得启动独立 UI Compiler HTTP Service。
 
 ## 验收
 
 - Fixture 全链路在 CI 稳定通过。
 - HTTP 和 WebSocket 均通过。
 - Action Resume 完整通过。
-- 至少一个真实 UI Compiler Model Provider Smoke 通过。
+- 至少一个真实 Presentation Model Provider Smoke 通过。
 - 所有测试进程、端口和临时数据正确清理。
-- 失败信息能够定位具体服务和阶段。
+- 失败信息能够定位 Business Agent、Runtime、Presentation Pipeline、Renderer 或 Action 阶段。

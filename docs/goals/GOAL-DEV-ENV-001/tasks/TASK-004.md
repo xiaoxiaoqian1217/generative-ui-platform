@@ -1,8 +1,8 @@
-# TASK-004：UI Compiler Model Adapter 多模型接入
+# TASK-004：Presentation Model Adapter 多模型接入
 
 ## 目标
 
-扩展 UI Compiler Service 现有 Model Adapter，使其可以使用 Fixture 或真实模型分析 Business Agent 输出，并生成不可信的 `PresentationDecision` 候选。
+扩展 `packages/presentation-pipeline` 中的 Model Adapter，使其可以使用 Fixture 或真实模型分析 Business Agent 输出，并生成不可信的 `PresentationDecision` 候选。
 
 候选选择 `generative-ui` 时必须包含 UI Plan Candidate；候选也可以选择 Markdown。
 
@@ -17,7 +17,7 @@
 - Timeout、Retry、AbortSignal 和错误分类。
 - Prompt、Catalog 摘要、日志和可观测性。
 
-优先扩展现有实现，禁止创建重复平行体系。
+优先扩展 TASK-013 提取后的现有实现，禁止创建重复平行体系。
 
 ## 工作项
 
@@ -34,7 +34,8 @@
 
 ## 架构限制
 
-- Model Adapter 属于 UI Compiler Service。
+- Model Adapter 的逻辑归属是 Presentation Pipeline。
+- 它运行在 Agent Runtime Host 进程内，但只能由 Presentation Router / Pipeline 调用。
 - 不用于 Business Agent 业务推理或业务工具调用。
 - Provider 输出始终是不可信候选。
 - 不直接生成可信 A2UI、HTML、Vue 或任意可执行代码。
@@ -46,6 +47,6 @@
 - Fixture 模式确定性通过，并可模拟超时、限流和非法候选。
 - Kimi、豆包、GLM 和通义千问均可通过配置注册。
 - 至少一个真实 Provider Smoke Test 通过。
-- 更换 Provider 不修改 UI Compiler Core。
+- 更换 Provider 不修改 UI Compiler Core 或 Runtime Orchestrator。
 - Markdown 和 generative-ui 两类 PresentationDecision 候选均可正确处理。
 - 非法候选进入现有重试、降级或失败路径。

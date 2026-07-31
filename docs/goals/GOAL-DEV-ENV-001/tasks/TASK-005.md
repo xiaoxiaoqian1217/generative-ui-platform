@@ -2,9 +2,9 @@
 
 ## 目标
 
-把 Business Agent 和 UI Compiler 串成完整后端链路。
+把 Business Agent 和 Embedded Presentation Pipeline 串成同一次 Agent Run 内的完整后端链路。
 
-Fixture 编译链路使用 UI Compiler Service 现有 Model Adapter，不等待真实 Provider 接入完成。
+Fixture Pipeline 不等待真实 Provider 接入完成。
 
 ## 流程
 
@@ -12,8 +12,7 @@ Fixture 编译链路使用 UI Compiler Service 现有 Model Adapter，不等待�
 用户请求
 → Business Agent Adapter
 → AgentContent
-→ PresentationRequest
-→ UI Compiler Service
+→ Embedded Presentation Pipeline
 → PresentationResult
 → Web
 ```
@@ -22,26 +21,29 @@ Fixture 编译链路使用 UI Compiler Service 现有 Model Adapter，不等待�
 
 - 实现 RunOrchestrator。
 - 实现 ActionOrchestrator 的基础结构。
-- 实现 UICompilerClient。
+- 在 Agent Runtime Host 组合根中组装 `packages/presentation-pipeline`。
+- 将 AgentContent 转换为 Pipeline 所需的 PresentationRequest 或等价内部请求。
 - 实现最小 SurfaceContextStore。
 - 实现 DependencyHealthService。
 - 提供 `/api/runs`、`/api/actions`、`/health/dependencies` 和 `/ws/runs`。
 - 让 HTTP 与 WebSocket 复用相同应用层编排。
 - 贯穿 requestId、threadId、runId 和 presentationRequestId。
-- 定义 UI Compiler 不可达、返回失败结果和返回降级结果时的不同处理。
+- 统一 Run 的 AbortSignal、总超时预算和观测上下文。
 
 ## 架构限制
 
-- Runtime Host 不生成 PresentationDecision、UI Plan Candidate 或 A2UI。
-- Runtime Host 不直接调用模型。
+- Runtime Host 不构造 PresentationDecision、UI Plan Candidate、UI IR 或 A2UI。
+- Runtime Host 不直接调用模型，Model Adapter 只能由 Presentation Pipeline 调用。
+- Runtime Host 不复制 Sanitizer、Catalog、Router 或 Compiler Core 规则。
 - Transport 层不放业务逻辑。
-- Compiler 内部错误和降级以 PresentationResult 契约为准。
-- UI Compiler Service 完全不可达时，Runtime 返回稳定平台错误，不伪造编译成功结果。
+- 当前不实现 UI Compiler Client、独立 UI Compiler HTTP Service 或 Remote 模式。
+- Pipeline 失败时优先保留有效 Business Agent 内容并执行安全 Markdown 降级。
 
 ## 验收
 
-- AgentContent 正确包装为 PresentationRequest。
+- AgentContent 可以在同一 Run 内进入 Presentation Pipeline。
 - PresentationResult 正确映射为 Runtime Result。
 - HTTP 和 WebSocket 对相同输入产生等价应用结果。
-- Compiler 的成功、降级、失败和不可达场景均有测试。
+- Pipeline 的成功、降级和失败场景均有测试。
+- 取消、超时和关闭语义覆盖 Business Agent 与 Presentation Pipeline。
 - 全链路关联 ID 可用于诊断。
