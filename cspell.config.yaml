@@ -1,5 +1,0 @@
-import:
-  - ./cspell.json
-
-ignoreRegExpList:
-  - /K.mi/g
