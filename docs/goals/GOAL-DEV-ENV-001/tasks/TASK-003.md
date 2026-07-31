@@ -19,8 +19,8 @@
 ## 架构限制
 
 - Runtime Host 不直接依赖 LangGraph SDK。
-- Adapter 不做展示决策，不调用 UI Compiler Model Adapter。
-- Adapter 不生成 PresentationResult 或 A2UI。
+- Adapter 不做展示决策，不调用 Presentation Pipeline、Presentation Model Adapter 或 UI Compiler Core。
+- Adapter 不生成 PresentationRequest、PresentationResult 或 A2UI。
 - Adapter 不把具体 Agent 协议泄露给 Web。
 
 ## 验收

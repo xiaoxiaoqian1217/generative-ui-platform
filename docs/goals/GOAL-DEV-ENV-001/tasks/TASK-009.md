@@ -16,12 +16,14 @@
 - HTTP 路径。
 - WebSocket 路径。
 - Reference Business Agent 不可用。
-- Embedded Presentation Pipeline 内部失败。
+- Embedded Presentation Pipeline 初始化或执行失败。
 - Model Adapter 超时、限流和非法 PresentationDecision 候选。
 - generative-ui 候选包含非法 UI Plan Candidate。
 - 非法 A2UI。
 - 非法、过期和重复 Action。
 - Pipeline 安全 Markdown 降级。
+- Runtime Host 取消、总超时预算和关闭传播。
+- 三服务拓扑检查：不存在独立 UI Compiler 进程、端口或网络调用。
 
 ## 模型测试
 
@@ -45,13 +47,15 @@ Agent Runtime Host + Embedded Presentation Pipeline
 Reference Business Agent
 ```
 
-不得启动独立 UI Compiler HTTP Service。
+不得启动独立 UI Compiler HTTP Service，也不得通过 `UI_COMPILER_URL` 或其他内部 HTTP Client 模拟 Embedded Pipeline。
 
 ## 验收
 
 - Fixture 全链路在 CI 稳定通过。
 - HTTP 和 WebSocket 均通过。
-- Action Resume 完整通过。
+- Action Resume 完整通过，并重新经过 Embedded Presentation Pipeline。
 - 至少一个真实 Presentation Model Provider Smoke 通过。
+- E2E 仅启动三个服务，且不存在独立 Compiler 端口或网络请求。
 - 所有测试进程、端口和临时数据正确清理。
 - 失败信息能够定位 Business Agent、Runtime、Presentation Pipeline、Renderer 或 Action 阶段。
+- 诊断断言只依赖安全摘要，不要求完整业务内容或 Provider 原始响应进入日志。

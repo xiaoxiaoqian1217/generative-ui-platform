@@ -2,7 +2,7 @@
 
 ## 目标
 
-在浏览器中安全渲染 UI Compiler 输出的 A2UI，并明确 Component Catalog 与 Component Registry 的职责边界。
+在浏览器中安全渲染由 UI Compiler Core 生成、并通过 Runtime Result 中 PresentationResult 交付的可信 A2UI，同时明确 Component Catalog 与 Component Registry 的职责边界。
 
 ## 工作项
 
@@ -20,8 +20,9 @@
 - Component Catalog 描述 Compiler 可选择的能力。
 - Component Registry 映射浏览器中的真实 Vue 组件。
 - Renderer 只渲染 Catalog 允许且 Registry 注册的组件。
+- Renderer 只消费 Runtime Host 返回的 PresentationResult，不直接连接 Presentation Pipeline 或 UI Compiler Core。
 - 不执行任意 HTML、JavaScript 或模型生成代码。
-- 不把 Model Adapter 或 UI Plan Candidate 当作浏览器输入。
+- 不把 Model Adapter、PresentationDecision 候选或 UI Plan Candidate 当作浏览器输入。
 
 ## 验收
 

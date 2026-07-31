@@ -25,7 +25,7 @@
 ## 架构限制
 
 - 默认不需要模型 API Key。
-- 不调用 UI Compiler Model Adapter。
+- 不调用 Presentation Pipeline、Presentation Model Adapter 或 UI Compiler Core。
 - 不输出 PresentationDecision、UI Plan Candidate 或 A2UI。
 - 不选择前端组件，不生成 HTML 或 Vue。
 - 真实业务 Agent 的接入方式由 Business Agent Adapter 隔离。
