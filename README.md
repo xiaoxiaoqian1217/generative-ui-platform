@@ -7,13 +7,14 @@
 | 名称 | 定位 | 当前状态 |
 |---|---|---|
 | Generative UI Platform | 仓库级和长期平台边界 | 持续建设 |
-| Generative UI Compiler | 平台核心子系统 | 已形成 Compiler MVP 基线 |
+| Generative UI Compiler | 平台核心编译能力 | 已形成 Compiler MVP 基线 |
+| Presentation Pipeline | 展示后处理应用 Package | 按 ADR-0019 迁移建设 |
 | Generative UI Workbench | Frontend Runtime 参考实现与开发验证工作台 | 逐步建设 |
 | Reference Business Agent | 全链路验证用参考 Agent | 当前阶段允许建设 |
 | Interaction Gateway | 未来多 Agent 扩展能力 | 不属于当前阶段 |
 
 当前仓库不再只描述 Compiler MVP。
-下一阶段目标是建设覆盖 Business Agent、Runtime Host、UI Compiler、A2UI Renderer 和 Action 回传的全链路开发验证环境。
+下一阶段目标是建设覆盖 Business Agent、Runtime Host、Embedded Presentation Pipeline、A2UI Renderer 和 Action 回传的全链路开发验证环境。
 
 这不是新的独立产品，而是 Generative UI Platform 的阶段性研发基础设施。
 
@@ -22,16 +23,17 @@
 ```text
 Generative UI Workbench
 → Agent Runtime Host
-→ Business Agent Adapter
-→ Reference Business Agent
-→ Markdown / Structured Data
-→ UI Compiler Service
-→ Presentation Router / Model Adapter
-→ untrusted PresentationDecision Candidate
-→ UI Plan Candidate when generative-ui is selected
-→ UI Compiler Core
-→ Markdown / A2UI
-→ Frontend Runtime
+   ├── Business Agent Adapter
+   │   → Reference Business Agent
+   │   → Markdown / Structured Data
+   │
+   └── Embedded Presentation Pipeline
+       → Presentation Router / Model Adapter
+       → untrusted PresentationDecision Candidate
+       → UI Plan Candidate when generative-ui is selected
+       → UI Compiler Core
+       → PresentationResult
+→ Frontend Markdown / A2UI Renderer
 → Action 回传
 ```
 
@@ -40,11 +42,13 @@ Generative UI Workbench
 - Web 只连接 Agent Runtime Host。
 - Business Agent 只输出 Markdown 或结构化业务数据。
 - Business Agent 不需要支持 AG-UI、A2UI 或前端组件协议。
-- Model Adapter 位于 UI Compiler Service。
+- Presentation Pipeline 是独立 Package，并嵌入 Agent Runtime Host 运行。
+- Model Adapter 的逻辑归属是 Presentation Pipeline。
 - Model Adapter 输出不可信的展示决策候选；选择 generative-ui 时包含 UI Plan Candidate。
 - UI Plan Candidate 始终是不可信输入。
 - UI Compiler Core 是唯一可信 A2UI 生产者。
-- Runtime Host 不承担 UI 规划和 UI 编译。
+- Runtime Host 负责组合和 Run 生命周期，但不承担 UI 规划和 A2UI 编译。
+- 当前不建设独立 UI Compiler HTTP Service、UI Compiler Client 或 Embedded / Remote 双模式。
 - Interaction Gateway 和多 Agent 路由仍属于未来范围。
 
 ## 当前项目状态
@@ -52,7 +56,7 @@ Generative UI Workbench
 当前仓库已具备：
 
 - UI Compiler Core；
-- UI Compiler Service；
+- 原 UI Compiler Service 中的展示应用能力；
 - Presentation Contract；
 - Component Catalog Schema；
 - Agent Runtime Host；
@@ -61,9 +65,10 @@ Generative UI Workbench
 
 当前尚未完成：
 
+- `packages/presentation-pipeline` 提取；
 - Reference Business Agent；
 - Business Agent Adapter；
-- Runtime Host 到 UI Compiler 的完整编排；
+- Runtime Host 内嵌 Presentation Pipeline 编排；
 - Vue A2UI Renderer；
 - Action 回传闭环；
 - 平台级 Playwright E2E；
@@ -77,7 +82,10 @@ Generative UI Workbench
 - [平台级需求](./docs/platform/REQUIREMENTS.md)
 - [平台系统架构](./docs/platform/SYSTEM_ARCHITECTURE.md)
 - [全链路开发验证环境](./docs/platform/DEVELOPMENT_ENVIRONMENT.md)
-- [平台范围调整决策](./docs/platform/SCOPE_DECISION.md)
+- [平台范围调整摘要](./docs/platform/SCOPE_DECISION.md)
+- [ADR 索引](./docs/adr/README.md)
+- [ADR-0018：平台验证环境范围](./docs/adr/0018-expand-repository-scope-to-platform-validation-environment.md)
+- [ADR-0019：Presentation Pipeline 嵌入 Runtime Host](./docs/adr/0019-embed-presentation-pipeline-in-agent-runtime-host.md)
 - [当前开发环境 Goal](./docs/goals/GOAL-DEV-ENV-001.md)
 - [当前 Goal 子任务包](./docs/goals/GOAL-DEV-ENV-001/README.md)
 
@@ -98,8 +106,9 @@ Generative UI Workbench
 
 ## 文档适用规则
 
-- 跨子系统关系和平台范围以 `docs/platform/` 为准。
-- Compiler 内部实现继续以原 Compiler MVP 文档为准。
+- 跨子系统关系和平台范围以 `docs/platform/` 与当前有效 ADR 为准。
+- Compiler 内部信任和编译边界继续以原 Compiler MVP 文档为准。
+- ADR-0019 取代旧文档中的独立 UI Compiler Service 目标部署结论。
 - 当前 Goal 的总目标以 `docs/goals/GOAL-DEV-ENV-001.md` 为准。
 - 可执行子任务以 `docs/goals/GOAL-DEV-ENV-001/tasks/` 为准。
 - 当前阶段执行内容必须由 Goal、Issue 或范围决策明确授权。
