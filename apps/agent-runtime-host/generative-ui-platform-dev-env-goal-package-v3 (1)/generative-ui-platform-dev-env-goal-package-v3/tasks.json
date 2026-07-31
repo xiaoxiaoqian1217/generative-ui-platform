@@ -1,0 +1,167 @@
+{
+  "goal_id": "GOAL-DEV-ENV-001",
+  "title": "生成式 UI 平台全链路开发验证环境建设",
+  "artifact_type": "development_validation_environment",
+  "not_a_standalone_product": true,
+  "parent_project": "Generative UI Platform",
+  "critical_architecture_boundaries": {
+    "web_entry": "Agent Runtime Host",
+    "business_agent_output": "Markdown or structured business data",
+    "model_adapter_location": "UI Compiler Service",
+    "model_adapter_purpose": "Convert sanitized AgentContent and presentation context into an untrusted UI Plan Candidate",
+    "trusted_a2ui_producer": "UI Compiler Core"
+  },
+  "ui_compiler_model_providers": ["fixture", "kimi", "doubao", "glm", "qwen"],
+  "default_ports": {
+    "web_workbench": 5173,
+    "agent_runtime_host": 8200,
+    "business_agent_langgraph": 8300,
+    "ui_compiler_service": 3000
+  },
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "平台集成契约",
+      "depends_on": [],
+      "goal": "建立 Business Agent、Runtime Host、UI Compiler 与 Web 之间的公共契约。",
+      "acceptance": [
+        "Business Agent Contract 不包含 UI Plan Candidate",
+        "Business Agent Contract 不包含 A2UI",
+        "Runtime Result 可以携带 PresentationResult",
+        "所有跨进程消息具有运行时 Schema 校验"
+      ]
+    },
+    {
+      "id": "TASK-002",
+      "title": "TypeScript LangGraph Business Agent MVP",
+      "depends_on": ["TASK-001"],
+      "goal": "建立确定性、可暂停恢复的简易业务 Agent。",
+      "acceptance": [
+        "无模型 API Key 可以运行",
+        "支持设备状态、巡逻计划和任务确认",
+        "支持内存 Checkpoint 与 Resume",
+        "只输出 Markdown 或结构化业务数据"
+      ]
+    },
+    {
+      "id": "TASK-003",
+      "title": "Business Agent Adapter",
+      "depends_on": ["TASK-001", "TASK-002"],
+      "goal": "让 Runtime Host 通过统一 Adapter 调用 LangGraph Business Agent。",
+      "acceptance": [
+        "Runtime Host 不直接依赖 LangGraph SDK",
+        "支持 run 和 resumeAction",
+        "支持超时、取消、Schema 校验和错误归一化",
+        "Adapter 不处理 UI 编译"
+      ]
+    },
+    {
+      "id": "TASK-004",
+      "title": "UI Compiler Model Adapter 多模型接入",
+      "depends_on": ["TASK-001"],
+      "goal": "扩展 UI Compiler Service 已有 Model Adapter，把 Business Agent 输出转换为 UI Plan Candidate。",
+      "providers": ["fixture", "kimi", "doubao", "glm", "qwen"],
+      "acceptance": [
+        "Model Adapter 位于 UI Compiler Service",
+        "优先复用现有抽象",
+        "模型输出必须满足 UI Plan Candidate Schema",
+        "至少一个真实 Provider Smoke Test 通过",
+        "模型不直接产生可信 A2UI"
+      ]
+    },
+    {
+      "id": "TASK-005",
+      "title": "Runtime Host 平台编排",
+      "depends_on": ["TASK-003", "TASK-004"],
+      "goal": "串联 Business Agent、UI Compiler 和 Web。",
+      "acceptance": [
+        "HTTP 与 WebSocket 共用 Orchestrator",
+        "Runtime Host 不直接调用模型",
+        "Runtime Host 不生成 A2UI",
+        "Compiler 故障具有安全降级"
+      ]
+    },
+    {
+      "id": "TASK-006",
+      "title": "Web Workbench 工程化",
+      "depends_on": ["TASK-001"],
+      "goal": "将静态 Demo 升级为长期可用的 Vue 开发验证工作台。",
+      "acceptance": [
+        "移除公共 CDN 依赖",
+        "Web 只连接 Runtime Host",
+        "支持 HTTP 和 WebSocket",
+        "构建产物可部署为测试与演示环境"
+      ]
+    },
+    {
+      "id": "TASK-007",
+      "title": "Vue A2UI Renderer",
+      "depends_on": ["TASK-006"],
+      "goal": "安全渲染 UI Compiler 输出的 A2UI。",
+      "acceptance": [
+        "只渲染 Catalog 注册组件",
+        "非法 Operation 被拒绝",
+        "不执行任意 HTML 或 JavaScript",
+        "Button 产生结构化 Action Event"
+      ]
+    },
+    {
+      "id": "TASK-008",
+      "title": "Action 回传闭环",
+      "depends_on": ["TASK-005", "TASK-007"],
+      "goal": "完成 A2UI Action 到 LangGraph Resume 的闭环。",
+      "acceptance": [
+        "校验 surfaceId、runId、actionId 和 Catalog Action",
+        "前端不能构造任意业务工具调用",
+        "任务确认后页面展示新业务状态"
+      ]
+    },
+    {
+      "id": "TASK-009",
+      "title": "完整平台 E2E",
+      "depends_on": ["TASK-008"],
+      "goal": "使用真实进程和浏览器验证完整链路。",
+      "acceptance": [
+        "Fixture 全链路在 CI 稳定通过",
+        "HTTP 和 WebSocket 均通过",
+        "覆盖模型超时、非法 UI Plan、非法 A2UI 和非法 Action",
+        "至少一个真实 UI Compiler Model Provider Smoke 通过"
+      ]
+    },
+    {
+      "id": "TASK-010",
+      "title": "一键开发环境",
+      "depends_on": ["TASK-005", "TASK-006", "TASK-009"],
+      "goal": "提供统一安装、启动、构建和验证命令。",
+      "acceptance": [
+        "全新克隆可冻结安装",
+        "一个命令启动四个服务",
+        "默认 Fixture 无 API Key 可运行",
+        "环境检查可报告所有依赖状态"
+      ]
+    },
+    {
+      "id": "TASK-011",
+      "title": "诊断与可观测性",
+      "depends_on": ["TASK-004", "TASK-005", "TASK-006"],
+      "goal": "使用 requestId 追踪完整安全链路。",
+      "acceptance": [
+        "可查看 AgentContent、PresentationRequest、UI Plan 校验、PresentationResult、A2UI 和 Action",
+        "可查看各阶段耗时和错误",
+        "不记录 API Key、Authorization、隐藏推理或未脱敏数据"
+      ]
+    },
+    {
+      "id": "TASK-012",
+      "title": "文档与演示",
+      "depends_on": ["TASK-010", "TASK-011"],
+      "goal": "形成可交接、可接入、可评审的开发验证环境文档。",
+      "acceptance": [
+        "新开发人员可以按文档启动环境",
+        "评审人员可以完成完整链路演示",
+        "文档明确当前交付物是验证环境而不是独立产品",
+        "文档明确 Model Adapter 位于 UI Compiler Service"
+      ]
+    }
+  ]
+}
