@@ -85,8 +85,12 @@
       "id": "TASK-006",
       "title": "Web Workbench 工程化",
       "depends_on": ["TASK-001"],
-      "goal": "将静态 Demo 升级为长期可用的 Vue 开发验证工作台。",
+      "workdir": "apps/web-workbench",
+      "requirements_baseline": "docs/WEB_WORKBENCH_SRS.md",
+      "goal": "在 apps/web-workbench 中将临时 Demo 验证能力升级为长期可用的 Vue 开发验证工作台。",
       "acceptance": [
+        "所有实现位于 apps/web-workbench",
+        "不创建平行的 Web Workbench 工程",
         "移除公共 CDN 依赖",
         "Web 只连接 Runtime Host",
         "支持 HTTP 和 WebSocket",
