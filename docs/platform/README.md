@@ -8,8 +8,18 @@
 - [平台级架构](./ARCHITECTURE.md)
 - [架构简图](./SYSTEM_ARCHITECTURE.md)
 - [开发验证环境](./DEVELOPMENT_ENVIRONMENT.md)
-- [平台范围调整决策](./SCOPE_DECISION.md)
+- [平台范围调整摘要](./SCOPE_DECISION.md)
+- [ADR-0018：平台全链路开发验证环境范围](../adr/0018-expand-repository-scope-to-platform-validation-environment.md)
+- [架构决策记录索引](../adr/README.md)
 - [当前 Goal](../goals/GOAL-DEV-ENV-001.md)
+
+## 规范关系
+
+平台级需求和架构定义跨子系统范围、职责和调用关系。
+ADR 记录重要架构选择的背景、取舍、取代关系和后果。
+当前 Goal 定义阶段性交付范围和验收标准。
+
+发生冲突时，应先判断修改属于平台级范围还是 Compiler 子系统范围，再根据 `AGENTS.md` 中的规范优先级处理。
 
 ## 旧文档关系
 
@@ -21,3 +31,4 @@
 
 平台级文档负责跨子系统范围和关系。
 旧文档负责 Compiler 内部需求、架构和设计。
+原 Compiler ADR 继续约束 Compiler 子系统，除非后续 ADR 明确说明取代范围。
