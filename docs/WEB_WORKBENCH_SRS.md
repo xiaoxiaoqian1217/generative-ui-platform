@@ -618,14 +618,15 @@ Agent 开发者必须能够通过 Runtime Host 运行指定 Agent 配置，并�
 
 系统必须先展示任务草稿和人工确认界面。
 
-用户确认后，Workbench 只将确认事件回传 Runtime Host，由 Runtime Host 调用后端任务创建工具。
+用户确认后，Workbench 只将确认事件回传 Runtime Host。
+Runtime Host 校验 Action 并通过 Business Agent Adapter 恢复 Agent Run，由 Business Agent 或业务后端调用后端任务创建工具。
 
 该场景验证：
 
 - 人机协作状态；
 - 高风险操作控制边界；
 - 用户确认；
-- 后端工具调用职责；
+- Runtime Host 的 Action 恢复职责与 Business Agent 的后端工具调用职责；
 - 创建失败后的草稿保留和恢复提示。
 
 ---
@@ -1201,7 +1202,7 @@ Workbench 可以执行至少一个地图前端 Action，并将结果回传 Runti
 
 ### AR-006 人工确认
 
-任务创建流程在用户确认前不得触发 Runtime Host 的后端创建操作。
+任务创建流程在用户确认前，Runtime Host 不得将确认型 Action 恢复给 Business Agent，Business Agent 不得调用后端任务创建工具。
 
 ### AR-007 诊断
 
