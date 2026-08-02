@@ -73,6 +73,7 @@ try {
   const packageDirectories = [
     "shared-types",
     "presentation-contract",
+    "runtime-contract",
     "component-catalog-schema",
     "compiler-contract",
     "ui-compiler-core",
@@ -106,8 +107,9 @@ try {
   const dependencyOverrides = {
     "@generative-ui/shared-types": asFileDependency(tarballs[0]),
     "@generative-ui/presentation-contract": asFileDependency(tarballs[1]),
-    "@generative-ui/component-catalog-schema": asFileDependency(tarballs[2]),
-    "@generative-ui/compiler-contract": asFileDependency(tarballs[3]),
+    "@generative-ui/runtime-contract": asFileDependency(tarballs[2]),
+    "@generative-ui/component-catalog-schema": asFileDependency(tarballs[3]),
+    "@generative-ui/compiler-contract": asFileDependency(tarballs[4]),
     ...Object.fromEntries(
       Object.entries(externalDependencyTarballs).map(
         ([packageName, tarball]) => [packageName, asFileDependency(tarball)],
@@ -124,13 +126,14 @@ try {
         type: "module",
         dependencies: {
           "@generative-ui/component-catalog-schema": asFileDependency(
-            tarballs[2],
+            tarballs[3],
           ),
-          "@generative-ui/compiler-contract": asFileDependency(tarballs[3]),
-          "@generative-ui/ag-ui-adapter": asFileDependency(tarballs[5]),
+          "@generative-ui/compiler-contract": asFileDependency(tarballs[4]),
+          "@generative-ui/ag-ui-adapter": asFileDependency(tarballs[6]),
           "@generative-ui/presentation-contract": asFileDependency(tarballs[1]),
+          "@generative-ui/runtime-contract": asFileDependency(tarballs[2]),
           "@generative-ui/shared-types": asFileDependency(tarballs[0]),
-          "@generative-ui/ui-compiler-core": asFileDependency(tarballs[4]),
+          "@generative-ui/ui-compiler-core": asFileDependency(tarballs[5]),
         },
       },
       null,
@@ -170,6 +173,10 @@ import {
   validateCatalogContentHash,
   validateUICompileRequest,
 } from "@generative-ui/compiler-contract";
+import {
+  validateRuntimeRunRequest,
+  validateRuntimeRunResult,
+} from "@generative-ui/runtime-contract";
 import { compileUI } from "@generative-ui/ui-compiler-core";
 import {
   createRunFinishedEvent,
@@ -258,6 +265,24 @@ const compileRequest = {
   },
 };
 
+const runtimeRunRequest = {
+  protocolVersion: "1.0",
+  requestId: "request-1",
+  message: {
+    role: "user",
+    content: "Show total",
+  },
+};
+const runtimeRunResult = {
+  protocolVersion: "1.0",
+  requestId: "request-1",
+  threadId: "thread-1",
+  runId: "run-1",
+  presentationRequestId: "request-1",
+  status: "completed",
+  presentation: result,
+};
+
 assert.equal(typeof jsonValueSchema.$id, "string", "shared schema export");
 assert.equal(validateUIPlan(plan).success, true, "UI Plan validation");
 assert.equal(
@@ -281,6 +306,16 @@ assert.equal(
   ).success,
   true,
   "Catalog content hash validation",
+);
+assert.equal(
+  validateRuntimeRunRequest(runtimeRunRequest).success,
+  true,
+  "Runtime Run Request validation",
+);
+assert.equal(
+  validateRuntimeRunResult(runtimeRunResult).success,
+  true,
+  "Runtime Run Result validation",
 );
 const compileResult = compileUI(compileRequest, {
   surfaceId: "surface-1",
@@ -344,6 +379,10 @@ import type {
   UICompileRequest,
   UICompileResult,
 } from "@generative-ui/compiler-contract";
+import type {
+  RuntimeRunRequest,
+  RuntimeRunResult,
+} from "@generative-ui/runtime-contract";
 import type { CompileOptions } from "@generative-ui/ui-compiler-core";
 import type {
   AGUIEventSequence,
@@ -362,6 +401,8 @@ declare const plan: UIPlan;
 declare const catalog: ComponentCatalog;
 declare const compileRequest: UICompileRequest;
 declare const compileResult: UICompileResult;
+declare const runtimeRunRequest: RuntimeRunRequest;
+declare const runtimeRunResult: RuntimeRunResult;
 declare const compileOptions: CompileOptions;
 declare const agUIContext: AGUIRequestContext;
 declare const agUIEvents: AGUIEventSequence;
@@ -372,6 +413,8 @@ void plan;
 void catalog;
 void compileRequest;
 void compileResult;
+void runtimeRunRequest;
+void runtimeRunResult;
 void compileOptions;
 void agUIContext;
 void agUIEvents;
@@ -418,6 +461,7 @@ void agUIEvents;
   const packageNames = [
     "@generative-ui/shared-types",
     "@generative-ui/presentation-contract",
+    "@generative-ui/runtime-contract",
     "@generative-ui/component-catalog-schema",
     "@generative-ui/compiler-contract",
     "@generative-ui/ui-compiler-core",

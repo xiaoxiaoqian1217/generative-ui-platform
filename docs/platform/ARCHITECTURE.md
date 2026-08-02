@@ -43,10 +43,12 @@ UI Compiler Core 是唯一可信 A2UI 生产者。
 
 ## 4. 协议边界
 
-- Business Agent Contract 描述业务请求和 AgentContent。
-- Presentation Contract 描述 Compiler 输入输出。
+- Runtime Contract 描述 Web 与 Runtime Host 的 HTTP / WebSocket Run 和 Action 消息，以及 Runtime Host 与 Business Agent Adapter 的 Run 和 Resume Action 消息。
+- Business Agent Contract 描述业务请求和 AgentContent，并由 `packages/runtime-contract` 承载。
+- Presentation Contract 描述 Runtime Host 与 Embedded Presentation Pipeline 的进程内请求和结果。
+- Compiler Contract 描述 Presentation Pipeline 与 UI Compiler Core 的进程内编译请求、UI IR、A2UI Profile 和编译结果。
 - A2UI 描述可渲染 UI Surface。
-- HTTP、WebSocket 或可选 AG-UI 描述前端传输。
+- HTTP、WebSocket 或可选 AG-UI 只描述前端传输，不描述 UI Compiler 网络客户端。
 - Business Agent 不需要实现 AG-UI。
 
 ## 5. 默认开发拓扑
