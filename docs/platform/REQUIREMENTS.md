@@ -18,8 +18,9 @@ Agent Runtime Host、Web Demo 和 Generative UI Workbench 已进入仓库，下�
 → Reference Business Agent
 → Markdown / Structured Data
 → Embedded Presentation Pipeline
-→ UI Plan Candidate
-→ UI Compiler Core
+→ untrusted PresentationDecision Candidate
+   ├── markdown
+   └── generative-ui + UI Plan Candidate → UI Compiler Core
 → Markdown / A2UI
 → Frontend Runtime
 → Action 回传
@@ -39,7 +40,7 @@ Generative UI Platform 是面向 Agent 应用的生成式 UI 编译与交互运�
 - Runtime Host 通过可替换 Adapter 调用协议无关的 Business Agent；
 - Business Agent 只输出 Markdown 或结构化业务数据；
 - Runtime Host 在进程内组装 Presentation Pipeline；
-- Presentation Pipeline 通过 Model Adapter 产生展示决策或 UI Plan Candidate；
+- Presentation Pipeline 通过 Model Adapter 产生不可信的 PresentationDecision Candidate，仅 `generative-ui` 分支包含 UI Plan Candidate；
 - UI Compiler Core 是唯一可信 A2UI 生产者；
 - Frontend Runtime 渲染 Markdown 和 A2UI；
 - 用户 Action 经 Runtime Host 校验后回传 Business Agent；
@@ -90,7 +91,7 @@ Business Agent 不得输出 UI Plan Candidate、A2UI、HTML、Vue 或组件选�
 ### Model Adapter
 
 平台当前所称 Model Adapter 属于 Presentation Pipeline。
-它把清洗后的 AgentContent 和展示上下文转换为 Schema 约束的展示决策或 UI Plan Candidate。
+它把清洗后的 AgentContent 和展示上下文转换为受 Schema 约束但仍不可信的 PresentationDecision Candidate；仅 `generative-ui` 分支包含 UI Plan Candidate。
 它不用于 Business Agent 业务推理，也不得直接产生可信 A2UI。
 
 ### Compiler Core
