@@ -52,7 +52,7 @@ _Avoid_: Business Agent Router、UI Compiler Core
 
 **Model Adapter**:
 Presentation Pipeline 中供 Presentation Router 调用的模型供应商适配实现。
-它用于生成展示决策或 UI Plan Candidate，不用于 Business Agent 业务推理。
+它用于生成不可信的 PresentationDecision Candidate；仅 `generative-ui` 分支包含 UI Plan Candidate，不用于 Business Agent 业务推理。
 _Avoid_: Business Agent Adapter、UI Compiler Core
 
 **UI Plan Candidate**:
