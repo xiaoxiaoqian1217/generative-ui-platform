@@ -51,7 +51,7 @@
 - 服务哪些用户；
 - 解决哪些用户问题；
 - 在 Generative UI Platform 中承担什么职责；
-- 与 Agent Runtime Host、Business Agent 和 UI Compiler 的边界；
+- 与 Agent Runtime Host、Business Agent 和 Presentation Pipeline 的边界；
 - MVP 必须提供哪些能力；
 - 以什么业务场景验证其价值；
 - 达到什么条件才可以验收。
@@ -84,7 +84,7 @@
 4. 系统展示设备编组、路线、风险和执行约束；
 5. 用户比较方案并作出选择；
 6. 高风险操作经过人工确认；
-7. Runtime Host 调用后端业务工具；
+7. Runtime Host 将确认结果恢复给 Business Agent，由 Business Agent 调用后端业务工具；
 8. 页面持续展示执行状态、异常和处理结果。
 
 这类业务结果不只是普通文本，还可能包含：
@@ -105,7 +105,7 @@ Generative UI Platform 已逐步形成以下能力：
 
 - Agent Runtime Host；
 - Business Agent Adapter 扩展位置；
-- UI Compiler Service；
+- 可嵌入的 Presentation Pipeline；
 - Presentation Router；
 - UI Compiler Core；
 - Presentation Request 和 Presentation Result 契约；
@@ -172,7 +172,7 @@ Generative UI Workbench
   ↓
 Agent Runtime Host
   ├── Business Agent Adapter → Business Agent
-  └── UI Compiler Service
+  └── Embedded Presentation Pipeline
           ↓
     Markdown / A2UI
           ↓
@@ -260,8 +260,9 @@ Generative UI Workbench 定位为：
 
 - 通用 Workbench 核心负责 Runtime 通信、渲染、诊断、案例和配置；
 - 智慧安防场景包负责领域组件、前端 Action、示例数据和验收案例；
-- Agent Runtime Host 负责 Business Agent Adapter、Run 生命周期、Compiler 调用和后端工具；
-- UI Compiler 负责展示决策和受控 UI 编译。
+- Agent Runtime Host 负责 Business Agent Adapter、Run 生命周期、Action 校验和进程内 Presentation Pipeline 组装；
+- Business Agent 负责业务推理、后端业务工具和权威业务状态；
+- Presentation Pipeline 负责展示路由、候选验证和受控 UI 编译。
 
 ### 5.3 一句话价值
 
@@ -378,9 +379,9 @@ Generative UI Workbench
           ▼
 Agent Runtime Host
           ├── Business Agent Adapter ──> Business Agent
-          ├── Run 生命周期和上下文编排
-          ├── 后端业务工具调用
-          └── UI Compiler Service
+          │                             └── 后端业务工具
+          ├── Run 生命周期、上下文编排和 Action 恢复
+          └── Embedded Presentation Pipeline
                     │
                     ├── Markdown
                     └── A2UI / Fallback
@@ -439,19 +440,19 @@ Agent Runtime Host 负责：
 - 适配不同 Business Agent 原有协议；
 - 调用 Business Agent；
 - 聚合运行事件；
-- 调用 UI Compiler Service；
+- 在进程内组装和调用 Presentation Pipeline；
 - 将 Markdown、A2UI、诊断和错误映射给 Workbench；
 - 接收 Workbench Action 结果；
-- 调用后端业务工具；
-- 维护需要后端权威控制的任务状态。
+- 校验 Action 并通过 Business Agent Adapter 恢复 Agent Run；
+- 维护 Run 生命周期、Checkpoint 引用和恢复上下文。
 
-### 7.5 UI Compiler 职责
+### 7.5 Presentation Pipeline 与 UI Compiler Core 职责
 
 UI Compiler 负责：
 
-- 判断 Agent 业务内容应使用 Markdown 还是生成式 UI；
-- 生成或接收 UI Plan Candidate；
-- 校验 Component Catalog、Props、Action 和结构；
+- Presentation Router 判断 Agent 业务内容应使用 Markdown 还是生成式 UI；
+- Model Adapter 生成不可信的 PresentationDecision Candidate，仅 `generative-ui` 分支包含 UI Plan Candidate；
+- 校验 PresentationDecision Candidate、Component Catalog、Props、Action 和结构；
 - 将 UI Plan Candidate 转换为 UI IR；
 - 将 UI IR 编译为 A2UI；
 - 失败时返回安全降级结果；
@@ -736,7 +737,7 @@ Workbench 必须维护已允许的前端 Action。
 - 风险提示；
 - 确认和取消操作。
 
-Workbench 不得在用户确认前触发后端业务工具。
+Runtime Host 不得在用户确认前将确认型 Action 恢复给 Business Agent，Business Agent 不得执行相应后端业务工具。
 
 ### FR-012 运行状态
 
@@ -952,7 +953,7 @@ Workbench 只显示 Runtime Host 暴露的 Agent 配置标识和运行结果，�
 
 该接口不属于 Workbench 直接调用范围。
 
-Runtime Host 负责调用 UI Compiler Service，并将结果映射为 Workbench 可消费的协议。
+Runtime Host 负责在进程内调用 Presentation Pipeline，并将结果映射为 Workbench 可消费的协议。
 
 ### IR-004 Renderer 与 Registry
 
@@ -1132,7 +1133,7 @@ Workbench 必须只连接 Agent Runtime Host，不得直接连接 Business Agent
 
 ### AC-002
 
-Business Agent Adapter、Run 编排、后端业务工具和权威业务状态属于 Runtime Host 或 Business Agent 后端。
+Business Agent Adapter、Run 编排和 Action 恢复属于 Runtime Host；后端业务工具和权威业务状态属于 Business Agent 或业务后端。
 
 ### AC-003
 

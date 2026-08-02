@@ -12,8 +12,9 @@ Workbench
 → AgentContent
 → Embedded Presentation Pipeline
 → Model Adapter
-→ UI Plan Candidate
-→ UI Compiler Core
+→ untrusted PresentationDecision Candidate
+   ├── markdown
+   └── generative-ui + UI Plan Candidate → UI Compiler Core
 → PresentationResult
 → Frontend Runtime
 ```
@@ -22,7 +23,7 @@ Workbench
 
 - Workbench 只连接 Agent Runtime Host。
 - Business Agent 只输出 Markdown 或结构化数据。
-- Model Adapter 位于 Presentation Pipeline。
+- Model Adapter 位于 Presentation Pipeline，输出不可信的 PresentationDecision Candidate；仅 `generative-ui` 分支包含 UI Plan Candidate。
 - Runtime Host 不生成 A2UI。
 - UI Compiler Core 是唯一可信 A2UI 生产者。
 - Frontend Runtime 负责 Markdown 和 A2UI 渲染。

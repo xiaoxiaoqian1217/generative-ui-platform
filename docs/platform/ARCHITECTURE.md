@@ -14,8 +14,9 @@ Generative UI Workbench
 → Agent Runtime Host
 → Embedded Presentation Pipeline
 → Presentation Router / Model Adapter
-→ UI Plan Candidate
-→ UI Compiler Core
+→ untrusted PresentationDecision Candidate
+   ├── markdown
+   └── generative-ui + UI Plan Candidate → UI Compiler Core
 → PresentationResult
 → Frontend Runtime
 → Action Event
@@ -30,7 +31,7 @@ Generative UI Workbench
 - Business Agent Adapter 隔离 Runtime Host 与具体 Agent 协议。
 - Reference Business Agent 负责业务工具、状态和恢复，只输出 Markdown 或结构化数据。
 - Presentation Pipeline 负责展示路由、Model Adapter 组装和 Compiler 调用。
-- Model Adapter 位于 Presentation Pipeline，输出受 Schema 约束但仍不可信的展示决策或 UI Plan Candidate。
+- Model Adapter 位于 Presentation Pipeline，输出受 Schema 约束但仍不可信的 PresentationDecision Candidate；仅 `generative-ui` 分支包含 UI Plan Candidate。
 - UI Compiler Core 校验 Candidate 和 Catalog，构建 UI IR 并编译 A2UI。
 - Frontend Runtime 维护 Component Registry，渲染 Markdown 或 A2UI，并产生 Action Event。
 

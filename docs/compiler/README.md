@@ -19,10 +19,10 @@
 
 ## 继续有效的 Compiler 约束
 
-- UI Compiler Service 接收 `AgentContent` 并返回 `PresentationResult`。
+- Presentation Pipeline 接收 `PresentationRequest` 并返回 `PresentationResult`。
 - Presentation Router 决定 Markdown 或 generative UI 展示路径。
-- Model Adapter 位于 UI Compiler Service。
-- 模型输出和 UI Plan Candidate 始终是不可信输入。
+- Model Adapter 位于 Presentation Pipeline。
+- Model Adapter 输出不可信的 PresentationDecision Candidate；仅 `generative-ui` 分支包含 UI Plan Candidate。
 - UI Compiler Core 不决定展示模式，也不调用模型。
 - UI Compiler Core 保持前端框架、传输协议、Agent 框架和模型供应商无关。
 - Component Catalog 定义 Compiler 可选组件和 Action 边界。
