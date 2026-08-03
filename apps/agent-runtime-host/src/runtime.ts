@@ -1,18 +1,40 @@
 import { HttpAgent } from "@ag-ui/client";
 import {
   CopilotRuntime,
-  ExperimentalEmptyAdapter,
   copilotRuntimeNodeHttpEndpoint,
+  ExperimentalEmptyAdapter,
 } from "@copilotkit/runtime";
+import {
+  createFixtureModelAdapter,
+  createPresentationPipeline,
+  FIXTURE_COMPONENT_CATALOG,
+  type PresentationPipeline,
+} from "@generative-ui/presentation-pipeline";
 import type { RequestHandler } from "express";
 import type { RuntimeHostConfig } from "./config.js";
 
 export interface RuntimeHost {
   handler: RequestHandler;
+  presentationPipeline: PresentationPipeline;
   runtime: CopilotRuntime;
 }
 
-export function createRuntimeHost(config: RuntimeHostConfig): RuntimeHost {
+export interface RuntimeHostDependencies {
+  presentationPipeline?: PresentationPipeline;
+}
+
+function createEmbeddedPresentationPipeline(): PresentationPipeline {
+  return createPresentationPipeline({
+    catalogRepository: { load: () => FIXTURE_COMPONENT_CATALOG },
+    modelAdapter: createFixtureModelAdapter(),
+    createSurfaceId: (request) => `surface-${request.requestId}`,
+  });
+}
+
+export function createRuntimeHost(
+  config: RuntimeHostConfig,
+  dependencies: RuntimeHostDependencies = {},
+): RuntimeHost {
   const businessAgent = new HttpAgent({
     url: config.businessAgentUrl,
   });
@@ -30,6 +52,8 @@ export function createRuntimeHost(config: RuntimeHostConfig): RuntimeHost {
     runtime,
     serviceAdapter,
   }) as RequestHandler;
+  const presentationPipeline =
+    dependencies.presentationPipeline ?? createEmbeddedPresentationPipeline();
 
-  return { handler, runtime };
+  return { handler, presentationPipeline, runtime };
 }

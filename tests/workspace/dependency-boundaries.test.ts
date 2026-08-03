@@ -70,12 +70,11 @@ afterEach(() => {
 describe("dependency boundary checker", () => {
   it("accepts dependencies that follow the architecture", () => {
     const fixtureRoot = createFixture({
-      "apps/ui-compiler-service": {
+      "apps/agent-runtime-host": {
         dependencies: {
-          "@generative-ui/ag-ui-adapter": "workspace:*",
-          "@generative-ui/ui-compiler-core": "workspace:*",
+          "@generative-ui/presentation-pipeline": "workspace:*",
         },
-        name: "@generative-ui/ui-compiler-service",
+        name: "@generative-ui/agent-runtime-host",
       },
       "packages/ag-ui-adapter": {
         dependencies: {
@@ -93,6 +92,13 @@ describe("dependency boundary checker", () => {
       "packages/presentation-contract": {
         name: "@generative-ui/presentation-contract",
       },
+      "packages/presentation-pipeline": {
+        dependencies: {
+          "@generative-ui/presentation-contract": "workspace:*",
+          "@generative-ui/ui-compiler-core": "workspace:*",
+        },
+        name: "@generative-ui/presentation-pipeline",
+      },
       "packages/shared-types": {
         name: "@generative-ui/shared-types",
       },
@@ -107,6 +113,27 @@ describe("dependency boundary checker", () => {
     const result = runChecker(fixtureRoot);
 
     expect(result.status, result.stderr).toBe(0);
+  });
+
+  it("rejects application dependencies on other applications", () => {
+    const fixtureRoot = createFixture({
+      "apps/agent-runtime-host": {
+        dependencies: {
+          "@generative-ui/ui-compiler-service": "workspace:*",
+        },
+        name: "@generative-ui/agent-runtime-host",
+      },
+      "apps/ui-compiler-service": {
+        name: "@generative-ui/ui-compiler-service",
+      },
+    });
+
+    const result = runChecker(fixtureRoot);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      "applications must not depend on applications",
+    );
   });
 
   it("rejects a package dependency on an app", () => {
@@ -210,6 +237,25 @@ describe("dependency boundary checker", () => {
       "AG-UI Adapter runtime dependencies are limited to approved contract and Schema packages",
     );
   });
+
+  it.each(["openai", "@langchain/langgraph", "react"])(
+    "rejects a Presentation Pipeline dependency on %s",
+    (dependencyName) => {
+      const fixtureRoot = createFixture({
+        "packages/presentation-pipeline": {
+          dependencies: { [dependencyName]: "1.0.0" },
+          name: "@generative-ui/presentation-pipeline",
+        },
+      });
+
+      const result = runChecker(fixtureRoot);
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(
+        "Presentation Pipeline runtime dependencies are limited to approved Compiler packages and Markdown tooling",
+      );
+    },
+  );
 
   it.each(["@ag-ui/core", "fastify"])(
     "rejects an AG-UI Adapter runtime dependency on %s",

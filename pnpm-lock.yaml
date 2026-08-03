@@ -56,6 +56,9 @@ importers:
       '@copilotkit/runtime':
         specifier: 1.63.2
         version: 1.63.2(@cfworker/json-schema@4.1.1)(@langchain/core@1.2.4(@opentelemetry/api@1.9.1)(openai@6.48.0(ws@8.21.1)(zod@3.25.76))(ws@8.21.1))(@langchain/langgraph-sdk@1.9.28(@langchain/core@1.2.4(@opentelemetry/api@1.9.1)(openai@6.48.0(ws@8.21.1)(zod@3.25.76))(ws@8.21.1))(vue@3.5.40(typescript@5.8.3)))(@opentelemetry/api@1.9.1)(langchain@1.5.4(@langchain/core@1.2.4(@opentelemetry/api@1.9.1)(openai@6.48.0(ws@8.21.1)(zod@3.25.76))(ws@8.21.1))(@opentelemetry/api@1.9.1)(openai@6.48.0(ws@8.21.1)(zod@3.25.76))(vue@3.5.40(typescript@5.8.3))(ws@8.21.1))(openai@6.48.0(ws@8.21.1)(zod@3.25.76))(vitest@3.2.4(@types/debug@4.1.13)(@types/node@24.0.15)(jiti@2.6.1)(tsx@4.20.3)(yaml@2.9.0))(vue@3.5.40(typescript@5.8.3))
+      '@generative-ui/presentation-pipeline':
+        specifier: workspace:*
+        version: link:../../packages/presentation-pipeline
       express:
         specifier: 5.1.0
         version: 5.1.0
@@ -103,55 +106,6 @@ importers:
       tsx:
         specifier: 4.20.3
         version: 4.20.3
-      typescript:
-        specifier: 5.8.3
-        version: 5.8.3
-      vitest:
-        specifier: 3.2.4
-        version: 3.2.4(@types/debug@4.1.13)(@types/node@24.0.15)(jiti@2.6.1)(tsx@4.20.3)(yaml@2.9.0)
-
-  apps/ui-compiler-service:
-    dependencies:
-      '@generative-ui/compiler-contract':
-        specifier: workspace:*
-        version: link:../../packages/compiler-contract
-      '@generative-ui/component-catalog-schema':
-        specifier: workspace:*
-        version: link:../../packages/component-catalog-schema
-      '@generative-ui/presentation-contract':
-        specifier: workspace:*
-        version: link:../../packages/presentation-contract
-      '@generative-ui/shared-types':
-        specifier: workspace:*
-        version: link:../../packages/shared-types
-      '@generative-ui/ui-compiler-core':
-        specifier: workspace:*
-        version: link:../../packages/ui-compiler-core
-      '@sinclair/typebox':
-        specifier: ^0.34.52
-        version: 0.34.52
-      ajv:
-        specifier: ^8.20.0
-        version: 8.20.0
-      fastify:
-        specifier: 5.10.0
-        version: 5.10.0
-      mdast-util-from-markdown:
-        specifier: 2.0.3
-        version: 2.0.3
-      mdast-util-to-markdown:
-        specifier: 2.1.2
-        version: 2.1.2
-      micromark-util-sanitize-uri:
-        specifier: 2.0.1
-        version: 2.0.1
-    devDependencies:
-      '@types/mdast':
-        specifier: 4.0.4
-        version: 4.0.4
-      tsup:
-        specifier: 8.5.0
-        version: 8.5.0(jiti@2.6.1)(postcss@8.5.22)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.9.0)
       typescript:
         specifier: 5.8.3
         version: 5.8.3
@@ -283,6 +237,46 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
     devDependencies:
+      tsup:
+        specifier: 8.5.0
+        version: 8.5.0(jiti@2.6.1)(postcss@8.5.22)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.9.0)
+      typescript:
+        specifier: 5.8.3
+        version: 5.8.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@24.0.15)(jiti@2.6.1)(tsx@4.20.3)(yaml@2.9.0)
+
+  packages/presentation-pipeline:
+    dependencies:
+      '@generative-ui/compiler-contract':
+        specifier: workspace:*
+        version: link:../compiler-contract
+      '@generative-ui/component-catalog-schema':
+        specifier: workspace:*
+        version: link:../component-catalog-schema
+      '@generative-ui/presentation-contract':
+        specifier: workspace:*
+        version: link:../presentation-contract
+      '@generative-ui/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
+      '@generative-ui/ui-compiler-core':
+        specifier: workspace:*
+        version: link:../ui-compiler-core
+      mdast-util-from-markdown:
+        specifier: 2.0.3
+        version: 2.0.3
+      mdast-util-to-markdown:
+        specifier: 2.1.2
+        version: 2.1.2
+      micromark-util-sanitize-uri:
+        specifier: 2.0.1
+        version: 2.0.1
+    devDependencies:
+      '@types/mdast':
+        specifier: 4.0.4
+        version: 4.0.4
       tsup:
         specifier: 8.5.0
         version: 8.5.0(jiti@2.6.1)(postcss@8.5.22)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.9.0)
@@ -2456,8 +2450,8 @@ packages:
   fast-uri@3.1.4:
     resolution: {integrity: sha512-8JnbkQ4juDyvYs4mgFGQqg4yCYtFDtUtmp2QIQq11ZZe5CFQ5wcqm1rqDgAh/QdMySuBnPzMUiJUNZG5N/AiQw==}
 
-  fast-uri@4.1.1:
-    resolution: {integrity: sha512-YPOs1zD5TG2+EZt+r88LwF6mclA7TPkpwMP7ZN3TO2HiHS8TXvq7QA/17iJsV9dubcLo/f8eEYqMBruyQV21hQ==}
+  fast-uri@4.1.2:
+    resolution: {integrity: sha512-TyGmBcbDTZXcb2cj5MV89DrF42DKvb3y5DDUNh95iO+IMeAzMkVSxK1PZRrRIpc9yg8U2GhGdbofNa0LS/a4Bw==}
 
   fastify@5.10.0:
     resolution: {integrity: sha512-A9L0ziuWGQHgEEVgF3davQ9vbD93IuX+lo2IsxapQmu5b/Y/ynn9m9K5JHt9dvyJXOFc5iN0Zk5GHEOqnzhWjg==}
@@ -3408,19 +3402,12 @@ packages:
   pino-abstract-transport@2.0.0:
     resolution: {integrity: sha512-F63x5tizV6WCh4R6RHyi2Ml+M70DNRXt/+HANowMflpgGFMAym/VKm6G7ZOQRjqN7XbGxK1Lg9t6ZrtzOaivMw==}
 
-  pino-abstract-transport@3.0.0:
-    resolution: {integrity: sha512-wlfUczU+n7Hy/Ha5j9a/gZNy7We5+cXp8YL+X+PG8S0KXxw7n/JXA3c46Y0zQznIJ83URJiwy7Lh56WLokNuxg==}
-
   pino-pretty@11.3.0:
     resolution: {integrity: sha512-oXwn7ICywaZPHmu3epHGU2oJX4nPmKvHvB/bwrJHlGcbEWaVcotkpyVHMKLKmiVryWYByNp0jpgAcXpFJDXJzA==}
     hasBin: true
 
   pino-std-serializers@7.1.0:
     resolution: {integrity: sha512-BndPH67/JxGExRgiX1dX0w1FvZck5Wa4aal9198SrRhZjH3GxKQUKIBnYJTdj2HDN3UQAS06HlfcSbQj2OHmaw==}
-
-  pino@10.3.1:
-    resolution: {integrity: sha512-r34yH/GlQpKZbU1BvFFqOjhISRo1MNx1tWYsYvmj6KIRHSPMT2+yHOEb1SG6NMvRoHRF0a07kCOox/9yakl1vg==}
-    hasBin: true
 
   pino@9.14.0:
     resolution: {integrity: sha512-8OEwKp5juEvb/MjpIc4hjqfgCNysrS94RIOMXYvpYCdm/jglrKEiAYmiumbmGhCvs+IcInsphYDFwqrjr7398w==}
@@ -3543,9 +3530,6 @@ packages:
   real-require@0.2.0:
     resolution: {integrity: sha512-57frrGM/OCTLqLOAh0mhVA9VBMHd+9U7Zb2THMGdBUoZVOtGbJzjxsYGDJ3A9AYYCP4hn6y1TVbaOfzWtm5GFg==}
     engines: {node: '>= 12.13.0'}
-
-  real-require@1.0.0:
-    resolution: {integrity: sha512-P4nbQYQfePJxRSmY+v/KINxVucm4NF3p3s7pJveMTtom52FR4YGltUQLB8idDXwDDWW+eYrWDFbuzUnjoWHF7g==}
 
   reflect-metadata@0.2.2:
     resolution: {integrity: sha512-urBwgfrvVP/eAyXx4hluJivBKzuEbSQs9rKWCrCkbSxNv8mxPcUZKeuoF3Uy4mJl3Lwprp6yy5/39VWigZ4K6Q==}
@@ -3761,10 +3745,6 @@ packages:
 
   thread-stream@3.2.0:
     resolution: {integrity: sha512-zLBvqpwr4Esa0kRjcrzGU6zL25lePWaCLMx0RQFrmteozIfeNdaMLpG5U7PeHzvlFkAWaRKA9/KVW4F60iB+qw==}
-
-  thread-stream@4.2.0:
-    resolution: {integrity: sha512-e2zZ96wSChazBsbENf/Pcm/4swHt2cEKQ92rhUjkL9GCKiTDJIaTBenjE/m9DXi0QBmTMDkFDdOomUy20A1tDQ==}
-    engines: {node: '>=20'}
 
   through@2.3.8:
     resolution: {integrity: sha512-w89qg7PI8wAdvX60bMDP+bFoD5Dvhm9oLheFp5O4a2QF0cSBGsBX4qZmadPMvVqlLJBBci+WqGGOAPvcDeNSVg==}
@@ -6498,7 +6478,7 @@ snapshots:
       '@fastify/merge-json-schemas': 0.2.1
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
-      fast-uri: 4.1.1
+      fast-uri: 4.1.2
       json-schema-ref-resolver: 3.0.0
       rfdc: 1.4.1
 
@@ -6510,7 +6490,7 @@ snapshots:
 
   fast-uri@3.1.4: {}
 
-  fast-uri@4.1.1: {}
+  fast-uri@4.1.2: {}
 
   fastify@5.10.0:
     dependencies:
@@ -6523,7 +6503,7 @@ snapshots:
       fast-json-stringify: 7.0.1
       find-my-way: 9.7.0
       light-my-request: 6.6.0
-      pino: 10.3.1
+      pino: 9.14.0
       process-warning: 5.0.0
       rfdc: 1.4.1
       secure-json-parse: 4.1.0
@@ -7526,10 +7506,6 @@ snapshots:
     dependencies:
       split2: 4.2.0
 
-  pino-abstract-transport@3.0.0:
-    dependencies:
-      split2: 4.2.0
-
   pino-pretty@11.3.0:
     dependencies:
       colorette: 2.0.20
@@ -7548,20 +7524,6 @@ snapshots:
       strip-json-comments: 3.1.1
 
   pino-std-serializers@7.1.0: {}
-
-  pino@10.3.1:
-    dependencies:
-      '@pinojs/redact': 0.4.0
-      atomic-sleep: 1.0.0
-      on-exit-leak-free: 2.1.2
-      pino-abstract-transport: 3.0.0
-      pino-std-serializers: 7.1.0
-      process-warning: 5.0.0
-      quick-format-unescaped: 4.0.4
-      real-require: 0.2.0
-      safe-stable-stringify: 2.5.0
-      sonic-boom: 4.2.1
-      thread-stream: 4.2.0
 
   pino@9.14.0:
     dependencies:
@@ -7679,8 +7641,6 @@ snapshots:
   readdirp@4.1.2: {}
 
   real-require@0.2.0: {}
-
-  real-require@1.0.0: {}
 
   reflect-metadata@0.2.2: {}
 
@@ -7939,10 +7899,6 @@ snapshots:
   thread-stream@3.2.0:
     dependencies:
       real-require: 0.2.0
-
-  thread-stream@4.2.0:
-    dependencies:
-      real-require: 1.0.0
 
   through@2.3.8: {}
 

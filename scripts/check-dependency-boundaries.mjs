@@ -42,6 +42,24 @@ const allowedAdapterDevelopmentDependencies = new Set([
   "vitest",
 ]);
 
+const allowedPipelineRuntimeDependencies = new Set([
+  "@generative-ui/compiler-contract",
+  "@generative-ui/component-catalog-schema",
+  "@generative-ui/presentation-contract",
+  "@generative-ui/shared-types",
+  "@generative-ui/ui-compiler-core",
+  "mdast-util-from-markdown",
+  "mdast-util-to-markdown",
+  "micromark-util-sanitize-uri",
+]);
+
+const allowedPipelineDevelopmentDependencies = new Set([
+  "@types/mdast",
+  "tsup",
+  "typescript",
+  "vitest",
+]);
+
 const contractPackagePaths = new Set([
   "packages/compiler-contract",
   "packages/component-catalog-schema",
@@ -52,6 +70,7 @@ const contractPackagePaths = new Set([
 
 const implementationPackagePaths = new Set([
   "packages/ag-ui-adapter",
+  "packages/presentation-pipeline",
   "packages/ui-compiler-core",
 ]);
 
@@ -168,6 +187,26 @@ function findViolations(projects) {
       }
 
       if (
+        source.path === "packages/presentation-pipeline" &&
+        runtimeDependencySections.has(dependencySection) &&
+        !allowedPipelineRuntimeDependencies.has(dependencyName)
+      ) {
+        violations.push(
+          `${source.path} -> ${dependencyName}: Presentation Pipeline runtime dependencies are limited to approved Compiler packages and Markdown tooling`,
+        );
+      }
+
+      if (
+        source.path === "packages/presentation-pipeline" &&
+        dependencySection === "devDependencies" &&
+        !allowedPipelineDevelopmentDependencies.has(dependencyName)
+      ) {
+        violations.push(
+          `${source.path} -> ${dependencyName}: Presentation Pipeline development dependencies are limited to approved tooling`,
+        );
+      }
+
+      if (
         source.path === "packages/ui-compiler-core" &&
         runtimeDependencySections.has(dependencySection) &&
         !allowedCoreRuntimeDependencies.has(dependencyName)
@@ -194,6 +233,12 @@ function findViolations(projects) {
           );
         }
         continue;
+      }
+
+      if (source.path.startsWith("apps/") && target?.path.startsWith("apps/")) {
+        violations.push(
+          `${source.path} -> ${dependencyName}: applications must not depend on applications`,
+        );
       }
 
       if (

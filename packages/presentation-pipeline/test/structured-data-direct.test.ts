@@ -12,7 +12,7 @@ import {
   type PresentationRouteRequest,
   type PresentationRouter,
   StructuredDataConfigurationError,
-} from "../src/main.js";
+} from "../src/index.js";
 import {
   dangerousStructuredFallbackFixture,
   dangerousStructuredFallbackTokens,

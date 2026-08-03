@@ -12,7 +12,7 @@ import {
   type ModelAdapter,
   type PresentationRouteRequest,
   type PresentationRouter,
-} from "../src/main.js";
+} from "../src/index.js";
 import {
   dangerousMarkdownFixture,
   dangerousMarkdownTokens,

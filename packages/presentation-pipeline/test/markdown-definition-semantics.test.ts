@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createMarkdownSanitizer,
   DEFAULT_MARKDOWN_SANITIZER_LIMITS,
-} from "../src/main.js";
+} from "../src/index.js";
 import { blankRangesPreservingLines } from "../src/markdown-sanitizer-definition-aware.js";
 
 interface TestAstNode {
@@ -93,32 +93,28 @@ describe("Markdown reference definition semantics", () => {
     expect(result.success).toBe(true);
   });
 
-  it(
-    "rewrites near-limit duplicate ranges in bounded time",
-    () => {
-      const prefix = "[id]: /a\n";
-      const duplicate = "[id]: /b\n";
-      const duplicateCount = 19_000;
-      const input = `${prefix}${duplicate.repeat(duplicateCount)}`;
-      const ranges = Array.from({ length: duplicateCount }, (_, index) => {
-        const start = prefix.length + index * duplicate.length;
-        return { start, end: start + duplicate.length };
-      });
+  it("rewrites near-limit duplicate ranges in bounded time", () => {
+    const prefix = "[id]: /a\n";
+    const duplicate = "[id]: /b\n";
+    const duplicateCount = 19_000;
+    const input = `${prefix}${duplicate.repeat(duplicateCount)}`;
+    const ranges = Array.from({ length: duplicateCount }, (_, index) => {
+      const start = prefix.length + index * duplicate.length;
+      return { start, end: start + duplicate.length };
+    });
 
-      expect(Buffer.byteLength(input, "utf8")).toBeLessThanOrEqual(
-        DEFAULT_MARKDOWN_SANITIZER_LIMITS.maxInputBytes,
-      );
+    expect(Buffer.byteLength(input, "utf8")).toBeLessThanOrEqual(
+      DEFAULT_MARKDOWN_SANITIZER_LIMITS.maxInputBytes,
+    );
 
-      const startedAt = performance.now();
-      const output = blankRangesPreservingLines(input, ranges);
-      const elapsedMilliseconds = performance.now() - startedAt;
+    const startedAt = performance.now();
+    const output = blankRangesPreservingLines(input, ranges);
+    const elapsedMilliseconds = performance.now() - startedAt;
 
-      expect(output).toBeDefined();
-      expect(output).toHaveLength(input.length);
-      expect(output).toContain("[id]: /a");
-      expect(output).not.toContain("[id]: /b");
-      expect(elapsedMilliseconds).toBeLessThan(1_000);
-    },
-    2_000,
-  );
+    expect(output).toBeDefined();
+    expect(output).toHaveLength(input.length);
+    expect(output).toContain("[id]: /a");
+    expect(output).not.toContain("[id]: /b");
+    expect(elapsedMilliseconds).toBeLessThan(1_000);
+  }, 2_000);
 });
