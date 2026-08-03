@@ -11,6 +11,7 @@ describe("loadConfig", () => {
       businessAgentUrl: "http://localhost:8000/ag-ui",
       businessAgentContractUrl: "http://localhost:8300",
       presentationModel: { mode: "fixture" },
+      runtime: { totalTimeoutMs: 15_000, maxConcurrentRuns: 16 },
     });
   });
 
@@ -32,6 +33,7 @@ describe("loadConfig", () => {
       businessAgentUrl: "http://localhost:9001/ag-ui",
       businessAgentContractUrl: "http://localhost:9300",
       presentationModel: { mode: "fixture" },
+      runtime: { totalTimeoutMs: 15_000, maxConcurrentRuns: 16 },
     });
   });
 
