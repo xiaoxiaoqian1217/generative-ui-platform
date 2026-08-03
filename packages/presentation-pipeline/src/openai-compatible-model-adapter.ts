@@ -78,6 +78,29 @@ interface StableProviderConfiguration {
   readonly apiKey: string;
 }
 
+function snapshotPresentationModelProviderRegistration(
+  input: PresentationModelProviderRegistration,
+): Readonly<PresentationModelProviderRegistration> {
+  try {
+    const registrationId = input.registrationId;
+    const provider = input.provider;
+    const modelName = input.modelName;
+    const baseUrl = input.baseUrl;
+    const endpointId = input.endpointId;
+    const apiKey = input.apiKey;
+    return Object.freeze({
+      registrationId,
+      provider,
+      modelName,
+      apiKey,
+      ...(baseUrl === undefined ? {} : { baseUrl }),
+      ...(endpointId === undefined ? {} : { endpointId }),
+    });
+  } catch {
+    throw new PresentationModelProviderConfigurationError();
+  }
+}
+
 const providerIds: ReadonlySet<PresentationModelProvider> = new Set([
   "kimi",
   "doubao",
@@ -134,26 +157,27 @@ function validatePresentationModelProviderRegistration(
   input: PresentationModelProviderRegistration,
 ): Readonly<StableProviderConfiguration> {
   try {
-    const baseUrl = normalizeBaseUrl(input.baseUrl ?? "");
+    const snapshot = snapshotPresentationModelProviderRegistration(input);
+    const baseUrl = normalizeBaseUrl(snapshot.baseUrl ?? "");
     if (
-      !registrationIdPattern.test(input.registrationId) ||
-      !providerIds.has(input.provider) ||
-      !isBoundedText(input.modelName, 256) ||
-      !isBoundedText(input.apiKey, 4_096) ||
-      (input.endpointId !== undefined &&
-        !isBoundedText(input.endpointId, 256)) ||
+      !registrationIdPattern.test(snapshot.registrationId) ||
+      !providerIds.has(snapshot.provider) ||
+      !isBoundedText(snapshot.modelName, 256) ||
+      !isBoundedText(snapshot.apiKey, 4_096) ||
+      (snapshot.endpointId !== undefined &&
+        !isBoundedText(snapshot.endpointId, 256)) ||
       baseUrl === undefined
     ) {
       throw new PresentationModelProviderConfigurationError();
     }
 
     return Object.freeze({
-      registrationId: input.registrationId,
-      provider: input.provider,
-      modelName: input.modelName,
+      registrationId: snapshot.registrationId,
+      provider: snapshot.provider,
+      modelName: snapshot.modelName,
       baseUrl,
-      requestModel: input.endpointId ?? input.modelName,
-      apiKey: input.apiKey,
+      requestModel: snapshot.endpointId ?? snapshot.modelName,
+      apiKey: snapshot.apiKey,
     });
   } catch (caught) {
     if (caught instanceof PresentationModelProviderConfigurationError) {
@@ -229,28 +253,58 @@ interface ExtractedProviderResponse {
   readonly usage?: PresentationModelUsageSummary;
 }
 
+async function readBoundedResponseText(response: Response): Promise<string> {
+  const declaredLength = response.headers.get("content-length");
+  if (
+    declaredLength !== null &&
+    /^\d+$/u.test(declaredLength) &&
+    Number(declaredLength) >
+      OPENAI_COMPATIBLE_MODEL_RESPONSE_LIMITS.maxResponseBytes
+  ) {
+    await response.body?.cancel();
+    throw new ModelAdapterError("MODEL_INVALID_RESPONSE", false);
+  }
+  if (response.body === null) {
+    return "";
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      totalBytes += value.byteLength;
+      if (
+        totalBytes > OPENAI_COMPATIBLE_MODEL_RESPONSE_LIMITS.maxResponseBytes
+      ) {
+        await reader.cancel();
+        throw new ModelAdapterError("MODEL_INVALID_RESPONSE", false);
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+}
+
 async function extractProviderResponse(
   response: Response,
 ): Promise<ExtractedProviderResponse> {
   let payload: unknown;
   try {
-    const declaredLength = response.headers.get("content-length");
-    if (
-      declaredLength !== null &&
-      /^\d+$/u.test(declaredLength) &&
-      Number(declaredLength) >
-        OPENAI_COMPATIBLE_MODEL_RESPONSE_LIMITS.maxResponseBytes
-    ) {
-      await response.body?.cancel();
-      throw new ModelAdapterError("MODEL_INVALID_RESPONSE", false);
-    }
-    const responseText = await response.text();
-    if (
-      new TextEncoder().encode(responseText).byteLength >
-      OPENAI_COMPATIBLE_MODEL_RESPONSE_LIMITS.maxResponseBytes
-    ) {
-      throw new ModelAdapterError("MODEL_INVALID_RESPONSE", false);
-    }
+    const responseText = await readBoundedResponseText(response);
     payload = JSON.parse(responseText);
   } catch (caught) {
     if (caught instanceof ModelAdapterError) {
@@ -320,9 +374,14 @@ function errorForHttpStatus(status: number): ModelAdapterError {
   return new ModelAdapterError("MODEL_PROVIDER_ERROR", false);
 }
 
-function requestBody(request: ModelPresentationRequest, model: string): string {
+function requestBody(
+  request: ModelPresentationRequest,
+  model: string,
+  provider: PresentationModelProvider,
+): string {
   return JSON.stringify({
     model,
+    ...(provider === "qwen" ? { enable_thinking: false } : {}),
     messages: [
       {
         role: "system",
@@ -376,7 +435,11 @@ export function createOpenAICompatiblePresentationModelAdapter(
               authorization: `Bearer ${configuration.apiKey}`,
               "content-type": "application/json",
             },
-            body: requestBody(modelRequest, configuration.requestModel),
+            body: requestBody(
+              modelRequest,
+              configuration.requestModel,
+              configuration.provider,
+            ),
             signal: options.signal,
           },
         );

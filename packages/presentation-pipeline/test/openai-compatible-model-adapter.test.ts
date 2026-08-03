@@ -373,4 +373,67 @@ describe("OpenAI-compatible Presentation Model Adapter", () => {
         isModelAdapterError(error) && error.code === "MODEL_INVALID_RESPONSE",
     );
   });
+
+  it("cancels an undeclared streaming response as soon as the byte limit is exceeded", async () => {
+    let cancelled = false;
+    const oversizedChunk = new Uint8Array(
+      OPENAI_COMPATIBLE_MODEL_RESPONSE_LIMITS.maxResponseBytes + 1,
+    );
+    const response = new Response(
+      new ReadableStream<Uint8Array>({
+        pull(controller) {
+          controller.enqueue(oversizedChunk);
+        },
+        cancel() {
+          cancelled = true;
+        },
+      }),
+      { status: 200 },
+    );
+    const adapter = createOpenAICompatiblePresentationModelAdapter(
+      {
+        registrationId: "stream-bounded-response",
+        provider: "openai-compatible",
+        modelName: "presentation-model",
+        baseUrl: "https://provider.example.test/v1",
+        apiKey: "secret-api-key",
+      },
+      { fetch: async () => response },
+    );
+
+    await expect(
+      adapter.generatePresentationDecisionCandidate(modelRequest(), {
+        signal: new AbortController().signal,
+      }),
+    ).rejects.toSatisfy(
+      (error: unknown) =>
+        isModelAdapterError(error) && error.code === "MODEL_INVALID_RESPONSE",
+    );
+    expect(cancelled).toBe(true);
+  });
+
+  it("disables Qwen thinking mode when requesting JSON output", async () => {
+    const fetch = vi.fn<OpenAICompatibleFetch>(async () =>
+      providerResponse({ mode: "markdown", reason: "Valid JSON mode." }),
+    );
+    const adapter = createOpenAICompatiblePresentationModelAdapter(
+      {
+        registrationId: "qwen-json-mode",
+        provider: "qwen",
+        modelName: "qwen-model",
+        baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        apiKey: "secret-api-key",
+      },
+      { fetch },
+    );
+
+    await adapter.generatePresentationDecisionCandidate(modelRequest(), {
+      signal: new AbortController().signal,
+    });
+
+    expect(JSON.parse(String(fetch.mock.calls[0]?.[1].body))).toMatchObject({
+      response_format: { type: "json_object" },
+      enable_thinking: false,
+    });
+  });
 });

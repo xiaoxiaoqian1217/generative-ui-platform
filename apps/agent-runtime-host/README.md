@@ -1,3 +1,5 @@
+<!-- cspell:ignore doubao qwen -->
+
 # Agent Runtime Host
 
 `agent-runtime-host` 是 Generative UI Platform 的 CopilotKit Runtime 集成层。
@@ -22,7 +24,8 @@ Agent Runtime Host
 Business Agent
 ```
 
-Runtime Host 不直接配置或调用模型。
+Runtime Host 不承担 Business Agent 的模型推理。
+进程内 Embedded Presentation Pipeline 可以通过服务端环境变量选择 Fixture 或已注册的 Presentation Model Provider，Provider 仍只由 Presentation Router / Pipeline 调用。
 Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI 编译逻辑。
 当前实现提供远程 Business Agent 的 AG-UI 转发、Demo 端点，以及 Presentation Pipeline 的进程内组合根。
 完整 Run / Action 编排仍由后续任务接入，但 Runtime Host 不通过独立 HTTP Client 调用展示能力。
@@ -46,6 +49,17 @@ Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI
 | `BUSINESS_AGENT_ID` | `business-agent` | 面向前端暴露的业务 Agent 标识。 |
 | `BUSINESS_AGENT_URL` | `http://localhost:8000/ag-ui` | 远程业务 Agent 的 AG-UI 端点。 |
 | `COPILOTKIT_TELEMETRY_DISABLED` | `true` | 是否关闭 CopilotKit 匿名遥测。 |
+| `PRESENTATION_MODEL_PROVIDER` | `fixture` | `fixture`、`kimi`、`doubao`、`glm`、`qwen` 或 `openai-compatible`。 |
+| `PRESENTATION_MODEL_REGISTRATION_ID` | `<provider>-primary` | Provider Registry 中的稳定注册 ID。 |
+| `PRESENTATION_MODEL_NAME` | 无 | 真实 Provider 的模型名。 |
+| `PRESENTATION_MODEL_BASE_URL` | Provider 默认值 | HTTPS Base URL；`openai-compatible` 必须显式提供。 |
+| `PRESENTATION_MODEL_ENDPOINT_ID` | 无 | 可选部署 Endpoint ID，与模型名分离。 |
+| `PRESENTATION_MODEL_API_KEY` | 无 | 仅服务端读取的 API Key，不得暴露到浏览器或日志。 |
+| `PRESENTATION_MODEL_TIMEOUT_MS` | `10000` | Router 总超时，范围为 1 至 300000 毫秒。 |
+| `PRESENTATION_MODEL_RETRY_COUNT` | `0` | Router 有限重试次数，范围为 0 至 3。 |
+
+真实 Provider 模式要求模型名和 API Key，`openai-compatible` 还要求显式 Base URL。
+切换 Provider 只需修改这些服务端配置，不需要修改 Runtime Orchestrator 或 UI Compiler Core。
 
 ## 启动
 

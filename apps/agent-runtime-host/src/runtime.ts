@@ -6,7 +6,9 @@ import {
 } from "@copilotkit/runtime";
 import {
   createFixtureModelAdapter,
+  createPresentationModelProviderRegistry,
   createPresentationPipeline,
+  DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION,
   FIXTURE_COMPONENT_CATALOG,
   type PresentationPipeline,
 } from "@generative-ui/presentation-pipeline";
@@ -23,11 +25,27 @@ export interface RuntimeHostDependencies {
   presentationPipeline?: PresentationPipeline;
 }
 
-function createEmbeddedPresentationPipeline(): PresentationPipeline {
+function createEmbeddedPresentationPipeline(
+  config: RuntimeHostConfig,
+): PresentationPipeline {
+  const modelAdapter =
+    config.presentationModel.mode === "fixture"
+      ? createFixtureModelAdapter()
+      : createPresentationModelProviderRegistry([
+          config.presentationModel.registration,
+        ]).resolve(config.presentationModel.registration.registrationId);
   return createPresentationPipeline({
     catalogRepository: { load: () => FIXTURE_COMPONENT_CATALOG },
-    modelAdapter: createFixtureModelAdapter(),
+    modelAdapter,
     createSurfaceId: (request) => `surface-${request.requestId}`,
+    ...(config.presentationModel.mode === "fixture"
+      ? {}
+      : {
+          configuration: {
+            ...DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION,
+            modelInvocation: config.presentationModel.modelInvocation,
+          },
+        }),
   });
 }
 
@@ -53,7 +71,8 @@ export function createRuntimeHost(
     serviceAdapter,
   }) as RequestHandler;
   const presentationPipeline =
-    dependencies.presentationPipeline ?? createEmbeddedPresentationPipeline();
+    dependencies.presentationPipeline ??
+    createEmbeddedPresentationPipeline(config);
 
   return { handler, presentationPipeline, runtime };
 }

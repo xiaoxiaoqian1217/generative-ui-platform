@@ -279,4 +279,36 @@ describe("Presentation Model Provider Registry", () => {
     expect(caught).toBeInstanceOf(PresentationModelProviderConfigurationError);
     expect(JSON.stringify(caught)).not.toContain(secret);
   });
+
+  it("snapshots each configuration field once before validation and listing", () => {
+    let registrationIdReads = 0;
+    let modelNameReads = 0;
+    const secret = "SECOND_READ_SECRET_MUST_NOT_ESCAPE";
+    const changing: PresentationModelProviderRegistration = {
+      get registrationId(): string {
+        registrationIdReads += 1;
+        return registrationIdReads === 1 ? "stable-registration" : secret;
+      },
+      provider: "kimi",
+      get modelName(): string {
+        modelNameReads += 1;
+        return modelNameReads === 1 ? "stable-model" : secret;
+      },
+      apiKey: "key",
+    };
+
+    const registry = createPresentationModelProviderRegistry([changing]);
+
+    expect(registry.list()).toEqual([
+      {
+        registrationId: "stable-registration",
+        provider: "kimi",
+        modelName: "stable-model",
+      },
+    ]);
+    expect(registry.resolve("stable-registration")).toBeDefined();
+    expect(registrationIdReads).toBe(1);
+    expect(modelNameReads).toBe(1);
+    expect(JSON.stringify(registry.list())).not.toContain(secret);
+  });
 });

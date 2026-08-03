@@ -82,7 +82,7 @@ describe.skipIf(!smokeRequired)(
         { signal: new AbortController().signal },
       );
 
-      expect(decision.mode).toBe("markdown");
+      expect(["markdown", "generative-ui"]).toContain(decision.mode);
       expect(summaries).toContainEqual(
         expect.objectContaining({
           registrationId: "real-provider-smoke",

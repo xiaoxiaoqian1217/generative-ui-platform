@@ -1,9 +1,33 @@
+import type {
+  ModelInvocationPolicy,
+  PresentationModelProvider,
+  PresentationModelProviderRegistration,
+} from "@generative-ui/presentation-pipeline";
+
+export type RuntimeHostPresentationModelConfig =
+  | { readonly mode: "fixture" }
+  | {
+      readonly mode: "provider";
+      readonly registration: PresentationModelProviderRegistration;
+      readonly modelInvocation: ModelInvocationPolicy;
+    };
+
 export interface RuntimeHostConfig {
   host: string;
   port: number;
   endpoint: string;
   agentId: string;
   businessAgentUrl: string;
+  presentationModel: RuntimeHostPresentationModelConfig;
+}
+
+export class RuntimeHostConfigurationError extends Error {
+  readonly code = "RUNTIME_HOST_CONFIGURATION_INVALID";
+
+  constructor() {
+    super("Runtime Host configuration is invalid.");
+    this.name = "RuntimeHostConfigurationError";
+  }
 }
 
 function readPort(value: string | undefined): number {
@@ -16,6 +40,83 @@ function readPort(value: string | undefined): number {
   return port;
 }
 
+function requiredValue(value: string | undefined): string {
+  if (value === undefined || value.trim() === "") {
+    throw new RuntimeHostConfigurationError();
+  }
+  return value;
+}
+
+function readBoundedInteger(
+  value: string | undefined,
+  fallback: number,
+  minimum: number,
+  maximum: number,
+): number {
+  const parsed = Number(value ?? String(fallback));
+  if (!Number.isSafeInteger(parsed) || parsed < minimum || parsed > maximum) {
+    throw new RuntimeHostConfigurationError();
+  }
+  return parsed;
+}
+
+function readProvider(value: string): PresentationModelProvider {
+  if (
+    value === "kimi" ||
+    value === "doubao" ||
+    value === "glm" ||
+    value === "qwen" ||
+    value === "openai-compatible"
+  ) {
+    return value;
+  }
+  throw new RuntimeHostConfigurationError();
+}
+
+function readPresentationModelConfig(
+  env: NodeJS.ProcessEnv,
+): RuntimeHostPresentationModelConfig {
+  const providerValue = env.PRESENTATION_MODEL_PROVIDER ?? "fixture";
+  if (providerValue === "fixture") {
+    return Object.freeze({ mode: "fixture" });
+  }
+
+  const provider = readProvider(providerValue);
+  const baseUrl = env.PRESENTATION_MODEL_BASE_URL;
+  if (provider === "openai-compatible" && baseUrl === undefined) {
+    throw new RuntimeHostConfigurationError();
+  }
+  const endpointId = env.PRESENTATION_MODEL_ENDPOINT_ID;
+  const registration = Object.freeze({
+    registrationId:
+      env.PRESENTATION_MODEL_REGISTRATION_ID ?? `${provider}-primary`,
+    provider,
+    modelName: requiredValue(env.PRESENTATION_MODEL_NAME),
+    apiKey: requiredValue(env.PRESENTATION_MODEL_API_KEY),
+    ...(baseUrl === undefined ? {} : { baseUrl }),
+    ...(endpointId === undefined ? {} : { endpointId }),
+  });
+
+  return Object.freeze({
+    mode: "provider",
+    registration,
+    modelInvocation: Object.freeze({
+      modelTimeoutMs: readBoundedInteger(
+        env.PRESENTATION_MODEL_TIMEOUT_MS,
+        10_000,
+        1,
+        300_000,
+      ),
+      modelRetryCount: readBoundedInteger(
+        env.PRESENTATION_MODEL_RETRY_COUNT,
+        0,
+        0,
+        3,
+      ),
+    }),
+  });
+}
+
 export function loadConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): RuntimeHostConfig {
@@ -24,7 +125,7 @@ export function loadConfig(
     port: readPort(env.PORT),
     endpoint: env.COPILOTKIT_ENDPOINT ?? "/api/copilotkit",
     agentId: env.BUSINESS_AGENT_ID ?? "business-agent",
-    businessAgentUrl:
-      env.BUSINESS_AGENT_URL ?? "http://localhost:8000/ag-ui",
+    businessAgentUrl: env.BUSINESS_AGENT_URL ?? "http://localhost:8000/ag-ui",
+    presentationModel: readPresentationModelConfig(env),
   };
 }

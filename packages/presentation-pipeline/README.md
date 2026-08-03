@@ -46,6 +46,7 @@ const result = await pipeline.present({
 内置 Base URL 分别来自 [Kimi API](https://platform.kimi.com/docs/api/overview)、[火山方舟](https://www.volcengine.com/docs/82379/1795150)、[智谱 OpenAI API](https://docs.bigmodel.cn/cn/guide/develop/openai/introduction) 和 [阿里云百炼](https://help.aliyun.com/en/model-studio/base-url) 官方文档。
 模型名、Base URL、Endpoint ID 和 API Key 是独立配置项。
 Endpoint ID 存在时仅作为兼容请求的 `model` 值，`modelName` 继续作为供应商无关的安全诊断标识。
+Qwen 的 JSON 输出请求会显式设置 `enable_thinking: false`，避免 thinking 模型与 JSON mode 冲突。
 
 ```ts
 import {

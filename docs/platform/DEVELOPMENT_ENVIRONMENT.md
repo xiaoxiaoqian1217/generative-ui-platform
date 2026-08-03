@@ -1,3 +1,5 @@
+<!-- cspell:ignore doubao qwen -->
+
 # 平台全链路开发验证环境
 
 ## 1. 定位
@@ -50,7 +52,9 @@ Reference Agent        http://localhost:8300
 默认使用确定性的 Fixture 模式。
 Fixture 模式不需要模型密钥，不产生模型费用，并作为 CI 的标准验证方式。
 
-真实模型模式只用于 Presentation Model Adapter Smoke Test。
+真实模型模式可用于 Agent Runtime Host 内嵌的 Presentation Pipeline，也可用于按需执行的 Presentation Model Adapter Smoke Test。
+Runtime Host 通过 `PRESENTATION_MODEL_PROVIDER` 选择 `fixture`、`kimi`、`doubao`、`glm`、`qwen` 或 `openai-compatible`，其余模型名、Base URL、Endpoint ID、API Key、超时和重试配置使用 `PRESENTATION_MODEL_*` 服务端环境变量。
+默认仍使用 `fixture`，常规 CI 不读取真实 Provider 密钥或产生模型费用。
 模型供应商、模型名称、Base URL 和认证配置必须通过环境变量提供。
 真实 Provider Smoke Test 使用 `pnpm --filter @generative-ui/presentation-pipeline test:provider-smoke` 按需执行。
 该命令要求显式提供 `PRESENTATION_PROVIDER_SMOKE_PROVIDER`、`PRESENTATION_PROVIDER_SMOKE_MODEL_NAME` 和 `PRESENTATION_PROVIDER_SMOKE_API_KEY`。

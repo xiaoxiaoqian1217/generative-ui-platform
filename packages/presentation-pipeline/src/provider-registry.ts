@@ -45,6 +45,29 @@ function defaultBaseUrl(
     : BUILT_IN_OPENAI_COMPATIBLE_PROVIDER_BASE_URLS[provider];
 }
 
+function snapshotRegistration(
+  input: PresentationModelProviderRegistration,
+): Readonly<PresentationModelProviderRegistration> {
+  try {
+    const registrationId = input.registrationId;
+    const provider = input.provider;
+    const modelName = input.modelName;
+    const baseUrl = input.baseUrl;
+    const endpointId = input.endpointId;
+    const apiKey = input.apiKey;
+    return Object.freeze({
+      registrationId,
+      provider,
+      modelName,
+      apiKey,
+      ...(baseUrl === undefined ? {} : { baseUrl }),
+      ...(endpointId === undefined ? {} : { endpointId }),
+    });
+  } catch {
+    throw new PresentationModelProviderConfigurationError();
+  }
+}
+
 export function createPresentationModelProviderRegistry(
   registrations: readonly PresentationModelProviderRegistration[],
   dependencies: OpenAICompatiblePresentationModelAdapterDependencies = {},
@@ -54,23 +77,24 @@ export function createPresentationModelProviderRegistry(
 
   try {
     for (const registration of registrations) {
-      if (adapters.has(registration.registrationId)) {
+      const snapshot = snapshotRegistration(registration);
+      if (adapters.has(snapshot.registrationId)) {
         throw new PresentationModelProviderConfigurationError();
       }
       const resolvedBaseUrl =
-        registration.baseUrl ?? defaultBaseUrl(registration.provider);
+        snapshot.baseUrl ?? defaultBaseUrl(snapshot.provider);
       const resolvedRegistration: PresentationModelProviderRegistration = {
-        registrationId: registration.registrationId,
-        provider: registration.provider,
-        modelName: registration.modelName,
-        apiKey: registration.apiKey,
+        registrationId: snapshot.registrationId,
+        provider: snapshot.provider,
+        modelName: snapshot.modelName,
+        apiKey: snapshot.apiKey,
         ...(resolvedBaseUrl === undefined ? {} : { baseUrl: resolvedBaseUrl }),
-        ...(registration.endpointId === undefined
+        ...(snapshot.endpointId === undefined
           ? {}
-          : { endpointId: registration.endpointId }),
+          : { endpointId: snapshot.endpointId }),
       };
       adapters.set(
-        registration.registrationId,
+        snapshot.registrationId,
         createOpenAICompatiblePresentationModelAdapter(
           resolvedRegistration,
           dependencies,
@@ -78,9 +102,9 @@ export function createPresentationModelProviderRegistry(
       );
       summaries.push(
         Object.freeze({
-          registrationId: registration.registrationId,
-          provider: registration.provider,
-          modelName: registration.modelName,
+          registrationId: snapshot.registrationId,
+          provider: snapshot.provider,
+          modelName: snapshot.modelName,
         }),
       );
     }
