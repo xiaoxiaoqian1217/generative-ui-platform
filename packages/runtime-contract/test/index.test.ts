@@ -355,4 +355,50 @@ describe("Runtime WebSocket contracts", () => {
       },
     });
   });
+
+  it("enforces Presentation correlation for WebSocket result payloads", () => {
+    expect(
+      validateRuntimeWebSocketOutboundMessage({
+        type: "runtime.run.result",
+        payload: {
+          protocolVersion: "1.0",
+          requestId: "request-1",
+          threadId: "thread-1",
+          runId: "run-1",
+          presentationRequestId: "presentation-expected",
+          status: "completed",
+          presentation: completedPresentation,
+        },
+      }),
+    ).toMatchObject({
+      success: false,
+      error: {
+        code: "RUNTIME_WEBSOCKET_MESSAGE_INVALID",
+        constraint: "presentation-request-correlation-consistency",
+      },
+    });
+
+    expect(
+      validateRuntimeWebSocketOutboundMessage({
+        type: "runtime.action.result",
+        payload: {
+          protocolVersion: "1.0",
+          requestId: "request-2",
+          threadId: "thread-1",
+          runId: "run-1",
+          actionId: "confirm-patrol",
+          presentationRequestId: "presentation-expected",
+          status: "completed",
+          presentation: completedPresentation,
+        },
+      }),
+    ).toMatchObject({
+      success: false,
+      error: {
+        code: "RUNTIME_WEBSOCKET_MESSAGE_INVALID",
+        constraint: "presentation-request-correlation-consistency",
+      },
+    });
+  });
+
 });

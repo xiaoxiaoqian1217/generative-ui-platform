@@ -462,7 +462,7 @@ export const validateRuntimeWebSocketInboundMessage = createValidator<
   [runtimeRunRequestSchema, runtimeActionRequestSchema],
 );
 
-export const validateRuntimeWebSocketOutboundMessage = createValidator<
+const validateRuntimeWebSocketOutboundMessageEnvelope = createValidator<
   RuntimeWebSocketOutboundMessage,
   "RUNTIME_WEBSOCKET_MESSAGE_INVALID"
 >(
@@ -471,3 +471,30 @@ export const validateRuntimeWebSocketOutboundMessage = createValidator<
   "Runtime WebSocket Outbound Message",
   [runtimeRunResultSchema, runtimeActionResultSchema],
 );
+
+export function validateRuntimeWebSocketOutboundMessage(
+  input: unknown,
+): ValidationResult<
+  RuntimeWebSocketOutboundMessage,
+  "RUNTIME_WEBSOCKET_MESSAGE_INVALID"
+> {
+  const result = validateRuntimeWebSocketOutboundMessageEnvelope(input);
+  if (!result.success) {
+    return result;
+  }
+
+  if (
+    result.value.type === "runtime.run.result" ||
+    result.value.type === "runtime.action.result"
+  ) {
+    return (
+      validatePresentationCorrelation(
+        result.value.payload,
+        "RUNTIME_WEBSOCKET_MESSAGE_INVALID",
+        "Runtime WebSocket Outbound Message",
+      ) ?? result
+    );
+  }
+
+  return result;
+}
