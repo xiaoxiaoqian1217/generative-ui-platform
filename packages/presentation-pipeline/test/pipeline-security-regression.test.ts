@@ -89,6 +89,214 @@ function createPipeline(
 }
 
 describe("Presentation Pipeline migrated security regressions", () => {
+  it("sanitizes hostile Markdown before the model, Core output, and observations", async () => {
+    const secret = "HOSTILE_MARKDOWN_SECRET_MUST_NOT_ESCAPE";
+    const model = vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>(
+      async (request) => candidateFor(request),
+    );
+    const observations: SafeStageObservation[] = [];
+    const markdownCatalog = {
+      ...FIXTURE_COMPONENT_CATALOG,
+      components: FIXTURE_COMPONENT_CATALOG.components.map((component) => ({
+        ...component,
+        propsSchema: {
+          ...component.propsSchema,
+          properties: {
+            ...component.propsSchema.properties,
+            content: { type: "string" as const },
+          },
+        },
+      })),
+    } as ComponentCatalog;
+    const pipeline = createPipeline(
+      { generatePresentationDecisionCandidate: model },
+      { catalog: markdownCatalog },
+    );
+
+    const result = await pipeline.present(
+      {
+        requestId: "hostile-markdown",
+        content: {
+          contentType: "markdown",
+          markdown: `# Safe\n<script>${secret}</script>\n[bad](javascript:alert('${secret}'))`,
+        },
+        catalog: catalogReference,
+      },
+      {
+        observability: {
+          recordStageCompletion: (event) => observations.push(event),
+        },
+      },
+    );
+
+    expect(model).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(model.mock.calls)).not.toContain(secret);
+    expect(JSON.stringify(result)).not.toContain(secret);
+    expect(JSON.stringify(observations)).not.toContain(secret);
+    expect(result).toMatchObject({
+      status: "completed",
+      mode: "generative-ui",
+    });
+  });
+
+  it("keeps every presentation-sensitive category out of observations", async () => {
+    const sentinels = {
+      rawMarkdown: "RAW_MARKDOWN_SECRET",
+      sanitizedMarkdown: "SANITIZED_MARKDOWN_SECRET",
+      structuredData: "STRUCTURED_DATA_SECRET",
+      userMessage: "USER_MESSAGE_SECRET",
+      fallback: "FALLBACK_MARKDOWN_SECRET",
+      uiPlan: "UI_PLAN_SECRET",
+      catalog: "CATALOG_DESCRIPTION_SECRET",
+      modelResponse: "MODEL_RESPONSE_SECRET",
+    } as const;
+    const sensitiveCatalog = {
+      ...FIXTURE_COMPONENT_CATALOG,
+      components: FIXTURE_COMPONENT_CATALOG.components.map((component) => ({
+        ...component,
+        description: sentinels.catalog,
+      })),
+    } as ComponentCatalog;
+    const observations: SafeStageObservation[] = [];
+    const pipeline = createPipeline(
+      {
+        async generatePresentationDecisionCandidate(request) {
+          const valid = candidateFor(request);
+          const region = valid.plan.regions[0];
+          if (region === undefined) throw new Error("Missing fixture region.");
+          return {
+            ...valid,
+            reason: sentinels.modelResponse,
+            plan: {
+              ...valid.plan,
+              regions: [{ ...region, purpose: sentinels.uiPlan }],
+            },
+          };
+        },
+      },
+      { catalog: sensitiveCatalog },
+    );
+    const options = {
+      observability: {
+        recordStageCompletion: (event: SafeStageObservation) =>
+          observations.push(event),
+      },
+    };
+
+    await pipeline.present(
+      {
+        requestId: "sensitive-markdown-categories",
+        content: {
+          contentType: "markdown",
+          markdown: `${sentinels.sanitizedMarkdown}<script>${sentinels.rawMarkdown}</script>`,
+        },
+        context: { userMessage: sentinels.userMessage },
+        catalog: catalogReference,
+      },
+      options,
+    );
+    await pipeline.present(
+      {
+        requestId: "sensitive-structured-categories",
+        content: {
+          contentType: "structured-data",
+          data: { summary: sentinels.structuredData },
+          fallbackMarkdown: sentinels.fallback,
+        },
+        context: { userMessage: sentinels.userMessage },
+        catalog: catalogReference,
+      },
+      options,
+    );
+
+    const serializedObservations = JSON.stringify(observations);
+    for (const sentinel of Object.values(sentinels)) {
+      expect(serializedObservations).not.toContain(sentinel);
+    }
+  });
+
+  it("isolates a concurrent compile result from another request's fallback", async () => {
+    const pipeline = createPipeline({
+      async generatePresentationDecisionCandidate(request) {
+        if (request.requestId === "fallback") {
+          throw new Error("fallback only");
+        }
+        await Promise.resolve();
+        return candidateFor(request);
+      },
+    });
+
+    const [compiled, fallback] = await Promise.all([
+      pipeline.present({
+        requestId: "compiled",
+        content: {
+          contentType: "structured-data",
+          data: { summary: { owner: "compiled-only" } },
+          fallbackMarkdown: "compiled fallback",
+        },
+        catalog: catalogReference,
+      }),
+      pipeline.present({
+        requestId: "fallback",
+        content: {
+          contentType: "structured-data",
+          data: { summary: { owner: "fallback-only" } },
+          fallbackMarkdown: "fallback-only",
+        },
+        catalog: catalogReference,
+      }),
+    ]);
+
+    expect(compiled).toMatchObject({
+      requestId: "compiled",
+      status: "completed",
+      mode: "generative-ui",
+      surfaceId: "surface-compiled",
+    });
+    expect(JSON.stringify(compiled)).toContain("compiled-only");
+    expect(JSON.stringify(compiled)).not.toContain("fallback-only");
+    expect(fallback).toMatchObject({
+      requestId: "fallback",
+      status: "degraded",
+      mode: "markdown",
+    });
+    expect(JSON.stringify(fallback)).toContain("fallback-only");
+    expect(JSON.stringify(fallback)).not.toContain("compiled-only");
+    expect(fallback).not.toHaveProperty("operations");
+  });
+
+  it("caches only the verified Catalog snapshot and never request content", async () => {
+    const secret = "CACHE_REQUEST_SECRET";
+    const repository = { load: vi.fn(() => FIXTURE_COMPONENT_CATALOG) };
+    const model = vi.fn<ModelAdapter["generatePresentationDecisionCandidate"]>(
+      async (request) => candidateFor(request),
+    );
+    const pipeline = createPresentationPipeline({
+      catalogRepository: repository,
+      modelAdapter: { generatePresentationDecisionCandidate: model },
+      createSurfaceId: (request) => `surface-${request.requestId}`,
+    });
+
+    await pipeline.present({
+      requestId: "cache-first",
+      content: {
+        contentType: "markdown",
+        markdown: `<script>${secret}</script> [bad](javascript:alert('${secret}'))`,
+      },
+      catalog: catalogReference,
+    });
+    const second = await pipeline.present({
+      requestId: "cache-second",
+      content: { contentType: "markdown", markdown: "Safe content." },
+      catalog: catalogReference,
+    });
+
+    expect(repository.load).toHaveBeenCalledTimes(1);
+    expect(repository.load).toHaveBeenCalledWith(catalogReference);
+    expect(JSON.stringify(repository.load.mock.calls)).not.toContain(secret);
+    expect(JSON.stringify(second)).not.toContain(secret);
+  });
+
   it("lets Core reject a schema-valid candidate that exceeds its item limit", async () => {
     const pipeline = createPipeline(
       {

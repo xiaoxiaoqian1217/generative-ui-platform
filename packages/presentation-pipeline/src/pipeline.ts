@@ -43,15 +43,18 @@ export interface PresentationPipelineConfiguration {
 
 export const DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION: Readonly<PresentationPipelineConfiguration> =
   Object.freeze({
-    markdownLimits: DEFAULT_MARKDOWN_SANITIZER_LIMITS,
-    structuredDataLimits: DEFAULT_STRUCTURED_DATA_LIMITS,
-    catalogSchemaLimits: defaultCatalogSchemaLimits,
-    coreLimits: {
+    markdownLimits: Object.freeze({ ...DEFAULT_MARKDOWN_SANITIZER_LIMITS }),
+    structuredDataLimits: Object.freeze({ ...DEFAULT_STRUCTURED_DATA_LIMITS }),
+    catalogSchemaLimits: Object.freeze({ ...defaultCatalogSchemaLimits }),
+    coreLimits: Object.freeze({
       maxDataDepth: DEFAULT_STRUCTURED_DATA_LIMITS.maxDataDepth,
       maxDataItems: DEFAULT_STRUCTURED_DATA_LIMITS.maxDataItems,
-      catalogSchema: defaultCatalogSchemaLimits,
-    },
-    modelInvocation: { modelTimeoutMs: 10_000, modelRetryCount: 0 },
+      catalogSchema: Object.freeze({ ...defaultCatalogSchemaLimits }),
+    }),
+    modelInvocation: Object.freeze({
+      modelTimeoutMs: 10_000,
+      modelRetryCount: 0,
+    }),
     compileTimeoutMs: 10_000,
   });
 

@@ -21,6 +21,40 @@ function fixturePipeline(mode: "markdown" | "generative-ui") {
 }
 
 describe("embedded Presentation Pipeline", () => {
+  it("deeply freezes the exported default configuration", () => {
+    expect(Object.isFrozen(DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION)).toBe(
+      true,
+    );
+    expect(
+      Object.isFrozen(
+        DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION.markdownLimits,
+      ),
+    ).toBe(true);
+    expect(
+      Object.isFrozen(
+        DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION.structuredDataLimits,
+      ),
+    ).toBe(true);
+    expect(
+      Object.isFrozen(
+        DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION.catalogSchemaLimits,
+      ),
+    ).toBe(true);
+    expect(
+      Object.isFrozen(DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION.coreLimits),
+    ).toBe(true);
+    expect(
+      Object.isFrozen(
+        DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION.coreLimits.catalogSchema,
+      ),
+    ).toBe(true);
+    expect(
+      Object.isFrozen(
+        DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION.modelInvocation,
+      ),
+    ).toBe(true);
+  });
+
   it("can be assembled in a plain TypeScript process and return Markdown", async () => {
     const result = await fixturePipeline("markdown").present({
       requestId: "fixture-markdown",
