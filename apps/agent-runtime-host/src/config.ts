@@ -18,6 +18,7 @@ export interface RuntimeHostConfig {
   endpoint: string;
   agentId: string;
   businessAgentUrl: string;
+  businessAgentContractUrl: string;
   presentationModel: RuntimeHostPresentationModelConfig;
 }
 
@@ -126,6 +127,8 @@ export function loadConfig(
     endpoint: env.COPILOTKIT_ENDPOINT ?? "/api/copilotkit",
     agentId: env.BUSINESS_AGENT_ID ?? "business-agent",
     businessAgentUrl: env.BUSINESS_AGENT_URL ?? "http://localhost:8000/ag-ui",
+    businessAgentContractUrl:
+      env.BUSINESS_AGENT_CONTRACT_URL ?? "http://localhost:8300",
     presentationModel: readPresentationModelConfig(env),
   };
 }

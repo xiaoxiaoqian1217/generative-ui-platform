@@ -56,9 +56,15 @@ importers:
       '@copilotkit/runtime':
         specifier: 1.63.2
         version: 1.63.2(@cfworker/json-schema@4.1.1)(@langchain/core@1.2.4(@opentelemetry/api@1.9.1)(openai@6.48.0(ws@8.21.1)(zod@3.25.76))(ws@8.21.1))(@langchain/langgraph-sdk@1.9.28(@langchain/core@1.2.4(@opentelemetry/api@1.9.1)(openai@6.48.0(ws@8.21.1)(zod@3.25.76))(ws@8.21.1))(vue@3.5.40(typescript@5.8.3)))(@opentelemetry/api@1.9.1)(langchain@1.5.4(@langchain/core@1.2.4(@opentelemetry/api@1.9.1)(openai@6.48.0(ws@8.21.1)(zod@3.25.76))(ws@8.21.1))(@opentelemetry/api@1.9.1)(openai@6.48.0(ws@8.21.1)(zod@3.25.76))(vue@3.5.40(typescript@5.8.3))(ws@8.21.1))(openai@6.48.0(ws@8.21.1)(zod@3.25.76))(vitest@3.2.4(@types/debug@4.1.13)(@types/node@24.0.15)(jiti@2.6.1)(tsx@4.20.3)(yaml@2.9.0))(vue@3.5.40(typescript@5.8.3))
+      '@generative-ui/business-agent-adapter':
+        specifier: workspace:*
+        version: link:../../packages/business-agent-adapter
       '@generative-ui/presentation-pipeline':
         specifier: workspace:*
         version: link:../../packages/presentation-pipeline
+      '@generative-ui/runtime-contract':
+        specifier: workspace:*
+        version: link:../../packages/runtime-contract
       express:
         specifier: 5.1.0
         version: 5.1.0
@@ -100,9 +106,6 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
     devDependencies:
-      '@generative-ui/business-agent-adapter':
-        specifier: workspace:*
-        version: link:../../packages/business-agent-adapter
       tsup:
         specifier: 8.5.0
         version: 8.5.0(jiti@2.6.1)(postcss@8.5.22)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.9.0)

@@ -87,9 +87,6 @@ describe("LangGraphHttpBusinessAgentAdapter", () => {
       url: "/api/runs",
       headers: expect.objectContaining({
         "content-type": "application/json",
-        "x-request-id": "request-http-run",
-        "x-thread-id": "thread-http",
-        "x-run-id": "run-http",
       }),
       body: request,
     });
@@ -152,6 +149,7 @@ describe("LangGraphHttpBusinessAgentAdapter", () => {
       requestTimeoutMs: 500,
       maxRetries: 1,
       retryDelayMs: 1,
+      retryMode: "agent-idempotent",
     });
 
     await expect(
@@ -312,6 +310,7 @@ describe("LangGraphHttpBusinessAgentAdapter", () => {
       baseUrl,
       maxRetries: 1,
       retryDelayMs: 1,
+      retryMode: "agent-idempotent",
     });
 
     await expect(
@@ -324,6 +323,18 @@ describe("LangGraphHttpBusinessAgentAdapter", () => {
       }),
     ).resolves.toMatchObject({ status: "completed" });
     expect(attempts).toBe(2);
+  });
+
+  it("rejects retries unless the Agent protocol guarantees idempotency", () => {
+    expect(
+      () =>
+        new LangGraphHttpBusinessAgentAdapter({
+          baseUrl: "http://127.0.0.1:8300",
+          maxRetries: 1,
+        }),
+    ).toThrow(
+      "retryMode must be agent-idempotent when maxRetries is greater than 0",
+    );
   });
 
   it("validates outgoing requests before crossing the HTTP boundary", async () => {

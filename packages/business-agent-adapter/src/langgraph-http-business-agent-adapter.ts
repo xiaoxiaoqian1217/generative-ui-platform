@@ -22,10 +22,11 @@ export interface LangGraphHttpBusinessAgentAdapterConfiguration {
   readonly maxResponseBytes?: number;
   readonly maxRetries?: number;
   readonly retryDelayMs?: number;
+  readonly retryMode?: "disabled" | "agent-idempotent";
 }
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
-const DEFAULT_MAX_RETRIES = 1;
+const DEFAULT_MAX_RETRIES = 0;
 const DEFAULT_RETRY_DELAY_MS = 100;
 const DEFAULT_MAX_RESPONSE_BYTES = 1_048_576;
 const MAX_REQUEST_TIMEOUT_MS = 300_000;
@@ -139,14 +140,9 @@ function normalizeBaseUrl(value: string | URL): URL {
   return url;
 }
 
-function correlationHeaders(
-  request: Pick<BusinessAgentRunRequest, "requestId" | "threadId" | "runId">,
-): HeadersInit {
+function requestHeaders(): HeadersInit {
   return {
     "content-type": "application/json",
-    "x-request-id": request.requestId,
-    "x-thread-id": request.threadId,
-    "x-run-id": request.runId,
   };
 }
 
@@ -180,6 +176,15 @@ export class LangGraphHttpBusinessAgentAdapter implements BusinessAgentAdapter {
       0,
       MAX_RETRIES,
     );
+    const retryMode = configuration.retryMode ?? "disabled";
+    if (retryMode !== "disabled" && retryMode !== "agent-idempotent") {
+      throw new TypeError("retryMode must be disabled or agent-idempotent.");
+    }
+    if (this.#maxRetries > 0 && retryMode !== "agent-idempotent") {
+      throw new TypeError(
+        "retryMode must be agent-idempotent when maxRetries is greater than 0.",
+      );
+    }
     this.#retryDelayMs = boundedInteger(
       configuration.retryDelayMs,
       DEFAULT_RETRY_DELAY_MS,
@@ -196,7 +201,7 @@ export class LangGraphHttpBusinessAgentAdapter implements BusinessAgentAdapter {
   ): Promise<unknown> {
     const response = await fetch(new URL(path, this.#baseUrl), {
       method: "POST",
-      headers: correlationHeaders(request),
+      headers: requestHeaders(),
       body: JSON.stringify(request),
       ...(signal === undefined ? {} : { signal }),
     });

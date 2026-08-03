@@ -28,6 +28,7 @@ Runtime Host 不承担 Business Agent 的模型推理。
 进程内 Embedded Presentation Pipeline 可以通过服务端环境变量选择 Fixture 或已注册的 Presentation Model Provider，Provider 仍只由 Presentation Router / Pipeline 调用。
 Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI 编译逻辑。
 当前实现提供远程 Business Agent 的 AG-UI 转发、Demo 端点，以及 Presentation Pipeline 的进程内组合根。
+当前实现还通过 `BusinessAgentAdapter` 的 Runtime Contract 接口提供 Run 和 Resume Action 调用 seam，并在组合根中装配 LangGraph HTTP 实现。
 完整 Run / Action 编排仍由后续任务接入，但 Runtime Host 不通过独立 HTTP Client 调用展示能力。
 
 ## 运行要求
@@ -48,6 +49,7 @@ Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI
 | `COPILOTKIT_ENDPOINT` | `/api/copilotkit` | 面向前端的 CopilotKit Runtime 路径。 |
 | `BUSINESS_AGENT_ID` | `business-agent` | 面向前端暴露的业务 Agent 标识。 |
 | `BUSINESS_AGENT_URL` | `http://localhost:8000/ag-ui` | 远程业务 Agent 的 AG-UI 端点。 |
+| `BUSINESS_AGENT_CONTRACT_URL` | `http://localhost:8300` | Runtime Host 通过 Business Agent Adapter 使用的 Contract HTTP 基址。 |
 | `COPILOTKIT_TELEMETRY_DISABLED` | `true` | 是否关闭 CopilotKit 匿名遥测。 |
 | `PRESENTATION_MODEL_PROVIDER` | `fixture` | `fixture`、`kimi`、`doubao`、`glm`、`qwen` 或 `openai-compatible`。 |
 | `PRESENTATION_MODEL_REGISTRATION_ID` | `<provider>-primary` | Provider Registry 中的稳定注册 ID。 |

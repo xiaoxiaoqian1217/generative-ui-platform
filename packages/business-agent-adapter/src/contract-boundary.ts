@@ -9,6 +9,7 @@ import {
   validateBusinessAgentRunRequest,
   validateBusinessAgentRunResult,
 } from "@generative-ui/runtime-contract";
+import { BusinessAgentAdapterRequestError } from "./adapter.js";
 
 type CorrelatedRequest = Pick<
   BusinessAgentRunRequest,
@@ -91,6 +92,44 @@ function invalidProtocolResult(
   );
 }
 
+function hasValidCorrelation(request: unknown): request is CorrelatedRequest {
+  return (
+    typeof request === "object" &&
+    request !== null &&
+    "protocolVersion" in request &&
+    request.protocolVersion === "1.0" &&
+    "requestId" in request &&
+    typeof request.requestId === "string" &&
+    request.requestId.length > 0 &&
+    "threadId" in request &&
+    typeof request.threadId === "string" &&
+    request.threadId.length > 0 &&
+    "runId" in request &&
+    typeof request.runId === "string" &&
+    request.runId.length > 0
+  );
+}
+
+function invalidRequestResult(
+  request: unknown,
+  validation: { path: string; constraint: string },
+  message: string,
+): BusinessAgentRunResult {
+  if (!hasValidCorrelation(request)) {
+    throw new BusinessAgentAdapterRequestError({
+      code: "REQUEST_INVALID",
+      message,
+      retryable: false,
+      path: validation.path,
+      constraint: validation.constraint,
+    });
+  }
+  return adapterFailureResult(request, "REQUEST_INVALID", message, false, {
+    path: validation.path,
+    constraint: validation.constraint,
+  });
+}
+
 export function normalizeRunResult(
   request: BusinessAgentRunRequest,
   input: unknown,
@@ -110,15 +149,13 @@ export function invalidRunRequestResult(
 ): BusinessAgentRunResult | undefined {
   const validation = validateBusinessAgentRunRequest(request);
   if (validation.success) return undefined;
-  return adapterFailureResult(
+  return invalidRequestResult(
     request,
-    "REQUEST_INVALID",
-    "The Business Agent Run request does not match its contract.",
-    false,
     {
       path: validation.error.path,
       constraint: validation.error.constraint,
     },
+    "The Business Agent Run request does not match its contract.",
   );
 }
 
@@ -127,15 +164,13 @@ export function invalidResumeActionRequestResult(
 ): BusinessAgentResumeActionResult | undefined {
   const validation = validateBusinessAgentResumeActionRequest(request);
   if (validation.success) return undefined;
-  return adapterFailureResult(
+  return invalidRequestResult(
     request,
-    "REQUEST_INVALID",
-    "The Business Agent Resume Action request does not match its contract.",
-    false,
     {
       path: validation.error.path,
       constraint: validation.error.constraint,
     },
+    "The Business Agent Resume Action request does not match its contract.",
   );
 }
 

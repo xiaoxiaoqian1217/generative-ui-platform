@@ -5,6 +5,7 @@ import type {
 import { describe, expect, it } from "vitest";
 import {
   type BusinessAgentAdapter,
+  BusinessAgentAdapterRequestError,
   MockBusinessAgentAdapter,
 } from "../src/index.js";
 
@@ -161,6 +162,73 @@ describe("BusinessAgentAdapter contract", () => {
       error: { code: "REQUEST_CANCELLED", retryable: false },
     });
     expect(calls).toBe(0);
+  });
+
+  it("cancels a running Mock handler even when the handler ignores the signal", async () => {
+    const adapter: BusinessAgentAdapter = new MockBusinessAgentAdapter({
+      run: async () => new Promise(() => undefined),
+      resumeAction: async () => new Promise(() => undefined),
+    });
+    const controller = new AbortController();
+
+    const invocation = adapter.run(runRequest, { signal: controller.signal });
+    controller.abort();
+
+    await expect(invocation).resolves.toMatchObject({
+      status: "failed",
+      error: { code: "REQUEST_CANCELLED", retryable: false },
+    });
+  });
+
+  it("observes a Mock rejection that races with cancellation", async () => {
+    const controller = new AbortController();
+    const adapter: BusinessAgentAdapter = new MockBusinessAgentAdapter({
+      run: async () => {
+        controller.abort();
+        throw new Error("failure after cancellation");
+      },
+      resumeAction: async () => new Promise(() => undefined),
+    });
+
+    await expect(
+      adapter.run(runRequest, { signal: controller.signal }),
+    ).resolves.toMatchObject({
+      status: "failed",
+      error: { code: "REQUEST_CANCELLED", retryable: false },
+    });
+  });
+
+  it("rejects an uncorrelatable request with a stable boundary error", async () => {
+    const adapter: BusinessAgentAdapter = new MockBusinessAgentAdapter({
+      run: async () => new Promise(() => undefined),
+      resumeAction: async () => new Promise(() => undefined),
+    });
+
+    const invocation = adapter.run({ ...runRequest, requestId: "" });
+
+    await expect(invocation).rejects.toMatchObject({
+      name: BusinessAgentAdapterRequestError.name,
+      error: {
+        code: "REQUEST_INVALID",
+        retryable: false,
+        path: "/requestId",
+        constraint: "minimum-length",
+      },
+    });
+  });
+
+  it("rejects a non-object request without leaking a native TypeError", async () => {
+    const adapter: BusinessAgentAdapter = new MockBusinessAgentAdapter({
+      run: async () => new Promise(() => undefined),
+      resumeAction: async () => new Promise(() => undefined),
+    });
+
+    const invocation = adapter.run(null as unknown as BusinessAgentRunRequest);
+
+    await expect(invocation).rejects.toMatchObject({
+      name: BusinessAgentAdapterRequestError.name,
+      error: { code: "REQUEST_INVALID", retryable: false },
+    });
   });
 
   it("normalizes a Mock implementation failure without leaking its error", async () => {

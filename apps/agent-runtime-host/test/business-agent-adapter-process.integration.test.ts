@@ -1,7 +1,8 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { once } from "node:events";
-import { LangGraphHttpBusinessAgentAdapter } from "@generative-ui/business-agent-adapter";
+import { resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { createRuntimeHost } from "../src/runtime.js";
 
 interface ListeningEvent {
   event: "business-agent.listening";
@@ -21,8 +22,9 @@ async function startReferenceAgent(): Promise<{
   baseUrl: string;
   child: ChildProcess;
 }> {
+  const agentDirectory = resolve(process.cwd(), "../business-agent-langgraph");
   const child = spawn(process.execPath, ["--import", "tsx", "src/cli.ts"], {
-    cwd: process.cwd(),
+    cwd: agentDirectory,
     env: {
       ...process.env,
       BUSINESS_AGENT_HOST: "127.0.0.1",
@@ -34,7 +36,7 @@ async function startReferenceAgent(): Promise<{
   });
   children.push(child);
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolveStartup, reject) => {
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -58,7 +60,7 @@ async function startReferenceAgent(): Promise<{
           if (!settled && event.event === "business-agent.listening") {
             settled = true;
             clearTimeout(timeout);
-            resolve({ baseUrl: event.address, child });
+            resolveStartup({ baseUrl: event.address, child });
           }
         } catch {
           // Ignore non-protocol output from the TypeScript process loader.
@@ -82,16 +84,20 @@ afterEach(async () => {
   await Promise.all(children.splice(0).map(stopChild));
 });
 
-describe("Business Agent Adapter process integration", () => {
-  it("runs and resumes the real LangGraph Agent with the same thread and run", async () => {
+describe("Runtime Host Business Agent Adapter process integration", () => {
+  it("runs and resumes the real Agent through the Host's contract-only seam", async () => {
     const { baseUrl } = await startReferenceAgent();
-    const adapter = new LangGraphHttpBusinessAgentAdapter({
-      baseUrl,
-      requestTimeoutMs: 5_000,
-      maxRetries: 0,
+    const host = createRuntimeHost({
+      host: "127.0.0.1",
+      port: 8200,
+      endpoint: "/api/copilotkit",
+      agentId: "business-agent",
+      businessAgentUrl: "http://127.0.0.1:8300/ag-ui",
+      businessAgentContractUrl: baseUrl,
+      presentationModel: { mode: "fixture" },
     });
 
-    const run = await adapter.run({
+    const run = await host.runBusinessAgent({
       protocolVersion: "1.0",
       requestId: "request-process-run",
       threadId: "thread-process-adapter",
@@ -109,7 +115,7 @@ describe("Business Agent Adapter process integration", () => {
       },
     });
 
-    const resumed = await adapter.resumeAction({
+    const resumed = await host.resumeBusinessAgentAction({
       protocolVersion: "1.0",
       requestId: "request-process-resume",
       threadId: "thread-process-adapter",
@@ -131,5 +137,5 @@ describe("Business Agent Adapter process integration", () => {
         data: { kind: "patrol-task", status: "confirmed" },
       },
     });
-  }, 15_000);
+  }, 20_000);
 });
