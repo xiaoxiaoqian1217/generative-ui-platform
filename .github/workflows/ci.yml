@@ -64,52 +64,11 @@ jobs:
           EOF
       - name: Refresh lockfile
         run: pnpm install --lockfile-only --no-frozen-lockfile
-      - name: Restore final CI and commit generated state
+      - name: Commit generated dependency state
         run: |
-          DOLLAR='$'
-          cat > .github/workflows/ci.yml <<EOF
-          name: CI
-          on:
-            pull_request:
-            push:
-              branches: [main]
-            workflow_dispatch:
-
-          permissions:
-            contents: read
-
-          concurrency:
-            group: ci-$DOLLAR{{ github.workflow }}-$DOLLAR{{ github.ref }}
-            cancel-in-progress: true
-
-          env:
-            CI: "true"
-            COPILOTKIT_TELEMETRY_DISABLED: "true"
-            DO_NOT_TRACK: "1"
-            TURBO_TELEMETRY_DISABLED: "1"
-
-          jobs:
-            validate:
-              name: validate
-              runs-on: ubuntu-latest
-              timeout-minutes: 30
-              steps:
-                - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-                - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-                  with:
-                    node-version: 24
-                    package-manager-cache: false
-                - name: Enable pnpm
-                  run: corepack enable && corepack prepare pnpm@10.13.1 --activate
-                - name: Install dependencies
-                  run: pnpm install --frozen-lockfile
-                - name: Install Workbench browser
-                  run: pnpm --filter @generative-ui/web-workbench exec playwright install --with-deps chromium
-                - run: pnpm validate
-          EOF
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add package.json apps/*/package.json packages/*/package.json pnpm-workspace.yaml pnpm-lock.yaml
           git commit -m "chore: refresh secure dependency lockfile"
           git push origin HEAD:agent/release-hardening-audit
 
