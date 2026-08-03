@@ -1,23 +1,17 @@
 # Test Scope
 
-本目录用于承载 Generative UI Workbench 的测试。
+`unit/` 从公开 seam 验证单一 Runtime Host 配置、HTTP/WS Runtime Contract 客户端和安全 Markdown。
+`e2e/` 使用生产静态构建、真实 Chromium 和 Runtime Host Fixture 验证浏览器行为。
 
-建议测试结构：
+基础 E2E 覆盖：
 
-| 目录 | 测试内容 |
-|---|---|
-| `unit/` | Runtime 事件转换、Registry、Schema 校验和状态管理 |
-| `integration/` | Runtime Client、Renderer、Action 回传和场景加载 |
-| `e2e/` | 用户输入、结果渲染、用户确认和错误降级完整流程 |
+- HTTP Markdown 结果；
+- WebSocket A2UI 结果；
+- PresentationResult Viewer；
+- A2UI Raw 默认隐藏和显式开启；
+- Runtime Host 断线和服务恢复；
+- 页面刷新状态；
+- 诊断摘要。
 
-## MVP 必测边界
-
-- Workbench 只连接 Agent Runtime Host。
-- 非法组件不能进入真实组件渲染。
-- 非法 Props 和 Action 参数必须被拒绝。
-- 高风险操作必须经过用户确认。
-- 重复确认必须被阻止。
-- UI 编译或组件渲染失败后必须保留有效业务内容。
-- 智慧安防场景移除后，通用工作台测试仍能运行。
-
-详细验收案例见 `docs/WEB_WORKBENCH_SRS.md`。
+Fixture 只实现 Runtime Host 的公开端点，不创建 Compiler 或 Business Agent 浏览器直连。
+完整平台业务 E2E 仍由 TASK-009 建设。
