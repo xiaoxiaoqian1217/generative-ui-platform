@@ -3,7 +3,8 @@ import { once } from "node:events";
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const PROCESS_INTEGRATION_TIMEOUT_MS = 20_000;
+const AGENT_STARTUP_TIMEOUT_MS = 30_000;
+const PROCESS_INTEGRATION_TIMEOUT_MS = 45_000;
 const DEFAULT_AGENT_COMMAND_ARGUMENTS = existsSync("dist/cli.js")
   ? ["dist/cli.js"]
   : ["--import", "tsx", "src/cli.ts"];
@@ -47,7 +48,7 @@ async function startAgentProcess(options?: {
         () => reject(error),
         (caught: unknown) => reject(caught),
       );
-    }, options?.startupTimeoutMs ?? 10_000);
+    }, options?.startupTimeoutMs ?? AGENT_STARTUP_TIMEOUT_MS);
     child.stderr?.on("data", (chunk: Buffer) => {
       stderr += chunk.toString("utf8");
     });

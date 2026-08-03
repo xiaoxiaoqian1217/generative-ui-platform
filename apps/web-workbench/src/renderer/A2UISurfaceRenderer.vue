@@ -15,7 +15,9 @@ const stringify = (value: unknown): string =>
   typeof value === "number" ||
   typeof value === "boolean"
     ? String(value)
-    : "";
+    : value !== null && typeof value === "object"
+      ? JSON.stringify(value)
+      : "";
 const record = (value: unknown): Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)

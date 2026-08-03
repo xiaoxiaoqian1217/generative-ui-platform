@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  createCatalogCapabilitySummary,
-  createMarkdownSanitizer,
-  createModelPresentationRouter,
+  createPresentationPipeline,
   createPresentationModelProviderRegistry,
-  DEFAULT_MARKDOWN_SANITIZER_LIMITS,
+  DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION,
   FIXTURE_COMPONENT_CATALOG,
   type PresentationModelInvocationSummary,
   type PresentationModelProvider,
@@ -37,7 +35,7 @@ function smokeProvider(): PresentationModelProvider {
 describe.skipIf(!smokeRequired)(
   "real Presentation Model Provider smoke",
   () => {
-    it("returns a locally validated PresentationDecision through the configured provider", async () => {
+    it("validates a provider decision through the complete Pipeline", async () => {
       const provider = smokeProvider();
       const baseUrl = process.env.PRESENTATION_PROVIDER_SMOKE_BASE_URL;
       const endpointId = process.env.PRESENTATION_PROVIDER_SMOKE_ENDPOINT_ID;
@@ -57,32 +55,39 @@ describe.skipIf(!smokeRequired)(
         ],
         { onInvocationSummary: (summary) => summaries.push(summary) },
       );
-      const sanitized = createMarkdownSanitizer().sanitize(
-        "Provider connectivity smoke test.",
-        DEFAULT_MARKDOWN_SANITIZER_LIMITS,
-      );
-      if (!sanitized.success) {
-        throw new Error("Smoke-test Markdown must be safe.");
-      }
-
-      const decision = await createModelPresentationRouter(
-        registry.resolve("real-provider-smoke"),
-        { modelTimeoutMs: 60_000, modelRetryCount: 1 },
-      ).route(
+      const result = await createPresentationPipeline({
+        catalogRepository: { load: () => FIXTURE_COMPONENT_CATALOG },
+        modelAdapter: registry.resolve("real-provider-smoke"),
+        createSurfaceId: () => "provider-smoke-surface",
+        configuration: {
+          ...DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION,
+          modelInvocation: { modelTimeoutMs: 60_000, modelRetryCount: 1 },
+        },
+      }).present(
         {
           requestId: "real-provider-smoke",
-          content: { contentType: "markdown", markdown: sanitized.markdown },
+          content: {
+            contentType: "markdown",
+            markdown: "Provider connectivity smoke test.",
+          },
           context: {
             locale: "en-US",
             userMessage:
               "For this connectivity smoke test, choose a Markdown presentation.",
           },
-          catalog: createCatalogCapabilitySummary(FIXTURE_COMPONENT_CATALOG),
+          catalog: {
+            catalogId: FIXTURE_COMPONENT_CATALOG.catalogId,
+            catalogVersion: FIXTURE_COMPONENT_CATALOG.catalogVersion,
+          },
         },
         { signal: new AbortController().signal },
       );
 
-      expect(["markdown", "generative-ui"]).toContain(decision.mode);
+      expect(["completed", "degraded"]).toContain(result.status);
+      if (result.status !== "failed" && result.mode === "generative-ui") {
+        expect(result.operations.length).toBeGreaterThan(0);
+        expect(result.surfaceId).toBe("provider-smoke-surface");
+      }
       expect(summaries).toContainEqual(
         expect.objectContaining({
           registrationId: "real-provider-smoke",

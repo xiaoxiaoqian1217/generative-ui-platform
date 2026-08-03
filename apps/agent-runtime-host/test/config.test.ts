@@ -80,4 +80,15 @@ describe("loadConfig", () => {
       }),
     ).toThrow("Runtime Host configuration is invalid.");
   });
+
+  it("allows only declared Fixture fault modes", () => {
+    expect(
+      loadConfig({ PRESENTATION_FIXTURE_MODEL_FAULT: "rate-limited" }),
+    ).toMatchObject({
+      presentationModel: { mode: "fixture", fixtureFault: "rate-limited" },
+    });
+    expect(() =>
+      loadConfig({ PRESENTATION_FIXTURE_MODEL_FAULT: "arbitrary-code" }),
+    ).toThrow("Runtime Host configuration is invalid.");
+  });
 });

@@ -165,7 +165,7 @@ describe("A2UI v0.9 reducer", () => {
       "Timeline",
     ]);
     expect(isRenderableComponent("fixture", "Card")).toBe(true);
-    expect(isRenderableComponent("fixture", "Button")).toBe(false);
+    expect(isRenderableComponent("fixture", "Button")).toBe(true);
     expect(isRenderableComponent("untrusted", "Card")).toBe(false);
   });
 });

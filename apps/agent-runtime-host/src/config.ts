@@ -1,11 +1,15 @@
 import type {
+  FixtureModelFault,
   ModelInvocationPolicy,
   PresentationModelProvider,
   PresentationModelProviderRegistration,
 } from "@generative-ui/presentation-pipeline";
 
 export type RuntimeHostPresentationModelConfig =
-  | { readonly mode: "fixture" }
+  | {
+      readonly mode: "fixture";
+      readonly fixtureFault?: FixtureModelFault;
+    }
   | {
       readonly mode: "provider";
       readonly registration: PresentationModelProviderRegistration;
@@ -80,7 +84,20 @@ function readPresentationModelConfig(
 ): RuntimeHostPresentationModelConfig {
   const providerValue = env.PRESENTATION_MODEL_PROVIDER ?? "fixture";
   if (providerValue === "fixture") {
-    return Object.freeze({ mode: "fixture" });
+    const fault = env.PRESENTATION_FIXTURE_MODEL_FAULT;
+    if (
+      fault !== undefined &&
+      fault !== "timeout" &&
+      fault !== "rate-limited" &&
+      fault !== "invalid-candidate" &&
+      fault !== "provider-failure"
+    ) {
+      throw new RuntimeHostConfigurationError();
+    }
+    return Object.freeze({
+      mode: "fixture",
+      ...(fault === undefined ? {} : { fixtureFault: fault }),
+    });
   }
 
   const provider = readProvider(providerValue);
@@ -132,8 +149,18 @@ export function loadConfig(
       env.BUSINESS_AGENT_CONTRACT_URL ?? "http://localhost:8300",
     presentationModel: readPresentationModelConfig(env),
     runtime: Object.freeze({
-      totalTimeoutMs: readBoundedInteger(env.RUNTIME_TOTAL_TIMEOUT_MS, 15_000, 1, 300_000),
-      maxConcurrentRuns: readBoundedInteger(env.RUNTIME_MAX_CONCURRENT_RUNS, 16, 1, 1_000),
+      totalTimeoutMs: readBoundedInteger(
+        env.RUNTIME_TOTAL_TIMEOUT_MS,
+        15_000,
+        1,
+        300_000,
+      ),
+      maxConcurrentRuns: readBoundedInteger(
+        env.RUNTIME_MAX_CONCURRENT_RUNS,
+        16,
+        1,
+        1_000,
+      ),
     }),
   };
 }
