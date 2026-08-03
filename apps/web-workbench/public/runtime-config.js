@@ -1,0 +1,1 @@
+window.__GEN_UI_WORKBENCH_CONFIG__ = window.__GEN_UI_WORKBENCH_CONFIG__ ?? {};
