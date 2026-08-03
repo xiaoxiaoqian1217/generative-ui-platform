@@ -23,9 +23,47 @@ describe("RunOrchestrator", () => {
     expect(result.presentationRequestId).toEqual(expect.any(String));
   });
 
+  it("returns a correlated, payload-free diagnostic projection for the embedded pipeline", async () => {
+    const secret = "Authorization: Bearer diagnostic-secret";
+    const businessContent = `Customer incident detail: ${secret}`;
+    const orchestrator = createRunOrchestrator({
+      businessAgentAdapter: new MockBusinessAgentAdapter({
+        run: async (request) => ({ protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, status: "completed", content: { contentType: "markdown", markdown: businessContent } }),
+        resumeAction: async () => { throw new Error("not used"); },
+      }),
+      presentationPipeline: createPresentationPipeline({ catalogRepository: { load: () => FIXTURE_COMPONENT_CATALOG }, modelAdapter: createFixtureModelAdapter(), createSurfaceId: () => "surface-test" }),
+      surfaceContextStore: createSurfaceContextStore(),
+      configuration: { totalTimeoutMs: 1_000, maxConcurrentRuns: 1, catalog: { catalogId: "fixture", catalogVersion: "1.0.0" }, catalogDefinition: FIXTURE_COMPONENT_CATALOG, agentId: "business-agent" },
+    });
+
+    const result = await orchestrator.run({ protocolVersion: "1.0", requestId: "request-diagnostics", threadId: "thread-diagnostics", runId: "run-diagnostics", message: { role: "user", content: secret } });
+
+    expect(result.status).toBe("completed");
+    expect(result.diagnostics).toMatchObject({
+      correlation: { agentId: "business-agent", presentationRequestId: result.presentationRequestId },
+      presentationDecisionMode: "markdown",
+      uiPlanValidationStatus: "not-applicable",
+    });
+    expect(result.diagnostics?.stages).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "business-agent", status: "completed" }),
+      expect.objectContaining({ name: "input-validation", status: "completed" }),
+      expect.objectContaining({ name: "presentation-routing", status: "completed" }),
+      expect.objectContaining({ name: "ui-compilation", status: "not-started" }),
+    ]));
+    expect(JSON.stringify(result.diagnostics)).not.toContain(secret);
+    expect(JSON.stringify(result.diagnostics)).not.toContain(businessContent);
+  });
+
   it("rejects actions for an unknown Surface without resuming the Business Agent", async () => {
     const result = await createOrchestrator().action({ protocolVersion: "1.0", requestId: "request-action", threadId: "thread-1", runId: "run-1", action: { actionId: "confirm", actionType: "confirm", surfaceId: "unknown" } });
     expect(result).toMatchObject({ status: "failed", error: { code: "SURFACE_NOT_FOUND" } });
+    expect(result.diagnostics).toMatchObject({
+      correlation: { agentId: "business-agent", actionId: "confirm" },
+      normalizedErrorCode: "SURFACE_NOT_FOUND",
+      stages: expect.arrayContaining([
+        expect.objectContaining({ name: "action-validation", status: "failed" }),
+      ]),
+    });
   });
 
   it("validates, atomically consumes, resumes, and re-presents an approved Catalog Action", async () => {

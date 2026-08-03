@@ -73,6 +73,13 @@ export const runtimeDiagnosticStageNameSchema = Type.Union(
     Type.Literal("action-validation"),
     Type.Literal("presentation-pipeline"),
     Type.Literal("response-validation"),
+    Type.Literal("input-validation"),
+    Type.Literal("content-serialization"),
+    Type.Literal("catalog-resolution"),
+    Type.Literal("presentation-routing"),
+    Type.Literal("model-analysis"),
+    Type.Literal("ui-plan-validation"),
+    Type.Literal("ui-compilation"),
   ],
   {
     $id: "https://generative-ui.dev/schemas/runtime/diagnostic-stage-name/1.0",
@@ -86,10 +93,14 @@ export type RuntimeDiagnosticStageName = Static<
 export const runtimeDiagnosticStageStatusSchema = Type.Union(
   [
     Type.Literal("not-started"),
+    Type.Literal("not-configured"),
+    Type.Literal("unavailable"),
     Type.Literal("skipped"),
     Type.Literal("completed"),
     Type.Literal("degraded"),
     Type.Literal("failed"),
+    Type.Literal("cancelled"),
+    Type.Literal("timed-out"),
   ],
   {
     $id: "https://generative-ui.dev/schemas/runtime/diagnostic-stage-status/1.0",
@@ -117,9 +128,62 @@ export type RuntimeDiagnosticStage = Static<
   typeof runtimeDiagnosticStageSchema
 >;
 
+export const normalizedModelUsageSchema = Type.Object(
+  {
+    inputTokens: Type.Optional(Type.Number({ minimum: 0 })),
+    outputTokens: Type.Optional(Type.Number({ minimum: 0 })),
+    totalTokens: Type.Optional(Type.Number({ minimum: 0 })),
+  },
+  {
+    $id: "https://generative-ui.dev/schemas/runtime/normalized-model-usage/1.0",
+    additionalProperties: false,
+  },
+);
+
+export type NormalizedModelUsage = Static<typeof normalizedModelUsageSchema>;
+
+export const runtimeDiagnosticsCorrelationSchema = Type.Object(
+  {
+    agentId: Type.Optional(nonEmptyStringSchema),
+    presentationRequestId: Type.Optional(nonEmptyStringSchema),
+    surfaceId: Type.Optional(nonEmptyStringSchema),
+    actionId: Type.Optional(nonEmptyStringSchema),
+  },
+  {
+    $id: "https://generative-ui.dev/schemas/runtime/diagnostics-correlation/1.0",
+    additionalProperties: false,
+  },
+);
+
+export type RuntimeDiagnosticsCorrelation = Static<
+  typeof runtimeDiagnosticsCorrelationSchema
+>;
+
 export const runtimeDiagnosticsSummarySchema = Type.Object(
   {
     stages: Type.Array(Type.Ref(runtimeDiagnosticStageSchema)),
+    correlation: Type.Optional(Type.Ref(runtimeDiagnosticsCorrelationSchema)),
+    presentationDecisionMode: Type.Optional(
+      Type.Union([Type.Literal("markdown"), Type.Literal("generative-ui")]),
+    ),
+    presentationMode: Type.Optional(
+      Type.Union([Type.Literal("markdown"), Type.Literal("generative-ui")]),
+    ),
+    modelProvider: Type.Optional(nonEmptyStringSchema),
+    modelName: Type.Optional(nonEmptyStringSchema),
+    modelLatencyMs: Type.Optional(Type.Number({ minimum: 0 })),
+    compilerLatencyMs: Type.Optional(Type.Number({ minimum: 0 })),
+    uiPlanValidationStatus: Type.Optional(
+      Type.Union([
+        Type.Literal("not-started"),
+        Type.Literal("not-applicable"),
+        Type.Literal("valid"),
+        Type.Literal("invalid"),
+      ]),
+    ),
+    degradationReasonCode: Type.Optional(nonEmptyStringSchema),
+    normalizedErrorCode: Type.Optional(Type.Ref(platformErrorCodeSchema)),
+    normalizedModelUsage: Type.Optional(Type.Ref(normalizedModelUsageSchema)),
   },
   {
     $id: "https://generative-ui.dev/schemas/runtime/diagnostics-summary/1.0",

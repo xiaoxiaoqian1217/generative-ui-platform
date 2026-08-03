@@ -30,6 +30,30 @@ defineProps<{ result: RuntimeRunResult }>();
         <dt>presentationRequestId</dt>
         <dd>{{ result.presentationRequestId ?? "—" }}</dd>
       </div>
+      <div>
+        <dt>agentId</dt>
+        <dd>{{ result.diagnostics?.correlation?.agentId ?? "—" }}</dd>
+      </div>
+      <div>
+        <dt>surfaceId</dt>
+        <dd>{{ result.diagnostics?.correlation?.surfaceId ?? "—" }}</dd>
+      </div>
+      <div>
+        <dt>actionId</dt>
+        <dd>{{ result.diagnostics?.correlation?.actionId ?? "—" }}</dd>
+      </div>
+      <div>
+        <dt>decision / UI Plan</dt>
+        <dd>{{ result.diagnostics?.presentationDecisionMode ?? "—" }} / {{ result.diagnostics?.uiPlanValidationStatus ?? "—" }}</dd>
+      </div>
+      <div>
+        <dt>degradation reason</dt>
+        <dd>{{ result.diagnostics?.degradationReasonCode ?? "—" }}</dd>
+      </div>
+      <div>
+        <dt>model / compiler latency</dt>
+        <dd>{{ result.diagnostics?.modelLatencyMs ?? "—" }} / {{ result.diagnostics?.compilerLatencyMs ?? "—" }} ms</dd>
+      </div>
     </dl>
     <div v-if="result.diagnostics?.stages.length" class="stages">
       <div v-for="stage in result.diagnostics.stages" :key="stage.name" class="stage-row">
