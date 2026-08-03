@@ -128,6 +128,27 @@ describe("dependency boundary checker", () => {
     expect(result.stderr).toContain("packages must not depend on apps");
   });
 
+  it("rejects a Runtime Contract dependency on an implementation package", () => {
+    const fixtureRoot = createFixture({
+      "packages/runtime-contract": {
+        dependencies: {
+          "@generative-ui/ui-compiler-core": "workspace:*",
+        },
+        name: "@generative-ui/runtime-contract",
+      },
+      "packages/ui-compiler-core": {
+        name: "@generative-ui/ui-compiler-core",
+      },
+    });
+
+    const result = runChecker(fixtureRoot);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      "contract packages must not depend on implementation packages",
+    );
+  });
+
   it("rejects a Core dependency on a protocol adapter", () => {
     const fixtureRoot = createFixture({
       "packages/ag-ui-adapter": {

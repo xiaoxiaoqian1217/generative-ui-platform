@@ -1,7 +1,7 @@
 # 契约包构建产物基线
 
-本基线记录 ADR-0012 要求的第一组可执行契约包构建产物。
-测量日期为 2026-07-28。
+本基线记录 ADR-0012 和 GOAL-DEV-ENV-001 TASK-001 要求的可执行契约包构建产物。
+测量日期为 2026-08-02。
 
 ## 测量方法
 
@@ -13,11 +13,12 @@
 |---|---:|---:|
 | `@generative-ui/shared-types` | 732 | 1,057 |
 | `@generative-ui/presentation-contract` | 13,168 | 40,782 |
-| `@generative-ui/component-catalog-schema` | 18,679 | 28,508 |
+| `@generative-ui/runtime-contract` | 21,946 | 204,303 |
+| `@generative-ui/component-catalog-schema` | 19,834 | 28,508 |
 | `@generative-ui/compiler-contract` | 28,684 | 57,085 |
 | `@generative-ui/ag-ui-adapter` | 17,769 | 71,083 |
 
 ## 比较规则
 
-依赖升级时必须重新构建这五个包并比较这些数值。
+依赖升级时必须重新构建这些包并比较这些数值。
 出现非预期大小变化时，必须在发布前检查生成的 JavaScript 和声明文件。

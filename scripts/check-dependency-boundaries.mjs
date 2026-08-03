@@ -46,6 +46,7 @@ const contractPackagePaths = new Set([
   "packages/compiler-contract",
   "packages/component-catalog-schema",
   "packages/presentation-contract",
+  "packages/runtime-contract",
   "packages/shared-types",
 ]);
 
