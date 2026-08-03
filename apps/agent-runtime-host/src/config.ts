@@ -140,7 +140,7 @@ export function loadConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): RuntimeHostConfig {
   return {
-    host: env.HOST ?? "0.0.0.0",
+    host: env.HOST ?? "127.0.0.1",
     port: readPort(env.PORT),
     endpoint: env.COPILOTKIT_ENDPOINT ?? "/api/copilotkit",
     agentId: env.BUSINESS_AGENT_ID ?? "business-agent",
