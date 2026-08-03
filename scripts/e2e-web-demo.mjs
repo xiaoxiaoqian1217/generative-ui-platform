@@ -141,6 +141,7 @@ try {
       HOST: "127.0.0.1",
       PORT: String(runtimePort),
       COPILOTKIT_TELEMETRY_DISABLED: "true",
+      PRESENTATION_MODEL_PROVIDER: "fixture",
     },
   );
   startProcess(
@@ -193,9 +194,7 @@ try {
   assert.equal(httpMessage.replyTo, httpMessageId);
   assert.match(httpMessage.content, /当前未接入真实 Business Agent/);
 
-  const socket = await openWebSocket(
-    `ws://127.0.0.1:${runtimePort}/ws/demo`,
-  );
+  const socket = await openWebSocket(`ws://127.0.0.1:${runtimePort}/ws/demo`);
   try {
     const systemMessage = await waitForWebSocketMessage(
       socket,
@@ -219,10 +218,7 @@ try {
     );
 
     const webSocketMessage = await agentMessagePromise;
-    assert.match(
-      webSocketMessage.content,
-      /当前未接入真实 Business Agent/,
-    );
+    assert.match(webSocketMessage.content, /当前未接入真实 Business Agent/);
   } finally {
     socket.close();
   }

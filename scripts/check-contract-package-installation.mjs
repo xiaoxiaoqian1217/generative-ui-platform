@@ -10,8 +10,8 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve, sep } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { dirname, join, relative, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const temporaryRoot = mkdtempSync(
@@ -61,7 +61,8 @@ function packPackage(packageDirectory, tarballDirectory) {
 }
 
 function asFileDependency(filePath) {
-  return pathToFileURL(filePath).href;
+  const consumerDirectory = join(temporaryRoot, "consumer");
+  return `file:${relative(consumerDirectory, filePath).replaceAll("\\", "/")}`;
 }
 
 try {

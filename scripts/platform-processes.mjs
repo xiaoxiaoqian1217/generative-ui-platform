@@ -76,6 +76,27 @@ export function isPortAvailable(port) {
   });
 }
 
+export async function waitForPlatformPortsAvailable(
+  timeoutMs = 10_000,
+  stableMs = 2_000,
+) {
+  const deadline = Date.now() + timeoutMs;
+  let availableSince;
+  while (Date.now() < deadline) {
+    const available = await Promise.all(
+      platformPorts.map(({ port }) => isPortAvailable(port)),
+    );
+    if (available.every(Boolean)) {
+      availableSince ??= Date.now();
+      if (Date.now() - availableSince >= stableMs) return true;
+    } else {
+      availableSince = undefined;
+    }
+    await delay(100);
+  }
+  return false;
+}
+
 export async function stopProcessTree(pid) {
   if (!Number.isSafeInteger(pid) || pid <= 0) return;
   if (process.platform === "win32") {
@@ -105,30 +126,33 @@ export async function stopTrackedPlatformProcesses(processes) {
       if (await isPlatformProcess(pid, name)) await stopProcessTree(pid);
     }),
   );
-  if (process.platform !== "win32" || processes.length === 0) return;
-
-  const { spawn } = await import("node:child_process");
-  const output = await new Promise((resolve) => {
-    let stdout = "";
-    const netstat = spawn("netstat", ["-ano"], { windowsHide: true });
-    netstat.stdout.on("data", (chunk) => {
-      stdout += String(chunk);
+  if (process.platform === "win32" && processes.length > 0) {
+    const { spawn } = await import("node:child_process");
+    const output = await new Promise((resolve) => {
+      let stdout = "";
+      const netstat = spawn("netstat", ["-ano"], { windowsHide: true });
+      netstat.stdout.on("data", (chunk) => {
+        stdout += String(chunk);
+      });
+      netstat.once("close", () => resolve(stdout));
+      netstat.once("error", () => resolve(""));
     });
-    netstat.once("close", () => resolve(stdout));
-    netstat.once("error", () => resolve(""));
-  });
-  const pids = new Set();
-  for (const line of output.split(/\r?\n/u)) {
-    const match = /:(5173|8200|8300)\s+\S+\s+LISTENING\s+(\d+)$/u.exec(
-      line.trim(),
+    const pids = new Set();
+    for (const line of output.split(/\r?\n/u)) {
+      const match = /:(5173|8200|8300)\s+\S+\s+LISTENING\s+(\d+)$/u.exec(
+        line.trim(),
+      );
+      if (match) pids.add(Number(match[2]));
+    }
+    await Promise.all(
+      [...pids].map(async (pid) => {
+        if (await isPlatformProcess(pid)) await stopProcessTree(pid);
+      }),
     );
-    if (match) pids.add(Number(match[2]));
   }
-  await Promise.all(
-    [...pids].map(async (pid) => {
-      if (await isPlatformProcess(pid)) await stopProcessTree(pid);
-    }),
-  );
+  if (!(await waitForPlatformPortsAvailable())) {
+    throw new Error("PLATFORM_PROCESS_CLEANUP_FAILED");
+  }
 }
 
 function signalProcessGroup(pid, signal) {
@@ -162,9 +186,7 @@ async function isPlatformProcess(pid, name) {
   if (process.platform !== "linux") return false;
   try {
     const workingDirectory = normalize(await readlink(`/proc/${pid}/cwd`));
-    return (
-      workingDirectory === root || workingDirectory.startsWith(`${root}/`)
-    );
+    return workingDirectory === root || workingDirectory.startsWith(`${root}/`);
   } catch {
     return false;
   }

@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import {
   assertPortsAvailable,
@@ -10,24 +11,32 @@ import {
 } from "./platform-processes.mjs";
 
 const background = process.argv.includes("--background");
-const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const tsxCli = join(repositoryRoot, "node_modules", "tsx", "dist", "cli.mjs");
+const workbenchDirectory = join(repositoryRoot, "apps", "web-workbench");
 const webEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(([name]) => !name.startsWith("VITE_")),
 );
 const services = [
   {
     name: "Reference Business Agent",
-    filter: "@generative-ui/business-agent-langgraph",
+    cwd: join(repositoryRoot, "apps", "business-agent-langgraph"),
+    args: [tsxCli, "watch", "src/cli.ts"],
     environment: {},
   },
   {
     name: "Agent Runtime Host",
-    filter: "@generative-ui/agent-runtime-host",
+    cwd: join(repositoryRoot, "apps", "agent-runtime-host"),
+    args: [tsxCli, "watch", "src/main.ts"],
     environment: { BUSINESS_AGENT_CONTRACT_URL: "http://127.0.0.1:8300" },
   },
   {
     name: "Generative UI Workbench",
-    filter: "@generative-ui/web-workbench",
+    cwd: workbenchDirectory,
+    args: [
+      join(workbenchDirectory, "node_modules", "vite", "bin", "vite.js"),
+      "--host",
+      "0.0.0.0",
+    ],
     environment: {
       ...webEnvironment,
       VITE_RUNTIME_HOST_URL: "http://127.0.0.1:8200",
@@ -77,11 +86,10 @@ async function waitForPlatformHealth() {
 let started = false;
 try {
   for (const service of services) {
-    const child = spawn(pnpmCommand, ["--filter", service.filter, "dev"], {
-      cwd: repositoryRoot,
+    const child = spawn(process.execPath, service.args, {
+      cwd: service.cwd,
       env: { ...process.env, ...service.environment },
-      detached: process.platform !== "win32",
-      shell: process.platform === "win32",
+      detached: true,
       stdio: background ? "ignore" : "inherit",
       windowsHide: true,
     });
