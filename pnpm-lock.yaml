@@ -121,9 +121,18 @@ importers:
 
   apps/web-workbench:
     dependencies:
+      '@generative-ui/compiler-contract':
+        specifier: workspace:*
+        version: link:../../packages/compiler-contract
+      '@generative-ui/presentation-contract':
+        specifier: workspace:*
+        version: link:../../packages/presentation-contract
       '@generative-ui/runtime-contract':
         specifier: workspace:*
         version: link:../../packages/runtime-contract
+      '@generative-ui/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       markdown-it:
         specifier: 14.1.0
         version: 14.1.0
@@ -1609,6 +1618,7 @@ packages:
     resolution: {integrity: sha512-uNN83XxQrRAh/w0/pmAfibcwyb6YWt4gP+dpnQKPVJshAloQ785ii8CT8ZCIxkGg9opVsvAlGhFitSm6D1Jjpg==}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@rollup/rollup-openbsd-x64@4.62.2':
     resolution: {integrity: sha512-srjEIxSH3LRnJN6THczDHWQplqEMFiAJrTab0msUryh9kwNpkICf3Ea6q6MN/2cZwRFUNx5w+h6Hpi4QuHS6Zg==}

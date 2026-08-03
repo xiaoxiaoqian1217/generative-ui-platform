@@ -12,6 +12,7 @@ import {
   watch,
 } from "vue";
 import DiagnosticsPanel from "../diagnostics/DiagnosticsPanel.vue";
+import A2UIRenderer from "../renderer/A2UIRenderer.vue";
 import A2UIRawViewer from "../renderer/A2UIRawViewer.vue";
 import MarkdownRenderer from "../renderer/MarkdownRenderer.vue";
 import PresentationResultViewer from "../renderer/PresentationResultViewer.vue";
@@ -127,6 +128,12 @@ const a2uiOperations = computed(() => {
   const value = presentation.value;
   return value && "mode" in value && value.mode === "generative-ui"
     ? value.operations
+    : undefined;
+});
+const a2uiPresentation = computed(() => {
+  const value = presentation.value;
+  return value && "mode" in value && value.mode === "generative-ui"
+    ? value
     : undefined;
 });
 const canSend = computed(
@@ -321,6 +328,10 @@ function retryLastRequest(): void {
 
 function selectScenario(message: string): void {
   input.value = message;
+}
+
+function handleA2UIAction(): void {
+  // TASK-008 owns Runtime Host Action submission and Business Agent resume.
 }
 
 function reconnect(): void {
@@ -522,15 +533,11 @@ onBeforeUnmount(() => {
               </span>
             </div>
             <MarkdownRenderer v-if="markdown" :markdown="markdown" />
-            <div v-else-if="a2uiOperations" class="a2ui-handoff" data-testid="a2ui-placeholder">
-              <div class="a2ui-symbol">A2</div>
-              <div>
-                <h3>A2UI Surface 已通过 Runtime Contract</h3>
-                <p>
-                  本任务提供受控 Raw Viewer；真实 Component Registry 渲染器由 TASK-007 接入。
-                </p>
-              </div>
-            </div>
+            <A2UIRenderer
+              v-else-if="a2uiPresentation"
+              :presentation="a2uiPresentation"
+              @action="handleA2UIAction"
+            />
             <div v-else class="empty-result">
               PresentationResult 未包含可展示内容，请查看错误与诊断。
             </div>

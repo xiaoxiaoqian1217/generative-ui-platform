@@ -50,8 +50,40 @@ function runtimeResult(request) {
           mode: "generative-ui",
           surfaceId: "surface-e2e",
           operations: [
-            { beginRendering: { root: "root" } },
-            { surfaceUpdate: { component: "StatusCard", text: "Ready" } },
+            {
+              version: "v0.9",
+              createSurface: {
+                surfaceId: "surface-e2e",
+                catalogId: "workbench-fixture",
+              },
+            },
+            {
+              version: "v0.9",
+              updateComponents: {
+                surfaceId: "surface-e2e",
+                components: [
+                  {
+                    id: "root",
+                    component: "Card",
+                    title: { path: "/sourceData/title" },
+                    children: ["confirm"],
+                  },
+                  {
+                    id: "confirm",
+                    component: "Button",
+                    label: "Confirm",
+                  },
+                ],
+              },
+            },
+            {
+              version: "v0.9",
+              updateDataModel: {
+                surfaceId: "surface-e2e",
+                path: "/",
+                value: { sourceData: { title: "Ready" } },
+              },
+            },
           ],
         }
       : {
