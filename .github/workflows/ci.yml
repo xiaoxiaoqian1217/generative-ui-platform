@@ -44,13 +44,14 @@ jobs:
       - name: Align Vitest manifests
         run: |
           node --input-type=module <<'EOF'
-          import { readFileSync, readdirSync, writeFileSync } from "node:fs";
+          import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
           import { join } from "node:path";
 
           const files = ["package.json"];
           for (const directory of ["apps", "packages"]) {
             for (const entry of readdirSync(directory, { withFileTypes: true })) {
-              if (entry.isDirectory()) files.push(join(directory, entry.name, "package.json"));
+              const manifestPath = join(directory, entry.name, "package.json");
+              if (entry.isDirectory() && existsSync(manifestPath)) files.push(manifestPath);
             }
           }
           for (const file of files) {
