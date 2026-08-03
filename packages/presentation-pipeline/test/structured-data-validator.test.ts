@@ -4,7 +4,7 @@ import {
   createStructuredDataSerializer,
   createStructuredDataValidator,
   DEFAULT_STRUCTURED_DATA_LIMITS,
-} from "../src/main.js";
+} from "../src/index.js";
 
 describe("StructuredDataValidator", () => {
   const validator = createStructuredDataValidator();

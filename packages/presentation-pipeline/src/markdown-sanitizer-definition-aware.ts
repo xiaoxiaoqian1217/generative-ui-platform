@@ -77,10 +77,7 @@ function exceedsAstLimits(
     }
 
     nodeCount += 1;
-    if (
-      nodeCount > limits.maxAstNodes ||
-      current.depth > limits.maxAstDepth
-    ) {
+    if (nodeCount > limits.maxAstNodes || current.depth > limits.maxAstDepth) {
       return true;
     }
 
@@ -144,9 +141,7 @@ export function blankRangesPreservingLines(
     }
 
     parts.push(markdown.slice(cursor, range.start));
-    parts.push(
-      markdown.slice(range.start, range.end).replace(/[^\r\n]/g, " "),
-    );
+    parts.push(markdown.slice(range.start, range.end).replace(/[^\r\n]/g, " "));
     cursor = range.end;
   }
   parts.push(markdown.slice(cursor));

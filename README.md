@@ -8,7 +8,7 @@
 |---|---|---|
 | Generative UI Platform | 仓库级和长期平台边界 | 持续建设 |
 | Generative UI Compiler | 平台核心编译能力 | 已形成 Compiler MVP 基线 |
-| Presentation Pipeline | 展示后处理应用 Package | 按 ADR-0019 迁移建设 |
+| Presentation Pipeline | 展示后处理应用 Package | 已提取并嵌入 Runtime Host |
 | Generative UI Workbench | Frontend Runtime 参考实现与开发验证工作台 | 逐步建设 |
 | Reference Business Agent | 全链路验证用参考 Agent | 当前阶段允许建设 |
 | Interaction Gateway | 未来多 Agent 扩展能力 | 不属于当前阶段 |
@@ -56,19 +56,19 @@ Generative UI Workbench
 当前仓库已具备：
 
 - UI Compiler Core；
-- 原 UI Compiler Service 中的展示应用能力；
+- 可嵌入的 Presentation Pipeline Package；
 - Presentation Contract；
 - Component Catalog Schema；
 - Agent Runtime Host；
+- Runtime Host 对 Presentation Pipeline 的进程内组装；
 - HTTP / WebSocket Mock 验证；
 - Generative UI Workbench 的需求和目录基础。
 
 当前尚未完成：
 
-- `packages/presentation-pipeline` 提取；
 - Reference Business Agent；
 - Business Agent Adapter；
-- Runtime Host 内嵌 Presentation Pipeline 编排；
+- Runtime Host 的完整 Run / Action Presentation Pipeline 编排；
 - Vue A2UI Renderer；
 - Action 回传闭环；
 - 平台级 Playwright E2E；

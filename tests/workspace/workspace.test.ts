@@ -10,10 +10,6 @@ const applications = [
     name: "@generative-ui/agent-runtime-host",
     path: "apps/agent-runtime-host",
   },
-  {
-    name: "@generative-ui/ui-compiler-service",
-    path: "apps/ui-compiler-service",
-  },
 ] as const;
 const packages = [
   {
@@ -33,6 +29,10 @@ const packages = [
     path: "packages/presentation-contract",
   },
   {
+    name: "@generative-ui/presentation-pipeline",
+    path: "packages/presentation-pipeline",
+  },
+  {
     name: "@generative-ui/runtime-contract",
     path: "packages/runtime-contract",
   },
@@ -47,8 +47,8 @@ const packages = [
 ] as const;
 
 const forbiddenPaths = [
-  "apps/agent-runtime-host",
   "apps/interaction-gateway",
+  "apps/ui-compiler-service",
   "packages/component-registry",
   "packages/frontend-runtime",
 ] as const;
@@ -74,9 +74,9 @@ function readManifest(relativePath: string): PackageManifest {
 }
 
 describe("workspace contract", () => {
-  it("contains two applications and seven shared packages", () => {
-    expect(applications).toHaveLength(2);
-    expect(packages).toHaveLength(7);
+  it("contains one runtime application and eight shared packages", () => {
+    expect(applications).toHaveLength(1);
+    expect(packages).toHaveLength(8);
 
     for (const project of [...applications, ...packages]) {
       expect(
@@ -118,5 +118,28 @@ describe("workspace contract", () => {
     for (const relativePath of activeForbiddenPaths) {
       expect(existsSync(join(repositoryRoot, relativePath))).toBe(false);
     }
+  });
+
+  it("does not retain the retired Compiler service runtime topology", () => {
+    const currentRuntimeConfiguration = [
+      "package.json",
+      "pnpm-workspace.yaml",
+      "apps/agent-runtime-host/package.json",
+      "apps/agent-runtime-host/.env.example",
+      "apps/agent-runtime-host/src/config.ts",
+    ]
+      .map((relativePath) =>
+        readFileSync(join(repositoryRoot, relativePath), "utf8"),
+      )
+      .join("\n");
+
+    expect(currentRuntimeConfiguration).not.toMatch(
+      /ui-compiler-service|UI_COMPILER_URL|UI_COMPILER_MODE|UI_COMPILER_PORT/,
+    );
+    expect(
+      existsSync(
+        join(repositoryRoot, "scripts/smoke-ui-compiler-service-container.mjs"),
+      ),
+    ).toBe(false);
   });
 });

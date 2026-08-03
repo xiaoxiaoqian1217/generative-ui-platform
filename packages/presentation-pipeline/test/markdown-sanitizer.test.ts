@@ -4,7 +4,7 @@ import {
   createDefensiveMarkdownSanitizerLimits,
   createMarkdownSanitizer,
   DEFAULT_MARKDOWN_SANITIZER_LIMITS,
-} from "../src/main.js";
+} from "../src/index.js";
 import {
   dangerousHtmlCorpus,
   dangerousMarkdownFixture,
