@@ -21,10 +21,20 @@ type CorrelatedRequest = Pick<
   "protocolVersion" | "requestId" | "runId" | "threadId"
 >;
 
+type CompletedBusinessAgentResult = Extract<
+  BusinessAgentRunResult,
+  { status: "completed" }
+>;
+
+type FailedBusinessAgentResult = Extract<
+  BusinessAgentRunResult,
+  { status: "failed" }
+>;
+
 function failedResult<T extends CorrelatedRequest>(
   request: T,
   error: PlatformError,
-): BusinessAgentRunResult | BusinessAgentResumeActionResult {
+): FailedBusinessAgentResult {
   return {
     protocolVersion: request.protocolVersion,
     requestId: request.requestId,
@@ -35,27 +45,10 @@ function failedResult<T extends CorrelatedRequest>(
   };
 }
 
-function completedRunResult(
-  request: BusinessAgentRunRequest,
-  content: Extract<BusinessAgentRunResult, { status: "completed" }>["content"],
-): BusinessAgentRunResult {
-  return {
-    protocolVersion: request.protocolVersion,
-    requestId: request.requestId,
-    threadId: request.threadId,
-    runId: request.runId,
-    status: "completed",
-    content,
-  };
-}
-
-function completedResumeResult(
-  request: BusinessAgentResumeActionRequest,
-  content: Extract<
-    BusinessAgentResumeActionResult,
-    { status: "completed" }
-  >["content"],
-): BusinessAgentResumeActionResult {
+function completedResult(
+  request: CorrelatedRequest,
+  content: CompletedBusinessAgentResult["content"],
+): CompletedBusinessAgentResult {
   return {
     protocolVersion: request.protocolVersion,
     requestId: request.requestId,
@@ -110,7 +103,7 @@ export class ReferenceBusinessAgent implements BusinessAgentApplication {
             requestId: request.requestId,
             threadId: request.threadId,
             runId: request.runId,
-          }) as BusinessAgentRunResult;
+          });
         }
 
         const state = await this.#graph.invoke(
@@ -118,11 +111,11 @@ export class ReferenceBusinessAgent implements BusinessAgentApplication {
           config,
         );
         if (isInterrupted(state)) {
-          return completedRunResult(request, interruptedDraftContent(state));
+          return completedResult(request, interruptedDraftContent(state));
         }
         if (state.content === undefined)
           throw new Error("AGENT_CONTENT_MISSING");
-        return completedRunResult(request, state.content);
+        return completedResult(request, state.content);
       } catch {
         return failedResult(request, {
           code: "BUSINESS_AGENT_ERROR",
@@ -131,7 +124,7 @@ export class ReferenceBusinessAgent implements BusinessAgentApplication {
           requestId: request.requestId,
           threadId: request.threadId,
           runId: request.runId,
-        }) as BusinessAgentRunResult;
+        });
       }
     });
   }
@@ -152,7 +145,7 @@ export class ReferenceBusinessAgent implements BusinessAgentApplication {
             threadId: request.threadId,
             runId: request.runId,
             actionId: request.action.actionId,
-          }) as BusinessAgentResumeActionResult;
+          });
         }
 
         const originalRequest = checkpoint.values.request;
@@ -165,7 +158,7 @@ export class ReferenceBusinessAgent implements BusinessAgentApplication {
             threadId: request.threadId,
             runId: request.runId,
             actionId: request.action.actionId,
-          }) as BusinessAgentResumeActionResult;
+          });
         }
 
         if (
@@ -182,7 +175,7 @@ export class ReferenceBusinessAgent implements BusinessAgentApplication {
             threadId: request.threadId,
             runId: request.runId,
             actionId: request.action.actionId,
-          }) as BusinessAgentResumeActionResult;
+          });
         }
 
         const state = await this.#graph.invoke(
@@ -192,7 +185,7 @@ export class ReferenceBusinessAgent implements BusinessAgentApplication {
         if (isInterrupted(state) || state.content === undefined) {
           throw new Error("AGENT_RESUME_INCOMPLETE");
         }
-        return completedResumeResult(request, state.content);
+        return completedResult(request, state.content);
       } catch {
         return failedResult(request, {
           code: "BUSINESS_AGENT_ERROR",
@@ -202,7 +195,7 @@ export class ReferenceBusinessAgent implements BusinessAgentApplication {
           threadId: request.threadId,
           runId: request.runId,
           actionId: request.action.actionId,
-        }) as BusinessAgentResumeActionResult;
+        });
       }
     });
   }

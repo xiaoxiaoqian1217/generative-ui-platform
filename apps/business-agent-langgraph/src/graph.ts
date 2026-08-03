@@ -1,7 +1,4 @@
-import type {
-  BusinessAgentRunRequest,
-  BusinessAgentRunResult,
-} from "@generative-ui/runtime-contract";
+import type { BusinessAgentRunRequest } from "@generative-ui/runtime-contract";
 import {
   Annotation,
   END,
@@ -11,6 +8,7 @@ import {
   StateGraph,
 } from "@langchain/langgraph";
 import {
+  type AgentContent,
   classifyScenario,
   confirmPatrolTask,
   createPatrolPlanDraft,
@@ -20,11 +18,6 @@ import {
   queryDeviceStatus,
   type ReferenceScenario,
 } from "./business-tools.js";
-
-type AgentContent = Extract<
-  BusinessAgentRunResult,
-  { status: "completed" }
->["content"];
 
 export const ReferenceAgentState = Annotation.Root({
   request: Annotation<BusinessAgentRunRequest>(),

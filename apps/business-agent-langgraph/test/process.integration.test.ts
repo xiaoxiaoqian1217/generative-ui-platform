@@ -77,6 +77,29 @@ describe("Reference Business Agent process", () => {
         checkpoint: "memory",
       });
 
+      const device = await fetch(`${baseUrl}/api/runs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          protocolVersion: "1.0",
+          requestId: "request-process-device",
+          threadId: "thread-process-device",
+          runId: "run-process-device",
+          input: { message: "查询巡逻机器人一号状态" },
+        }),
+      });
+      expect(device.status).toBe(200);
+      expect(await device.json()).toMatchObject({
+        status: "completed",
+        content: {
+          contentType: "structured-data",
+          data: {
+            kind: "device-status",
+            devices: [{ deviceId: "robot-patrol-01", status: "charging" }],
+          },
+        },
+      });
+
       const run = await fetch(`${baseUrl}/api/runs`, {
         method: "POST",
         headers: { "content-type": "application/json" },

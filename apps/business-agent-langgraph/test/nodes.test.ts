@@ -25,6 +25,11 @@ describe("Reference Business Agent nodes", () => {
     expect(routeRequestNode(state)).toEqual({ scenario: "device-status" });
   });
 
+  it("prioritizes device status intent when a device name contains patrol", () => {
+    const state = initialGraphState(request("查询巡逻机器人一号状态"));
+    expect(routeRequestNode(state)).toEqual({ scenario: "device-status" });
+  });
+
   it("returns deterministic structured device data", () => {
     const state = initialGraphState(request("查询 sensor-warehouse-02"));
     expect(deviceStatusNode(state)).toMatchObject({

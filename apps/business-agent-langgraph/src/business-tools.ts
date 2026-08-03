@@ -3,7 +3,7 @@ import type { BusinessAgentRunResult } from "@generative-ui/runtime-contract";
 export const CONFIRM_PATROL_ACTION_ID = "confirm-patrol-plan";
 export const CONFIRM_PATROL_ACTION_TYPE = "patrol.confirm";
 
-type AgentContent = Extract<
+export type AgentContent = Extract<
   BusinessAgentRunResult,
   { status: "completed" }
 >["content"];
@@ -51,12 +51,17 @@ const deviceFixtures = Object.freeze([
 
 export function classifyScenario(message: string): ReferenceScenario {
   const normalized = message.trim().toLocaleLowerCase("zh-CN");
+  const mentionsDevice =
+    deviceFixtures.some(
+      (device) =>
+        normalized.includes(device.deviceId) ||
+        normalized.includes(device.name),
+    ) ||
+    /设备|摄像头|传感器|机器人|device|camera|sensor|robot/u.test(normalized);
+  const requestsStatus = /查询|查看|状态|query|status/u.test(normalized);
+  if (mentionsDevice && requestsStatus) return "device-status";
   if (/巡逻|巡检|patrol/u.test(normalized)) return "patrol-plan";
-  if (
-    /设备|摄像头|传感器|机器人|device|camera|sensor|robot/u.test(normalized)
-  ) {
-    return "device-status";
-  }
+  if (mentionsDevice) return "device-status";
   return "help";
 }
 
