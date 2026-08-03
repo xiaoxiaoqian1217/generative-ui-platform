@@ -53,7 +53,11 @@ function createEmbeddedPresentationPipeline(
 ): PresentationPipeline {
   const modelAdapter =
     config.presentationModel.mode === "fixture"
-      ? createFixtureModelAdapter()
+      ? createFixtureModelAdapter(
+          config.presentationModel.fixtureFault === undefined
+            ? {}
+            : { fault: config.presentationModel.fixtureFault },
+        )
       : createPresentationModelProviderRegistry([
           config.presentationModel.registration,
         ]).resolve(config.presentationModel.registration.registrationId);

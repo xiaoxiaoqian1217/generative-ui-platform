@@ -22,13 +22,29 @@ export const FIXTURE_COMPONENT_CATALOG = Object.freeze({
         type: "object",
         properties: {
           title: { type: "string" },
-          content: { type: "object" },
+          content: { type: ["object", "array"] },
         },
-        required: ["title", "content"],
+        required: ["title"],
         additionalProperties: false,
       },
       allowedActions: ["patrol.confirm"],
-      nesting: { canHaveChildren: false },
+      nesting: { canHaveChildren: true, allowedChildTypes: ["Button"] },
+    },
+    {
+      componentType: "Button",
+      displayName: "Button",
+      description: "Confirms a deterministic fixture action.",
+      category: "common",
+      domainTags: [],
+      propsSchema: {
+        $schema: "http://json-schema.org/draft-07/schema#",
+        type: "object",
+        properties: { label: { type: "string" } },
+        required: ["label"],
+        additionalProperties: false,
+      },
+      allowedActions: ["patrol.confirm"],
+      nesting: { canHaveChildren: false, allowedParentTypes: ["Card"] },
     },
   ],
   actions: [
@@ -78,7 +94,7 @@ export function createFixtureModelAdapter(
   options: FixtureModelAdapterOptions = {},
 ): ModelAdapter {
   const mode = options.mode ?? "auto";
-  const structuredDataPointer = options.structuredDataPointer ?? "/summary";
+  const structuredDataPointer = options.structuredDataPointer;
   const fault = options.fault;
 
   return Object.freeze({
@@ -112,6 +128,36 @@ export function createFixtureModelAdapter(
         typeof request.content.data === "object" &&
         !Array.isArray(request.content.data) &&
         request.content.data.kind === "patrol-plan-draft";
+      const structuredBinding =
+        request.content.contentType !== "structured-data" ||
+        request.content.data === null ||
+        typeof request.content.data !== "object" ||
+        Array.isArray(request.content.data)
+          ? undefined
+          : (() => {
+              const kind = request.content.data.kind;
+              const pointer =
+                structuredDataPointer ??
+                (kind === "device-status"
+                  ? "/devices"
+                  : kind === "patrol-plan-draft"
+                    ? Object.hasOwn(request.content.data, "plan")
+                      ? "/plan"
+                      : "/summary"
+                    : kind === "patrol-task"
+                      ? Object.hasOwn(request.content.data, "stops")
+                        ? "/stops"
+                        : "/summary"
+                      : undefined);
+              if (!pointer) return undefined;
+              return {
+                sourcePointer: pointer,
+                role:
+                  kind === "device-status" || kind === "patrol-task"
+                    ? "collection"
+                    : "content",
+              } as const;
+            })();
       return {
         mode: "generative-ui",
         reason: "FIXTURE_GENERATIVE_UI",
@@ -122,21 +168,35 @@ export function createFixtureModelAdapter(
             {
               regionId: "summary",
               purpose: "Deterministic fixture summary",
-              bindings: [
-                {
-                  sourcePointer:
-                    request.content.contentType === "markdown"
-                      ? "/markdown"
-                      : structuredDataPointer,
-                  role: "content",
-                },
-              ],
+              bindings:
+                request.content.contentType === "markdown"
+                  ? [{ sourcePointer: "/markdown", role: "content" }]
+                  : structuredBinding === undefined
+                    ? []
+                    : [structuredBinding],
               componentPreferences: [{ componentType: "Card" }],
               layout: { flow: "vertical", density: "comfortable" },
-              ...(isPatrolDraft
-                ? { actions: [{ actionId: "confirm-patrol-plan", actionType: "patrol.confirm", label: "Confirm patrol plan", requiresApproval: true, destructive: false, targetRegionId: "summary" }] }
-                : {}),
             },
+            ...(isPatrolDraft
+              ? [
+                  {
+                    regionId: "confirm",
+                    purpose: "Confirm the patrol plan.",
+                    bindings: [],
+                    componentPreferences: [{ componentType: "Button" }],
+                    layout: { flow: "vertical", density: "comfortable" },
+                    actions: [
+                      {
+                        actionId: "confirm-patrol-plan",
+                        actionType: "patrol.confirm",
+                        label: "Confirm patrol plan",
+                        requiresApproval: true,
+                        destructive: false,
+                      },
+                    ],
+                  },
+                ]
+              : []),
           ],
         },
       };

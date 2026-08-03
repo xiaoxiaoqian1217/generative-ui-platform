@@ -24,7 +24,7 @@ export type RegisteredComponentType = (typeof registeredComponentTypes)[number];
 export const catalogComponentRegistry: Readonly<
   Record<string, readonly RegisteredComponentType[]>
 > = {
-  fixture: ["Card", "Text"],
+  fixture: ["Button", "Card", "Text"],
 };
 
 export function isRenderableComponent(
