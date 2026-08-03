@@ -74,25 +74,27 @@ test("patrol confirmation resumes the Business Agent and re-presents through the
   );
 });
 
-test.skip(
-  process.env.PLATFORM_E2E_FIXTURE_FAULT === undefined,
-  "This assertion runs only against a separately started fault-injected Runtime Host.",
+test(
+  "fixture model failures preserve a safe Markdown result",
+  async ({ page }) => {
+    test.skip(
+      process.env.PLATFORM_E2E_FIXTURE_FAULT === undefined,
+      "This assertion runs only against a separately started fault-injected Runtime Host.",
+    );
+
+    await waitForRuntime(page);
+    await page.getByTestId("message-input").fill("query device status");
+    await page.getByTestId("send-run").click();
+    await expect(page.getByTestId("run-status")).toHaveAttribute(
+      "data-state",
+      "degraded",
+    );
+    await expect(page.getByTestId("markdown-result")).toBeVisible();
+    await expect(
+      page.getByTestId("markdown-result").locator("script"),
+    ).toHaveCount(0);
+    await expect(page.getByTestId("presentation-result-viewer")).toContainText(
+      "markdown",
+    );
+  },
 );
-test("fixture model failures preserve a safe Markdown result", async ({
-  page,
-}) => {
-  await waitForRuntime(page);
-  await page.getByTestId("message-input").fill("query device status");
-  await page.getByTestId("send-run").click();
-  await expect(page.getByTestId("run-status")).toHaveAttribute(
-    "data-state",
-    "degraded",
-  );
-  await expect(page.getByTestId("markdown-result")).toBeVisible();
-  await expect(
-    page.getByTestId("markdown-result").locator("script"),
-  ).toHaveCount(0);
-  await expect(page.getByTestId("presentation-result-viewer")).toContainText(
-    "markdown",
-  );
-});
