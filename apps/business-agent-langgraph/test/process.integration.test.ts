@@ -1,8 +1,12 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { once } from "node:events";
+import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const PROCESS_INTEGRATION_TIMEOUT_MS = 20_000;
+const DEFAULT_AGENT_COMMAND_ARGUMENTS = existsSync("dist/cli.js")
+  ? ["dist/cli.js"]
+  : ["--import", "tsx", "src/cli.ts"];
 
 interface ListeningEvent {
   event: "business-agent.listening";
@@ -18,7 +22,7 @@ async function startAgentProcess(options?: {
 }> {
   const child = spawn(
     process.execPath,
-    options?.commandArguments ?? ["--import", "tsx", "src/cli.ts"],
+    options?.commandArguments ?? DEFAULT_AGENT_COMMAND_ARGUMENTS,
     {
       cwd: process.cwd(),
       env: {
