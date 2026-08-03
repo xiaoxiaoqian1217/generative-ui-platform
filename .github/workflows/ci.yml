@@ -107,10 +107,9 @@ jobs:
                   run: pnpm --filter @generative-ui/web-workbench exec playwright install --with-deps chromium
                 - run: pnpm validate
           EOF
-          rm -f .github/workflows/refresh-release-lockfile.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows/ci.yml .github/workflows/refresh-release-lockfile.yml package.json apps/*/package.json packages/*/package.json pnpm-workspace.yaml pnpm-lock.yaml
+          git add -A
           git commit -m "chore: refresh secure dependency lockfile"
           git push origin HEAD:agent/release-hardening-audit
 
