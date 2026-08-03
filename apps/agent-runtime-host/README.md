@@ -5,6 +5,8 @@
 `agent-runtime-host` 是 Generative UI Platform 的 CopilotKit Runtime 集成层。
 它位于前端和兼容 AG-UI 的远程业务 Agent 之间。
 
+> 当前实现属于 Developer Preview。默认仅监听本机回环地址，未实现认证、授权和正式持久化；不得直接暴露到公网。
+
 ## 职责边界
 
 Runtime Host 提供 CopilotKit 运行时端点，并把 AG-UI 请求转发给远程业务 Agent。
@@ -46,7 +48,7 @@ Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI
 
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `HOST` | `0.0.0.0` | HTTP 监听地址。 |
+| `HOST` | `127.0.0.1` | HTTP 监听地址。仅在已有认证、TLS、受控 CORS 和 WebSocket Origin 校验的部署边界内，才应改为非回环地址。 |
 | `PORT` | `8200` | HTTP 监听端口。 |
 | `COPILOTKIT_ENDPOINT` | `/api/copilotkit` | 面向前端的 CopilotKit Runtime 路径。 |
 | `BUSINESS_AGENT_ID` | `business-agent` | 面向前端暴露的业务 Agent 标识。 |
@@ -61,8 +63,8 @@ Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI
 | `PRESENTATION_MODEL_API_KEY` | 无 | 仅服务端读取的 API Key，不得暴露到浏览器或日志。 |
 | `PRESENTATION_MODEL_TIMEOUT_MS` | `10000` | Router 总超时，范围为 1 至 300000 毫秒。 |
 | `PRESENTATION_MODEL_RETRY_COUNT` | `0` | Router 有限重试次数，范围为 0 至 3。 |
-| `RUNTIME_TOTAL_TIMEOUT_MS` | `15000` | 单次 Run 的总超时预算，范围为 1 至 300000 毫秒。 |
-| `RUNTIME_MAX_CONCURRENT_RUNS` | `16` | 运行时并发 Run 上限，范围为 1 至 1000。 |
+| `RUNTIME_TOTAL_TIMEOUT_MS` | `15000` | 单次 Run 或 Action 的总超时预算，范围为 1 至 300000 毫秒。 |
+| `RUNTIME_MAX_CONCURRENT_RUNS` | `16` | Run 与 Action 共享的运行时并发上限，范围为 1 至 1000。 |
 
 真实 Provider 模式要求模型名和 API Key，`openai-compatible` 还要求显式 Base URL。
 切换 Provider 只需修改这些服务端配置，不需要修改 Runtime Orchestrator 或 UI Compiler Core。
