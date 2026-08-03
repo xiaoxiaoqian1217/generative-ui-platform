@@ -110,6 +110,14 @@ export function createRuntimeHost(
       catalog: { catalogId: "fixture", catalogVersion: "1.0.0" },
       catalogDefinition: FIXTURE_COMPONENT_CATALOG,
       agentId: config.agentId,
+      modelProvider:
+        config.presentationModel.mode === "fixture"
+          ? "fixture"
+          : config.presentationModel.registration.provider,
+      modelName:
+        config.presentationModel.mode === "fixture"
+          ? "deterministic-fixture"
+          : config.presentationModel.registration.modelName,
     },
   });
 
