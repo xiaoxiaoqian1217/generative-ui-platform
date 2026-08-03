@@ -54,7 +54,7 @@ function runtimeResult(request) {
               version: "v0.9",
               createSurface: {
                 surfaceId: "surface-e2e",
-                catalogId: "workbench-fixture",
+                catalogId: "fixture",
               },
             },
             {
@@ -66,12 +66,12 @@ function runtimeResult(request) {
                     id: "root",
                     component: "Card",
                     title: { path: "/sourceData/title" },
-                    children: ["confirm"],
+                    children: ["summary"],
                   },
                   {
-                    id: "confirm",
-                    component: "Button",
-                    label: "Confirm",
+                    id: "summary",
+                    component: "Text",
+                    text: { path: "/sourceData/summary" },
                   },
                 ],
               },
@@ -81,7 +81,7 @@ function runtimeResult(request) {
               updateDataModel: {
                 surfaceId: "surface-e2e",
                 path: "/",
-                value: { sourceData: { title: "Ready" } },
+                value: { sourceData: { title: "Ready", summary: "Ready" } },
               },
             },
           ],

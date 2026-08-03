@@ -3,26 +3,33 @@ import type { RuntimeActionEnvelope } from "@generative-ui/runtime-contract";
 import { computed, h, type VNode } from "vue";
 import {
   createRuntimeAction,
-  registeredComponentTypes,
+  isRenderableComponent,
   resolveDynamicValue,
   type A2UISurface,
 } from "./a2ui.js";
 
 const props = defineProps<{ surface: A2UISurface }>();
 const emit = defineEmits<{ action: [action: RuntimeActionEnvelope] }>();
-const registered = new Set<string>(registeredComponentTypes);
 const stringify = (value: unknown): string =>
   typeof value === "string" ||
   typeof value === "number" ||
   typeof value === "boolean"
     ? String(value)
     : "";
+const record = (value: unknown): Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 
 function componentProps(
   componentId: string,
 ): Record<string, unknown> | undefined {
   const component = props.surface.components.get(componentId);
-  if (!component || !registered.has(component.component)) return undefined;
+  if (
+    !component ||
+    !isRenderableComponent(props.surface.catalogId, component.component)
+  )
+    return undefined;
   return Object.fromEntries(
     Object.entries(component)
       .filter(
@@ -121,9 +128,7 @@ function renderComponent(componentId: string): VNode | undefined {
         rows.map((row) =>
           h(
             "tr",
-            headers.map((header) =>
-              h("td", stringify((row as Record<string, unknown>)[header])),
-            ),
+            headers.map((header) => h("td", stringify(record(row)[header]))),
           ),
         ),
       ),

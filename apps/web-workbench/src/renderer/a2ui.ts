@@ -18,6 +18,29 @@ export const registeredComponentTypes = [
   "Timeline",
 ] as const;
 
+export type RegisteredComponentType = (typeof registeredComponentTypes)[number];
+
+/** Catalog capabilities are a local, verified deployment configuration, never model input. */
+export const catalogComponentRegistry: Readonly<
+  Record<string, readonly RegisteredComponentType[]>
+> = {
+  fixture: ["Card", "Text"],
+};
+
+export function isRenderableComponent(
+  catalogId: string,
+  componentType: string,
+): componentType is RegisteredComponentType {
+  return (
+    registeredComponentTypes.includes(
+      componentType as RegisteredComponentType,
+    ) &&
+    (catalogComponentRegistry[catalogId] ?? []).includes(
+      componentType as RegisteredComponentType,
+    )
+  );
+}
+
 export interface A2UISurface {
   readonly catalogId: string;
   readonly components: ReadonlyMap<string, A2UIComponent>;
@@ -39,6 +62,48 @@ export type A2UIApplyResult =
         readonly operationIndex: number;
       };
     };
+
+const MAX_COMPONENTS_PER_SURFACE = 500;
+
+function hasValidComponentGraph(components: readonly A2UIComponent[]): boolean {
+  if (components.length > MAX_COMPONENTS_PER_SURFACE) return false;
+  const ids = new Set(components.map((component) => component.id));
+  if (ids.size !== components.length || !ids.has("root")) return false;
+  const adjacency = new Map<string, string[]>();
+  const parentCounts = new Map<string, number>();
+  for (const component of components) {
+    const children = component.children;
+    if (
+      children !== undefined &&
+      (!Array.isArray(children) ||
+        !children.every((child) => typeof child === "string"))
+    )
+      return false;
+    const childIds = (children ?? []) as string[];
+    if (
+      new Set(childIds).size !== childIds.length ||
+      childIds.some((childId) => !ids.has(childId))
+    )
+      return false;
+    adjacency.set(component.id, childIds);
+    for (const childId of childIds) {
+      parentCounts.set(childId, (parentCounts.get(childId) ?? 0) + 1);
+    }
+  }
+  if ([...parentCounts.values()].some((count) => count > 1)) return false;
+  const visited = new Set<string>();
+  const visiting = new Set<string>();
+  const visit = (componentId: string): boolean => {
+    if (visiting.has(componentId)) return false;
+    if (visited.has(componentId)) return true;
+    visiting.add(componentId);
+    const valid = (adjacency.get(componentId) ?? []).every(visit);
+    visiting.delete(componentId);
+    if (valid) visited.add(componentId);
+    return valid;
+  };
+  return visit("root") && visited.size === components.length;
+}
 
 function cloneSurfaces(
   surfaces: ReadonlyMap<string, A2UISurface>,
@@ -93,6 +158,15 @@ export function applyA2UIOperations(
           error: {
             code: "A2UI_SURFACE_NOT_FOUND",
             message: "A2UI component update references an unknown Surface.",
+            operationIndex,
+          },
+        };
+      if (!hasValidComponentGraph(operation.updateComponents.components))
+        return {
+          success: false,
+          error: {
+            code: "A2UI_OPERATION_INVALID",
+            message: "A2UI components must form a bounded rooted tree.",
             operationIndex,
           },
         };
@@ -181,12 +255,12 @@ export function createRuntimeAction(
     requiresApproval: _requiresApproval,
     ...payload
   } = event.context;
-  const resolvedPayload = Object.fromEntries(
-    Object.entries(payload).map(([key, value]) => [
-      key,
-      resolveDynamicValue(value, dataModel),
-    ]),
-  ) as JsonValue;
+  const resolvedPayload: Record<string, JsonValue> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    const resolved = resolveDynamicValue(value, dataModel);
+    if (resolved === undefined) return undefined;
+    resolvedPayload[key] = resolved;
+  }
   return {
     actionId,
     actionType: event.name,

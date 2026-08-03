@@ -3,6 +3,7 @@ import {
   applyA2UIOperations,
   createRuntimeAction,
   destroySurface,
+  isRenderableComponent,
   registeredComponentTypes,
   resolveJsonPointer,
 } from "../../src/renderer/a2ui.js";
@@ -109,6 +110,24 @@ describe("A2UI v0.9 reducer", () => {
       success: false,
       error: { code: "A2UI_OPERATION_INVALID" },
     });
+    expect(
+      applyA2UIOperations(new Map(), [
+        create,
+        {
+          version: "v0.9",
+          updateComponents: {
+            surfaceId: "surface-1",
+            components: [
+              { id: "root", component: "Card", children: ["child"] },
+              { id: "child", component: "Card", children: ["root"] },
+            ],
+          },
+        },
+      ]),
+    ).toMatchObject({
+      success: false,
+      error: { code: "A2UI_OPERATION_INVALID" },
+    });
   });
 
   it("creates a Runtime-contract Action without executable metadata", () => {
@@ -128,6 +147,11 @@ describe("A2UI v0.9 reducer", () => {
       payload: { planId: "plan-1" },
     });
     expect(JSON.stringify(action)).not.toContain("requiresApproval");
+    expect(
+      createRuntimeAction("surface-1", surface?.components.get("confirm")!, {
+        sourceData: {},
+      }),
+    ).toBeUndefined();
   });
 
   it("contains only the fixed, non-executable component registry", () => {
@@ -142,5 +166,8 @@ describe("A2UI v0.9 reducer", () => {
       "Text",
       "Timeline",
     ]);
+    expect(isRenderableComponent("fixture", "Card")).toBe(true);
+    expect(isRenderableComponent("fixture", "Button")).toBe(false);
+    expect(isRenderableComponent("untrusted", "Card")).toBe(false);
   });
 });
