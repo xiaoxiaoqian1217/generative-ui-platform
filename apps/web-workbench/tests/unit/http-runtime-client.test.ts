@@ -1,4 +1,4 @@
-import type { RuntimeRunRequest } from "@generative-ui/runtime-contract";
+import type { RuntimeActionRequest, RuntimeRunRequest } from "@generative-ui/runtime-contract";
 import { describe, expect, it, vi } from "vitest";
 import { createHttpRuntimeClient } from "../../src/runtime/http-runtime-client.js";
 
@@ -51,6 +51,15 @@ describe("HTTP Runtime client", () => {
       }),
     );
     expect(connectionStates).toEqual(["connected"]);
+  });
+
+  it("submits an Action only through the Runtime Host Action endpoint", async () => {
+    const request: RuntimeActionRequest = { protocolVersion: "1.0", requestId: "action-1", threadId: "thread-1", runId: "run-1", action: { actionId: "confirm", actionType: "patrol.confirm", surfaceId: "surface-1", approved: true } };
+    const actionResult = { ...completedResult, requestId: "action-1", actionId: "confirm", sourcePresentationRequestId: "presentation-0" };
+    const fetcher = vi.fn(async () => new Response(JSON.stringify(actionResult), { status: 200, headers: { "content-type": "application/json" } }));
+    const client = createHttpRuntimeClient({ endpoint: "https://runtime.test.example/api/runs", fetcher });
+    await expect(client.action(request)).resolves.toEqual(actionResult);
+    expect(fetcher).toHaveBeenCalledWith("https://runtime.test.example/api/actions", expect.objectContaining({ body: JSON.stringify(request), method: "POST" }));
   });
 
   it("rejects untrusted responses that do not match Runtime Contract", async () => {

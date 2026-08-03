@@ -2,6 +2,7 @@
 import type {
   RuntimeRunRequest,
   RuntimeRunResult,
+  RuntimeActionEnvelope,
 } from "@generative-ui/runtime-contract";
 import {
   computed,
@@ -330,8 +331,33 @@ function selectScenario(message: string): void {
   input.value = message;
 }
 
-function handleA2UIAction(): void {
-  // TASK-008 owns Runtime Host Action submission and Business Agent resume.
+async function handleA2UIAction(action: RuntimeActionEnvelope): Promise<void> {
+  if (!client || !result.value || result.value.status === "failed") return;
+  if (!window.confirm("Confirm this action?")) return;
+  const controller = new AbortController();
+  activeController.value = controller;
+  error.value = undefined;
+  runState.value = "running";
+  try {
+    const actionResult = await client.action({
+      protocolVersion: "1.0",
+      requestId: globalThis.crypto.randomUUID?.() ?? `action-${Date.now()}`,
+      threadId: result.value.threadId,
+      runId: result.value.runId,
+      action: { ...action, approved: true },
+    }, controller.signal);
+    result.value = actionResult;
+    error.value = platformErrorFromResult(actionResult);
+    if (actionResult.status === "failed") { runState.value = "failed"; return; }
+    runState.value = "rendering";
+    await nextTick();
+    runState.value = actionResult.status;
+  } catch (caught) {
+    error.value = displayErrorFromUnknown(caught);
+    runState.value = "failed";
+  } finally {
+    if (activeController.value === controller) activeController.value = undefined;
+  }
 }
 
 function reconnect(): void {

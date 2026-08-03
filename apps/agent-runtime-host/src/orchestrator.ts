@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { BusinessAgentAdapter } from "@generative-ui/business-agent-adapter";
+import { defaultCatalogSchemaLimits, type ComponentCatalog, validateActionPayload } from "@generative-ui/component-catalog-schema";
 import type { PresentationPipeline } from "@generative-ui/presentation-pipeline";
 import type {
   PlatformError,
@@ -18,6 +19,7 @@ export interface RuntimeOrchestratorConfiguration {
   readonly totalTimeoutMs: number;
   readonly maxConcurrentRuns: number;
   readonly catalog: { readonly catalogId: string; readonly catalogVersion: string };
+  readonly catalogDefinition: ComponentCatalog;
   readonly agentId: string;
 }
 
@@ -85,7 +87,7 @@ export function createRunOrchestrator(dependencies: {
       try {
         const presentation = await dependencies.presentationPipeline.present({ requestId: presentationRequestId, threadId, runId, content: agent.content, context: { userMessage: request.message.content, ...request.presentation?.context }, catalog: request.presentation?.catalog ?? dependencies.configuration.catalog }, { signal: budget.signal });
         if (presentation.status === "failed") return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId, runId, presentationRequestId, status: "failed", error: error("PRESENTATION_PIPELINE_ERROR", "Presentation pipeline failed.", request), presentation };
-        if (presentation.mode === "generative-ui") dependencies.surfaceContextStore.remember({ ...request, threadId, runId }, presentation.surfaceId);
+        if (presentation.mode === "generative-ui") dependencies.surfaceContextStore.remember({ ...request, threadId, runId }, presentationRequestId, presentation);
         return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId, runId, presentationRequestId, status: presentation.status, presentation };
       } catch {
         return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId, runId, presentationRequestId, status: "degraded", presentation: { requestId: presentationRequestId, status: "degraded", mode: "markdown", markdown: fallbackMarkdown(agent.content), errors: [{ code: "RUNTIME_PIPELINE_FALLBACK", message: "Presentation pipeline failed; safe Markdown was returned.", stage: "presentation-routing", retryable: false }] } };
@@ -95,13 +97,34 @@ export function createRunOrchestrator(dependencies: {
       return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId, runId, status: "failed", error: error(code, code === "REQUEST_TIMEOUT" ? "Runtime request timed out." : code === "REQUEST_CANCELLED" ? "Runtime request was cancelled." : "Business Agent invocation failed.", { ...request, threadId, runId }) };
     } finally { budget.dispose(); release?.(); }
   };
-  const action = async (input: unknown, _signal?: AbortSignal): Promise<RuntimeActionResult> => {
+  const action = async (input: unknown, externalSignal?: AbortSignal): Promise<RuntimeActionResult> => {
     const validated = validateRuntimeActionRequest(input);
     const requestId = stringField(input, "requestId", "invalid-request");
     if (!validated.success) return { protocolVersion: "1.0", requestId, threadId: "invalid-thread", runId: "invalid-run", status: "failed", error: error("REQUEST_INVALID", "Runtime action request is invalid.") };
     const request: RuntimeActionRequest = validated.value;
-    if (!dependencies.surfaceContextStore.has(request.threadId, request.runId, request.action.surfaceId)) return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, actionId: request.action.actionId, status: "failed", error: error("SURFACE_NOT_FOUND", "Action surface is not known for this run.", request) };
-    return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, actionId: request.action.actionId, status: "failed", error: error("ACTION_FORBIDDEN", "Action execution is not enabled until TASK-008.", request) };
+    const actionLookup = { ...request.action, threadId: request.threadId, runId: request.runId };
+    const context = dependencies.surfaceContextStore.get(actionLookup);
+    if (!context) return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, actionId: request.action.actionId, status: "failed", error: error("SURFACE_NOT_FOUND", "Action surface is unknown, expired, or already consumed.", request) };
+    const actionContext = context.actions.get(request.action.actionId);
+    const catalogAction = dependencies.configuration.catalogDefinition.actions.find((candidate) => candidate.actionType === request.action.actionType);
+    if (!actionContext || actionContext.actionType !== request.action.actionType || !catalogAction) return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, actionId: request.action.actionId, status: "failed", error: error("ACTION_INVALID", "Action is not declared by the rendered surface and Catalog.", request) };
+    const payload = request.action.payload ?? {};
+    const payloadValidation = validateActionPayload(dependencies.configuration.catalogDefinition, request.action.actionType, payload, defaultCatalogSchemaLimits);
+    if (!payloadValidation.success) return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, actionId: request.action.actionId, status: "failed", error: error("ACTION_INVALID", "Action payload does not match the Catalog schema.", request) };
+    if ((actionContext.destructive || actionContext.requiresApproval || catalogAction.destructive || catalogAction.requiresApproval) && request.action.approved !== true) return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, actionId: request.action.actionId, status: "failed", error: error("ACTION_FORBIDDEN", "Action requires explicit approval.", request) };
+    if (!dependencies.surfaceContextStore.consume(actionLookup)) return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, actionId: request.action.actionId, status: "failed", error: error("ACTION_CONFLICT", "Action was already consumed.", request) };
+    const budget = withBudget(externalSignal, dependencies.configuration.totalTimeoutMs);
+    try {
+      const agent = await dependencies.businessAgentAdapter.resumeAction({ protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, agentId: context.request.agentId ?? dependencies.configuration.agentId, action: { ...request.action, payload: payloadValidation.value } }, { signal: budget.signal });
+      if (agent.status === "failed") return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, actionId: request.action.actionId, status: "failed", error: agent.error };
+      const presentationRequestId = randomUUID();
+      try {
+        const presentation = await dependencies.presentationPipeline.present({ requestId: presentationRequestId, threadId: request.threadId, runId: request.runId, content: agent.content, ...(context.request.presentation?.context === undefined ? {} : { context: context.request.presentation.context }), catalog: context.request.presentation?.catalog ?? dependencies.configuration.catalog }, { signal: budget.signal });
+        if (presentation.status === "failed") throw new Error("PRESENTATION_PIPELINE_ERROR");
+        if (presentation.mode === "generative-ui") dependencies.surfaceContextStore.remember(context.request, presentationRequestId, presentation);
+        return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, actionId: request.action.actionId, sourcePresentationRequestId: context.presentationRequestId, presentationRequestId, status: presentation.status, presentation };
+      } catch { return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, actionId: request.action.actionId, sourcePresentationRequestId: context.presentationRequestId, presentationRequestId, status: "degraded", presentation: { requestId: presentationRequestId, status: "degraded", mode: "markdown", markdown: fallbackMarkdown(agent.content), errors: [{ code: "RUNTIME_PIPELINE_FALLBACK", message: "Presentation pipeline failed; safe Markdown was returned.", stage: "presentation-routing", retryable: false }] } }; }
+    } catch { return { protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, actionId: request.action.actionId, status: "failed", error: error(budget.signal.aborted ? "REQUEST_TIMEOUT" : "BUSINESS_AGENT_ERROR", "Business Agent action resumption failed.", request) }; } finally { budget.dispose(); }
   };
   return Object.freeze({ run, action, capacity: { maxConcurrentRuns: dependencies.configuration.maxConcurrentRuns, activeRuns: () => active } });
 }

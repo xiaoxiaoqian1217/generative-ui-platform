@@ -1,6 +1,8 @@
 import type {
   RuntimeRunRequest,
   RuntimeRunResult,
+  RuntimeActionRequest,
+  RuntimeActionResult,
 } from "@generative-ui/runtime-contract";
 
 export type ConnectionState =
@@ -45,4 +47,5 @@ export interface RuntimeTransportClient {
     request: RuntimeRunRequest,
     signal?: AbortSignal,
   ): Promise<RuntimeRunResult>;
+  action(request: RuntimeActionRequest, signal?: AbortSignal): Promise<RuntimeActionResult>;
 }

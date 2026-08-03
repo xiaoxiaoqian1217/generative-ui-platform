@@ -27,11 +27,24 @@ export const FIXTURE_COMPONENT_CATALOG = Object.freeze({
         required: ["title", "content"],
         additionalProperties: false,
       },
-      allowedActions: [],
+      allowedActions: ["patrol.confirm"],
       nesting: { canHaveChildren: false },
     },
   ],
-  actions: [],
+  actions: [
+    {
+      actionType: "patrol.confirm",
+      description: "Explicitly confirms the generated patrol plan.",
+      payloadSchema: {
+        $schema: "http://json-schema.org/draft-07/schema#",
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+      destructive: false,
+      requiresApproval: true,
+    },
+  ],
 } as const satisfies ComponentCatalog);
 
 export type FixturePresentationMode = "auto" | "markdown" | "generative-ui";
@@ -93,12 +106,18 @@ export function createFixtureModelAdapter(
         return { mode: "markdown", reason: "FIXTURE_MARKDOWN" };
       }
 
+      const isPatrolDraft =
+        request.content.contentType === "structured-data" &&
+        request.content.data !== null &&
+        typeof request.content.data === "object" &&
+        !Array.isArray(request.content.data) &&
+        request.content.data.kind === "patrol-plan-draft";
       return {
         mode: "generative-ui",
         reason: "FIXTURE_GENERATIVE_UI",
         plan: {
           version: "1.0",
-          scenario: "summary",
+          scenario: isPatrolDraft ? "confirmation" : "summary",
           regions: [
             {
               regionId: "summary",
@@ -114,6 +133,9 @@ export function createFixtureModelAdapter(
               ],
               componentPreferences: [{ componentType: "Card" }],
               layout: { flow: "vertical", density: "comfortable" },
+              ...(isPatrolDraft
+                ? { actions: [{ actionId: "confirm-patrol-plan", actionType: "patrol.confirm", label: "Confirm patrol plan", requiresApproval: true, destructive: false, targetRegionId: "summary" }] }
+                : {}),
             },
           ],
         },

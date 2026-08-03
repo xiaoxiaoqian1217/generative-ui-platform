@@ -108,6 +108,7 @@ export function createRuntimeHost(
     configuration: {
       ...(config.runtime ?? { totalTimeoutMs: 15_000, maxConcurrentRuns: 16 }),
       catalog: { catalogId: "fixture", catalogVersion: "1.0.0" },
+      catalogDefinition: FIXTURE_COMPONENT_CATALOG,
       agentId: config.agentId,
     },
   });

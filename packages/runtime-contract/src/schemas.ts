@@ -390,6 +390,7 @@ export type RuntimeRunResult = Static<typeof runtimeRunResultSchema>;
 export const completedRuntimeActionResultSchema = Type.Object(
   {
     ...runtimeResultFields,
+    sourcePresentationRequestId: nonEmptyStringSchema,
     presentationRequestId: nonEmptyStringSchema,
     actionId: nonEmptyStringSchema,
     status: Type.Union([Type.Literal("completed"), Type.Literal("degraded")]),

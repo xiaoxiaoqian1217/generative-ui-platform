@@ -1,6 +1,9 @@
 import {
   type RuntimeRunRequest,
   type RuntimeRunResult,
+  type RuntimeActionRequest,
+  type RuntimeActionResult,
+  validateRuntimeActionRequest,
   validateRuntimeRunRequest,
   validateRuntimeWebSocketInboundMessage,
   validateRuntimeWebSocketOutboundMessage,
@@ -11,9 +14,9 @@ import {
   WorkbenchRuntimeError,
 } from "./types.js";
 
-interface PendingRun {
+interface PendingRequest {
   reject: (error: WorkbenchRuntimeError) => void;
-  resolve: (result: RuntimeRunResult) => void;
+  resolve: (result: RuntimeRunResult | RuntimeActionResult) => void;
 }
 
 export interface WebSocketRuntimeClientOptions {
@@ -39,7 +42,7 @@ export function createWebSocketRuntimeClient(
   options: WebSocketRuntimeClientOptions,
 ): RuntimeTransportClient {
   const socketFactory = options.socketFactory ?? ((url) => new WebSocket(url));
-  const pending = new Map<string, PendingRun>();
+  const pending = new Map<string, PendingRequest>();
   let disposed = false;
   let reconnectTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
   let socket: WebSocket | undefined;
@@ -105,6 +108,11 @@ export function createWebSocketRuntimeClient(
           pending.delete(inbound.value.payload.requestId);
           entry.resolve(inbound.value.payload);
         }
+        return;
+      }
+      if (inbound.value.type === "runtime.action.result") {
+        const entry = pending.get(inbound.value.payload.requestId);
+        if (entry !== undefined) { pending.delete(inbound.value.payload.requestId); entry.resolve(inbound.value.payload); }
         return;
       }
 
@@ -274,6 +282,22 @@ export function createWebSocketRuntimeClient(
             resolve(result);
           },
         });
+        socket?.send(JSON.stringify(validatedEnvelope.value));
+      });
+    },
+    action(request: RuntimeActionRequest, signal?: AbortSignal) {
+      const validatedRequest = validateRuntimeActionRequest(request);
+      if (!validatedRequest.success || socket?.readyState !== SOCKET_OPEN) return Promise.reject(new WorkbenchRuntimeError("WORKBENCH_REQUEST_INVALID", "Action request cannot be sent.", { ...(validatedRequest.success ? {} : { path: validatedRequest.error.path }), retryable: false }));
+      const envelope = { type: "runtime.action.request", payload: validatedRequest.value } as const;
+      const validatedEnvelope = validateRuntimeWebSocketInboundMessage(envelope);
+      if (!validatedEnvelope.success) return Promise.reject(responseInvalid(validatedEnvelope.error.path));
+      return new Promise<RuntimeActionResult>((resolve, reject) => {
+        const timeout = globalThis.setTimeout(() => pending.get(request.requestId)?.reject(new WorkbenchRuntimeError("WORKBENCH_REQUEST_TIMEOUT", "WebSocket Action request timed out.", { retryable: true })), options.timeoutMs ?? 30_000);
+        const cleanup = () => { globalThis.clearTimeout(timeout); signal?.removeEventListener("abort", cancel); pending.delete(request.requestId); };
+        const cancel = () => pending.get(request.requestId)?.reject(new WorkbenchRuntimeError("WORKBENCH_REQUEST_CANCELLED", "Action request was cancelled.", { retryable: false }));
+        if (signal?.aborted || pending.has(request.requestId)) { reject(new WorkbenchRuntimeError("WORKBENCH_REQUEST_INVALID", "Action request cannot be queued.", { retryable: false })); return; }
+        signal?.addEventListener("abort", cancel, { once: true });
+        pending.set(request.requestId, { reject: (value) => { cleanup(); reject(value); }, resolve: (value) => { cleanup(); resolve(value as RuntimeActionResult); } });
         socket?.send(JSON.stringify(validatedEnvelope.value));
       });
     },
