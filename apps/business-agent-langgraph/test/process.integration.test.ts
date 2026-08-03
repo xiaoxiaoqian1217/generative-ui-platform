@@ -1,6 +1,12 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { once } from "node:events";
+import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+
+const PROCESS_INTEGRATION_TIMEOUT_MS = 20_000;
+const DEFAULT_AGENT_COMMAND_ARGUMENTS = existsSync("dist/cli.js")
+  ? ["dist/cli.js"]
+  : ["--import", "tsx", "src/cli.ts"];
 
 interface ListeningEvent {
   event: "business-agent.listening";
@@ -16,7 +22,7 @@ async function startAgentProcess(options?: {
 }> {
   const child = spawn(
     process.execPath,
-    options?.commandArguments ?? ["--import", "tsx", "src/cli.ts"],
+    options?.commandArguments ?? DEFAULT_AGENT_COMMAND_ARGUMENTS,
     {
       cwd: process.cwd(),
       env: {
@@ -92,88 +98,94 @@ describe("Reference Business Agent process", () => {
     ).rejects.toThrow("Agent startup timed out.");
   });
 
-  it("serves health, Run and Resume Action without model credentials", async () => {
-    const { baseUrl, child } = await startAgentProcess();
-    try {
-      const health = await fetch(`${baseUrl}/health`);
-      expect(health.status).toBe(200);
-      expect(await health.json()).toEqual({
-        status: "ok",
-        service: "business-agent-langgraph",
-        checkpoint: "memory",
-      });
+  it(
+    "serves health, Run and Resume Action without model credentials",
+    async () => {
+      const { baseUrl, child } = await startAgentProcess();
+      try {
+        const health = await fetch(`${baseUrl}/health`);
+        expect(health.status).toBe(200);
+        expect(await health.json()).toEqual({
+          status: "ok",
+          service: "business-agent-langgraph",
+          checkpoint: "memory",
+        });
 
-      const device = await fetch(`${baseUrl}/api/runs`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          protocolVersion: "1.0",
-          requestId: "request-process-device",
-          threadId: "thread-process-device",
-          runId: "run-process-device",
-          input: { message: "查询巡逻机器人一号状态" },
-        }),
-      });
-      expect(device.status).toBe(200);
-      expect(await device.json()).toMatchObject({
-        status: "completed",
-        content: {
-          contentType: "structured-data",
-          data: {
-            kind: "device-status",
-            devices: [{ deviceId: "robot-patrol-01", status: "charging" }],
+        const device = await fetch(`${baseUrl}/api/runs`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            protocolVersion: "1.0",
+            requestId: "request-process-device",
+            threadId: "thread-process-device",
+            runId: "run-process-device",
+            input: { message: "查询巡逻机器人一号状态" },
+          }),
+        });
+        expect(device.status).toBe(200);
+        expect(await device.json()).toMatchObject({
+          status: "completed",
+          content: {
+            contentType: "structured-data",
+            data: {
+              kind: "device-status",
+              devices: [
+                { deviceId: "robot-patrol-01", status: "charging" },
+              ],
+            },
           },
-        },
-      });
+        });
 
-      const run = await fetch(`${baseUrl}/api/runs`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          protocolVersion: "1.0",
-          requestId: "request-process-run",
+        const run = await fetch(`${baseUrl}/api/runs`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            protocolVersion: "1.0",
+            requestId: "request-process-run",
+            threadId: "thread-process",
+            runId: "run-process",
+            input: { message: "生成巡逻计划" },
+          }),
+        });
+        expect(run.status).toBe(200);
+        expect(await run.json()).toMatchObject({
+          status: "completed",
+          content: {
+            contentType: "structured-data",
+            data: { kind: "patrol-plan-draft" },
+          },
+        });
+
+        const resume = await fetch(`${baseUrl}/api/actions`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            protocolVersion: "1.0",
+            requestId: "request-process-resume",
+            threadId: "thread-process",
+            runId: "run-process",
+            action: {
+              actionId: "confirm-patrol-plan",
+              actionType: "patrol.confirm",
+              surfaceId: "surface-process",
+              approved: true,
+            },
+          }),
+        });
+        expect(resume.status).toBe(200);
+        expect(await resume.json()).toMatchObject({
+          status: "completed",
           threadId: "thread-process",
           runId: "run-process",
-          input: { message: "生成巡逻计划" },
-        }),
-      });
-      expect(run.status).toBe(200);
-      expect(await run.json()).toMatchObject({
-        status: "completed",
-        content: {
-          contentType: "structured-data",
-          data: { kind: "patrol-plan-draft" },
-        },
-      });
-
-      const resume = await fetch(`${baseUrl}/api/actions`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          protocolVersion: "1.0",
-          requestId: "request-process-resume",
-          threadId: "thread-process",
-          runId: "run-process",
-          action: {
-            actionId: "confirm-patrol-plan",
-            actionType: "patrol.confirm",
-            surfaceId: "surface-process",
-            approved: true,
+          content: {
+            contentType: "structured-data",
+            data: { kind: "patrol-task", status: "confirmed" },
           },
-        }),
-      });
-      expect(resume.status).toBe(200);
-      expect(await resume.json()).toMatchObject({
-        status: "completed",
-        threadId: "thread-process",
-        runId: "run-process",
-        content: {
-          contentType: "structured-data",
-          data: { kind: "patrol-task", status: "confirmed" },
-        },
-      });
-    } finally {
-      await stopAgentProcess(child);
-    }
-  });
+        });
+      } finally {
+        await stopAgentProcess(child);
+      }
+    },
+    PROCESS_INTEGRATION_TIMEOUT_MS,
+  );
 });

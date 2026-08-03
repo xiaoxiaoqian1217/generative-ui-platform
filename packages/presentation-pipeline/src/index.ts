@@ -16,8 +16,10 @@ export {
 } from "./markdown-sanitizer.js";
 export { createMarkdownSanitizer } from "./markdown-sanitizer-definition-aware.js";
 export * from "./observability.js";
+export * from "./openai-compatible-model-adapter.js";
 export * from "./pipeline.js";
 export * from "./presentation-router.js";
+export * from "./provider-registry.js";
 export * from "./safe-markdown-presentation.js";
 export * from "./structured-data-presentation-service.js";
 export * from "./structured-data-serializer.js";
