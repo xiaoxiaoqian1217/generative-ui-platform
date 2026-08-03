@@ -10,6 +10,7 @@ import type { CoreCompileLimits } from "@generative-ui/ui-compiler-core";
 import {
   type CatalogRepository,
   createGenerativeUIPresentationService,
+  GenerativeUIPresentationConfigurationError,
 } from "./generative-ui-presentation-service.js";
 import {
   DEFAULT_MARKDOWN_SANITIZER_LIMITS,
@@ -30,11 +31,13 @@ import {
 } from "./structured-data-validator.js";
 
 export interface PresentationPipelineConfiguration {
-  readonly markdownLimits: MarkdownSanitizerLimits;
-  readonly structuredDataLimits: StructuredDataLimits;
-  readonly catalogSchemaLimits: CatalogSchemaLimits;
-  readonly coreLimits: CoreCompileLimits;
-  readonly modelInvocation: ModelInvocationPolicy;
+  readonly markdownLimits: Readonly<MarkdownSanitizerLimits>;
+  readonly structuredDataLimits: Readonly<StructuredDataLimits>;
+  readonly catalogSchemaLimits: Readonly<CatalogSchemaLimits>;
+  readonly coreLimits: Readonly<CoreCompileLimits> & {
+    readonly catalogSchema: Readonly<CatalogSchemaLimits>;
+  };
+  readonly modelInvocation: Readonly<ModelInvocationPolicy>;
   readonly compileTimeoutMs: number;
 }
 
@@ -66,16 +69,70 @@ export interface PresentationPipelineRunOptions {
 
 export interface PresentationPipeline {
   present(
-    request: PresentationRequest | unknown,
+    request: PresentationRequest,
     options?: PresentationPipelineRunOptions,
   ): Promise<PresentationResult>;
+}
+
+function createConfigurationSnapshot(
+  configuration: PresentationPipelineConfiguration,
+): Readonly<PresentationPipelineConfiguration> {
+  try {
+    const catalogSchemaLimits = Object.freeze({
+      maxCatalogBytes: configuration.catalogSchemaLimits.maxCatalogBytes,
+      maxEmbeddedSchemaBytes:
+        configuration.catalogSchemaLimits.maxEmbeddedSchemaBytes,
+      maxEmbeddedSchemaDepth:
+        configuration.catalogSchemaLimits.maxEmbeddedSchemaDepth,
+      maxEmbeddedSchemaNodes:
+        configuration.catalogSchemaLimits.maxEmbeddedSchemaNodes,
+    });
+
+    return Object.freeze({
+      markdownLimits: Object.freeze({
+        maxInputBytes: configuration.markdownLimits.maxInputBytes,
+        maxOutputBytes: configuration.markdownLimits.maxOutputBytes,
+        maxAstDepth: configuration.markdownLimits.maxAstDepth,
+        maxAstNodes: configuration.markdownLimits.maxAstNodes,
+      }),
+      structuredDataLimits: Object.freeze({
+        maxDataDepth: configuration.structuredDataLimits.maxDataDepth,
+        maxDataItems: configuration.structuredDataLimits.maxDataItems,
+        maxSerializedBytes:
+          configuration.structuredDataLimits.maxSerializedBytes,
+      }),
+      catalogSchemaLimits,
+      coreLimits: Object.freeze({
+        maxDataDepth: configuration.coreLimits.maxDataDepth,
+        maxDataItems: configuration.coreLimits.maxDataItems,
+        catalogSchema: Object.freeze({
+          maxCatalogBytes:
+            configuration.coreLimits.catalogSchema.maxCatalogBytes,
+          maxEmbeddedSchemaBytes:
+            configuration.coreLimits.catalogSchema.maxEmbeddedSchemaBytes,
+          maxEmbeddedSchemaDepth:
+            configuration.coreLimits.catalogSchema.maxEmbeddedSchemaDepth,
+          maxEmbeddedSchemaNodes:
+            configuration.coreLimits.catalogSchema.maxEmbeddedSchemaNodes,
+        }),
+      }),
+      modelInvocation: Object.freeze({
+        modelTimeoutMs: configuration.modelInvocation.modelTimeoutMs,
+        modelRetryCount: configuration.modelInvocation.modelRetryCount,
+      }),
+      compileTimeoutMs: configuration.compileTimeoutMs,
+    });
+  } catch {
+    throw new GenerativeUIPresentationConfigurationError();
+  }
 }
 
 export function createPresentationPipeline(
   dependencies: PresentationPipelineDependencies,
 ): PresentationPipeline {
-  const configuration =
-    dependencies.configuration ?? DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION;
+  const configuration = createConfigurationSnapshot(
+    dependencies.configuration ?? DEFAULT_PRESENTATION_PIPELINE_CONFIGURATION,
+  );
   const service = createGenerativeUIPresentationService({
     catalogRepository: dependencies.catalogRepository,
     sanitizer: createMarkdownSanitizer(),
