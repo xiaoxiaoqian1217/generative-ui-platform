@@ -29,6 +29,11 @@ interface StoredSurfaceContext {
   readonly expiresAt: number;
 }
 
+type RuntimeSurfaceActionRequest = RuntimeActionEnvelope & {
+  readonly threadId: string;
+  readonly runId: string;
+};
+
 const DEFAULT_MAX_ENTRIES = 1_024;
 const DEFAULT_TTL_MS = 15 * 60 * 1_000;
 const MAX_MAX_ENTRIES = 100_000;
@@ -88,18 +93,8 @@ export interface SurfaceContextStore {
     presentationRequestId: string,
     presentation: Extract<PresentationResult, { mode: "generative-ui" }>,
   ): void;
-  get(
-    request: RuntimeActionEnvelope & {
-      readonly threadId: string;
-      readonly runId: string;
-    },
-  ): SurfaceContext | undefined;
-  consume(
-    request: RuntimeActionEnvelope & {
-      readonly threadId: string;
-      readonly runId: string;
-    },
-  ): SurfaceContext | undefined;
+  get(request: RuntimeSurfaceActionRequest): SurfaceContext | undefined;
+  consume(request: RuntimeSurfaceActionRequest): SurfaceContext | undefined;
 }
 
 /**
@@ -128,10 +123,7 @@ export function createSurfaceContextStore(
   };
 
   const read = (
-    request: RuntimeActionEnvelope & {
-      readonly threadId: string;
-      readonly runId: string;
-    },
+    request: RuntimeSurfaceActionRequest,
     consume: boolean,
   ): SurfaceContext | undefined => {
     const timestamp = now();
@@ -189,10 +181,10 @@ export function createSurfaceContextStore(
         expiresAt: timestamp + ttlMs,
       });
     },
-    get(request) {
+    get(request: RuntimeSurfaceActionRequest) {
       return read(request, false);
     },
-    consume(request) {
+    consume(request: RuntimeSurfaceActionRequest) {
       return read(request, true);
     },
   });
