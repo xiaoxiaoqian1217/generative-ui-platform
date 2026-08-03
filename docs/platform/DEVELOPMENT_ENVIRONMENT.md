@@ -52,6 +52,10 @@ Fixture 模式不需要模型密钥，不产生模型费用，并作为 CI 的�
 
 真实模型模式只用于 Presentation Model Adapter Smoke Test。
 模型供应商、模型名称、Base URL 和认证配置必须通过环境变量提供。
+真实 Provider Smoke Test 使用 `pnpm --filter @generative-ui/presentation-pipeline test:provider-smoke` 按需执行。
+该命令要求显式提供 `PRESENTATION_PROVIDER_SMOKE_PROVIDER`、`PRESENTATION_PROVIDER_SMOKE_MODEL_NAME` 和 `PRESENTATION_PROVIDER_SMOKE_API_KEY`。
+可选的 `PRESENTATION_PROVIDER_SMOKE_BASE_URL` 与 `PRESENTATION_PROVIDER_SMOKE_ENDPOINT_ID` 分别覆盖访问地址和部署 Endpoint，不与模型名或 API Key 合并。
+常规测试不会读取这些变量或产生模型费用。
 
 ## 6. 统一命令目标
 

@@ -21,3 +21,15 @@ test("pipeline entrypoint exports the embedded composition seam", () => {
   expect(pipelineEntrypoint).toHaveProperty("createPresentationPipeline");
   expect(pipelineEntrypoint).toHaveProperty("createFixtureModelAdapter");
 });
+
+test("pipeline entrypoint exports the configurable Provider seam", () => {
+  expect(pipelineEntrypoint).toHaveProperty(
+    "createOpenAICompatiblePresentationModelAdapter",
+  );
+  expect(pipelineEntrypoint).toHaveProperty(
+    "createPresentationModelProviderRegistry",
+  );
+  expect(pipelineEntrypoint).toHaveProperty(
+    "BUILT_IN_OPENAI_COMPATIBLE_PROVIDER_BASE_URLS",
+  );
+});
