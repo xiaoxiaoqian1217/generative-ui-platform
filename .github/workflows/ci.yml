@@ -19,59 +19,6 @@ env:
   TURBO_TELEMETRY_DISABLED: "1"
 
 jobs:
-  refresh-lockfile:
-    name: refresh secure lockfile
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.actor == 'xiaoxiaoqian1217' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.head_ref == 'agent/release-hardening-audit'
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          ref: agent/release-hardening-audit
-          persist-credentials: true
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: 24
-          package-manager-cache: false
-      - name: Enable pnpm
-        run: corepack enable && corepack prepare pnpm@10.13.1 --activate
-      - name: Align Vitest manifests
-        run: |
-          node --input-type=module <<'EOF'
-          import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-          import { join } from "node:path";
-
-          const files = ["package.json"];
-          for (const directory of ["apps", "packages"]) {
-            for (const entry of readdirSync(directory, { withFileTypes: true })) {
-              const manifestPath = join(directory, entry.name, "package.json");
-              if (entry.isDirectory() && existsSync(manifestPath)) files.push(manifestPath);
-            }
-          }
-          for (const file of files) {
-            const manifest = JSON.parse(readFileSync(file, "utf8"));
-            if (manifest.devDependencies?.vitest !== undefined) {
-              manifest.devDependencies.vitest = "3.2.6";
-              writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-            }
-          }
-          EOF
-      - name: Refresh lockfile
-        run: pnpm install --lockfile-only --no-frozen-lockfile
-      - name: Commit generated dependency state
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json apps/*/package.json packages/*/package.json pnpm-workspace.yaml pnpm-lock.yaml
-          git commit -m "chore: refresh secure dependency lockfile"
-          git push origin HEAD:agent/release-hardening-audit
-
   validate:
     name: validate
     runs-on: ubuntu-latest
