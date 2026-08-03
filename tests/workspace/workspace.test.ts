@@ -17,6 +17,10 @@ const packages = [
     path: "packages/ag-ui-adapter",
   },
   {
+    name: "@generative-ui/business-agent-adapter",
+    path: "packages/business-agent-adapter",
+  },
+  {
     name: "@generative-ui/compiler-contract",
     path: "packages/compiler-contract",
   },
@@ -74,9 +78,9 @@ function readManifest(relativePath: string): PackageManifest {
 }
 
 describe("workspace contract", () => {
-  it("contains one runtime application and eight shared packages", () => {
+  it("contains one runtime application and nine shared packages", () => {
     expect(applications).toHaveLength(1);
-    expect(packages).toHaveLength(8);
+    expect(packages).toHaveLength(9);
 
     for (const project of [...applications, ...packages]) {
       expect(

@@ -42,6 +42,16 @@ const allowedAdapterDevelopmentDependencies = new Set([
   "vitest",
 ]);
 
+const allowedBusinessAgentAdapterRuntimeDependencies = new Set([
+  "@generative-ui/runtime-contract",
+]);
+
+const allowedBusinessAgentAdapterDevelopmentDependencies = new Set([
+  "tsup",
+  "typescript",
+  "vitest",
+]);
+
 const allowedPipelineRuntimeDependencies = new Set([
   "@generative-ui/compiler-contract",
   "@generative-ui/component-catalog-schema",
@@ -70,6 +80,7 @@ const contractPackagePaths = new Set([
 
 const implementationPackagePaths = new Set([
   "packages/ag-ui-adapter",
+  "packages/business-agent-adapter",
   "packages/presentation-pipeline",
   "packages/ui-compiler-core",
 ]);
@@ -165,6 +176,26 @@ function findViolations(projects) {
         version,
       } = dependency;
       const target = projectsByName.get(dependencyName);
+
+      if (
+        source.path === "packages/business-agent-adapter" &&
+        runtimeDependencySections.has(dependencySection) &&
+        !allowedBusinessAgentAdapterRuntimeDependencies.has(dependencyName)
+      ) {
+        violations.push(
+          `${source.path} -> ${dependencyName}: Business Agent Adapter runtime dependencies are limited to the Runtime Contract`,
+        );
+      }
+
+      if (
+        source.path === "packages/business-agent-adapter" &&
+        dependencySection === "devDependencies" &&
+        !allowedBusinessAgentAdapterDevelopmentDependencies.has(dependencyName)
+      ) {
+        violations.push(
+          `${source.path} -> ${dependencyName}: Business Agent Adapter development dependencies are limited to approved tooling`,
+        );
+      }
 
       if (
         source.path === "packages/ag-ui-adapter" &&

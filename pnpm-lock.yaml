@@ -100,6 +100,9 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
     devDependencies:
+      '@generative-ui/business-agent-adapter':
+        specifier: workspace:*
+        version: link:../../packages/business-agent-adapter
       tsup:
         specifier: 8.5.0
         version: 8.5.0(jiti@2.6.1)(postcss@8.5.22)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.9.0)
@@ -167,6 +170,22 @@ importers:
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
+    devDependencies:
+      tsup:
+        specifier: 8.5.0
+        version: 8.5.0(jiti@2.6.1)(postcss@8.5.22)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.9.0)
+      typescript:
+        specifier: 5.8.3
+        version: 5.8.3
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@24.0.15)(jiti@2.6.1)(tsx@4.20.3)(yaml@2.9.0)
+
+  packages/business-agent-adapter:
+    dependencies:
+      '@generative-ui/runtime-contract':
+        specifier: workspace:*
+        version: link:../runtime-contract
     devDependencies:
       tsup:
         specifier: 8.5.0
