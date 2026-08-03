@@ -1,5 +1,8 @@
 # UI Compiler Service 独立运行
 
+> 历史归档：本文记录已退役的 Compiler MVP 独立服务运行方式，不是当前可执行操作手册。
+> ADR-0019 已取消该 App、端口、Docker 镜像和启动命令；当前展示能力通过 `packages/presentation-pipeline` 嵌入 Agent Runtime Host。
+
 UI Compiler Service 可以在不依赖 Gateway、Copilot Runtime、真实业务 Agent 或前端运行时的情况下独立启动。
 
 服务使用内置测试 Catalog 和确定性测试 Model Adapter。

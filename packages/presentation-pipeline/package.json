@@ -1,12 +1,19 @@
 {
-  "name": "@generative-ui/ui-compiler-service",
+  "name": "@generative-ui/presentation-pipeline",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "build": "tsup src/main.ts src/cli.ts --format esm --clean --out-dir dist",
-    "start": "node dist/cli.js",
-    "test:e2e:http": "pnpm --workspace-root build && vitest run test/http-functional-e2e.test.ts",
+    "build": "tsup src/index.ts --format esm --dts --clean --out-dir dist",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -16,9 +23,6 @@
     "@generative-ui/presentation-contract": "workspace:*",
     "@generative-ui/shared-types": "workspace:*",
     "@generative-ui/ui-compiler-core": "workspace:*",
-    "@sinclair/typebox": "^0.34.52",
-    "ajv": "^8.20.0",
-    "fastify": "5.10.0",
     "mdast-util-from-markdown": "2.0.3",
     "mdast-util-to-markdown": "2.1.2",
     "micromark-util-sanitize-uri": "2.0.1"
