@@ -2,7 +2,11 @@ import { createServer } from "node:http";
 import express from "express";
 import { loadConfig } from "./config.js";
 import { attachDemoHttp, DEMO_HTTP_PATH } from "./demo-http.js";
-import { attachDemoSocket, attachRuntimeSocket, DEMO_SOCKET_PATH } from "./demo-socket.js";
+import {
+  attachDemoSocket,
+  attachRuntimeSocket,
+  DEMO_SOCKET_PATH,
+} from "./demo-socket.js";
 import { createRuntimeHost } from "./runtime.js";
 import { attachRuntimeHttp } from "./runtime-http.js";
 
@@ -28,7 +32,7 @@ app.get("/health", (_request, response) => {
 });
 
 attachDemoHttp(app);
-attachRuntimeHttp(app, host);
+attachRuntimeHttp(app, host, config);
 app.use(config.endpoint, handler);
 
 app.use(
