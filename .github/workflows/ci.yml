@@ -31,4 +31,6 @@ jobs:
           else
             pnpm install --no-frozen-lockfile
           fi
+      - name: Install Workbench browser
+        run: pnpm --filter @generative-ui/web-workbench exec playwright install --with-deps chromium
       - run: pnpm validate
