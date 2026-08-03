@@ -20,6 +20,7 @@ export interface RuntimeHostConfig {
   businessAgentUrl: string;
   businessAgentContractUrl: string;
   presentationModel: RuntimeHostPresentationModelConfig;
+  runtime?: { totalTimeoutMs: number; maxConcurrentRuns: number };
 }
 
 export class RuntimeHostConfigurationError extends Error {
@@ -130,5 +131,9 @@ export function loadConfig(
     businessAgentContractUrl:
       env.BUSINESS_AGENT_CONTRACT_URL ?? "http://localhost:8300",
     presentationModel: readPresentationModelConfig(env),
+    runtime: Object.freeze({
+      totalTimeoutMs: readBoundedInteger(env.RUNTIME_TOTAL_TIMEOUT_MS, 15_000, 1, 300_000),
+      maxConcurrentRuns: readBoundedInteger(env.RUNTIME_MAX_CONCURRENT_RUNS, 16, 1, 1_000),
+    }),
   };
 }

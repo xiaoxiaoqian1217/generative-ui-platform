@@ -1,0 +1,31 @@
+import { createServer } from "node:http";
+import { once } from "node:events";
+import express from "express";
+import { MockBusinessAgentAdapter } from "@generative-ui/business-agent-adapter";
+import { afterEach, describe, expect, it } from "vitest";
+import { attachRuntimeHttp, RUNTIME_DEPENDENCIES_HEALTH_PATH, RUNTIME_RUNS_PATH } from "../src/runtime-http.js";
+import { createRuntimeHost } from "../src/runtime.js";
+
+const servers = new Set<ReturnType<typeof createServer>>();
+afterEach(async () => { await Promise.all([...servers].map((server) => new Promise<void>((resolve) => server.close(() => resolve())))); servers.clear(); });
+
+describe("Runtime HTTP transport", () => {
+  it("delegates runs to the shared application orchestrator and exposes separated health", async () => {
+    const host = createRuntimeHost({ host: "127.0.0.1", port: 8200, endpoint: "/api/copilotkit", agentId: "business-agent", businessAgentUrl: "http://unused", businessAgentContractUrl: "http://unused", presentationModel: { mode: "fixture" } }, {
+      businessAgentAdapter: new MockBusinessAgentAdapter({
+        run: async (request) => ({ protocolVersion: request.protocolVersion, requestId: request.requestId, threadId: request.threadId, runId: request.runId, status: "completed", content: { contentType: "markdown", markdown: "# Runtime" } }),
+        resumeAction: async () => { throw new Error("not used"); },
+      }),
+    });
+    const app = express(); app.use(express.json()); attachRuntimeHttp(app, host);
+    const server = createServer(app); servers.add(server); server.listen(0, "127.0.0.1"); await once(server, "listening");
+    const address = server.address(); if (address === null || typeof address === "string") throw new Error("Expected TCP address.");
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    const [run, health] = await Promise.all([
+      fetch(`${baseUrl}${RUNTIME_RUNS_PATH}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ protocolVersion: "1.0", requestId: "http-1", threadId: "thread-1", runId: "run-1", message: { role: "user", content: "status" } }) }).then((response) => response.json()),
+      fetch(`${baseUrl}${RUNTIME_DEPENDENCIES_HEALTH_PATH}`).then((response) => response.json()),
+    ]);
+    expect(run).toMatchObject({ status: "completed", presentation: { mode: "markdown", markdown: "# Runtime\n" } });
+    expect(health).toMatchObject({ dependencies: { businessAgent: { kind: "remote" }, presentationPipeline: { kind: "in-process", status: "ready" } } });
+  });
+});

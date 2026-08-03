@@ -2,12 +2,14 @@ import { createServer } from "node:http";
 import express from "express";
 import { loadConfig } from "./config.js";
 import { attachDemoHttp, DEMO_HTTP_PATH } from "./demo-http.js";
-import { attachDemoSocket, DEMO_SOCKET_PATH } from "./demo-socket.js";
+import { attachDemoSocket, attachRuntimeSocket, DEMO_SOCKET_PATH } from "./demo-socket.js";
 import { createRuntimeHost } from "./runtime.js";
+import { attachRuntimeHttp } from "./runtime-http.js";
 
 const config = loadConfig();
 const app = express();
-const { handler } = createRuntimeHost(config);
+const host = createRuntimeHost(config);
+const { handler } = host;
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "1mb" }));
@@ -26,6 +28,7 @@ app.get("/health", (_request, response) => {
 });
 
 attachDemoHttp(app);
+attachRuntimeHttp(app, host);
 app.use(config.endpoint, handler);
 
 app.use(
@@ -45,6 +48,7 @@ app.use(
 
 const server = createServer(app);
 attachDemoSocket(server);
+attachRuntimeSocket(server, host);
 
 server.listen(config.port, config.host, () => {
   console.log(

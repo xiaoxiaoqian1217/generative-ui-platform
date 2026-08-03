@@ -25,6 +25,8 @@ import type {
 } from "@generative-ui/runtime-contract";
 import type { RequestHandler } from "express";
 import type { RuntimeHostConfig } from "./config.js";
+import { createRunOrchestrator, type RunOrchestrator } from "./orchestrator.js";
+import { createSurfaceContextStore } from "./surface-context-store.js";
 
 export interface RuntimeHost {
   handler: RequestHandler;
@@ -38,6 +40,7 @@ export interface RuntimeHost {
     options?: BusinessAgentInvocationOptions,
   ): Promise<BusinessAgentResumeActionResult>;
   runtime: CopilotRuntime;
+  orchestrator: RunOrchestrator;
 }
 
 export interface RuntimeHostDependencies {
@@ -98,6 +101,16 @@ export function createRuntimeHost(
     new LangGraphHttpBusinessAgentAdapter({
       baseUrl: config.businessAgentContractUrl,
     });
+  const orchestrator = createRunOrchestrator({
+    businessAgentAdapter,
+    presentationPipeline,
+    surfaceContextStore: createSurfaceContextStore(),
+    configuration: {
+      ...(config.runtime ?? { totalTimeoutMs: 15_000, maxConcurrentRuns: 16 }),
+      catalog: { catalogId: "fixture", catalogVersion: "1.0.0" },
+      agentId: config.agentId,
+    },
+  });
 
   return {
     handler,
@@ -107,5 +120,6 @@ export function createRuntimeHost(
     resumeBusinessAgentAction: (request, options) =>
       businessAgentAdapter.resumeAction(request, options),
     runtime,
+    orchestrator,
   };
 }

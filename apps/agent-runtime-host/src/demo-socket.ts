@@ -1,11 +1,14 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import type { Duplex } from "node:stream";
+import type { RuntimeHost } from "./runtime.js";
 
 const WEB_SOCKET_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 const MAX_MESSAGE_BYTES = 64 * 1024;
 
 export const DEMO_SOCKET_PATH = "/ws/demo";
+export const RUNTIME_SOCKET_PATH = "/ws/runs";
+type TextMessageHandler = (value: unknown) => Promise<unknown>;
 
 interface UserMessage {
   type: "user_message";
@@ -126,10 +129,14 @@ function isUserMessage(value: unknown): value is UserMessage {
   );
 }
 
-function handleTextMessage(socket: Duplex, payload: Buffer): void {
+function handleTextMessage(socket: Duplex, payload: Buffer, onTextMessage?: TextMessageHandler): void {
   try {
     const parsed: unknown = JSON.parse(payload.toString("utf8"));
 
+    if (onTextMessage) {
+      void onTextMessage(parsed).then((result) => sendJson(socket, result)).catch(() => sendJson(socket, { type: "runtime.error", payload: { code: "INTERNAL_ERROR", message: "Runtime WebSocket processing failed.", retryable: false } }));
+      return;
+    }
     if (!isUserMessage(parsed)) {
       sendJson(socket, {
         type: "error_message",
@@ -154,14 +161,10 @@ function handleTextMessage(socket: Duplex, payload: Buffer): void {
   }
 }
 
-function handleConnection(socket: Duplex, head: Buffer): void {
+function handleConnection(socket: Duplex, head: Buffer, onTextMessage?: TextMessageHandler): void {
   let pending = Buffer.from(head);
 
-  sendJson(socket, {
-    type: "system_message",
-    messageId: randomUUID(),
-    content: "Mock WebSocket 已连接。当前未接入真实 Business Agent。",
-  });
+  if (!onTextMessage) sendJson(socket, { type: "system_message", messageId: randomUUID(), content: "Mock WebSocket 已连接。当前未接入真实 Business Agent。" });
 
   const consume = (chunk: Buffer) => {
     pending = Buffer.concat([pending, chunk]);
@@ -197,7 +200,7 @@ function handleConnection(socket: Duplex, head: Buffer): void {
       }
 
       if (frame.opcode === 0x1) {
-        handleTextMessage(socket, frame.payload);
+        handleTextMessage(socket, frame.payload, onTextMessage);
       } else if (frame.opcode === 0x8) {
         socket.end(createFrame(0x8, Buffer.alloc(0)));
         return;
@@ -222,10 +225,7 @@ export function attachDemoSocket(
   server.on("upgrade", (request, socket, head) => {
     const requestUrl = new URL(request.url ?? "/", "http://runtime-host.local");
 
-    if (requestUrl.pathname !== path) {
-      socket.destroy();
-      return;
-    }
+    if (requestUrl.pathname !== path) return;
 
     const key = request.headers["sec-websocket-key"];
     const upgrade = request.headers.upgrade;
@@ -250,5 +250,23 @@ export function attachDemoSocket(
     );
 
     handleConnection(socket, head);
+  });
+}
+
+export function attachRuntimeSocket(server: Server, host: RuntimeHost, path = RUNTIME_SOCKET_PATH): void {
+  server.on("upgrade", (request, socket, head) => {
+    const requestUrl = new URL(request.url ?? "/", "http://runtime-host.local");
+    if (requestUrl.pathname !== path) return;
+    const key = request.headers["sec-websocket-key"];
+    if (typeof key !== "string" || request.headers.upgrade?.toLowerCase() !== "websocket") { socket.destroy(); return; }
+    const accept = createHash("sha1").update(`${key}${WEB_SOCKET_GUID}`).digest("base64");
+    socket.write(["HTTP/1.1 101 Switching Protocols", "Upgrade: websocket", "Connection: Upgrade", `Sec-WebSocket-Accept: ${accept}`, "\r\n"].join("\r\n"));
+    handleConnection(socket, head, async (message) => {
+      if (typeof message !== "object" || message === null) return { type: "runtime.error", payload: { code: "REQUEST_INVALID", message: "Runtime WebSocket message is invalid.", retryable: false } };
+      const candidate = message as { type?: unknown; payload?: unknown };
+      if (candidate.type === "runtime.run.request") return { type: "runtime.run.result", payload: await host.orchestrator.run(candidate.payload) };
+      if (candidate.type === "runtime.action.request") return { type: "runtime.action.result", payload: await host.orchestrator.action(candidate.payload) };
+      return { type: "runtime.error", payload: { code: "REQUEST_INVALID", message: "Runtime WebSocket message is invalid.", retryable: false } };
+    });
   });
 }
