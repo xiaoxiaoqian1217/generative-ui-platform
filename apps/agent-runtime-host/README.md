@@ -29,8 +29,9 @@ Runtime Host 不承担 Business Agent 的模型推理。
 Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI 编译逻辑。
 当前实现提供远程 Business Agent 的 AG-UI 转发、Demo 端点，以及 Presentation Pipeline 的进程内组合根。
 当前实现通过 `BusinessAgentAdapter` 的 Runtime Contract 接口提供 Run 调用，并在组合根中直接装配 LangGraph HTTP Adapter 和 Presentation Pipeline Package。
-`/api/runs` 与 `/ws/runs` 复用同一 RunOrchestrator。
-`/api/actions` 仅提供 TASK-008 完整安全闭环之前的拒绝入口。
+`/api/runs`、`/ws/runs` 和 `/api/actions` 复用同一 RunOrchestrator。
+`/api/actions` 会校验 `threadId`、`runId`、`surfaceId`、`actionId`、Catalog Action 定义、Payload Schema 与显式审批。
+校验通过后，Runtime Host 经 Business Agent Adapter 恢复 Reference Business Agent，并将新的业务结果再次交给同一个 Embedded Presentation Pipeline。
 
 ## 运行要求
 
@@ -49,7 +50,7 @@ Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI
 | `PORT` | `8200` | HTTP 监听端口。 |
 | `COPILOTKIT_ENDPOINT` | `/api/copilotkit` | 面向前端的 CopilotKit Runtime 路径。 |
 | `BUSINESS_AGENT_ID` | `business-agent` | 面向前端暴露的业务 Agent 标识。 |
-| `BUSINESS_AGENT_URL` | `http://localhost:8000/ag-ui` | 远程业务 Agent 的 AG-UI 端点。 |
+| `BUSINESS_AGENT_URL` | `http://localhost:8000/ag-ui` | 仅兼容 CopilotKit AG-UI 端点使用的远程业务 Agent 地址；三服务开发验证链路使用下方 Contract 地址。 |
 | `BUSINESS_AGENT_CONTRACT_URL` | `http://localhost:8300` | Runtime Host 通过 Business Agent Adapter 使用的 Contract HTTP 基址。 |
 | `COPILOTKIT_TELEMETRY_DISABLED` | `true` | 是否关闭 CopilotKit 匿名遥测。 |
 | `PRESENTATION_MODEL_PROVIDER` | `fixture` | `fixture`、`kimi`、`doubao`、`glm`、`qwen` 或 `openai-compatible`。 |
@@ -83,11 +84,15 @@ Runtime HTTP 接口为 `POST /api/runs` 和 `POST /api/actions`。
 
 Runtime WebSocket 接口为 `ws://localhost:8200/ws/runs`。
 
+`/api/runs` 和 `/ws/runs` 使用相同的 Run 请求和结果契约。
+`/api/actions` 和 WebSocket action 消息使用相同的 Action 契约。
+浏览器不连接 Reference Business Agent、Presentation Pipeline、UI Compiler Core 或 Model Provider。
+
 前端应使用 `http://localhost:8200/api/copilotkit` 作为 Runtime URL，并选择 `business-agent` 或默认 Agent。
 
 ## 当前范围
 
-当前 Host 不实现业务 Agent、线程持久化、认证、前端工具或审批处理。
-Action 的校验、恢复和再次展示编排由 TASK-008 实现。
+当前 Host 不实现正式业务 Agent、线程持久化、认证或前端业务工具。
+Reference Business Agent 的内存 Checkpoint 仅用于开发验证，进程重启后会丢失。
 当前 Host 不启用 CopilotKit 自动 A2UI 生成功能。
-这些能力必须在边界和契约明确后，以独立 Adapter 接入。
+所有 A2UI 均由 Presentation Pipeline 调用 UI Compiler Core 产生。

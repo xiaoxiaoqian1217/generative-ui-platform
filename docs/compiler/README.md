@@ -17,6 +17,10 @@
 
 它们不再单独代表整个仓库当前阶段的顶层范围。
 
+ADR-0019 只调整旧 Compiler MVP 文档中独立 `ui-compiler-service` 的部署结论。
+旧文档中出现的独立 Service、HTTP Client、端口、Docker 或 Remote Mode 属于保留的历史 MVP 记录，不能作为当前平台的启动或部署说明。
+当前可执行的开发验证拓扑、命令和端口以 [平台开发验证环境](../platform/DEVELOPMENT_ENVIRONMENT.md) 为准。
+
 ## 继续有效的 Compiler 约束
 
 - Presentation Pipeline 接收 `PresentationRequest` 并返回 `PresentationResult`。
