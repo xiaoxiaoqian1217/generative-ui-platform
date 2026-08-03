@@ -45,6 +45,18 @@ function runPlaywright(args, environment = {}) {
   });
 }
 
+async function waitForPlatformPortsAvailable(timeoutMs = 5_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const available = await Promise.all(
+      platformPorts.map(({ port }) => isPortAvailable(port)),
+    );
+    if (available.every(Boolean)) return true;
+    await delay(100);
+  }
+  return false;
+}
+
 async function runFixtureSuite(environment, grep) {
   if ((await run(["dev:platform", "--", "--background"], environment)) !== 0)
     throw new Error("PLATFORM_START_FAILED");
@@ -84,13 +96,7 @@ async function runFixtureSuite(environment, grep) {
     if ((await readProcessState()).length !== 0) {
       cleanupError = new Error("PLATFORM_PROCESS_CLEANUP_FAILED");
     }
-    if (
-      !(
-        await Promise.all(
-          platformPorts.map(({ port }) => isPortAvailable(port)),
-        )
-      ).every(Boolean)
-    ) {
+    if (!(await waitForPlatformPortsAvailable())) {
       cleanupError ??= new Error("PLATFORM_PORT_CLEANUP_FAILED");
     }
   }
