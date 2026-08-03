@@ -16,10 +16,8 @@
 - 显示连接、重连、恢复、运行、降级、失败和页面刷新状态。
 - 显示环境、Workbench 版本、关联 ID 和 Runtime Host 安全诊断摘要。
 - 提供四个场景快捷输入。
-
-真实 Component Registry A2UI Renderer 属于 TASK-007。
-Action 回传和人工确认闭环属于 TASK-008。
-本任务不会提前实现这些后续范围。
+- 使用受控 Component Registry 渲染 A2UI，并将用户 Action 回传 Runtime Host。
+- 对需要审批的 Action 请求浏览器显式确认。
 
 ## 架构边界
 
@@ -84,7 +82,7 @@ pnpm test:e2e:web-workbench
 ```
 
 静态构建输出位于 `apps/web-workbench/dist`。
-基础 E2E 使用真实 Chromium、可发布静态构建和同源 Runtime Host Fixture，覆盖 HTTP、WebSocket、断线恢复、刷新、安全 Markdown、PresentationResult、诊断和受控 A2UI Raw Viewer。
+基础 E2E 使用真实 Chromium、可发布静态构建和同源 Runtime Host Fixture，覆盖 HTTP、WebSocket、断线恢复、刷新、安全 Markdown、PresentationResult、诊断、受控 A2UI Raw Viewer 和 Action Resume。
 
 ## 容器发布
 
@@ -104,7 +102,7 @@ docker build \
 
 ## Web Demo 迁移决策
 
-`apps/web-workbench` 是后续平台开发、联调和验收的正式 Web 入口。
+`apps/web-workbench` 是当前平台开发、联调和验收的 Web 入口。
 `apps/web-demo` 暂时保留为旧 Mock HTTP/WebSocket 协议的兼容 Smoke，不再承载新增 Workbench 能力。
 在 Runtime Host 平台编排和后续全链路迁移完成前，仓库继续运行原 Demo 的构建和测试。
 迁移依据和删除条件记录在 [`../../docs/platform/WEB_DEMO_MIGRATION.md`](../../docs/platform/WEB_DEMO_MIGRATION.md)。

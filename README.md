@@ -9,12 +9,12 @@
 | Generative UI Platform | 仓库级和长期平台边界 | 持续建设 |
 | Generative UI Compiler | 平台核心编译能力 | 已形成 Compiler MVP 基线 |
 | Presentation Pipeline | 展示后处理应用 Package | 已提取并嵌入 Runtime Host |
-| Generative UI Workbench | Frontend Runtime 参考实现与开发验证工作台 | 逐步建设 |
-| Reference Business Agent | 全链路验证用参考 Agent | 当前阶段允许建设 |
+| Generative UI Workbench | Frontend Runtime 参考实现与开发验证工作台 | 已用于开发验证环境 |
+| Reference Business Agent | 全链路验证用参考 Agent | 已用于开发验证环境 |
 | Interaction Gateway | 未来多 Agent 扩展能力 | 不属于当前阶段 |
 
 当前仓库不再只描述 Compiler MVP。
-下一阶段目标是建设覆盖 Business Agent、Runtime Host、Embedded Presentation Pipeline、A2UI Renderer 和 Action 回传的全链路开发验证环境。
+当前 Goal 已交付覆盖 Business Agent、Runtime Host、Embedded Presentation Pipeline、A2UI Renderer 和 Action 回传的全链路开发验证环境。
 
 这不是新的独立产品，而是 Generative UI Platform 的阶段性研发基础设施。
 
@@ -53,7 +53,7 @@ Generative UI Workbench
 
 ## 当前项目状态
 
-当前仓库已具备：
+当前仓库已具备以下开发验证能力：
 
 - UI Compiler Core；
 - 可嵌入的 Presentation Pipeline Package；
@@ -61,18 +61,10 @@ Generative UI Workbench
 - Component Catalog Schema；
 - Agent Runtime Host；
 - Runtime Host 对 Presentation Pipeline 的进程内组装；
-- HTTP / WebSocket Mock 验证；
-- Generative UI Workbench 的需求和目录基础。
-
-当前尚未完成：
-
-- Reference Business Agent；
-- Business Agent Adapter；
-- Runtime Host 的完整 Run / Action Presentation Pipeline 编排；
-- Vue A2UI Renderer；
-- Action 回传闭环；
-- 平台级 Playwright E2E；
-- 一键启动完整开发环境。
+- HTTP / WebSocket 全链路验证；
+- Vue A2UI Renderer 与受控 Component Registry；
+- Action 安全校验、Reference Business Agent Resume 和再次展示；
+- 三服务一键启动、诊断摘要与平台级 Playwright E2E。
 
 ## 文档结构
 
@@ -134,8 +126,9 @@ Linux / WSL：
 ```bash
 pnpm check:boundaries
 pnpm typecheck
-pnpm test
-pnpm build
-pnpm validate
+pnpm dev:platform
+pnpm verify:platform
 pnpm docs:check
 ```
+
+完整安装、启动、演示、传输切换、Provider 配置和排障步骤见[平台开发验证指南](./docs/platform/DEVELOPMENT_ENVIRONMENT.md)。
