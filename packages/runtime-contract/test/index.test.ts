@@ -250,6 +250,7 @@ describe("Runtime HTTP contracts", () => {
         threadId: "thread-1",
         runId: "run-1",
         actionId: "confirm-patrol",
+        sourcePresentationRequestId: "presentation-1",
         presentationRequestId: "presentation-2",
         status: "completed",
         presentation: {
@@ -387,6 +388,7 @@ describe("Runtime WebSocket contracts", () => {
           threadId: "thread-1",
           runId: "run-1",
           actionId: "confirm-patrol",
+          sourcePresentationRequestId: "presentation-1",
           presentationRequestId: "presentation-expected",
           status: "completed",
           presentation: completedPresentation,

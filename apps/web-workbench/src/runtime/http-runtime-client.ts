@@ -1,6 +1,10 @@
 import {
   type RuntimeRunRequest,
   type RuntimeRunResult,
+  type RuntimeActionRequest,
+  type RuntimeActionResult,
+  validateRuntimeActionRequest,
+  validateRuntimeActionResult,
   validateRuntimeRunRequest,
   validateRuntimeRunResult,
 } from "@generative-ui/runtime-contract";
@@ -17,6 +21,7 @@ type Fetcher = (
 
 export interface HttpRuntimeClientOptions {
   endpoint: string;
+  actionEndpoint?: string;
   fetcher?: Fetcher;
   onConnectionStateChange?: (state: ConnectionState) => void;
   timeoutMs?: number;
@@ -115,6 +120,18 @@ export function createHttpRuntimeClient(
       } finally {
         requestSignal.dispose();
       }
+    },
+    async action(request: RuntimeActionRequest, callerSignal?: AbortSignal): Promise<RuntimeActionResult> {
+      const outbound = validateRuntimeActionRequest(request);
+      if (!outbound.success) throw new WorkbenchRuntimeError("WORKBENCH_REQUEST_INVALID", "Action request does not match Runtime Contract.", { path: outbound.error.path, retryable: false });
+      const requestSignal = createRequestSignal(callerSignal, timeoutMs);
+      try {
+        const response = await fetcher(options.actionEndpoint ?? options.endpoint.replace(/\/runs$/, "/actions"), { body: JSON.stringify(outbound.value), headers: { accept: "application/json", "content-type": "application/json" }, method: "POST", signal: requestSignal.signal });
+        const inbound = validateRuntimeActionResult(await response.json());
+        if (!inbound.success) throw new WorkbenchRuntimeError("WORKBENCH_RESPONSE_INVALID", "Runtime Host returned an invalid Action response.", { path: inbound.error.path, retryable: response.status >= 500 });
+        options.onConnectionStateChange?.("connected");
+        return inbound.value;
+      } finally { requestSignal.dispose(); }
     },
   };
 }
