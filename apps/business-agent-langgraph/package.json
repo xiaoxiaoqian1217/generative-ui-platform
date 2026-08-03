@@ -1,0 +1,26 @@
+{
+  "name": "@generative-ui/business-agent-langgraph",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/cli.ts",
+    "build": "tsup src/main.ts src/cli.ts --format esm --clean --out-dir dist",
+    "start": "node dist/cli.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@generative-ui/runtime-contract": "workspace:*",
+    "@langchain/core": "1.2.4",
+    "@langchain/langgraph": "1.4.8",
+    "fastify": "5.10.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "tsup": "8.5.0",
+    "tsx": "4.20.3",
+    "typescript": "5.8.3",
+    "vitest": "3.2.4"
+  }
+}
