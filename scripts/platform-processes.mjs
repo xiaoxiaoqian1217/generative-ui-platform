@@ -1,6 +1,7 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readlink, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { dirname, join } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 
 export const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -14,6 +15,11 @@ const platformServiceNames = new Set([
   "Reference Business Agent",
   "Agent Runtime Host",
   "Generative UI Workbench",
+]);
+const platformProcessMarkers = new Map([
+  ["Reference Business Agent", "@generative-ui/business-agent-langgraph"],
+  ["Agent Runtime Host", "@generative-ui/agent-runtime-host"],
+  ["Generative UI Workbench", "@generative-ui/web-workbench"],
 ]);
 
 export async function readProcessState() {
@@ -84,17 +90,19 @@ export async function stopProcessTree(pid) {
     });
     return;
   }
-  try {
-    process.kill(-pid, "SIGTERM");
-  } catch (error) {
-    if (error?.code !== "ESRCH") throw error;
+
+  if (!signalProcessGroup(pid, "SIGTERM")) return;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await delay(100);
+    if (!isProcessGroupRunning(pid)) return;
   }
+  signalProcessGroup(pid, "SIGKILL");
 }
 
 export async function stopTrackedPlatformProcesses(processes) {
   await Promise.all(
-    processes.map(async ({ pid }) => {
-      if (await isPlatformProcess(pid)) await stopProcessTree(pid);
+    processes.map(async ({ name, pid }) => {
+      if (await isPlatformProcess(pid, name)) await stopProcessTree(pid);
     }),
   );
   if (process.platform !== "win32" || processes.length === 0) return;
@@ -123,10 +131,43 @@ export async function stopTrackedPlatformProcesses(processes) {
   );
 }
 
-async function isPlatformProcess(pid) {
-  const commandLine = await readProcessCommandLine(pid);
+function signalProcessGroup(pid, signal) {
+  try {
+    process.kill(-pid, signal);
+    return true;
+  } catch (error) {
+    if (error?.code === "ESRCH") return false;
+    throw error;
+  }
+}
+
+function isProcessGroupRunning(pid) {
+  try {
+    process.kill(-pid, 0);
+    return true;
+  } catch (error) {
+    if (error?.code === "ESRCH") return false;
+    throw error;
+  }
+}
+
+async function isPlatformProcess(pid, name) {
   const normalize = (value) => value.replaceAll("\\", "/").toLowerCase();
-  return normalize(commandLine).includes(normalize(repositoryRoot));
+  const commandLine = normalize(await readProcessCommandLine(pid));
+  const root = normalize(repositoryRoot);
+  const marker = name ? normalize(platformProcessMarkers.get(name) ?? "") : "";
+  if (commandLine.includes(root) || (marker && commandLine.includes(marker))) {
+    return true;
+  }
+  if (process.platform !== "linux") return false;
+  try {
+    const workingDirectory = normalize(await readlink(`/proc/${pid}/cwd`));
+    return (
+      workingDirectory === root || workingDirectory.startsWith(`${root}/`)
+    );
+  } catch {
+    return false;
+  }
 }
 
 async function readProcessCommandLine(pid) {
