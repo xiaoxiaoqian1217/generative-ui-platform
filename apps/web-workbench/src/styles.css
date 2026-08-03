@@ -651,6 +651,80 @@ pre {
   line-height: 1.55;
 }
 
+.a2ui-renderer,
+.a2ui-fallback {
+  min-height: 170px;
+}
+
+.a2ui-fallback {
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  font-size: 0.8rem;
+}
+
+.a2ui-card,
+.a2ui-list,
+.a2ui-timeline {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--paper-strong);
+}
+
+.a2ui-card h3,
+.a2ui-list h3,
+.a2ui-timeline h3,
+.a2ui-card p {
+  margin: 0;
+}
+
+.a2ui-column {
+  display: grid;
+  gap: 12px;
+}
+
+.a2ui-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.a2ui-badge {
+  display: inline-block;
+  padding: 3px 7px;
+  color: var(--green);
+  border: 1px solid currentcolor;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.a2ui-button {
+  min-height: 36px;
+  padding: 0 13px;
+  color: #fff;
+  border: 0;
+  background: var(--accent-dark);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.a2ui-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.a2ui-table th,
+.a2ui-table td {
+  padding: 8px;
+  text-align: left;
+  border: 1px solid var(--line);
+}
+
 .reveal-control {
   display: flex;
   align-items: center;

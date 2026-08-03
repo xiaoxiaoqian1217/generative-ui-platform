@@ -44,11 +44,11 @@ test("WebSocket recovers and keeps A2UI raw data controlled", async ({
   await page.getByTestId("message-input").fill("返回 A2UI");
   await page.getByTestId("send-run").click();
   await expect(page.getByTestId("run-status")).toContainText("已完成");
-  await expect(page.getByTestId("a2ui-placeholder")).toBeVisible();
+  await expect(page.getByTestId("a2ui-renderer")).toContainText("Ready");
   await expect(page.getByTestId("a2ui-raw-content")).toHaveCount(0);
   await page.getByTestId("a2ui-raw-viewer").getByLabel("显示原始数据").check();
   await expect(page.getByTestId("a2ui-raw-content")).toContainText(
-    "beginRendering",
+    "createSurface",
   );
 
   await page.request.post("/__control__/disconnect");

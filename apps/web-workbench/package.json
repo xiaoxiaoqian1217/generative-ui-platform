@@ -12,7 +12,10 @@
     "test:e2e": "pnpm build && playwright test"
   },
   "dependencies": {
+    "@generative-ui/compiler-contract": "workspace:*",
+    "@generative-ui/presentation-contract": "workspace:*",
     "@generative-ui/runtime-contract": "workspace:*",
+    "@generative-ui/shared-types": "workspace:*",
     "markdown-it": "14.1.0",
     "vue": "3.5.40"
   },
