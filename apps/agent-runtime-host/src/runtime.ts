@@ -5,6 +5,11 @@ import {
   ExperimentalEmptyAdapter,
 } from "@copilotkit/runtime";
 import {
+  type BusinessAgentAdapter,
+  type BusinessAgentInvocationOptions,
+  LangGraphHttpBusinessAgentAdapter,
+} from "@generative-ui/business-agent-adapter";
+import {
   createFixtureModelAdapter,
   createPresentationModelProviderRegistry,
   createPresentationPipeline,
@@ -12,16 +17,31 @@ import {
   FIXTURE_COMPONENT_CATALOG,
   type PresentationPipeline,
 } from "@generative-ui/presentation-pipeline";
+import type {
+  BusinessAgentResumeActionRequest,
+  BusinessAgentResumeActionResult,
+  BusinessAgentRunRequest,
+  BusinessAgentRunResult,
+} from "@generative-ui/runtime-contract";
 import type { RequestHandler } from "express";
 import type { RuntimeHostConfig } from "./config.js";
 
 export interface RuntimeHost {
   handler: RequestHandler;
   presentationPipeline: PresentationPipeline;
+  runBusinessAgent(
+    request: BusinessAgentRunRequest,
+    options?: BusinessAgentInvocationOptions,
+  ): Promise<BusinessAgentRunResult>;
+  resumeBusinessAgentAction(
+    request: BusinessAgentResumeActionRequest,
+    options?: BusinessAgentInvocationOptions,
+  ): Promise<BusinessAgentResumeActionResult>;
   runtime: CopilotRuntime;
 }
 
 export interface RuntimeHostDependencies {
+  businessAgentAdapter?: BusinessAgentAdapter;
   presentationPipeline?: PresentationPipeline;
 }
 
@@ -53,14 +73,14 @@ export function createRuntimeHost(
   config: RuntimeHostConfig,
   dependencies: RuntimeHostDependencies = {},
 ): RuntimeHost {
-  const businessAgent = new HttpAgent({
+  const legacyAgUiAgent = new HttpAgent({
     url: config.businessAgentUrl,
   });
 
   const runtime = new CopilotRuntime({
     agents: {
-      [config.agentId]: businessAgent,
-      default: businessAgent,
+      [config.agentId]: legacyAgUiAgent,
+      default: legacyAgUiAgent,
     },
   });
 
@@ -73,6 +93,19 @@ export function createRuntimeHost(
   const presentationPipeline =
     dependencies.presentationPipeline ??
     createEmbeddedPresentationPipeline(config);
+  const businessAgentAdapter =
+    dependencies.businessAgentAdapter ??
+    new LangGraphHttpBusinessAgentAdapter({
+      baseUrl: config.businessAgentContractUrl,
+    });
 
-  return { handler, presentationPipeline, runtime };
+  return {
+    handler,
+    presentationPipeline,
+    runBusinessAgent: (request, options) =>
+      businessAgentAdapter.run(request, options),
+    resumeBusinessAgentAction: (request, options) =>
+      businessAgentAdapter.resumeAction(request, options),
+    runtime,
+  };
 }

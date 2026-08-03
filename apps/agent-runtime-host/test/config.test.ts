@@ -9,6 +9,7 @@ describe("loadConfig", () => {
       endpoint: "/api/copilotkit",
       agentId: "business-agent",
       businessAgentUrl: "http://localhost:8000/ag-ui",
+      businessAgentContractUrl: "http://localhost:8300",
       presentationModel: { mode: "fixture" },
     });
   });
@@ -21,6 +22,7 @@ describe("loadConfig", () => {
         COPILOTKIT_ENDPOINT: "/copilotkit",
         BUSINESS_AGENT_ID: "planner-agent",
         BUSINESS_AGENT_URL: "http://localhost:9001/ag-ui",
+        BUSINESS_AGENT_CONTRACT_URL: "http://localhost:9300",
       }),
     ).toEqual({
       host: "127.0.0.1",
@@ -28,6 +30,7 @@ describe("loadConfig", () => {
       endpoint: "/copilotkit",
       agentId: "planner-agent",
       businessAgentUrl: "http://localhost:9001/ag-ui",
+      businessAgentContractUrl: "http://localhost:9300",
       presentationModel: { mode: "fixture" },
     });
   });

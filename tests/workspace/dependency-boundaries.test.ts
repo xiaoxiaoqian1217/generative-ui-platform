@@ -277,4 +277,29 @@ describe("dependency boundary checker", () => {
       );
     },
   );
+
+  it.each([
+    "@langchain/langgraph",
+    "@generative-ui/presentation-pipeline",
+    "react",
+  ])(
+    "rejects a Business Agent Adapter runtime dependency on %s",
+    (dependencyName) => {
+      const fixtureRoot = createFixture({
+        "packages/business-agent-adapter": {
+          dependencies: {
+            [dependencyName]: "1.0.0",
+          },
+          name: "@generative-ui/business-agent-adapter",
+        },
+      });
+
+      const result = runChecker(fixtureRoot);
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(
+        "Business Agent Adapter runtime dependencies are limited to the Runtime Contract",
+      );
+    },
+  );
 });

@@ -1,3 +1,4 @@
+import { MockBusinessAgentAdapter } from "@generative-ui/business-agent-adapter";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createRuntimeHost } from "../src/runtime.js";
 
@@ -13,6 +14,7 @@ describe("Runtime Host embedded Presentation Pipeline", () => {
       endpoint: "/api/copilotkit",
       agentId: "business-agent",
       businessAgentUrl: "http://127.0.0.1:8300/ag-ui",
+      businessAgentContractUrl: "http://127.0.0.1:8300",
       presentationModel: { mode: "fixture" },
     });
 
@@ -57,6 +59,7 @@ describe("Runtime Host embedded Presentation Pipeline", () => {
       endpoint: "/api/copilotkit",
       agentId: "business-agent",
       businessAgentUrl: "http://127.0.0.1:8300/ag-ui",
+      businessAgentContractUrl: "http://127.0.0.1:8300",
       presentationModel: {
         mode: "provider",
         registration: {
@@ -90,6 +93,53 @@ describe("Runtime Host embedded Presentation Pipeline", () => {
     expect(JSON.parse(String(init?.body))).toMatchObject({
       model: "qwen-model",
       enable_thinking: false,
+    });
+  });
+
+  it("uses an injected Mock through the same Host Business Agent seam", async () => {
+    const businessAgentAdapter = new MockBusinessAgentAdapter({
+      run: async (request) => ({
+        protocolVersion: request.protocolVersion,
+        requestId: request.requestId,
+        threadId: request.threadId,
+        runId: request.runId,
+        status: "completed",
+        content: { contentType: "markdown", markdown: "Mock result." },
+      }),
+      resumeAction: async (request) => ({
+        protocolVersion: request.protocolVersion,
+        requestId: request.requestId,
+        threadId: request.threadId,
+        runId: request.runId,
+        status: "completed",
+        content: { contentType: "markdown", markdown: "Mock resumed." },
+      }),
+    });
+    const host = createRuntimeHost(
+      {
+        host: "127.0.0.1",
+        port: 8200,
+        endpoint: "/api/copilotkit",
+        agentId: "business-agent",
+        businessAgentUrl: "http://127.0.0.1:8300/ag-ui",
+        businessAgentContractUrl: "http://127.0.0.1:8300",
+        presentationModel: { mode: "fixture" },
+      },
+      { businessAgentAdapter },
+    );
+
+    await expect(
+      host.runBusinessAgent({
+        protocolVersion: "1.0",
+        requestId: "request-host-mock",
+        threadId: "thread-host-mock",
+        runId: "run-host-mock",
+        input: { message: "Use the mock" },
+      }),
+    ).resolves.toMatchObject({
+      requestId: "request-host-mock",
+      status: "completed",
+      content: { markdown: "Mock result." },
     });
   });
 });
