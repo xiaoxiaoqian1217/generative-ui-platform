@@ -1,24 +1,28 @@
 name: Refresh release lockfile
 on:
-  push:
-    branches: [agent/release-hardening-audit]
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
 
 concurrency:
-  group: refresh-release-lockfile
+  group: refresh-release-lockfile-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   refresh:
-    if: github.actor == 'xiaoxiaoqian1217'
+    if: >-
+      github.actor == 'xiaoxiaoqian1217' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'agent/release-hardening-audit'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: agent/release-hardening-audit
+          persist-credentials: true
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
