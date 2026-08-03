@@ -2,10 +2,12 @@ packages:
   - apps/*
   - packages/*
 
-allowBuilds:
-  "@scarf/scarf": false
-  esbuild: true
-  lefthook: true
+strictDepBuilds: true
+onlyBuiltDependencies:
+  - esbuild
+  - lefthook
+ignoredBuiltDependencies:
+  - "@scarf/scarf"
 
 overrides:
   "undici@<6.28.0": 6.28.0
