@@ -135,11 +135,9 @@ describe("A2UI v0.9 reducer", () => {
     expect(applied.success).toBe(true);
     if (!applied.success) return;
     const surface = applied.surfaces.get("surface-1");
-    const action = createRuntimeAction(
-      "surface-1",
-      surface?.components.get("confirm")!,
-      surface?.dataModel,
-    );
+    const confirm = surface?.components.get("confirm");
+    if (!surface || !confirm) throw new Error("Expected confirm component.");
+    const action = createRuntimeAction("surface-1", confirm, surface.dataModel);
     expect(action).toEqual({
       actionId: "confirm-1",
       actionType: "confirm-plan",
@@ -148,7 +146,7 @@ describe("A2UI v0.9 reducer", () => {
     });
     expect(JSON.stringify(action)).not.toContain("requiresApproval");
     expect(
-      createRuntimeAction("surface-1", surface?.components.get("confirm")!, {
+      createRuntimeAction("surface-1", confirm, {
         sourceData: {},
       }),
     ).toBeUndefined();
