@@ -7,28 +7,41 @@ interface ListeningEvent {
   address: string;
 }
 
-async function startAgentProcess(): Promise<{
+async function startAgentProcess(options?: {
+  commandArguments?: string[];
+  startupTimeoutMs?: number;
+}): Promise<{
   baseUrl: string;
   child: ChildProcess;
 }> {
-  const child = spawn(process.execPath, ["--import", "tsx", "src/cli.ts"], {
-    cwd: process.cwd(),
-    env: {
-      ...process.env,
-      BUSINESS_AGENT_HOST: "127.0.0.1",
-      BUSINESS_AGENT_PORT: "0",
-      ANTHROPIC_API_KEY: "",
-      OPENAI_API_KEY: "",
+  const child = spawn(
+    process.execPath,
+    options?.commandArguments ?? ["--import", "tsx", "src/cli.ts"],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        BUSINESS_AGENT_HOST: "127.0.0.1",
+        BUSINESS_AGENT_PORT: "0",
+        ANTHROPIC_API_KEY: "",
+        OPENAI_API_KEY: "",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
     },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  );
   const listening = new Promise<ListeningEvent>((resolve, reject) => {
     let stdout = "";
     let stderr = "";
-    const timeout = setTimeout(
-      () => reject(new Error(`Agent startup timed out. ${stderr}`)),
-      10_000,
-    );
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      const error = new Error(`Agent startup timed out. ${stderr}`);
+      void stopAgentProcess(child).then(
+        () => reject(error),
+        (caught: unknown) => reject(caught),
+      );
+    }, options?.startupTimeoutMs ?? 10_000);
     child.stderr?.on("data", (chunk: Buffer) => {
       stderr += chunk.toString("utf8");
     });
@@ -39,7 +52,8 @@ async function startAgentProcess(): Promise<{
       for (const line of lines) {
         try {
           const event = JSON.parse(line) as ListeningEvent;
-          if (event.event === "business-agent.listening") {
+          if (!settled && event.event === "business-agent.listening") {
+            settled = true;
             clearTimeout(timeout);
             resolve(event);
           }
@@ -49,6 +63,8 @@ async function startAgentProcess(): Promise<{
       }
     });
     child.once("exit", (code) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timeout);
       reject(
         new Error(`Agent exited before startup with code ${code}. ${stderr}`),
@@ -61,11 +77,21 @@ async function startAgentProcess(): Promise<{
 
 async function stopAgentProcess(child: ChildProcess): Promise<void> {
   if (child.exitCode !== null) return;
+  const exited = once(child, "exit");
   child.kill("SIGTERM");
-  await once(child, "exit");
+  await exited;
 }
 
 describe("Reference Business Agent process", () => {
+  it("terminates the child process before reporting a startup timeout", async () => {
+    await expect(
+      startAgentProcess({
+        commandArguments: ["-e", "setInterval(() => undefined, 1000)"],
+        startupTimeoutMs: 50,
+      }),
+    ).rejects.toThrow("Agent startup timed out.");
+  });
+
   it("serves health, Run and Resume Action without model credentials", async () => {
     const { baseUrl, child } = await startAgentProcess();
     try {

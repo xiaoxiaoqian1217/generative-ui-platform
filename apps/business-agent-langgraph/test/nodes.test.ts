@@ -49,6 +49,20 @@ describe("Reference Business Agent nodes", () => {
     });
   });
 
+  it("does not return all devices for an unknown device identifier", () => {
+    const state = initialGraphState(request("查询 camera-south-99 状态"));
+    expect(deviceStatusNode(state)).toMatchObject({
+      content: {
+        contentType: "structured-data",
+        data: {
+          kind: "device-status",
+          devices: [],
+        },
+        fallbackMarkdown: "未找到设备 camera-south-99。",
+      },
+    });
+  });
+
   it("creates a deterministic patrol draft", () => {
     expect(patrolDraftNode()).toMatchObject({
       draft: {

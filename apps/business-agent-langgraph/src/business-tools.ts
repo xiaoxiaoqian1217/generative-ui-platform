@@ -49,6 +49,9 @@ const deviceFixtures = Object.freeze([
   },
 ]);
 
+const DEVICE_ID_PATTERN =
+  /\b(?:camera|device|robot|sensor)-[a-z0-9]+(?:-[a-z0-9]+)*\b/iu;
+
 export function classifyScenario(message: string): ReferenceScenario {
   const normalized = message.trim().toLocaleLowerCase("zh-CN");
   const mentionsDevice =
@@ -71,7 +74,13 @@ export function queryDeviceStatus(message: string): AgentContent {
     (device) =>
       normalized.includes(device.deviceId) || normalized.includes(device.name),
   );
-  const devices = matchingDevices.length > 0 ? matchingDevices : deviceFixtures;
+  const requestedDeviceId = normalized.match(DEVICE_ID_PATTERN)?.[0];
+  const devices =
+    matchingDevices.length > 0
+      ? matchingDevices
+      : requestedDeviceId === undefined
+        ? deviceFixtures
+        : [];
   return {
     contentType: "structured-data",
     data: {
@@ -80,7 +89,10 @@ export function queryDeviceStatus(message: string): AgentContent {
       observedAt: "2026-08-02T00:00:00Z",
       devices: devices.map((device) => ({ ...device })),
     },
-    fallbackMarkdown: `查询到 ${devices.length} 台设备，其中 ${devices.filter((device) => device.status === "maintenance-required").length} 台需要维护。`,
+    fallbackMarkdown:
+      devices.length === 0
+        ? `未找到设备 ${requestedDeviceId}。`
+        : `查询到 ${devices.length} 台设备，其中 ${devices.filter((device) => device.status === "maintenance-required").length} 台需要维护。`,
   };
 }
 
