@@ -24,6 +24,106 @@ Frontend Runtime 参考实现和开发验证工作台。
 它只连接 Agent Runtime Host，渲染 Markdown 和 A2UI。
 _Avoid_: Business Agent、Presentation Pipeline
 
+**Workbench 开发验证产品化**:
+以 Generative UI Workbench 为对象的下一阶段建设。
+它把开发验证环境完善为可独立部署、可诊断、可回放和可验收的产品，而非正式业务运营前端。
+_Avoid_: 正式指挥系统、生产业务前端
+
+**验收案例**:
+描述一个场景、用户输入、期望语义结果和一次实际运行结果的可重放验证单元。
+它用于验证平台链路，而不是保存任意用户会话。
+_Avoid_: 聊天记录、端到端脚本
+
+**语义断言**:
+针对展示模式、关键组件、受控 Action、错误阶段、稳定错误码或降级原因的验收预期。
+它不比较 A2UI 原始结构、页面文案或截图。
+_Avoid_: 快照断言、字节级比较
+
+**本地案例库**:
+由代码随版本发布的内置验收案例与浏览器本地保存的用户案例组成的案例集合。
+它可通过 JSON 导入导出交换案例，但不提供服务端共享或协作存储。
+_Avoid_: 生产数据库、共享案例中心
+
+**内置验收矩阵**:
+随 Workbench 版本发布、用于覆盖成功、交互、校验失败和安全降级路径的一组最低验收案例。
+当前最低矩阵包含十个 SRS 指定案例，后端工具失败作为额外案例。
+_Avoid_: 任意快捷输入、非确定性演示
+
+**Workbench 公开视图**:
+由 Agent Runtime Host 向浏览器提供的只读、脱敏的 Catalog、场景、运行配置或诊断数据。
+它不暴露内部包、Business Agent 私有协议、模型供应商配置或密钥。
+_Avoid_: 前端直连服务、内部状态转储
+
+**本地调试可见性**:
+在本地调试模式下，参考场景的用户输入和业务结果可完整显示以支持问题定位。
+密钥、令牌、设备凭证和 Provider 原始响应永不传送至浏览器。
+_Avoid_: 无边界原始响应查看、生产审计日志
+
+**Workbench 工作区路由**:
+将 Playground、Inspect、Cases、Catalog、Scenarios 和 Settings 划分为独立稳定 URL 的导航结构。
+Playground 是默认入口，Cases 是验收案例运行与比较的中心。
+_Avoid_: 单页堆叠面板、无状态临时页面
+
+**连续参考链路**:
+用于端到端验收的固定业务流程：设备查询、巡防方案比较、地图协同、任务确认、Action 回传与结果展示。
+它使用进程内测试替身或 Reference Business Agent 验证平台行为，不连接真实设备控制。
+_Avoid_: 孤立组件演示、真实设备调度
+
+**Catalog 受控预览**:
+使用 Catalog 或场景包登记的示例数据，通过同一 Component Registry 渲染实际组件的只读预览。
+它不接受任意 Props，不动态加载任意组件。
+_Avoid_: 自由 Props 编辑器、动态模块执行
+
+**Workbench Runtime 查询契约**:
+由 Agent Runtime Host 提供的、经过 Schema 校验的 Catalog 摘要和已加载场景元数据只读接口。
+它是 Workbench 获取运行时查询数据的唯一后端边界。
+_Avoid_: 前端读取内部 Package、私有服务直连
+
+**CopilotKit Headless 集成**:
+Workbench 通过 Runtime Host 的 CopilotKit Headless 端点接入 Agent Runtime 的前端集成方式。
+它与 HTTP 和 WebSocket 共用 RunOrchestrator，不绕过 Presentation Pipeline。
+_Avoid_: 前端直连 Business Agent、独立展示编译客户端
+
+**Runtime 传输适配入口**:
+HTTP、WebSocket 和 CopilotKit Headless 将各自传输协议映射为同一 Runtime Contract 的薄入口。
+它们共用 RunOrchestrator 与 Action 编排，不包含独立业务、展示编译或状态逻辑。
+_Avoid_: 每种传输各自编排、协议专属业务链路
+
+**WebSocket Business Agent Adapter**:
+将 Runtime Contract 的 Run 和 Resume Action 请求映射为公司 Business Agent WebSocket 协议的 Runtime Host 适配层。
+它与非流式 HTTP Adapter 一同属于当前 Goal 的 Business Agent 传输实现范围。
+_Avoid_: Workbench 直连 Business Agent、RunOrchestrator 感知私有协议
+
+**HTTP + SSE Business Agent Adapter**:
+将 Runtime Contract 的 Run 和 Resume Action 请求映射为 HTTP 请求和 SSE 事件流响应的 Runtime Host 适配层。
+它与 WebSocket Adapter 一同属于当前 Goal 的 Business Agent 传输实现范围，并支持一次请求中的离散完整业务事件。
+_Avoid_: 普通 HTTP 轮询、将 SSE 误解为仅 token 流式、RunOrchestrator 感知 Agent 事件协议
+
+**进程内测试替身**:
+由测试代码直接构造或注入的固定契约对象和内存 Stub。
+它只用于确定性验证，不作为 Workbench、Runtime Host 或模型供应商的可运行部署模式。
+_Avoid_: Fixture Provider、Fixture 服务、默认离线运行模式
+
+**开发模型联调**:
+开发人员在本地 Workbench 环境中调用真实 Business Model 和 Presentation Model 的验证活动。
+它不属于 CI、合并门槛或独立 Smoke Test。
+_Avoid_: Provider 可用性门禁、自动化模型验收
+
+**双模型开发联调**:
+开发环境中由 Business Agent 私有调用的真实 Business Model 与由 Presentation Pipeline 私有调用的真实 Presentation Model 的组合验证。
+前者只输出业务内容，后者只输出不可信展示决策候选。
+_Avoid_: 浏览器直连模型、一个模型兼任业务与展示边界
+
+**确认型 Action**:
+带有 Runtime Contract 风险元数据且必须在用户批准后才允许 Runtime Host 恢复业务流程的 Action。
+Workbench 展示确认信息并回传批准或取消，低风险前端 Action 不属于此类。
+_Avoid_: 所有 Action 一律确认、浏览器自行判断业务风险
+
+**自然语言确认**:
+用户以“同意”“取消”等普通文本继续当前 Business Agent 会话的对话式确认方式。
+它允许 Business Agent 依据会话上下文解释意图，但不替代必须由 Runtime Host 校验的确认型 Action。
+_Avoid_: 将所有高风险审批降格为文本、无上下文的确认文本
+
 **Reference Business Agent**:
 用于全链路验证的参考业务 Agent，优先采用 TypeScript LangGraph。
 它只输出 Markdown 或结构化业务数据。

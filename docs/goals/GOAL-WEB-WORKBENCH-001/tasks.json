@@ -1,0 +1,56 @@
+{
+  "goal_id": "GOAL-WEB-WORKBENCH-001",
+  "title": "Generative UI Workbench 开发验证产品化",
+  "canonical_goal": "docs/goals/GOAL-WEB-WORKBENCH-001.md",
+  "architecture_decisions": ["ADR-0020", "ADR-0021", "ADR-0022"],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "issue": 137,
+      "title": "Business Agent 事件传输 Adapter",
+      "depends_on": []
+    },
+    {
+      "id": "TASK-002",
+      "issue": 138,
+      "title": "退役可运行 Fixture Provider",
+      "depends_on": []
+    },
+    {
+      "id": "TASK-003",
+      "issue": 139,
+      "title": "Workbench 路由与本地设置",
+      "depends_on": []
+    },
+    {
+      "id": "TASK-004",
+      "issue": 140,
+      "title": "CopilotKit 主运行与确认闭环",
+      "depends_on": ["TASK-001", "TASK-003"]
+    },
+    {
+      "id": "TASK-005",
+      "issue": 141,
+      "title": "Runtime Catalog 与场景浏览",
+      "depends_on": ["TASK-003"]
+    },
+    {
+      "id": "TASK-006",
+      "issue": 142,
+      "title": "Cases 与语义断言",
+      "depends_on": ["TASK-003", "TASK-004"]
+    },
+    {
+      "id": "TASK-007",
+      "issue": 143,
+      "title": "Inspect 与确认型 Action",
+      "depends_on": ["TASK-004", "TASK-006"]
+    },
+    {
+      "id": "TASK-008",
+      "issue": 144,
+      "title": "自动化验证与文档收口",
+      "depends_on": ["TASK-001", "TASK-002", "TASK-005", "TASK-006", "TASK-007"]
+    }
+  ]
+}
