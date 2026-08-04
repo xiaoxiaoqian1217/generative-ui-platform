@@ -4,7 +4,7 @@ import { loadConfig } from "../src/config.js";
 describe("loadConfig", () => {
   it("returns stable defaults", () => {
     expect(loadConfig({})).toEqual({
-      host: "0.0.0.0",
+      host: "127.0.0.1",
       port: 8200,
       endpoint: "/api/copilotkit",
       agentId: "business-agent",
