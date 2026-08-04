@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { BusinessAgentAdapter } from "@generative-ui/business-agent-adapter";
 import {
-  defaultCatalogSchemaLimits,
   type ComponentCatalog,
+  defaultCatalogSchemaLimits,
   validateActionPayload,
 } from "@generative-ui/component-catalog-schema";
 import type { PresentationPipeline } from "@generative-ui/presentation-pipeline";
@@ -99,6 +99,33 @@ function durationSince(startedAt: number): number {
   return Math.max(0, Math.trunc(performance.now() - startedAt));
 }
 
+interface TextConfirmationIntent {
+  readonly pausedRunId: string;
+  readonly actionId: string;
+  readonly actionType: string;
+}
+
+function textConfirmationIntent(
+  content: unknown,
+): TextConfirmationIntent | undefined {
+  if (typeof content !== "object" || content === null) return undefined;
+  const data = (content as Record<string, unknown>).data;
+  if (typeof data !== "object" || data === null) return undefined;
+  const value = data as Record<string, unknown>;
+  if (
+    value.kind !== "confirmation-intent" ||
+    typeof value.pausedRunId !== "string" ||
+    typeof value.actionId !== "string" ||
+    typeof value.actionType !== "string"
+  )
+    return undefined;
+  return {
+    pausedRunId: value.pausedRunId,
+    actionId: value.actionId,
+    actionType: value.actionType,
+  };
+}
+
 export function createRunOrchestrator(dependencies: {
   businessAgentAdapter: BusinessAgentAdapter;
   presentationPipeline: PresentationPipeline;
@@ -174,6 +201,76 @@ export function createRunOrchestrator(dependencies: {
             errorCode: agent.error.code,
           }),
         };
+      const confirmation = textConfirmationIntent(agent.content);
+      if (confirmation !== undefined) {
+        const context = dependencies.surfaceContextStore.findAction({
+          threadId,
+          runId: confirmation.pausedRunId,
+          actionId: confirmation.actionId,
+          actionType: confirmation.actionType,
+        });
+        if (context === undefined)
+          return {
+            protocolVersion: request.protocolVersion,
+            requestId: request.requestId,
+            threadId,
+            runId,
+            status: "failed",
+            error: error(
+              "ACTION_CONFLICT",
+              "The paused confirmation action is unknown, expired, or already consumed.",
+              { ...request, threadId, runId },
+            ),
+            diagnostics: diagnostics.forBusinessAgent({
+              status: "failed",
+              durationMs: durationSince(businessAgentStartedAt),
+              errorCode: "ACTION_CONFLICT",
+            }),
+          };
+        const actionResult = await action(
+          {
+            protocolVersion: request.protocolVersion,
+            requestId: request.requestId,
+            threadId,
+            runId: confirmation.pausedRunId,
+            action: {
+              actionId: confirmation.actionId,
+              actionType: confirmation.actionType,
+              surfaceId: context.surfaceId,
+              approved: true,
+            },
+          },
+          budget.signal,
+          true,
+        );
+        if (actionResult.status === "failed")
+          return {
+            protocolVersion: request.protocolVersion,
+            requestId: request.requestId,
+            threadId,
+            runId: confirmation.pausedRunId,
+            status: "failed",
+            error: actionResult.error,
+            ...(actionResult.presentation === undefined
+              ? {}
+              : { presentation: actionResult.presentation }),
+            ...(actionResult.diagnostics === undefined
+              ? {}
+              : { diagnostics: actionResult.diagnostics }),
+          };
+        return {
+          protocolVersion: request.protocolVersion,
+          requestId: request.requestId,
+          threadId,
+          runId: confirmation.pausedRunId,
+          presentationRequestId: actionResult.presentationRequestId,
+          status: actionResult.status,
+          presentation: actionResult.presentation,
+          ...(actionResult.diagnostics === undefined
+            ? {}
+            : { diagnostics: actionResult.diagnostics }),
+        };
+      }
       const presentationRequestId = randomUUID();
       diagnostics.setPresentationRequestId(presentationRequestId);
       try {
@@ -188,7 +285,8 @@ export function createRunOrchestrator(dependencies: {
               ...request.presentation?.context,
             },
             catalog:
-              request.presentation?.catalog ?? dependencies.configuration.catalog,
+              request.presentation?.catalog ??
+              dependencies.configuration.catalog,
           },
           {
             signal: budget.signal,
@@ -293,6 +391,7 @@ export function createRunOrchestrator(dependencies: {
   const action = async (
     input: unknown,
     externalSignal?: AbortSignal,
+    capacityAlreadyHeld = false,
   ): Promise<RuntimeActionResult> => {
     const validated = validateRuntimeActionRequest(input);
     const requestId = stringField(input, "requestId", "invalid-request");
@@ -346,9 +445,10 @@ export function createRunOrchestrator(dependencies: {
         ),
       };
     const actionContext = context.actions.get(request.action.actionId);
-    const catalogAction = dependencies.configuration.catalogDefinition.actions.find(
-      (candidate) => candidate.actionType === request.action.actionType,
-    );
+    const catalogAction =
+      dependencies.configuration.catalogDefinition.actions.find(
+        (candidate) => candidate.actionType === request.action.actionType,
+      );
     if (
       !actionContext ||
       actionContext.actionType !== request.action.actionType ||
@@ -423,7 +523,7 @@ export function createRunOrchestrator(dependencies: {
 
     let release: (() => void) | undefined;
     try {
-      release = acquire();
+      if (!capacityAlreadyHeld) release = acquire();
     } catch {
       return {
         protocolVersion: request.protocolVersion,
@@ -446,7 +546,7 @@ export function createRunOrchestrator(dependencies: {
     }
 
     if (!dependencies.surfaceContextStore.consume(actionLookup)) {
-      release();
+      release?.();
       return {
         protocolVersion: request.protocolVersion,
         requestId: request.requestId,
@@ -599,7 +699,7 @@ export function createRunOrchestrator(dependencies: {
       };
     } finally {
       budget.dispose();
-      release();
+      release?.();
     }
   };
 

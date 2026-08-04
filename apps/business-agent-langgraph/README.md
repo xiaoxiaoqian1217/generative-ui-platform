@@ -20,6 +20,22 @@
 
 ## API
 
+`GET /ws/business-agent` exposes the same validated Run and Resume Action contracts over WebSocket.
+
+The client sends `business-agent.run` or `business-agent.resume-action` with a Contract payload.
+
+The server emits `business-agent.event` frames followed by one `business-agent.result` frame.
+
+When a patrol plan is paused, the Business Agent also interprets an explicit confirmation message in the same `threadId`.
+
+Accepted messages are `confirm`, `approve`, `yes`, `ok`, `确认`, `确认执行`, `同意`, `批准`, and `好`.
+
+Any other text preserves the pause and returns `ACTION_CONFLICT`; it never resumes a plan implicitly.
+
+For an accepted message, the Business Agent returns a structured confirmation intent instead of resuming the graph directly.
+
+Agent Runtime Host resolves the original Surface and validates the Catalog, Action, and approval before it may resume the Business Agent.
+
 - `GET /health`：进程健康检查。
 - `POST /api/runs`：执行 Business Agent Run Contract。
 - `POST /api/actions`：执行 Business Agent Resume Action Contract。

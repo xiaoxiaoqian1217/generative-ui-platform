@@ -12,11 +12,13 @@ import {
 import type { TSchema } from "@sinclair/typebox";
 import { Ajv, type ErrorObject, type ValidateFunction } from "ajv";
 import {
+  type BusinessAgentEvent,
   type BusinessAgentResumeActionRequest,
   type BusinessAgentResumeActionResult,
   type BusinessAgentRunRequest,
   type BusinessAgentRunResult,
   businessAgentContextSchema,
+  businessAgentEventSchema,
   businessAgentResumeActionRequestSchema,
   businessAgentResumeActionResultSchema,
   businessAgentRunRequestSchema,
@@ -29,6 +31,7 @@ import {
   failedBusinessAgentRunResultSchema,
   failedRuntimeActionResultSchema,
   failedRuntimeRunResultSchema,
+  normalizedModelUsageSchema,
   type PlatformError,
   platformErrorCodeSchema,
   platformErrorSchema,
@@ -44,7 +47,6 @@ import {
   runtimeDiagnosticStageNameSchema,
   runtimeDiagnosticStageSchema,
   runtimeDiagnosticStageStatusSchema,
-  normalizedModelUsageSchema,
   runtimeDiagnosticsCorrelationSchema,
   runtimeDiagnosticsSummarySchema,
   runtimeProtocolVersionSchema,
@@ -69,6 +71,7 @@ export type RuntimeContractValidationCode =
   | "BUSINESS_AGENT_RESUME_ACTION_RESULT_INVALID"
   | "BUSINESS_AGENT_RUN_REQUEST_INVALID"
   | "BUSINESS_AGENT_RESULT_INVALID"
+  | "BUSINESS_AGENT_EVENT_INVALID"
   | "PLATFORM_ERROR_INVALID"
   | "RUNTIME_ACTION_REQUEST_INVALID"
   | "RUNTIME_ACTION_RESULT_INVALID"
@@ -135,6 +138,7 @@ const commonReferencedSchemas = [
   runtimeDiagnosticsSummarySchema,
   runtimeActionEnvelopeSchema,
   businessAgentContextSchema,
+  businessAgentEventSchema,
 ] as const;
 
 function addSchemaOnce(ajv: Ajv, seenIds: Set<string>, schema: TSchema): void {
@@ -242,6 +246,15 @@ export const validateBusinessAgentResumeActionRequest = createValidator<
   businessAgentResumeActionRequestSchema,
   "BUSINESS_AGENT_RESUME_ACTION_REQUEST_INVALID",
   "Business Agent Resume Action Request",
+);
+
+export const validateBusinessAgentEvent = createValidator<
+  BusinessAgentEvent,
+  "BUSINESS_AGENT_EVENT_INVALID"
+>(
+  businessAgentEventSchema,
+  "BUSINESS_AGENT_EVENT_INVALID",
+  "Business Agent Event",
 );
 
 const validateCompletedBusinessAgentRunResult = createValidator<

@@ -95,6 +95,12 @@ export interface SurfaceContextStore {
   ): void;
   get(request: RuntimeSurfaceActionRequest): SurfaceContext | undefined;
   consume(request: RuntimeSurfaceActionRequest): SurfaceContext | undefined;
+  findAction(input: {
+    readonly threadId: string;
+    readonly runId: string;
+    readonly actionId: string;
+    readonly actionType: string;
+  }): SurfaceContext | undefined;
 }
 
 /**
@@ -146,10 +152,7 @@ export function createSurfaceContextStore(
         if (typeof operation !== "object" || operation === null) continue;
         const updateComponents = (operation as Record<string, unknown>)
           .updateComponents;
-        if (
-          typeof updateComponents !== "object" ||
-          updateComponents === null
-        )
+        if (typeof updateComponents !== "object" || updateComponents === null)
           continue;
         const components = (updateComponents as Record<string, unknown>)
           .components;
@@ -186,6 +189,26 @@ export function createSurfaceContextStore(
     },
     consume(request: RuntimeSurfaceActionRequest) {
       return read(request, true);
+    },
+    findAction(input: {
+      readonly threadId: string;
+      readonly runId: string;
+      readonly actionId: string;
+      readonly actionType: string;
+    }) {
+      const timestamp = now();
+      pruneExpired(timestamp);
+      for (const stored of surfaces.values()) {
+        const context = stored.context;
+        if (
+          context.request.threadId !== input.threadId ||
+          context.request.runId !== input.runId
+        )
+          continue;
+        const action = context.actions.get(input.actionId);
+        if (action?.actionType === input.actionType) return context;
+      }
+      return undefined;
     },
   });
 }

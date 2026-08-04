@@ -5,7 +5,7 @@ test.beforeEach(async ({ request }) => {
   await request.post("/__control__/runtime-up");
 });
 
-test("HTTP renders safe Markdown, PresentationResult and diagnostics", async ({
+test("CopilotKit Headless renders safe Markdown, PresentationResult and diagnostics", async ({
   page,
 }) => {
   await page.goto("/");
@@ -32,11 +32,8 @@ test("HTTP renders safe Markdown, PresentationResult and diagnostics", async ({
   );
 });
 
-test("WebSocket recovers and keeps A2UI raw data controlled", async ({
-  page,
-}) => {
+test("CopilotKit Headless keeps A2UI raw data controlled", async ({ page }) => {
   await page.goto("/");
-  await page.getByTestId("transport-websocket").click();
   await expect(page.getByTestId("connection-status")).toHaveText(
     "Runtime Host 可用",
   );
@@ -50,18 +47,6 @@ test("WebSocket recovers and keeps A2UI raw data controlled", async ({
   await expect(page.getByTestId("a2ui-raw-content")).toContainText(
     "createSurface",
   );
-
-  await page.request.post("/__control__/disconnect");
-  await expect(page.getByTestId("connection-status")).toHaveText(
-    "连接中断，正在重连",
-  );
-  await page.request.post("/__control__/restore");
-  await expect(page.getByTestId("connection-notice")).toHaveText(
-    "Runtime Host 服务连接已恢复",
-    {
-      timeout: 10_000,
-    },
-  );
 });
 
 test("refresh explicitly reports reset state", async ({ page }) => {
@@ -71,27 +56,23 @@ test("refresh explicitly reports reset state", async ({ page }) => {
   await expect(page.getByTestId("run-status")).toContainText("等待发送");
 });
 
-test("HTTP reports an initial outage, clears stale output and recovers", async ({
-  page,
-}) => {
+test("Headless reports an initial outage and recovers", async ({ page }) => {
   await page.request.post("/__control__/runtime-down");
   await page.goto("/");
 
   await expect(page.getByTestId("connection-status")).toHaveText(
     "Runtime Host 不可用",
   );
-  await page.getByTestId("message-input").fill("故障期间发送");
-  await page.getByTestId("send-run").click();
-  await expect(page.getByTestId("run-status")).toContainText("失败");
-  await expect(page.getByTestId("error-state")).toContainText(
-    "WORKBENCH_RESPONSE_INVALID",
-  );
-  await expect(page.getByTestId("markdown-result")).toHaveCount(0);
+  await expect(page.getByTestId("send-run")).toBeDisabled();
 
   await page.request.post("/__control__/runtime-up");
   await expect(page.getByTestId("connection-notice")).toHaveText(
     "Runtime Host 服务连接已恢复",
     { timeout: 10_000 },
+  );
+  await page.getByRole("button", { name: "重新探测 / 连接" }).click();
+  await expect(page.getByTestId("connection-status")).toHaveText(
+    "Runtime Host 可用",
   );
 
   await page.getByTestId("message-input").fill("恢复后的结果");
@@ -99,10 +80,11 @@ test("HTTP reports an initial outage, clears stale output and recovers", async (
   await expect(page.getByTestId("markdown-result")).toBeVisible();
 
   await page.request.post("/__control__/runtime-down");
-  await page.getByTestId("message-input").fill("再次故障");
-  await page.getByTestId("send-run").click();
-  await expect(page.getByTestId("error-state")).toBeVisible();
-  await expect(page.getByTestId("markdown-result")).toHaveCount(0);
+  await expect(page.getByTestId("connection-status")).toHaveText(
+    "Runtime Host 不可用",
+    { timeout: 10_000 },
+  );
+  await expect(page.getByTestId("send-run")).toBeDisabled();
 
   await page.request.post("/__control__/runtime-up");
 });

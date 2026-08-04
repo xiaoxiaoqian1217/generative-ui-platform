@@ -1,17 +1,19 @@
 import type { Express, Request, Response } from "express";
-import type { RuntimeHost } from "./runtime.js";
 import type { RuntimeHostConfig } from "./config.js";
 import { createRuntimeDependenciesHealth } from "./dependency-health.js";
+import type { RuntimeHost } from "./runtime.js";
 
 export const RUNTIME_RUNS_PATH = "/api/runs";
 export const RUNTIME_ACTIONS_PATH = "/api/actions";
 export const RUNTIME_DEPENDENCIES_HEALTH_PATH = "/health/dependencies";
+export const RUNTIME_CATALOG_PATH = "/api/catalog";
+export const RUNTIME_SCENARIOS_PATH = "/api/scenarios";
 
 function setCors(response: Response): void {
   response.set({
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   });
 }
 
@@ -58,5 +60,18 @@ export function attachRuntimeHttp(
         maxConcurrentRuns: host.orchestrator.capacity.maxConcurrentRuns,
       },
     });
+  });
+  for (const path of [RUNTIME_CATALOG_PATH, RUNTIME_SCENARIOS_PATH])
+    app.options(path, (_request, response) => {
+      setCors(response);
+      response.sendStatus(204);
+    });
+  app.get(RUNTIME_CATALOG_PATH, (_request, response) => {
+    setCors(response);
+    response.json(host.catalogSummary);
+  });
+  app.get(RUNTIME_SCENARIOS_PATH, (_request, response) => {
+    setCors(response);
+    response.json({ scenarios: host.scenarios });
   });
 }

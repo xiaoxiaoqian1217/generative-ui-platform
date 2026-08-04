@@ -145,6 +145,21 @@ export function patrolDraftContent(draft: PatrolPlanDraft): AgentContent {
   };
 }
 
+export function textConfirmationIntentContent(
+  pausedRunId: string,
+): AgentContent {
+  return {
+    contentType: "structured-data",
+    data: {
+      kind: "confirmation-intent",
+      pausedRunId,
+      actionId: CONFIRM_PATROL_ACTION_ID,
+      actionType: CONFIRM_PATROL_ACTION_TYPE,
+    },
+    fallbackMarkdown: "Confirmation is being validated by the Runtime Host.",
+  };
+}
+
 export function confirmPatrolTask(draft: PatrolPlanDraft): AgentContent {
   return {
     contentType: "structured-data",

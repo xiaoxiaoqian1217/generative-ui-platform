@@ -21,7 +21,7 @@
     "build:platform": "turbo run build",
     "check:boundaries": "node scripts/check-dependency-boundaries.mjs",
     "typecheck": "turbo run typecheck",
-    "test": "pnpm build && vitest run tests/workspace && node scripts/check-contract-package-installation.mjs && turbo run test && pnpm test:e2e:web-workbench && pnpm test:e2e:platform",
+    "test": "pnpm build && vitest run tests/workspace && node scripts/check-contract-package-installation.mjs && turbo run test --concurrency=1 && pnpm test:e2e:web-workbench && pnpm test:e2e:platform",
     "test:web-workbench": "pnpm --filter @generative-ui/web-workbench test",
     "test:e2e:web-workbench": "pnpm --filter @generative-ui/web-workbench test:e2e",
     "test:e2e:platform": "node scripts/test-e2e-platform.mjs",
@@ -43,6 +43,7 @@
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
     "@types/node": "24.0.15",
+    "@types/ws": "8.18.1",
     "cspell": "9.1.1",
     "lefthook": "1.11.14",
     "markdownlint-cli2": "0.18.1",
@@ -50,6 +51,7 @@
     "tsx": "4.20.3",
     "turbo": "2.5.5",
     "typescript": "5.8.3",
-    "vitest": "3.2.6"
+    "vitest": "3.2.6",
+    "ws": "8.21.1"
   }
 }

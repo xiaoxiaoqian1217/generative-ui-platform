@@ -1,9 +1,11 @@
 import type {
+  BusinessAgentEvent,
   BusinessAgentResumeActionRequest,
   BusinessAgentResumeActionResult,
   BusinessAgentRunRequest,
   BusinessAgentRunResult,
 } from "@generative-ui/runtime-contract";
+import { validateBusinessAgentEvent } from "@generative-ui/runtime-contract";
 import type {
   BusinessAgentAdapter,
   BusinessAgentInvocationOptions,
@@ -143,7 +145,63 @@ function normalizeBaseUrl(value: string | URL): URL {
 function requestHeaders(): HeadersInit {
   return {
     "content-type": "application/json",
+    accept: "text/event-stream, application/json",
   };
+}
+
+async function readSseResult(
+  response: Response,
+  maximumBytes: number,
+  onEvent: ((event: BusinessAgentEvent) => void) | undefined,
+): Promise<unknown> {
+  if (response.body === null) throw new InvalidProtocolResponseError();
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let totalBytes = 0;
+  let result: unknown;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    totalBytes += value.byteLength;
+    if (totalBytes > maximumBytes) {
+      await reader.cancel();
+      throw new InvalidProtocolResponseError();
+    }
+    buffer += decoder.decode(value, { stream: true });
+    for (;;) {
+      const boundary = buffer.indexOf("\n\n");
+      if (boundary < 0) break;
+      const frame = buffer.slice(0, boundary);
+      buffer = buffer.slice(boundary + 2);
+      const event = /^event:\s*([^\n\r]+)\r?$/mu.exec(frame)?.[1];
+      const data = frame
+        .split(/\r?\n/u)
+        .filter((line) => line.startsWith("data:"))
+        .map((line) => line.slice(5).trimStart())
+        .join("\n");
+      if (event === undefined || data === "")
+        throw new InvalidProtocolResponseError();
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(data) as unknown;
+      } catch {
+        throw new InvalidProtocolResponseError();
+      }
+      if (event === "business-agent.event") {
+        const validated = validateBusinessAgentEvent(parsed);
+        if (!validated.success) throw new InvalidProtocolResponseError();
+        onEvent?.(validated.value);
+      } else if (event === "business-agent.result") {
+        if (result !== undefined) throw new InvalidProtocolResponseError();
+        result = parsed;
+      } else {
+        throw new InvalidProtocolResponseError();
+      }
+    }
+  }
+  if (result === undefined) throw new InvalidProtocolResponseError();
+  return result;
 }
 
 export class LangGraphHttpBusinessAgentAdapter implements BusinessAgentAdapter {
@@ -198,6 +256,7 @@ export class LangGraphHttpBusinessAgentAdapter implements BusinessAgentAdapter {
     path: string,
     request: BusinessAgentRunRequest | BusinessAgentResumeActionRequest,
     signal?: AbortSignal,
+    onEvent?: (event: BusinessAgentEvent) => void,
   ): Promise<unknown> {
     const response = await fetch(new URL(path, this.#baseUrl), {
       method: "POST",
@@ -209,7 +268,12 @@ export class LangGraphHttpBusinessAgentAdapter implements BusinessAgentAdapter {
       await response.body?.cancel();
       throw new HttpResponseStatusError(response.status);
     }
-    return readBoundedJson(response, this.#maxResponseBytes);
+    return response.headers
+      .get("content-type")
+      ?.toLowerCase()
+      .startsWith("text/event-stream")
+      ? readSseResult(response, this.#maxResponseBytes, onEvent)
+      : readBoundedJson(response, this.#maxResponseBytes);
   }
 
   async #invoke(
@@ -227,7 +291,9 @@ export class LangGraphHttpBusinessAgentAdapter implements BusinessAgentAdapter {
     try {
       for (let attempt = 0; ; attempt += 1) {
         try {
-          return normalize(await this.#post(path, request, signal));
+          return normalize(
+            await this.#post(path, request, signal, options.onEvent),
+          );
         } catch (caught) {
           if (options.signal?.aborted === true) {
             return adapterFailureResult(

@@ -20,37 +20,27 @@ import {
 } from "./platform-topology.mjs";
 
 const background = process.argv.includes("--background");
-const realProvider = process.argv.includes("--provider=real");
-if (
-  process.argv.some(
-    (argument) =>
-      argument.startsWith("--provider=") && argument !== "--provider=real",
-  )
-)
-  throw new Error(
-    "PLATFORM_PROVIDER_INVALID: use --provider=real or omit the option for fixture.",
-  );
+if (process.argv.some((argument) => argument.startsWith("--provider=")))
+  throw new Error("PLATFORM_PROVIDER_OPTION_RETIRED");
 loadDevelopmentEnvironment(join(repositoryRoot, "apps", "agent-runtime-host"));
 const pnpmCli = process.env.npm_execpath;
 if (!pnpmCli) throw new Error("PACKAGE_MANAGER_CLI_UNAVAILABLE");
-if (realProvider) {
-  const providerCheck = spawn(
-    process.execPath,
-    ["scripts/check-platform-environment.mjs", "--provider"],
-    {
-      cwd: repositoryRoot,
-      stdio: "inherit",
-      env: process.env,
-      windowsHide: true,
-    },
-  );
-  if (
-    (await new Promise((resolve) =>
-      providerCheck.once("exit", (code) => resolve(code ?? 1)),
-    )) !== 0
-  )
-    throw new Error("PLATFORM_PROVIDER_CONFIGURATION_INVALID");
-}
+const providerCheck = spawn(
+  process.execPath,
+  ["scripts/check-platform-environment.mjs", "--provider"],
+  {
+    cwd: repositoryRoot,
+    stdio: "inherit",
+    env: process.env,
+    windowsHide: true,
+  },
+);
+if (
+  (await new Promise((resolve) =>
+    providerCheck.once("exit", (code) => resolve(code ?? 1)),
+  )) !== 0
+)
+  throw new Error("PLATFORM_PROVIDER_CONFIGURATION_INVALID");
 if ((await readProcessState()).length > 0) {
   throw new Error("PLATFORM_ALREADY_RUNNING: run pnpm stop:platform first.");
 }
@@ -87,7 +77,6 @@ const services = platformServices.map((service) => ({
       ? createWorkbenchEnvironment()
       : {
           ...process.env,
-          ...(realProvider ? {} : { PRESENTATION_MODEL_PROVIDER: "fixture" }),
           ...(service.name === "Reference Business Agent"
             ? { BUSINESS_AGENT_PORT: String(service.port) }
             : {}),
@@ -202,7 +191,7 @@ try {
     })),
   );
   process.stdout.write(
-    `Platform starting in ${realProvider ? "real Provider" : "fixture"} mode: Workbench :${platformServices[2].port}, Runtime Host :${platformServices[1].port}, Reference Business Agent :${platformServices[0].port}.\n`,
+    `Platform starting with a configured Presentation Model: Workbench :${platformServices[2].port}, Runtime Host :${platformServices[1].port}, Reference Business Agent :${platformServices[0].port}.\n`,
   );
   await waitForPlatformHealth();
   started = true;

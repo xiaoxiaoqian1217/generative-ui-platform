@@ -2,16 +2,10 @@ import { describe, expect, it } from "vitest";
 import { loadConfig } from "../src/config.js";
 
 describe("loadConfig", () => {
-  it("returns stable defaults", () => {
-    expect(loadConfig({})).toEqual({
-      host: "127.0.0.1",
-      port: 8200,
-      endpoint: "/api/copilotkit",
-      agentId: "business-agent",
-      businessAgentContractUrl: "http://localhost:8300",
-      presentationModel: { mode: "fixture" },
-      runtime: { totalTimeoutMs: 15_000, maxConcurrentRuns: 16 },
-    });
+  it("fails closed when no Presentation Model is configured", () => {
+    expect(() => loadConfig({})).toThrow(
+      "Runtime Host configuration is invalid.",
+    );
   });
 
   it("reads explicit environment values", () => {
@@ -22,6 +16,9 @@ describe("loadConfig", () => {
         COPILOTKIT_ENDPOINT: "/copilotkit",
         BUSINESS_AGENT_ID: "planner-agent",
         BUSINESS_AGENT_CONTRACT_URL: "http://localhost:9300",
+        PRESENTATION_MODEL_PROVIDER: "qwen",
+        PRESENTATION_MODEL_NAME: "qwen-model",
+        PRESENTATION_MODEL_API_KEY: "server-only-secret",
       }),
     ).toEqual({
       host: "127.0.0.1",
@@ -29,7 +26,8 @@ describe("loadConfig", () => {
       endpoint: "/copilotkit",
       agentId: "planner-agent",
       businessAgentContractUrl: "http://localhost:9300",
-      presentationModel: { mode: "fixture" },
+      businessAgentTransport: "http-sse",
+      presentationModel: expect.objectContaining({ mode: "provider" }),
       runtime: { totalTimeoutMs: 15_000, maxConcurrentRuns: 16 },
     });
   });
@@ -78,14 +76,13 @@ describe("loadConfig", () => {
     ).toThrow("Runtime Host configuration is invalid.");
   });
 
-  it("allows only declared Fixture fault modes", () => {
-    expect(
-      loadConfig({ PRESENTATION_FIXTURE_MODEL_FAULT: "rate-limited" }),
-    ).toMatchObject({
-      presentationModel: { mode: "fixture", fixtureFault: "rate-limited" },
-    });
+  it("rejects the retired Fixture Provider", () => {
     expect(() =>
-      loadConfig({ PRESENTATION_FIXTURE_MODEL_FAULT: "arbitrary-code" }),
+      loadConfig({
+        PRESENTATION_MODEL_PROVIDER: "fixture",
+        PRESENTATION_MODEL_NAME: "unused",
+        PRESENTATION_MODEL_API_KEY: "unused",
+      }),
     ).toThrow("Runtime Host configuration is invalid.");
   });
 });

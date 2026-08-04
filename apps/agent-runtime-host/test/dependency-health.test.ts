@@ -23,7 +23,19 @@ function configuration(contractUrl: string): RuntimeHostConfig {
     endpoint: "/api/copilotkit",
     agentId: "business-agent",
     businessAgentContractUrl: contractUrl,
-    presentationModel: { mode: "fixture" },
+    presentationModel: {
+      mode: "provider",
+      registration: {
+        registrationId: "test-provider",
+        provider: "qwen",
+        modelName: "test-model",
+        apiKey: "test-only-key",
+      },
+      modelInvocation: {
+        modelTimeoutMs: 1000,
+        modelRetryCount: 0,
+      },
+    },
   };
 }
 

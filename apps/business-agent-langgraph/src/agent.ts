@@ -9,6 +9,7 @@ import { Command, isInterrupted } from "@langchain/langgraph";
 import {
   CONFIRM_PATROL_ACTION_ID,
   CONFIRM_PATROL_ACTION_TYPE,
+  textConfirmationIntentContent,
 } from "./business-tools.js";
 import {
   createReferenceBusinessGraph,
@@ -30,6 +31,30 @@ type FailedBusinessAgentResult = Extract<
   BusinessAgentRunResult,
   { status: "failed" }
 >;
+
+const confirmationMessages = new Set([
+  "confirm",
+  "confirmed",
+  "approve",
+  "approved",
+  "yes",
+  "y",
+  "ok",
+  "\u786e\u8ba4",
+  "\u786e\u8ba4\u6267\u884c",
+  "\u540c\u610f",
+  "\u6279\u51c6",
+  "\u597d",
+]);
+
+function isExplicitConfirmation(message: string): boolean {
+  return confirmationMessages.has(
+    message
+      .trim()
+      .toLocaleLowerCase()
+      .replace(/[.!\uff01\u3002]/g, ""),
+  );
+}
 
 function failedResult<T extends CorrelatedRequest>(
   request: T,
@@ -96,9 +121,16 @@ export class ReferenceBusinessAgent implements BusinessAgentApplication {
       try {
         const checkpoint = await this.#graph.getState(config);
         if (checkpoint.next.length > 0) {
+          if (isExplicitConfirmation(request.input.message)) {
+            return completedResult(
+              request,
+              textConfirmationIntentContent(checkpoint.values.request.runId),
+            );
+          }
           return failedResult(request, {
             code: "ACTION_CONFLICT",
-            message: "The business thread is waiting for an action.",
+            message:
+              "The business thread is waiting for an explicit confirmation message.",
             retryable: false,
             requestId: request.requestId,
             threadId: request.threadId,

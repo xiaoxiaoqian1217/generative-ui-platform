@@ -1,20 +1,14 @@
 import type {
-  FixtureModelFault,
   ModelInvocationPolicy,
   PresentationModelProvider,
   PresentationModelProviderRegistration,
 } from "@generative-ui/presentation-pipeline";
 
-export type RuntimeHostPresentationModelConfig =
-  | {
-      readonly mode: "fixture";
-      readonly fixtureFault?: FixtureModelFault;
-    }
-  | {
-      readonly mode: "provider";
-      readonly registration: PresentationModelProviderRegistration;
-      readonly modelInvocation: ModelInvocationPolicy;
-    };
+export interface RuntimeHostPresentationModelConfig {
+  readonly mode: "provider";
+  readonly registration: PresentationModelProviderRegistration;
+  readonly modelInvocation: ModelInvocationPolicy;
+}
 
 export interface RuntimeHostConfig {
   host: string;
@@ -22,6 +16,7 @@ export interface RuntimeHostConfig {
   endpoint: string;
   agentId: string;
   businessAgentContractUrl: string;
+  businessAgentTransport?: "http-sse" | "websocket";
   presentationModel: RuntimeHostPresentationModelConfig;
   runtime?: { totalTimeoutMs: number; maxConcurrentRuns: number };
 }
@@ -78,28 +73,18 @@ function readProvider(value: string): PresentationModelProvider {
   throw new RuntimeHostConfigurationError();
 }
 
+function readBusinessAgentTransport(
+  value: string | undefined,
+): "http-sse" | "websocket" {
+  if (value === undefined || value === "http-sse") return "http-sse";
+  if (value === "websocket") return "websocket";
+  throw new RuntimeHostConfigurationError();
+}
+
 function readPresentationModelConfig(
   env: NodeJS.ProcessEnv,
 ): RuntimeHostPresentationModelConfig {
-  const providerValue = env.PRESENTATION_MODEL_PROVIDER ?? "fixture";
-  if (providerValue === "fixture") {
-    const fault = env.PRESENTATION_FIXTURE_MODEL_FAULT;
-    if (
-      fault !== undefined &&
-      fault !== "timeout" &&
-      fault !== "rate-limited" &&
-      fault !== "invalid-candidate" &&
-      fault !== "provider-failure"
-    ) {
-      throw new RuntimeHostConfigurationError();
-    }
-    return Object.freeze({
-      mode: "fixture",
-      ...(fault === undefined ? {} : { fixtureFault: fault }),
-    });
-  }
-
-  const provider = readProvider(providerValue);
+  const provider = readProvider(requiredValue(env.PRESENTATION_MODEL_PROVIDER));
   const baseUrl = env.PRESENTATION_MODEL_BASE_URL;
   if (provider === "openai-compatible" && baseUrl === undefined) {
     throw new RuntimeHostConfigurationError();
@@ -145,6 +130,9 @@ export function loadConfig(
     agentId: env.BUSINESS_AGENT_ID ?? "business-agent",
     businessAgentContractUrl:
       env.BUSINESS_AGENT_CONTRACT_URL ?? "http://localhost:8300",
+    businessAgentTransport: readBusinessAgentTransport(
+      env.BUSINESS_AGENT_TRANSPORT,
+    ),
     presentationModel: readPresentationModelConfig(env),
     runtime: Object.freeze({
       totalTimeoutMs: readBoundedInteger(

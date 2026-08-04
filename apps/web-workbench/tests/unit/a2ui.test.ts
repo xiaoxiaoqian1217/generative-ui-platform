@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyA2UIOperations,
+  createRenderedRuntimeAction,
   createRuntimeAction,
   destroySurface,
   isRenderableComponent,
@@ -150,6 +151,21 @@ describe("A2UI v0.9 reducer", () => {
         sourceData: {},
       }),
     ).toBeUndefined();
+  });
+
+  it("retains only confirmation metadata for the controlled rendering decision", () => {
+    const applied = applyA2UIOperations(new Map(), [create, components, data]);
+    if (!applied.success) throw new Error("Expected surface.");
+    const surface = applied.surfaces.get("surface-1");
+    const confirm = surface?.components.get("confirm");
+    if (!surface || !confirm) throw new Error("Expected confirm component.");
+    expect(
+      createRenderedRuntimeAction("surface-1", confirm, surface.dataModel),
+    ).toMatchObject({
+      action: { actionId: "confirm-1" },
+      requiresConfirmation: true,
+      destructive: false,
+    });
   });
 
   it("contains only the fixed, non-executable component registry", () => {

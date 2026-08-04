@@ -5,8 +5,10 @@ import type { RuntimeHost } from "./runtime.js";
 import {
   attachRuntimeHttp,
   RUNTIME_ACTIONS_PATH,
+  RUNTIME_CATALOG_PATH,
   RUNTIME_DEPENDENCIES_HEALTH_PATH,
   RUNTIME_RUNS_PATH,
+  RUNTIME_SCENARIOS_PATH,
 } from "./runtime-http.js";
 
 export function createRuntimeHostApp(
@@ -25,6 +27,8 @@ export function createRuntimeHostApp(
       runtimeContract: {
         runsPath: RUNTIME_RUNS_PATH,
         actionsPath: RUNTIME_ACTIONS_PATH,
+        catalogPath: RUNTIME_CATALOG_PATH,
+        scenariosPath: RUNTIME_SCENARIOS_PATH,
         socketPath: RUNTIME_SOCKET_PATH,
         copilotKitPath: config.endpoint,
       },

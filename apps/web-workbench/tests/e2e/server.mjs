@@ -2,13 +2,10 @@ import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { WebSocketServer } from "ws";
 
 const appRoot = fileURLToPath(new URL("../..", import.meta.url));
 const distRoot = join(appRoot, "dist");
 const port = Number(process.env.WEB_WORKBENCH_E2E_PORT ?? "4173");
-const sockets = new Set();
-let acceptWebSockets = true;
 let runtimeAvailable = true;
 
 const contentTypes = {
@@ -103,6 +100,23 @@ function runtimeResult(request) {
   };
 }
 
+function sse(response, event) {
+  response.write(`data: ${JSON.stringify(event)}\n\n`);
+}
+
+function copilotRunRequest(body) {
+  const message = [...(body.messages ?? [])]
+    .reverse()
+    .find((item) => item.role === "user")?.content;
+  return {
+    requestId: `headless-${body.runId ?? "run"}`,
+    message: {
+      role: "user",
+      content: typeof message === "string" ? message : "",
+    },
+  };
+}
+
 async function serveStatic(request, response) {
   const requestUrl = new URL(request.url ?? "/", `http://127.0.0.1:${port}`);
   const relativePath =
@@ -146,6 +160,56 @@ const server = createServer(async (request, response) => {
     });
     return;
   }
+  if (request.method === "GET" && url.pathname === "/api/copilotkit/info") {
+    if (!runtimeAvailable) {
+      json(response, 503, { status: "unavailable" });
+      return;
+    }
+    json(response, 200, {
+      agents: { default: { description: "Workbench E2E agent" } },
+      mode: "sse",
+      version: "test",
+    });
+    return;
+  }
+  if (
+    request.method === "POST" &&
+    url.pathname === "/api/copilotkit/agent/default/run"
+  ) {
+    if (!runtimeAvailable) {
+      json(response, 503, { status: "unavailable" });
+      return;
+    }
+    const body = await readJson(request);
+    const result = runtimeResult(copilotRunRequest(body));
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      connection: "keep-alive",
+      "content-type": "text/event-stream",
+    });
+    sse(response, {
+      type: "RUN_STARTED",
+      threadId: body.threadId,
+      runId: body.runId,
+    });
+    sse(response, {
+      type: "CUSTOM",
+      name: "generative-ui.presentation-result",
+      value: { mappingVersion: "1.0", result: result.presentation },
+    });
+    sse(response, {
+      type: "CUSTOM",
+      name: "generative-ui.runtime-run-result",
+      value: { mappingVersion: "1.0", result },
+    });
+    sse(response, {
+      type: "RUN_FINISHED",
+      threadId: body.threadId,
+      runId: body.runId,
+    });
+    response.end();
+    return;
+  }
   if (request.method === "POST" && url.pathname === "/api/runs") {
     if (!runtimeAvailable) {
       json(response, 503, { status: "unavailable" });
@@ -156,15 +220,12 @@ const server = createServer(async (request, response) => {
     return;
   }
   if (request.method === "POST" && url.pathname === "/__control__/disconnect") {
-    acceptWebSockets = false;
-    for (const socket of sockets) {
-      socket.terminate();
-    }
+    runtimeAvailable = false;
     response.writeHead(204).end();
     return;
   }
   if (request.method === "POST" && url.pathname === "/__control__/restore") {
-    acceptWebSockets = true;
+    runtimeAvailable = true;
     response.writeHead(204).end();
     return;
   }
@@ -184,42 +245,11 @@ const server = createServer(async (request, response) => {
   await serveStatic(request, response);
 });
 
-const webSockets = new WebSocketServer({ noServer: true });
-webSockets.on("connection", (socket) => {
-  sockets.add(socket);
-  socket.on("close", () => sockets.delete(socket));
-  socket.on("message", (data) => {
-    const message = JSON.parse(data.toString("utf8"));
-    if (message.type === "runtime.run.request") {
-      socket.send(
-        JSON.stringify({
-          type: "runtime.run.result",
-          payload: runtimeResult(message.payload),
-        }),
-      );
-    }
-  });
-});
-
-server.on("upgrade", (request, socket, head) => {
-  if (request.url !== "/ws/runs" || !acceptWebSockets) {
-    socket.destroy();
-    return;
-  }
-  webSockets.handleUpgrade(request, socket, head, (webSocket) => {
-    webSockets.emit("connection", webSocket, request);
-  });
-});
-
 server.listen(port, "127.0.0.1", () => {
   console.log(`Workbench E2E server listening on ${port}`);
 });
 
 function shutdown() {
-  for (const socket of sockets) {
-    socket.terminate();
-  }
-  webSockets.close();
   server.close(() => process.exit(0));
 }
 

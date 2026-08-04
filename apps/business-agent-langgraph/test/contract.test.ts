@@ -118,6 +118,59 @@ describe("Business Agent Contract", () => {
     });
   });
 
+  it("lets the Business Agent interpret an explicit text confirmation", async () => {
+    const agent = new ReferenceBusinessAgent();
+    const draftRequest = runRequest(
+      "\u751f\u6210\u5de1\u903b\u8ba1\u5212",
+      "text-confirmation",
+    );
+    await agent.run(draftRequest);
+
+    const result = await agent.run({
+      ...draftRequest,
+      requestId: "request-text-confirmation-confirm",
+      runId: "run-text-confirmation-confirm",
+      input: { message: "\u786e\u8ba4\u6267\u884c" },
+    });
+
+    expect(result).toMatchObject({
+      status: "completed",
+      content: {
+        contentType: "structured-data",
+        data: {
+          kind: "confirmation-intent",
+          pausedRunId: draftRequest.runId,
+          actionId: "confirm-patrol-plan",
+          actionType: "patrol.confirm",
+        },
+      },
+    });
+    expect(validateBusinessAgentRunResult(result)).toMatchObject({
+      success: true,
+    });
+  });
+
+  it("keeps a paused run pending when text is not an explicit confirmation", async () => {
+    const agent = new ReferenceBusinessAgent();
+    const draftRequest = runRequest(
+      "\u751f\u6210\u5de1\u903b\u8ba1\u5212",
+      "text-rejection",
+    );
+    await agent.run(draftRequest);
+
+    const result = await agent.run({
+      ...draftRequest,
+      requestId: "request-text-rejection",
+      runId: "run-text-rejection",
+      input: { message: "please explain the plan" },
+    });
+
+    expect(result).toMatchObject({
+      status: "failed",
+      error: { code: "ACTION_CONFLICT" },
+    });
+  });
+
   it("serializes concurrent access to the same paused thread", async () => {
     const agent = new ReferenceBusinessAgent();
     const run = runRequest("生成巡逻计划", "concurrent");

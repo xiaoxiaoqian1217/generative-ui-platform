@@ -355,6 +355,28 @@ export type BusinessAgentResumeActionResult = Static<
   typeof businessAgentResumeActionResultSchema
 >;
 
+export const businessAgentEventSchema = Type.Object(
+  {
+    protocolVersion: Type.Ref(runtimeProtocolVersionSchema),
+    eventId: nonEmptyStringSchema,
+    requestId: nonEmptyStringSchema,
+    threadId: nonEmptyStringSchema,
+    runId: nonEmptyStringSchema,
+    type: Type.Union([
+      Type.Literal("business-agent.started"),
+      Type.Literal("business-agent.progress"),
+      Type.Literal("business-agent.completed"),
+    ]),
+    payload: Type.Optional(jsonValueReferenceSchema),
+  },
+  {
+    $id: "https://generative-ui.dev/schemas/runtime/business-agent/event/1.0",
+    additionalProperties: false,
+  },
+);
+
+export type BusinessAgentEvent = Static<typeof businessAgentEventSchema>;
+
 export const runtimeRunRequestSchema = Type.Object(
   {
     protocolVersion: Type.Ref(runtimeProtocolVersionSchema),

@@ -8,8 +8,12 @@ describe("Workbench Runtime Host configuration", () => {
   it("derives every backend endpoint from the single configured Runtime Host", () => {
     expect(createRuntimeEndpoints("https://runtime.test.example/base")).toEqual(
       {
+        actions: "https://runtime.test.example/api/actions",
+        catalog: "https://runtime.test.example/api/catalog",
+        copilotKit: "https://runtime.test.example/api/copilotkit",
         health: "https://runtime.test.example/health/dependencies",
         runs: "https://runtime.test.example/api/runs",
+        scenarios: "https://runtime.test.example/api/scenarios",
         socket: "wss://runtime.test.example/ws/runs",
       },
     );

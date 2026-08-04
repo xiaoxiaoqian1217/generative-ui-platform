@@ -14,8 +14,12 @@ export interface WorkbenchConfig {
 }
 
 export interface RuntimeEndpoints {
+  actions: string;
+  catalog: string;
+  copilotKit: string;
   health: string;
   runs: string;
+  scenarios: string;
   socket: string;
 }
 
@@ -69,8 +73,12 @@ export function createRuntimeEndpoints(
   socket.protocol = host.protocol === "https:" ? "wss:" : "ws:";
 
   return {
+    actions: new URL("/api/actions", host).toString(),
+    catalog: new URL("/api/catalog", host).toString(),
+    copilotKit: new URL("/api/copilotkit", host).toString(),
     health: new URL("/health/dependencies", host).toString(),
     runs: new URL("/api/runs", host).toString(),
+    scenarios: new URL("/api/scenarios", host).toString(),
     socket: socket.toString(),
   };
 }

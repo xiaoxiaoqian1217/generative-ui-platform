@@ -6,6 +6,10 @@ import type { RuntimeHostConfig } from "../src/config.js";
 import { RUNTIME_SOCKET_PATH } from "../src/demo-socket.js";
 import { createRuntimeHost } from "../src/runtime.js";
 import { createRuntimeHostApp } from "../src/runtime-host-app.js";
+import {
+  createTestPresentationPipeline,
+  testRuntimeHostConfig,
+} from "./test-runtime-dependencies.js";
 
 const servers = new Set<ReturnType<typeof createServer>>();
 
@@ -20,14 +24,7 @@ afterEach(async () => {
 
 describe("Runtime Host application", () => {
   it("advertises only the Runtime Contract routes and dependency health", async () => {
-    const configuration: RuntimeHostConfig = {
-      host: "127.0.0.1",
-      port: 8200,
-      endpoint: "/api/copilotkit",
-      agentId: "business-agent",
-      businessAgentContractUrl: "http://127.0.0.1:1",
-      presentationModel: { mode: "fixture" },
-    };
+    const configuration: RuntimeHostConfig = testRuntimeHostConfig();
     const host = createRuntimeHost(configuration, {
       businessAgentAdapter: new MockBusinessAgentAdapter({
         run: async (request) => ({
@@ -42,6 +39,7 @@ describe("Runtime Host application", () => {
           throw new Error("not used");
         },
       }),
+      presentationPipeline: createTestPresentationPipeline(),
     });
     const server = createServer(createRuntimeHostApp(host, configuration));
     servers.add(server);
@@ -59,6 +57,8 @@ describe("Runtime Host application", () => {
       runtimeContract: {
         runsPath: "/api/runs",
         actionsPath: "/api/actions",
+        catalogPath: "/api/catalog",
+        scenariosPath: "/api/scenarios",
         socketPath: RUNTIME_SOCKET_PATH,
         copilotKitPath: "/api/copilotkit",
       },

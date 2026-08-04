@@ -2,7 +2,6 @@
 import type {
   RuntimeRunRequest,
   RuntimeRunResult,
-  RuntimeActionEnvelope,
 } from "@generative-ui/runtime-contract";
 import {
   computed,
@@ -10,29 +9,63 @@ import {
   onBeforeUnmount,
   onMounted,
   ref,
-  watch,
 } from "vue";
 import DiagnosticsPanel from "../diagnostics/DiagnosticsPanel.vue";
 import A2UIRenderer from "../renderer/A2UIRenderer.vue";
+import CatalogComponentPreview from "../catalog/CatalogComponentPreview.vue";
 import A2UIRawViewer from "../renderer/A2UIRawViewer.vue";
+import type { RenderedRuntimeAction } from "../renderer/a2ui.js";
 import MarkdownRenderer from "../renderer/MarkdownRenderer.vue";
 import PresentationResultViewer from "../renderer/PresentationResultViewer.vue";
 import { probeRuntimeHealth } from "../runtime/health.js";
-import { createHttpRuntimeClient } from "../runtime/http-runtime-client.js";
+import {
+  fetchReadOnlyRuntimeData,
+  parseRuntimeCatalogSummary,
+  parseRuntimeScenarios,
+  type RuntimeCatalogSummary,
+  type RuntimeScenarioSummary,
+} from "../runtime/read-only-client.js";
+import { createCopilotKitHeadlessClient } from "../runtime/copilotkit-headless-client.js";
 import {
   type ConnectionState,
   type RuntimeTransportClient,
   WorkbenchRuntimeError,
 } from "../runtime/types.js";
-import { createWebSocketRuntimeClient } from "../runtime/websocket-runtime-client.js";
 import {
   createRuntimeEndpoints,
   resolveWorkbenchConfig,
   type WorkbenchConfig,
 } from "../settings/runtime-config.js";
+import {
+  loadWorkbenchLocalSettings,
+  saveWorkbenchLocalSettings,
+} from "../settings/local-settings.js";
 import { quickScenarios } from "./scenarios.js";
+import {
+  BUILTIN_CASES,
+  exportCustomCases,
+  importCustomCases,
+  loadCustomCases,
+  loadCaseFailureDiagnosis,
+  consumePendingCase,
+  saveCustomCases,
+  saveCaseFailureDiagnosis,
+  savePendingCase,
+  evaluateCase,
+  type CaseEvaluation,
+  type WorkbenchCase,
+} from "../cases/case-library.js";
+import {
+  loadInspectionSnapshot,
+  saveInspectionSnapshot,
+  type InspectionSnapshot,
+} from "../inspect/inspection-snapshot.js";
+import {
+  resolveWorkbenchRoute,
+  workbenchRouteLabel,
+  WORKBENCH_ROUTES,
+} from "./routes.js";
 
-type TransportKind = "http" | "websocket";
 type RunState =
   | "idle"
   | "running"
@@ -76,25 +109,54 @@ const configResolution:
   }
 })();
 
+const initialLocalSettings = loadWorkbenchLocalSettings(window.localStorage);
 const fallbackConfig: WorkbenchConfig = {
   environment: "invalid",
   runtimeHostUrl: window.location.origin,
 };
-const config = configResolution.config ?? fallbackConfig;
+const configured = configResolution.config ?? fallbackConfig;
+const config =
+  initialLocalSettings.runtimeHostUrl === undefined
+    ? configured
+    : resolveWorkbenchConfig(
+        {
+          environment: configured.environment,
+          runtimeHostUrl: initialLocalSettings.runtimeHostUrl,
+        },
+        {},
+        window.location.origin,
+      );
 const endpoints = createRuntimeEndpoints(config.runtimeHostUrl);
+const pendingCase = consumePendingCase(window.sessionStorage);
 const configurationError = configResolution.error;
 const workbenchVersion = __WORKBENCH_VERSION__;
 
-const transport = ref<TransportKind>("http");
 const connectionState = ref<ConnectionState>("connecting");
 const connectionNotice = ref("正在探测 Runtime Host");
 const runState = ref<RunState>("idle");
-const input = ref(quickScenarios[0]?.message ?? "");
+const input = ref(pendingCase?.input ?? quickScenarios[0]?.message ?? "");
 const result = ref<RuntimeRunResult>();
+const conversationThreadId = ref<string>();
 const error = ref<DisplayError>();
 const refreshNotice = ref("");
 const lastMessage = ref("");
 const activeController = ref<AbortController>();
+const route = ref(resolveWorkbenchRoute(window.location.pathname));
+const settingsRuntimeHostUrl = ref(config.runtimeHostUrl);
+const settingsTimeoutMs = ref(String(initialLocalSettings.requestTimeoutMs));
+const settingsShowDebugDetails = ref(initialLocalSettings.showDebugDetails);
+const settingsNotice = ref("");
+const catalog = ref<RuntimeCatalogSummary>();
+const scenarios = ref<readonly RuntimeScenarioSummary[]>();
+const readOnlyNotice = ref("");
+const customCases = ref<readonly WorkbenchCase[]>(loadCustomCases(window.localStorage));
+const caseImport = ref("");
+const caseNotice = ref("");
+const activeCase = ref<WorkbenchCase | undefined>(pendingCase);
+const caseEvaluation = ref<CaseEvaluation>();
+const latestCaseFailure = ref(loadCaseFailureDiagnosis(window.localStorage));
+const allCases = computed(() => [...BUILTIN_CASES, ...customCases.value]);
+const inspection = ref<InspectionSnapshot | undefined>(loadInspectionSnapshot(window.sessionStorage));
 
 let client: RuntimeTransportClient | undefined;
 let clientGeneration = 0;
@@ -142,12 +204,10 @@ const canSend = computed(
     input.value.trim().length > 0 &&
     runState.value !== "running" &&
     runState.value !== "rendering" &&
-    (transport.value === "http" || connectionState.value === "connected") &&
+    connectionState.value === "connected" &&
     configurationError === undefined,
 );
-const activeEndpoint = computed(() =>
-  transport.value === "http" ? endpoints.runs : endpoints.socket,
-);
+const activeEndpoint = computed(() => endpoints.copilotKit);
 
 function applyConnectionState(next: ConnectionState): void {
   const previous = connectionState.value;
@@ -166,12 +226,12 @@ function applyConnectionState(next: ConnectionState): void {
 
 async function probeHealth(generation: number): Promise<void> {
   const state = await probeRuntimeHealth(endpoints.health);
-  if (generation === clientGeneration && transport.value === "http") {
+  if (generation === clientGeneration) {
     applyConnectionState(state);
   }
 }
 
-function configureTransport(): void {
+function configureHeadlessRuntime(): void {
   clientGeneration += 1;
   const generation = clientGeneration;
   client?.close();
@@ -200,24 +260,18 @@ function configureTransport(): void {
     }
   };
 
-  if (transport.value === "http") {
-    applyConnectionState("connecting");
-    client = createHttpRuntimeClient({
-      endpoint: endpoints.runs,
-      onConnectionStateChange,
-    });
-    void probeHealth(generation);
-    healthTimer = globalThis.setInterval(() => {
-      void probeHealth(generation);
-    }, 3_000);
-    return;
-  }
-
-  client = createWebSocketRuntimeClient({
-    endpoint: endpoints.socket,
+  applyConnectionState("connecting");
+  client = createCopilotKitHeadlessClient({
+    actionEndpoint: endpoints.actions,
+    runtimeUrl: endpoints.copilotKit,
+    timeoutMs: initialLocalSettings.requestTimeoutMs,
     onConnectionStateChange,
   });
   client.connect();
+  void probeHealth(generation);
+  healthTimer = globalThis.setInterval(() => {
+    void probeHealth(generation);
+  }, 3_000);
 }
 
 function createRequest(message: string): RuntimeRunRequest {
@@ -227,6 +281,9 @@ function createRequest(message: string): RuntimeRunRequest {
   return {
     protocolVersion: "1.0",
     requestId,
+    ...(conversationThreadId.value === undefined
+      ? {}
+      : { threadId: conversationThreadId.value }),
     message: { role: "user", content: message },
     presentation: {
       context: {
@@ -293,6 +350,26 @@ async function sendMessage(message = input.value): Promise<void> {
       controller.signal,
     );
     result.value = runtimeResult;
+    conversationThreadId.value = runtimeResult.threadId;
+    if (activeCase.value !== undefined) {
+      caseEvaluation.value = evaluateCase(
+        activeCase.value.expectation,
+        runtimeResult,
+      );
+      caseNotice.value = caseEvaluation.value.passed
+        ? `用例“${activeCase.value.title}”通过语义断言。`
+        : `用例“${activeCase.value.title}”失败：${caseEvaluation.value.failures.join(" ")}`;
+    }
+    if (activeCase.value !== undefined && caseEvaluation.value?.passed === false) {
+      saveCaseFailureDiagnosis(
+        window.localStorage,
+        activeCase.value.id,
+        caseEvaluation.value,
+      );
+      latestCaseFailure.value = loadCaseFailureDiagnosis(window.localStorage);
+    }
+    saveInspectionSnapshot(window.sessionStorage, runtimeResult);
+    inspection.value = loadInspectionSnapshot(window.sessionStorage);
     error.value = platformErrorFromResult(runtimeResult);
     if (runtimeResult.status === "failed") {
       runState.value = "failed";
@@ -331,9 +408,17 @@ function selectScenario(message: string): void {
   input.value = message;
 }
 
-async function handleA2UIAction(action: RuntimeActionEnvelope): Promise<void> {
+async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> {
   if (!client || !result.value || result.value.status === "failed") return;
-  if (!window.confirm("Confirm this action?")) return;
+  if (
+    rendered.requiresConfirmation &&
+    !window.confirm(
+      rendered.destructive
+        ? "此高风险操作将继续执行。确认吗？"
+        : "此操作需要确认。确认吗？",
+    )
+  )
+    return;
   const controller = new AbortController();
   activeController.value = controller;
   error.value = undefined;
@@ -344,9 +429,15 @@ async function handleA2UIAction(action: RuntimeActionEnvelope): Promise<void> {
       requestId: globalThis.crypto.randomUUID?.() ?? `action-${Date.now()}`,
       threadId: result.value.threadId,
       runId: result.value.runId,
-      action: { ...action, approved: true },
+      action: {
+        ...rendered.action,
+        ...(rendered.requiresConfirmation ? { approved: true } : {}),
+      },
     }, controller.signal);
     result.value = actionResult;
+    conversationThreadId.value = actionResult.threadId;
+    saveInspectionSnapshot(window.sessionStorage, actionResult);
+    inspection.value = loadInspectionSnapshot(window.sessionStorage);
     error.value = platformErrorFromResult(actionResult);
     if (actionResult.status === "failed") { runState.value = "failed"; return; }
     runState.value = "rendering";
@@ -361,16 +452,80 @@ async function handleA2UIAction(action: RuntimeActionEnvelope): Promise<void> {
 }
 
 function reconnect(): void {
-  if (transport.value === "websocket") {
-    client?.connect();
-  } else {
-    void probeHealth(clientGeneration);
+  configureHeadlessRuntime();
+}
+
+async function loadReadOnlyData(): Promise<void> {
+  if (route.value !== "/catalog" && route.value !== "/scenarios") return;
+  readOnlyNotice.value = "正在读取 Runtime Host 元数据…";
+  try {
+    if (route.value === "/catalog") {
+      catalog.value = await fetchReadOnlyRuntimeData(
+        endpoints.catalog,
+        parseRuntimeCatalogSummary,
+      );
+    } else {
+      scenarios.value = await fetchReadOnlyRuntimeData(
+        endpoints.scenarios,
+        parseRuntimeScenarios,
+      );
+    }
+    readOnlyNotice.value = "";
+  } catch {
+    readOnlyNotice.value = "Runtime Host 元数据当前不可用或未通过只读契约校验。";
   }
 }
 
-watch(transport, configureTransport);
+function saveSettings(): void {
+  const parsedTimeout = Number(settingsTimeoutMs.value);
+  try {
+    const runtimeUrl = new URL(settingsRuntimeHostUrl.value);
+    if (
+      (runtimeUrl.protocol !== "http:" && runtimeUrl.protocol !== "https:") ||
+      runtimeUrl.username !== "" ||
+      runtimeUrl.password !== "" ||
+      !Number.isSafeInteger(parsedTimeout) ||
+      parsedTimeout < 1_000 ||
+      parsedTimeout > 300_000
+    )
+      throw new Error("invalid-settings");
+    const saved = saveWorkbenchLocalSettings(window.localStorage, {
+      runtimeHostUrl: settingsRuntimeHostUrl.value,
+      requestTimeoutMs: parsedTimeout,
+      showDebugDetails: settingsShowDebugDetails.value,
+    });
+    settingsNotice.value = "设置已保存在此浏览器。正在重新加载连接配置。";
+    window.setTimeout(() => window.location.reload(), 100);
+    void saved;
+  } catch {
+    settingsNotice.value = "设置无效。Runtime Host 必须是 HTTP(S) 地址，超时必须在 1,000 到 300,000 毫秒之间。";
+  }
+}
+
+function exportCases(): void {
+  caseImport.value = exportCustomCases(customCases.value);
+  caseNotice.value = "已导出本地自定义案例 JSON。";
+}
+
+function importCases(): void {
+  try {
+    customCases.value = importCustomCases(caseImport.value);
+    saveCustomCases(window.localStorage, customCases.value);
+    caseNotice.value = "已导入并保存本地自定义案例。";
+  } catch {
+    caseNotice.value = "案例 JSON 无效，未修改本地案例库。";
+  }
+}
+
+function replayCase(item: WorkbenchCase): void {
+  savePendingCase(window.sessionStorage, item);
+  window.location.assign("/playground");
+}
 
 onMounted(() => {
+  window.addEventListener("popstate", () => {
+    route.value = resolveWorkbenchRoute(window.location.pathname);
+  });
   const navigation = performance.getEntriesByType("navigation")[0] as
     | PerformanceNavigationTiming
     | undefined;
@@ -378,7 +533,9 @@ onMounted(() => {
     refreshNotice.value =
       "页面已刷新，本地运行记录已重置，Runtime Host 配置已重新加载。";
   }
-  configureTransport();
+  configureHeadlessRuntime();
+  void loadReadOnlyData();
+  if (pendingCase !== undefined) window.setTimeout(() => void sendMessage(pendingCase.input), 0);
 });
 
 onBeforeUnmount(() => {
@@ -410,7 +567,18 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <main class="workspace">
+    <nav class="workbench-nav" aria-label="Workbench">
+      <a
+        v-for="item in WORKBENCH_ROUTES"
+        :key="item"
+        :class="{ active: route === item }"
+        :href="item"
+      >
+        {{ workbenchRouteLabel(item) }}
+      </a>
+    </nav>
+
+    <main v-if="route === '/playground'" class="workspace">
       <aside class="control-rail">
         <section class="rail-section runtime-card">
           <div class="section-heading">
@@ -424,24 +592,7 @@ onBeforeUnmount(() => {
             <span>Agent Runtime Host</span>
             <code data-testid="runtime-host-url">{{ config.runtimeHostUrl }}</code>
           </div>
-          <div class="transport-switch" aria-label="Transport">
-            <button
-              :class="{ active: transport === 'http' }"
-              data-testid="transport-http"
-              type="button"
-              @click="transport = 'http'"
-            >
-              HTTP
-            </button>
-            <button
-              :class="{ active: transport === 'websocket' }"
-              data-testid="transport-websocket"
-              type="button"
-              @click="transport = 'websocket'"
-            >
-              WebSocket
-            </button>
-          </div>
+          <p class="endpoint-line">CopilotKit Headless</p>
           <div class="connection-readout" :data-state="connectionState">
             <strong data-testid="connection-status">{{ connectionLabels[connectionState] }}</strong>
             <span data-testid="connection-notice">{{ connectionNotice }}</span>
@@ -575,6 +726,13 @@ onBeforeUnmount(() => {
             :operations="a2uiOperations"
           />
           <DiagnosticsPanel :result="result" />
+          <p
+            v-if="activeCase && caseEvaluation"
+            data-testid="case-evaluation"
+            :data-passed="caseEvaluation.passed"
+          >
+            {{ caseEvaluation.passed ? '用例语义断言通过。' : caseEvaluation.failures.join(' ') }}
+          </p>
         </div>
 
         <section v-else class="empty-stage">
@@ -582,6 +740,63 @@ onBeforeUnmount(() => {
           <p class="eyebrow">READY</p>
           <h2>等待首个 PresentationResult</h2>
           <p>选择快捷场景或输入消息，Workbench 将通过当前 Transport 连接 Runtime Host。</p>
+        </section>
+      </section>
+    </main>
+    <main v-else class="workspace static-workbench-page" :data-testid="`route-${route.slice(1)}`">
+      <section class="main-stage">
+        <section class="composer-card">
+          <p class="eyebrow">{{ workbenchRouteLabel(route).toUpperCase() }}</p>
+          <h2>{{ workbenchRouteLabel(route) }}</h2>
+          <template v-if="route === '/inspect'">
+            <p>选择或重放一次运行后，在此查看已脱敏的阶段、关联 ID、耗时、展示决策和降级信息。</p>
+            <div v-if="inspection" data-testid="inspection-summary">
+              <p>{{ inspection.status }} · {{ inspection.presentationMode ?? '无展示结果' }}</p>
+              <dl><div><dt>requestId</dt><dd>{{ inspection.requestId }}</dd></div><div><dt>runId</dt><dd>{{ inspection.runId }}</dd></div><div><dt>降级原因</dt><dd>{{ inspection.degradationReasonCode ?? '—' }}</dd></div></dl>
+              <p v-for="stage in inspection.stages" :key="stage.name">{{ stage.name }} · {{ stage.status }} · {{ stage.durationMs ?? '—' }} ms · {{ stage.errorCode ?? '' }}</p>
+            </div>
+            <p v-else data-testid="inspection-empty">尚未保存可检查的运行摘要。</p>
+          </template>
+          <template v-else-if="route === '/cases'">
+            <p>案例使用语义断言；不比较原始 A2UI、页面文案或截图。</p>
+            <div data-testid="case-library">
+              <article v-for="item in allCases" :key="item.id">
+                <h3>{{ item.title }}</h3><p>{{ item.input }}</p><code>{{ item.builtin ? '内置案例' : '本地案例' }}</code><button class="secondary-button" type="button" @click="replayCase(item)">运行此案例</button>
+              </article>
+            </div>
+            <label>导入或导出本地案例 JSON<textarea v-model="caseImport" data-testid="case-json" rows="8"></textarea></label>
+            <div class="button-group"><button class="secondary-button" data-testid="export-cases" type="button" @click="exportCases">导出 JSON</button><button class="primary-button" data-testid="import-cases" type="button" @click="importCases">导入 JSON</button></div>
+            <p v-if="caseNotice" data-testid="case-notice">{{ caseNotice }}</p>
+            <p v-if="latestCaseFailure" data-testid="case-failure-diagnosis">{{ latestCaseFailure.caseId }} · {{ latestCaseFailure.failures.join(' ') }}</p>
+          </template>
+          <template v-else-if="route === '/catalog'">
+            <p>此页仅查看 Runtime Host 提供的受 Schema 校验 Catalog 摘要和受控组件预览。</p>
+            <p v-if="readOnlyNotice" data-testid="catalog-notice">{{ readOnlyNotice }}</p>
+            <div v-if="catalog" data-testid="catalog-summary">
+              <p><strong>{{ catalog.catalogId }}</strong> · {{ catalog.catalogVersion }}</p>
+              <article v-for="component in catalog.components" :key="component.componentType">
+                <h3>{{ component.displayName }}</h3><p>{{ component.description }}</p><code>{{ component.componentType }}</code><p>Actions: {{ component.allowedActions.join(', ') || '—' }}</p><pre>{{ JSON.stringify(component.propsSchema, null, 2) }}</pre><CatalogComponentPreview :component-type="component.componentType" />
+              </article>
+              <section data-testid="catalog-actions"><h3>受控 Action</h3><p v-for="action in catalog.actions" :key="action.actionType">{{ action.actionType }} · {{ action.description }} · {{ action.requiresConfirmation ? 'requires confirmation' : 'no confirmation' }} · {{ action.destructive ? 'destructive' : 'non-destructive' }}</p></section>
+            </div>
+          </template>
+          <template v-else-if="route === '/scenarios'">
+            <p>此页仅查看 Runtime Host 已加载的场景元数据、说明和示例。</p>
+            <p v-if="readOnlyNotice" data-testid="scenarios-notice">{{ readOnlyNotice }}</p>
+            <div v-if="scenarios" data-testid="scenarios-summary">
+              <article v-for="scenario in scenarios" :key="scenario.scenarioId">
+                <h3>{{ scenario.scenarioId }} · {{ scenario.version }}</h3><p>{{ scenario.description }}</p><p>{{ scenario.examples.join('；') }}</p>
+              </article>
+            </div>
+          </template>
+          <form v-else class="settings-form" @submit.prevent="saveSettings">
+            <p>本地设置仅保存 Runtime Host 地址、超时和调试显示；不保存模型、Agent 地址或任何凭证。</p>
+            <label>Runtime Host 地址 <input v-model="settingsRuntimeHostUrl" data-testid="settings-runtime-host" type="url" required /></label>
+            <label>请求超时（毫秒） <input v-model="settingsTimeoutMs" data-testid="settings-timeout" type="number" min="1000" max="300000" required /></label>
+            <label><input v-model="settingsShowDebugDetails" data-testid="settings-debug" type="checkbox" /> 显示本地调试详情</label>
+            <button class="primary-button" data-testid="save-settings" type="submit">保存设置</button>
+            <p v-if="settingsNotice" data-testid="settings-notice">{{ settingsNotice }}</p>
+          </form>
         </section>
       </section>
     </main>

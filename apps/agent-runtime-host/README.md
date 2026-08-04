@@ -8,7 +8,7 @@
 
 开发命令加载 `.env` 与 `.env.local`，进程环境变量优先。
 
-Fixture 是默认 Provider，因此正常开发不需要密钥。
+开发运行必须配置真实 Presentation Model 的服务端凭证。
 
 成功后检查 `http://127.0.0.1:8200/health` 和 `http://127.0.0.1:8200/health/dependencies`。
 
@@ -43,7 +43,7 @@ Business Agent
 ```
 
 Runtime Host 不承担 Business Agent 的模型推理。
-进程内 Embedded Presentation Pipeline 可以通过服务端环境变量选择 Fixture 或已注册的 Presentation Model Provider，Provider 仍只由 Presentation Router / Pipeline 调用。
+进程内 Embedded Presentation Pipeline 通过服务端环境变量选择已注册的 Presentation Model Provider，Provider 仍只由 Presentation Router / Pipeline 调用。
 Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI 编译逻辑。
 当前实现提供远程 Business Agent 的 AG-UI 转发、Demo 端点，以及 Presentation Pipeline 的进程内组合根。
 当前实现通过 `BusinessAgentAdapter` 的 Runtime Contract 接口提供 Run 调用，并在组合根中直接装配 LangGraph HTTP Adapter 和 Presentation Pipeline Package。
@@ -59,6 +59,10 @@ Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI
 
 ## 配置
 
+`BUSINESS_AGENT_TRANSPORT` defaults to `http-sse`.
+
+Set it to `websocket` to use the Business Agent WebSocket Contract at the configured Agent host.
+
 将 `.env.example` 中的值复制到启动进程的环境变量中。
 应用不会自动加载 `.env` 文件。
 
@@ -70,7 +74,7 @@ Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI
 | `BUSINESS_AGENT_ID` | `business-agent` | 面向前端暴露的业务 Agent 标识。 |
 | `BUSINESS_AGENT_CONTRACT_URL` | `http://localhost:8300` | Runtime Host 通过 Business Agent Adapter 使用的 Contract HTTP 基址。 |
 | `COPILOTKIT_TELEMETRY_DISABLED` | `true` | 是否关闭 CopilotKit 匿名遥测。 |
-| `PRESENTATION_MODEL_PROVIDER` | `fixture` | `fixture`、`kimi`、`doubao`、`glm`、`qwen` 或 `openai-compatible`。 |
+| `PRESENTATION_MODEL_PROVIDER` | 无 | `kimi`、`doubao`、`glm`、`qwen` 或 `openai-compatible`。 |
 | `PRESENTATION_MODEL_REGISTRATION_ID` | `<provider>-primary` | Provider Registry 中的稳定注册 ID。 |
 | `PRESENTATION_MODEL_NAME` | 无 | 真实 Provider 的模型名。 |
 | `PRESENTATION_MODEL_BASE_URL` | Provider 默认值 | HTTPS Base URL；`openai-compatible` 必须显式提供。 |
@@ -97,7 +101,7 @@ pnpm --filter @generative-ui/agent-runtime-host dev
 
 依赖健康检查地址为 `http://localhost:8200/health/dependencies`。
 
-Runtime HTTP 接口为 `POST /api/runs` 和 `POST /api/actions`。
+Runtime HTTP 接口为 `POST /api/runs`、`POST /api/actions`、`GET /api/catalog` 和 `GET /api/scenarios`。
 
 Runtime WebSocket 接口为 `ws://localhost:8200/ws/runs`。
 

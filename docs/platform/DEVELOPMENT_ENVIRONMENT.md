@@ -65,14 +65,14 @@ node scripts/check-platform-environment.mjs --require-running --require-build
 `http://127.0.0.1:8200/health/dependencies` 会检查远程 Reference Business Agent，并报告 Presentation Pipeline、Model Provider 和 Catalog 的进程内状态。
 健康响应和 Workbench 诊断不会包含 API Key、完整业务内容、Provider 原始响应或未脱敏 Action Payload。
 
-## Fixture 与真实 Presentation Model
+## 真实 Presentation Model 与测试替身
 
-默认 `PRESENTATION_MODEL_PROVIDER=fixture`。
-Fixture 是确定性的离线展示决策实现，不需要 API Key，不产生模型费用，并且是 CI 和全链路 E2E 的标准模式。
-Runtime Host 在 Fixture、`kimi`、`doubao`、`glm`、`qwen` 和 `openai-compatible` Provider 之间切换。
+Workbench 的日常运行要求配置真实 Presentation Model。
+Runtime Host 支持 `kimi`、`doubao`、`glm`、`qwen` 和 `openai-compatible` Provider。
 真实 Provider 只由 Runtime Host 内嵌的 Presentation Pipeline 调用。
+单元、集成和浏览器测试在测试进程内注入确定性契约替身，而不启动 Fixture Provider 或依赖外部模型服务。
 
-在启动 Runtime Host 前设置服务端环境变量即可切换真实 Provider。
+在启动 Runtime Host 前必须设置服务端环境变量。
 
 ```powershell
 $env:PRESENTATION_MODEL_PROVIDER = "qwen"
@@ -86,15 +86,6 @@ pnpm dev:platform
 可用 `PRESENTATION_MODEL_TIMEOUT_MS` 和 `PRESENTATION_MODEL_RETRY_COUNT` 控制展示路由的超时和有限重试。
 这些变量只能留在服务端环境中，绝不能放进 `VITE_*`、`runtime-config.js`、浏览器诊断或日志。
 
-真实 Provider smoke 不属于常规测试，因为它需要显式密钥且可能产生费用。
-
-```powershell
-$env:PRESENTATION_PROVIDER_SMOKE_PROVIDER = "qwen"
-$env:PRESENTATION_PROVIDER_SMOKE_MODEL_NAME = "<模型名>"
-$env:PRESENTATION_PROVIDER_SMOKE_API_KEY = "<密钥>"
-pnpm --filter @generative-ui/presentation-pipeline test:provider-smoke
-```
-
 ## 演示流程
 
 先访问 `http://127.0.0.1:5173`。
@@ -103,7 +94,7 @@ Workbench 默认使用 HTTP，并在界面左侧显示 Runtime Host 地址与健
 1. 点击“设备状态”或输入“查看当前可用的无人机和无人车”。
 2. Reference Business Agent 返回结构化设备业务数据，而不是 UI Plan 或 A2UI。
 3. Runtime Host 通过 Business Agent Adapter 接收结果，并调用进程内 Embedded Presentation Pipeline。
-4. Model Adapter 在 Fixture 或真实 Provider 下生成不可信的 PresentationDecision 候选。
+4. Model Adapter 通过已配置的真实 Provider 生成不可信的 PresentationDecision 候选。
 5. `generative-ui` 候选中的 UI Plan Candidate 经过 Schema、Policy、Catalog、Props、Action 和绑定校验。
 6. UI Compiler Core 编译已验证候选为 A2UI，Workbench 的受控 Component Registry 渲染 Surface。
 7. 在“诊断摘要”中确认 `requestId`、`runId` 和 `presentationRequestId`。
@@ -133,7 +124,7 @@ pnpm docs:check
 ```
 
 `pnpm test:e2e:platform` 会自行启动和停止三服务环境。
-该测试使用真实 Chromium，覆盖 HTTP Markdown 与 A2UI、WebSocket、Action Resume、相关 ID 诊断，以及 Fixture `rate-limited`、`invalid-candidate` 和 `timeout` 故障下的安全 Markdown 降级。
+该测试使用真实 Chromium 和进程内测试替身，覆盖 HTTP Markdown 与 A2UI、WebSocket、Action Resume、相关 ID 诊断及安全 Markdown 降级。
 `pnpm verify:platform` 依次构建、检查环境并执行同一套平台 E2E。
 
 ## 排障

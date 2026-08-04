@@ -9,6 +9,10 @@ import {
   RUNTIME_DEPENDENCIES_HEALTH_PATH,
   RUNTIME_RUNS_PATH,
 } from "../src/runtime-http.js";
+import {
+  createTestPresentationPipeline,
+  testRuntimeHostConfig,
+} from "./test-runtime-dependencies.js";
 
 const servers = new Set<ReturnType<typeof createServer>>();
 afterEach(async () => {
@@ -22,14 +26,7 @@ afterEach(async () => {
 
 describe("Runtime HTTP transport", () => {
   it("delegates runs to the shared application orchestrator and exposes separated health", async () => {
-    const configuration = {
-      host: "127.0.0.1",
-      port: 8200,
-      endpoint: "/api/copilotkit",
-      agentId: "business-agent",
-      businessAgentContractUrl: "http://127.0.0.1:1",
-      presentationModel: { mode: "fixture" },
-    } as const;
+    const configuration = testRuntimeHostConfig();
     const host = createRuntimeHost(configuration, {
       businessAgentAdapter: new MockBusinessAgentAdapter({
         run: async (request) => ({
@@ -44,6 +41,7 @@ describe("Runtime HTTP transport", () => {
           throw new Error("not used");
         },
       }),
+      presentationPipeline: createTestPresentationPipeline(),
     });
     const app = express();
     app.use(express.json());
