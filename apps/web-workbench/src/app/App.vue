@@ -26,11 +26,9 @@ import {
   type TurnFailure,
 } from "../conversation/conversation-store.js";
 import DiagnosticsPanel from "../diagnostics/DiagnosticsPanel.vue";
-import A2UIRenderer from "../renderer/A2UIRenderer.vue";
 import CatalogComponentPreview from "../catalog/CatalogComponentPreview.vue";
 import A2UIRawViewer from "../renderer/A2UIRawViewer.vue";
 import type { RenderedRuntimeAction } from "../renderer/a2ui.js";
-import MarkdownRenderer from "../renderer/MarkdownRenderer.vue";
 import PresentationResultViewer from "../renderer/PresentationResultViewer.vue";
 import { probeRuntimeHealth } from "../runtime/health.js";
 import {
@@ -231,23 +229,10 @@ const runLabels: Record<RunState, string> = {
   running: "Agent 运行中",
 };
 
-const presentation = computed(() => result.value?.presentation);
-const markdown = computed(() => {
-  const value = presentation.value;
-  return value && "mode" in value && value.mode === "markdown"
-    ? value.markdown
-    : undefined;
-});
 const a2uiOperations = computed(() => {
-  const value = presentation.value;
+  const value = result.value?.presentation;
   return value && "mode" in value && value.mode === "generative-ui"
     ? value.operations
-    : undefined;
-});
-const a2uiPresentation = computed(() => {
-  const value = presentation.value;
-  return value && "mode" in value && value.mode === "generative-ui"
-    ? value
     : undefined;
 });
 const canSend = computed(
@@ -758,7 +743,9 @@ onBeforeUnmount(() => {
               :is-input-disabled="isInputDisabled"
               :is-running="runState === 'running' || runState === 'rendering'"
               :messages="[...messages]"
+              :turns="conversation.turns"
               data-testid="controlled-copilot-chat"
+              @action="handleA2UIAction"
               @input-change="input = $event"
               @stop="cancelRequest"
               @submit-message="sendMessage($event)"
@@ -794,15 +781,6 @@ onBeforeUnmount(() => {
               <span class="result-mode" :data-status="result.status">
                 {{ result.status }}
               </span>
-            </div>
-            <MarkdownRenderer v-if="markdown" :markdown="markdown" />
-            <A2UIRenderer
-              v-else-if="a2uiPresentation"
-              :presentation="a2uiPresentation"
-              @action="handleA2UIAction"
-            />
-            <div v-else class="empty-result">
-              PresentationResult 未包含可展示内容，请查看错误与诊断。
             </div>
           </section>
 

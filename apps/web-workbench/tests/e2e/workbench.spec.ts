@@ -25,7 +25,10 @@ test("CopilotKit Headless renders safe Markdown, PresentationResult and diagnost
 
   await expect(page.getByTestId("run-status")).toContainText("已完成");
   await expect(
-    page.getByTestId("markdown-result").getByRole("heading", { level: 2 }),
+    page
+      .getByTestId("controlled-copilot-chat")
+      .getByTestId("markdown-result")
+      .getByRole("heading", { level: 2 }),
   ).toHaveText("Runtime 在线");
   await expect(
     page.getByTestId("markdown-result").locator("script"),
@@ -47,7 +50,9 @@ test("CopilotKit Headless keeps A2UI raw data controlled", async ({ page }) => {
   await chatInput(page).fill("返回 A2UI");
   await sendMessage(page).click();
   await expect(page.getByTestId("run-status")).toContainText("已完成");
-  await expect(page.getByTestId("a2ui-renderer")).toContainText("Ready");
+  await expect(
+    page.getByTestId("controlled-copilot-chat").getByTestId("a2ui-renderer"),
+  ).toContainText("Ready");
   await expect(page.getByTestId("a2ui-raw-content")).toHaveCount(0);
   await page.getByTestId("a2ui-raw-viewer").getByLabel("显示原始数据").check();
   await expect(page.getByTestId("a2ui-raw-content")).toContainText(

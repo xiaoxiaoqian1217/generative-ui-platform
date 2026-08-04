@@ -39,6 +39,7 @@ describe("ControlledCopilotChatView", () => {
                   isInputDisabled: false,
                   isRunning: false,
                   messages: [message],
+                  turns: [],
                 }),
             );
         },
@@ -74,6 +75,7 @@ describe("ControlledCopilotChatView", () => {
                   isInputDisabled: true,
                   isRunning: false,
                   messages: [],
+                  turns: [],
                 }),
             );
         },

@@ -1,19 +1,32 @@
 <script setup lang="ts">
 import type { Message } from "@ag-ui/core";
-import { CopilotChatInput, CopilotChatView } from "@copilotkit/vue/v2";
+import {
+  CopilotChatInput,
+  CopilotChatMessageView,
+  CopilotChatView,
+} from "@copilotkit/vue/v2";
+import type { ConversationTurn } from "./conversation-store.js";
+import ConversationTurnPresentation from "./ConversationTurnPresentation.vue";
+import type { RenderedRuntimeAction } from "../renderer/a2ui.js";
 
-defineProps<{
+const props = defineProps<{
   inputValue: string;
   isInputDisabled: boolean;
   isRunning: boolean;
   messages: Message[];
+  turns: readonly ConversationTurn[];
 }>();
 
 const emit = defineEmits<{
   inputChange: [value: string];
   stop: [];
   submitMessage: [value: string];
+  action: [action: RenderedRuntimeAction];
 }>();
+
+function turnForUserMessage(messageId: string): ConversationTurn | undefined {
+  return props.turns.find((turn) => turn.userMessage.id === messageId);
+}
 </script>
 
 <template>
@@ -26,6 +39,21 @@ const emit = defineEmits<{
     @stop="emit('stop')"
     @submit-message="emit('submitMessage', $event)"
   >
+    <template #message-view="{ messages: viewMessages, isRunning: viewIsRunning }">
+      <CopilotChatMessageView
+        :is-running="viewIsRunning"
+        :messages="viewMessages"
+      >
+        <template #message-after="{ message }">
+          <ConversationTurnPresentation
+            v-if="message.role === 'user' && turnForUserMessage(message.id)"
+            :messages="viewMessages"
+            :turn="turnForUserMessage(message.id)!"
+            @action="emit('action', $event)"
+          />
+        </template>
+      </CopilotChatMessageView>
+    </template>
     <template
       #input="{
         isRunning: viewIsRunning,
