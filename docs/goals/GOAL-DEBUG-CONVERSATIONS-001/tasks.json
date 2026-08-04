@@ -7,43 +7,38 @@
   "tasks": [
     {
       "id": "TASK-001",
-      "title": "Thread Contract 与数据安全模型",
+      "title": "调试会话契约与安全边界",
       "depends_on": []
     },
     {
       "id": "TASK-002",
-      "title": "Runtime Thread Repository",
+      "title": "持久化调试会话的运行闭环",
       "depends_on": ["TASK-001"]
     },
     {
       "id": "TASK-003",
-      "title": "Business Agent Checkpoint Store",
+      "title": "跨重启恢复 Business Agent 工作流",
       "depends_on": ["TASK-001"]
     },
     {
       "id": "TASK-004",
-      "title": "Thread 编排与一致性",
-      "depends_on": ["TASK-002", "TASK-003"]
+      "title": "Workbench 调试会话管理",
+      "depends_on": ["TASK-002"]
     },
     {
       "id": "TASK-005",
-      "title": "Workbench 线程管理",
-      "depends_on": ["TASK-001", "TASK-004"]
+      "title": "只读回放历史 Presentation Snapshot",
+      "depends_on": ["TASK-002", "TASK-004"]
     },
     {
       "id": "TASK-006",
-      "title": "Presentation Snapshot 回放",
-      "depends_on": ["TASK-002", "TASK-005"]
+      "title": "保留策略、双侧删除与部分失败恢复",
+      "depends_on": ["TASK-003", "TASK-004", "TASK-005"]
     },
     {
       "id": "TASK-007",
-      "title": "保留、删除与部分失败恢复",
-      "depends_on": ["TASK-004", "TASK-005", "TASK-006"]
-    },
-    {
-      "id": "TASK-008",
-      "title": "自动化验证与文档收口",
-      "depends_on": ["TASK-007"]
+      "title": "调试会话自动化验收与运维文档收口",
+      "depends_on": ["TASK-006"]
     }
   ]
 }

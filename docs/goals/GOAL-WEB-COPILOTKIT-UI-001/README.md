@@ -1,6 +1,6 @@
 # GOAL-WEB-COPILOTKIT-UI-001 子任务包
 
-该目录将 CopilotKit 会话 UI 与会话内 A2UI 拆分为可顺序实施的任务。
+该目录将 CopilotKit 会话 UI 与会话内 A2UI 拆分为可独立验收的端到端任务。
 总目标和边界以 [`../GOAL-WEB-COPILOTKIT-UI-001.md`](../GOAL-WEB-COPILOTKIT-UI-001.md) 为准。
 
 每个任务必须从最新 `origin/main` 建立独立任务分支和 worktree。
@@ -10,12 +10,12 @@
 ## 内容
 
 - `tasks.json`：机器可读的任务依赖和验收摘要。
-- `tasks/TASK-001.md` 至 `tasks/TASK-006.md`：可独立实施的任务说明。
+- `tasks/TASK-001.md` 至 `tasks/TASK-005.md`：可独立实施的任务说明。
 
 ## 推荐顺序
 
 ```text
-TASK-001 → TASK-002 → TASK-003 → TASK-004 → TASK-005 → TASK-006
+TASK-001 → TASK-002 → TASK-003 → TASK-004 → TASK-005
 ```
 
 ## 执行边界

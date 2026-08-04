@@ -1,23 +1,23 @@
-# TASK-004：会话内 Markdown 与 A2UI
+# TASK-004：会话 Run、Action 与失败恢复
 
 ## 目标
 
-在对应会话轮次中显示已验证的 Markdown 或受控 A2UI。
+让 Run、Action Resume、失败、取消和重试都保持在原 Conversation Turn 中，且不会重复执行可能具有副作用的 Action。
 
 ## 交付
 
-- 将 Markdown PresentationResult 映射为 CopilotKit 助手消息组件。
-- 通过 message-view 插槽在助手区域挂载现有 A2UI Renderer。
-- 保留 A2UI Raw Viewer 的显式只读诊断入口。
-- 历史 Business Surface 保留可见但禁止 Action。
-- 诊断区域不得重复渲染可操作 A2UI。
+- Run 和 Action 执行期间阻止新的提交和其他 Action。
+- 将 Action Resume 的新 PresentationResult 原位更新到所属轮次。
+- 将失败和取消显示为 Workbench Turn Failure，而不是 Assistant Message。
+- 提供使用新 `requestId` 和 `runId` 的显式重试。
+- 保留确认型 Action 的风险元数据和用户批准门槛。
 
 ## 验收
 
-- Markdown 与 A2UI 不会在同一结果中错误重复显示。
-- 只有 A2UI 的轮次不生成助手文本、状态消息或占位内容。
-- 未注册组件继续安全忽略。
-- A2UI 不转换为 CopilotKit Tool Call。
+- 乱序响应不会把错误 Surface 标记为当前结果。
+- 用户取消不会触发自动重试。
+- 错误只显示稳定代码和安全摘要。
+- 详细关联信息仅保留在 Inspect 中。
 
 ## 依赖
 

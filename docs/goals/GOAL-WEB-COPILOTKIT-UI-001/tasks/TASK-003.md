@@ -1,23 +1,23 @@
-# TASK-003：受控 CopilotKit 会话视图
+# TASK-003：在会话轮次中交付受控 A2UI
 
 ## 目标
 
-使用受控 CopilotChatView 替换 Playground 的自定义消息列表和输入基础设施。
+让已验证的 A2UI PresentationResult 以内嵌 Business Surface 显示在对应 Conversation Turn 中，并维持现有 Action 安全边界。
 
 ## 交付
 
-- 由 Workbench 显式传入 messages、isRunning 和 inputValue。
-- 将提交、停止和输入变化事件连接到现有 Headless Client 与 Conversation Store。
-- 使用 CopilotKit 默认滚动、运行光标和输入控制。
-- 保留快捷场景、案例重放和页面级运行控制。
-- 为窄屏和桌面布局提供可访问样式。
+- 通过消息视图插槽在助手区域挂载现有 A2UI Renderer。
+- 只将 Markdown 映射为助手消息。
+- A2UI 结果不生成助手文本、状态消息或占位内容。
+- 新 PresentationResult 到达后将旧 Business Surface 转为 Historical Business Surface 并保持只读。
+- 保留 A2UI Raw Viewer 的显式只读诊断入口。
 
 ## 验收
 
-- 高级 CopilotChat 不拥有第二套 Agent、线程或消息状态。
-- 用户提交后立即看到用户消息和运行状态。
-- 停止操作取消当前 Run 并恢复输入能力。
-- Playground 之外的 Workbench 路由不受 CopilotKit 样式影响。
+- Markdown 与 A2UI 不会在同一结果中错误重复显示。
+- 历史 Business Surface 的按钮和表单不能发出 Action。
+- 未注册组件继续安全忽略。
+- A2UI 不转换为 CopilotKit Tool Call。
 
 ## 依赖
 

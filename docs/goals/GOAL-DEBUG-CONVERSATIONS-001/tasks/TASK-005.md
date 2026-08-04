@@ -1,25 +1,24 @@
-# TASK-005：Workbench 线程管理
+# TASK-005：只读回放历史 Presentation Snapshot
 
 ## 目标
 
-在 Workbench 中提供由 Runtime Thread Contract 驱动的调试会话管理。
+让 Workbench 在原 Conversation Turn 中安全回放历史 Markdown 和 A2UI，而不重新调用模型或 UI Compiler Core。
 
 ## 交付
 
-- 提供线程列表、分页、新建、切换、重命名、归档和删除。
-- 使用第一条用户消息的安全截断作为默认标题，不额外调用模型。
-- 切换线程时加载 Runtime Host 的消息和 Presentation Snapshot。
-- 显示加载、空列表、不可用和部分删除状态。
-- 保持 CopilotKit Conversation UI 为受控视图。
-- 不把完整历史复制到 localStorage 或 sessionStorage。
+- 使用保存的契约版本、Catalog 身份和 Compiler 版本验证快照。
+- 兼容快照在原会话轮次中只读回放。
+- 不兼容快照显示安全诊断和受限的显式 Raw Viewer。
+- 不自动迁移、重新编译、部分渲染或重新调用模型。
+- 历史 Business Surface 永远不能产生 Action。
 
 ## 验收
 
-- 刷新后可以从 Runtime Host 恢复线程列表和选定会话。
-- 会话切换不会复用错误的 Active Business Surface 或 `threadId`。
-- 归档和删除需要服务端确认后才更新权威状态。
-- Workbench 不调用 CopilotKit 托管线程服务。
+- 历史回放与保存时的 PresentationResult 保持一致。
+- 当前组件不支持旧快照时不会执行或猜测其操作。
+- Raw Viewer 默认隐藏并继续限制大小。
+- 历史加载不访问 Business Model 或 Presentation Model。
 
 ## 依赖
 
-TASK-001 和 TASK-004。
+TASK-002 和 TASK-004。

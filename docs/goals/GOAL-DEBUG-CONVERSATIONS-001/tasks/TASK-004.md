@@ -1,25 +1,25 @@
-# TASK-004：Thread 编排与一致性
+# TASK-004：Workbench 调试会话管理
 
 ## 目标
 
-在 Runtime Host 中协调 Thread Repository、RunOrchestrator 和 Business Agent checkpoint 生命周期。
+让 Workbench 通过 Runtime Thread Contract 创建、分页、切换、重命名、归档和删除调试会话，并在刷新后恢复权威状态。
 
 ## 交付
 
-- 在调用 Business Agent 前创建 pending Conversation Turn。
-- 在 Run、Pipeline、Action 和取消终局更新明确状态。
-- 在返回成功结果前保存已验证 Presentation Snapshot。
-- 对历史写入失败、checkpoint 失败和部分删除提供稳定状态。
-- 对幂等请求、重试和重复 Action 建立保护。
-- 不引入分布式事务或自动重复副作用 Action。
+- 提供线程列表、分页、新建、切换、重命名、归档和删除。
+- 使用第一条用户消息的安全截断作为默认标题，不额外调用模型。
+- 切换线程时加载 Runtime Host 的消息和 Presentation Snapshot。
+- 显示加载、空列表、不可用和部分删除状态。
+- 保持 CopilotKit Conversation UI 为受控视图。
+- 不把完整历史复制到 localStorage 或 sessionStorage。
 
 ## 验收
 
-- 存储失败不会被错误报告为 Business Agent 失败。
-- 已执行 Action 不会因历史写入失败自动重放。
-- 每个 Turn 具有唯一终局或明确的 history-write-failed 状态。
-- 关联 ID 可以串联 Thread、Run、Presentation 和 Action，但不会进入普通日志内容字段。
+- 刷新后可以从 Runtime Host 恢复线程列表和选定会话。
+- 会话切换不会复用错误的 Active Business Surface 或 `threadId`。
+- 归档和删除需要服务端确认后才更新权威状态。
+- Workbench 不调用 CopilotKit 托管线程服务。
 
 ## 依赖
 
-TASK-002 和 TASK-003。
+TASK-002。

@@ -74,12 +74,11 @@ A2UI 结果形成 Inline Business Surface，不生成额外助手文本或状态
 任务包位于 [`./GOAL-WEB-COPILOTKIT-UI-001/`](./GOAL-WEB-COPILOTKIT-UI-001/README.md)。
 
 ```text
-TASK-001 CopilotKit Vue 兼容基线
-  → TASK-002 Conversation Turn 状态模型
-      → TASK-003 受控 CopilotKit 会话视图
-          → TASK-004 会话内 Markdown 与 A2UI
-              → TASK-005 Run、Action 与错误交互
-                  → TASK-006 自动化验证与文档收口
+TASK-001 CopilotKit Vue 受控会话基础
+  → TASK-002 在会话轮次中交付 Markdown
+      → TASK-003 在会话轮次中交付受控 A2UI
+          → TASK-004 会话 Run、Action 与失败恢复
+              → TASK-005 CopilotKit 会话 UI 自动化验收与文档收口
 ```
 
 ## 9. 完成条件
