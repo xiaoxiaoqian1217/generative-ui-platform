@@ -1,5 +1,8 @@
+import { existsSync } from "node:fs";
 import { access } from "node:fs/promises";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import { loadDevelopmentEnvironment } from "./environment.mjs";
 import {
   isPortAvailable,
   platformPorts,
@@ -9,15 +12,17 @@ import {
 const argumentsSet = new Set(process.argv.slice(2));
 const requireBuild = argumentsSet.has("--require-build");
 const requireRunning = argumentsSet.has("--require-running");
+const requireBrowser = argumentsSet.has("--browser");
+const requireProvider = argumentsSet.has("--provider");
+if (requireProvider)
+  loadDevelopmentEnvironment(
+    join(repositoryRoot, "apps", "agent-runtime-host"),
+  );
 const failures = [];
 const nodeMajor = Number(process.versions.node.split(".")[0]);
 if (!Number.isInteger(nodeMajor) || nodeMajor < 24)
   failures.push("NODE_VERSION_UNSUPPORTED");
-if (
-  !/pnpm\/(?:1[0-9]|[2-9][0-9])\./u.test(
-    process.env.npm_config_user_agent ?? "",
-  )
-)
+if (!/pnpm\/10\.13\./u.test(process.env.npm_config_user_agent ?? ""))
   failures.push("PNPM_VERSION_UNSUPPORTED");
 
 const forbiddenEnvironment = Object.keys(process.env).filter((name) =>
@@ -46,6 +51,55 @@ if (requireBuild) {
       break;
     }
   }
+}
+
+if (requireBrowser) {
+  const playwright = join(
+    repositoryRoot,
+    "apps",
+    "web-workbench",
+    "node_modules",
+    "@playwright",
+    "test",
+    "cli.js",
+  );
+  if (!existsSync(playwright)) failures.push("PLAYWRIGHT_PACKAGE_MISSING");
+  else {
+    const moduleUrl = pathToFileURL(
+      join(
+        repositoryRoot,
+        "apps",
+        "web-workbench",
+        "node_modules",
+        "@playwright",
+        "test",
+        "index.mjs",
+      ),
+    ).href;
+    const { chromium } = await import(moduleUrl);
+    if (!existsSync(chromium.executablePath()))
+      failures.push("PLAYWRIGHT_CHROMIUM_MISSING");
+  }
+}
+
+if (requireProvider) {
+  const provider = process.env.PRESENTATION_MODEL_PROVIDER;
+  if (!provider || provider === "fixture")
+    failures.push("PRESENTATION_PROVIDER_NOT_EXPLICIT");
+  for (const name of [
+    "PRESENTATION_MODEL_NAME",
+    "PRESENTATION_MODEL_API_KEY",
+  ]) {
+    if (!process.env[name]?.trim())
+      failures.push(`PRESENTATION_PROVIDER_VARIABLE_MISSING:${name}`);
+  }
+  if (
+    provider === "openai-compatible" &&
+    !process.env.PRESENTATION_MODEL_BASE_URL?.trim()
+  )
+    failures.push(
+      "PRESENTATION_PROVIDER_VARIABLE_MISSING:PRESENTATION_MODEL_BASE_URL",
+    );
 }
 
 if (requireRunning) {
@@ -88,7 +142,8 @@ if (requireRunning) {
 
 if (failures.length > 0) {
   process.stderr.write(
-    `Platform environment check failed: ${failures.join(",")}\n`,
+    `Platform environment check failed: ${failures.join(",")}\n` +
+      "Run `pnpm check:doctor -- --source --require-build --browser` for a local fixture diagnosis. Values are intentionally never printed.\n",
   );
   process.exitCode = 1;
 } else {

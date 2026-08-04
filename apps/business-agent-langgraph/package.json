@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/cli.ts",
+    "dev": "node ../../scripts/dev-application.mjs business-agent",
     "build": "tsup src/main.ts src/cli.ts --format esm --clean --out-dir dist",
     "start": "node dist/cli.js",
     "test": "vitest run",

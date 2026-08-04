@@ -16,6 +16,10 @@ const playwrightCli = join(
   "test",
   "cli.js",
 );
+async function ensureChromium() {
+  const code = await runPlaywright(["install", "chromium"]);
+  if (code !== 0) throw new Error("PLAYWRIGHT_CHROMIUM_UNAVAILABLE");
+}
 function run(args, environment = {}) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [packageManagerCli, ...args], {
@@ -94,7 +98,12 @@ async function runFixtureSuite(environment, grep) {
   if (cleanupError) throw cleanupError;
 }
 
-await runFixtureSuite({}, ".*");
+if ((await readProcessState()).length > 0)
+  throw new Error(
+    "PLATFORM_ALREADY_RUNNING: stop it with pnpm stop:platform before E2E.",
+  );
+await ensureChromium();
+for (let run = 0; run < 3; run += 1) await runFixtureSuite({}, ".*");
 for (const fault of ["rate-limited", "invalid-candidate", "timeout"]) {
   await runFixtureSuite(
     {

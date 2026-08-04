@@ -1,5 +1,19 @@
 # Reference Business Agent
 
+## 开发者入口
+
+在本目录运行 `pnpm dev`。
+
+开发命令加载 `.env` 与 `.env.local`，进程环境变量优先。
+
+它会先构建 workspace 依赖，然后监听 `http://127.0.0.1:8300/health`。
+
+停止前台进程使用 Ctrl+C。
+
+该应用不依赖其他服务，且不需要 Provider 密钥。
+
+端口错误时运行 `pnpm check:doctor -- --source`，或设置未占用的 `BUSINESS_AGENT_PORT`。
+
 这是平台全链路验证使用的 TypeScript LangGraph Reference Business Agent。
 它使用确定性 Fixture 工具，不需要模型 API Key。
 它只返回 Markdown 或结构化业务数据，不做展示决策，也不生成 A2UI、HTML 或 Vue。
