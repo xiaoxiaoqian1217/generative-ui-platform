@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process";
-import { mkdir, open } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import {
@@ -179,29 +178,11 @@ async function waitForServiceHealth(service) {
 let started = false;
 try {
   for (const service of services) {
-    let log;
-    if (background) {
-      await mkdir(join(repositoryRoot, ".platform", "logs"), {
-        recursive: true,
-      });
-      log = await open(
-        join(
-          repositoryRoot,
-          ".platform",
-          "logs",
-          `${service.name.replaceAll(/[^a-z0-9]+/giu, "-").toLowerCase()}.log`,
-        ),
-        "a",
-      );
-      await log.writeFile(`[${service.name}] process log\n`);
-    }
     const child = spawn(process.execPath, service.args, {
       cwd: service.cwd,
       env: service.environment,
       detached: true,
-      stdio: background
-        ? ["ignore", log.fd, log.fd]
-        : ["ignore", "pipe", "pipe"],
+      stdio: background ? "ignore" : ["ignore", "pipe", "pipe"],
       windowsHide: true,
     });
     child.once("error", (error) =>

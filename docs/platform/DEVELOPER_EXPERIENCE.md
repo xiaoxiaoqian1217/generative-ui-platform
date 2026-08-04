@@ -64,7 +64,7 @@ Workbench 依赖 Runtime Host，地址为 `http://127.0.0.1:5173`。
 
 `pnpm dev:platform` 按 Reference Business Agent、Runtime Host、Workbench 顺序启动，并在启动前构建一次全部依赖。
 
-`pnpm dev:platform -- --background` 将日志写入 `.platform/logs/`，每一行带服务名前缀。
+`pnpm dev:platform -- --background` 在后台启动服务；使用 `pnpm stop:platform` 清理其进程和端口。
 
 真实 Provider 只能显式执行 `pnpm dev:platform -- --provider=real`。
 
