@@ -46,7 +46,7 @@ Generative UI Platform 是面向 Agent 应用的生成式 UI 编译与交互运�
 - 用户 Action 经 Runtime Host 校验后回传 Business Agent；
 - HTTP 和 WebSocket 共用同一应用层编排；
 - 浏览器 E2E 使用进程内确定性替身或受控测试服务，不依赖模型密钥；
-- 至少一个真实 Presentation Model Provider 通过 Smoke Test；
+- 真实 Presentation Model Provider 可由开发人员通过 Workbench 显式联调；
 - 开发环境支持统一启动、构建、验证和诊断。
 
 ## 4. 当前允许建设
@@ -113,7 +113,7 @@ UI Compiler Core 必须保持框架、传输、Agent 框架和模型供应商中
 - HTTP 和 WebSocket 全链路通过；
 - Markdown 和 A2UI 均可在浏览器展示；
 - Action 可回传并恢复业务流程；
-- 至少一个真实 UI Compiler 模型供应商通过 Smoke Test；
+- 真实 UI Compiler 模型供应商不作为 CI 或合并门槛；
 - Playwright E2E 在 CI 稳定通过；
 - 关键阶段可通过关联 ID 诊断；
 - 敏感配置不进入浏览器或日志。

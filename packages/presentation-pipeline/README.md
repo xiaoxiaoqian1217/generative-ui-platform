@@ -77,7 +77,7 @@ Adapter 不记录完整 Prompt、Authorization、Provider 原始响应或错误�
 可选的 `onInvocationSummary` 只接收供应商无关的耗时、Token Usage、安全 Response ID 和稳定错误码。
 Provider 候选保持为 `unknown`，必须继续通过 Router 的 `validatePresentationDecision` 和 UI Compiler Core 的 Catalog 约束。
 
-## 真实 Provider Smoke Test
+## 真实 Provider 本地联调
 
 常规 `pnpm test` 不产生模型费用，真实调用默认跳过。
 专用命令会在缺少必填配置时失败，避免把未执行误报为通过。
