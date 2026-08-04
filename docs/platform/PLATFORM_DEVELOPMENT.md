@@ -16,7 +16,8 @@ Presentation Pipeline、Model Provider 与 Component Catalog 都嵌入 Runtime H
 pnpm install --frozen-lockfile
 ```
 
-默认使用 Fixture Model Adapter，不需要 API Key。
+开发运行使用已配置的真实 Presentation Model。
+单元、集成和浏览器测试使用进程内确定性替身，不需要 API Key。
 
 ## 统一命令
 

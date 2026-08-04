@@ -3,6 +3,10 @@ import { once } from "node:events";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createRuntimeHost } from "../src/runtime.js";
+import {
+  createTestPresentationPipeline,
+  testRuntimeHostConfig,
+} from "./test-runtime-dependencies.js";
 
 interface ListeningEvent {
   event: "business-agent.listening";
@@ -87,14 +91,10 @@ afterEach(async () => {
 describe("Runtime Host Business Agent Adapter process integration", () => {
   it("runs and resumes the real Agent through the Host's contract-only seam", async () => {
     const { baseUrl } = await startReferenceAgent();
-    const host = createRuntimeHost({
-      host: "127.0.0.1",
-      port: 8200,
-      endpoint: "/api/copilotkit",
-      agentId: "business-agent",
-      businessAgentContractUrl: baseUrl,
-      presentationModel: { mode: "fixture" },
-    });
+    const host = createRuntimeHost(
+      testRuntimeHostConfig({ businessAgentContractUrl: baseUrl }),
+      { presentationPipeline: createTestPresentationPipeline() },
+    );
 
     const run = await host.runBusinessAgent({
       protocolVersion: "1.0",

@@ -1,20 +1,16 @@
 import { MockBusinessAgentAdapter } from "@generative-ui/business-agent-adapter";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { createPresentationModelProviderRegistry } from "@generative-ui/presentation-pipeline";
+import { describe, expect, it, vi } from "vitest";
 import { createRuntimeHost } from "../src/runtime.js";
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
+import {
+  createTestPresentationPipeline,
+  testRuntimeHostConfig,
+} from "./test-runtime-dependencies.js";
 
 describe("Runtime Host embedded Presentation Pipeline", () => {
   it("assembles the package directly without a Compiler HTTP client", async () => {
-    const host = createRuntimeHost({
-      host: "127.0.0.1",
-      port: 8200,
-      endpoint: "/api/copilotkit",
-      agentId: "business-agent",
-      businessAgentContractUrl: "http://127.0.0.1:8300",
-      presentationModel: { mode: "fixture" },
+    const host = createRuntimeHost(testRuntimeHostConfig(), {
+      presentationPipeline: createTestPresentationPipeline(),
     });
 
     const result = await host.presentationPipeline.present({
@@ -51,24 +47,37 @@ describe("Runtime Host embedded Presentation Pipeline", () => {
           { status: 200 },
         ),
     );
-    vi.stubGlobal("fetch", providerFetch);
-    const host = createRuntimeHost({
-      host: "127.0.0.1",
-      port: 8200,
-      endpoint: "/api/copilotkit",
-      agentId: "business-agent",
-      businessAgentContractUrl: "http://127.0.0.1:8300",
-      presentationModel: {
-        mode: "provider",
-        registration: {
+    const providerRegistry = createPresentationModelProviderRegistry(
+      [
+        {
           registrationId: "qwen-primary",
           provider: "qwen",
           modelName: "qwen-model",
           apiKey: "server-only-secret",
         },
-        modelInvocation: { modelTimeoutMs: 1_000, modelRetryCount: 1 },
+      ],
+      { fetch: providerFetch },
+    );
+    const host = createRuntimeHost(
+      {
+        host: "127.0.0.1",
+        port: 8200,
+        endpoint: "/api/copilotkit",
+        agentId: "business-agent",
+        businessAgentContractUrl: "http://127.0.0.1:8300",
+        presentationModel: {
+          mode: "provider",
+          registration: {
+            registrationId: "qwen-primary",
+            provider: "qwen",
+            modelName: "qwen-model",
+            apiKey: "server-only-secret",
+          },
+          modelInvocation: { modelTimeoutMs: 1_000, modelRetryCount: 1 },
+        },
       },
-    });
+      { presentationModelProviderRegistry: providerRegistry },
+    );
 
     const result = await host.presentationPipeline.present({
       requestId: "runtime-provider-pipeline",
@@ -113,17 +122,10 @@ describe("Runtime Host embedded Presentation Pipeline", () => {
         content: { contentType: "markdown", markdown: "Mock resumed." },
       }),
     });
-    const host = createRuntimeHost(
-      {
-        host: "127.0.0.1",
-        port: 8200,
-        endpoint: "/api/copilotkit",
-        agentId: "business-agent",
-        businessAgentContractUrl: "http://127.0.0.1:8300",
-        presentationModel: { mode: "fixture" },
-      },
-      { businessAgentAdapter },
-    );
+    const host = createRuntimeHost(testRuntimeHostConfig(), {
+      businessAgentAdapter,
+      presentationPipeline: createTestPresentationPipeline(),
+    });
 
     await expect(
       host.runBusinessAgent({

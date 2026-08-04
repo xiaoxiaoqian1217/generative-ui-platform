@@ -18,7 +18,7 @@ Linux 或 WSL：
 pnpm dev:platform
 ```
 
-启动器默认使用离线、确定性的 Fixture，不需要模型密钥。
+启动器要求配置真实 Presentation Model 的服务端凭证。
 
 访问 `http://127.0.0.1:5173`，依次尝试 HTTP、WebSocket、Markdown、设备状态和巡逻确认。
 
@@ -35,10 +35,10 @@ pnpm dev:platform
 | 应用 | 配置文件 | 支持的变量与默认值 |
 | --- | --- | --- |
 | Reference Business Agent | `apps/business-agent-langgraph/.env[.local]` | `BUSINESS_AGENT_HOST=127.0.0.1`，`BUSINESS_AGENT_PORT=8300`。 |
-| Agent Runtime Host | `apps/agent-runtime-host/.env[.local]` | `HOST=127.0.0.1`，`PORT=8200`，`BUSINESS_AGENT_CONTRACT_URL=http://localhost:8300`，`PRESENTATION_MODEL_PROVIDER=fixture`，以及应用 README 列出的超时、并发和 Provider 变量。 |
+| Agent Runtime Host | `apps/agent-runtime-host/.env[.local]` | `HOST=127.0.0.1`，`PORT=8200`，`BUSINESS_AGENT_CONTRACT_URL=http://localhost:8300`，以及应用 README 列出的真实 Provider、超时和并发变量。 |
 | Workbench | `apps/web-workbench/.env[.local]` | `VITE_RUNTIME_HOST_URL` 和 `VITE_WORKBENCH_ENVIRONMENT`。 |
 
-Fixture、CI 和普通平台 E2E 强制 `PRESENTATION_MODEL_PROVIDER=fixture`，因此不会被本地真实 Provider 文件污染。
+CI 和平台 E2E 使用进程内确定性替身，因此不会读取或依赖真实 Provider 配置。
 
 真实 Provider 要求显式 `PRESENTATION_MODEL_PROVIDER`、`PRESENTATION_MODEL_NAME` 和 `PRESENTATION_MODEL_API_KEY`。
 
@@ -66,7 +66,7 @@ Workbench 依赖 Runtime Host，地址为 `http://127.0.0.1:5173`。
 
 `pnpm dev:platform -- --background` 在后台启动服务；使用 `pnpm stop:platform` 清理其进程和端口。
 
-真实 Provider 只能显式执行 `pnpm dev:platform -- --provider=real`。
+真实 Provider 通过标准 `pnpm dev:platform` 服务端配置启用。
 
 先执行 `pnpm check:doctor -- --provider`，诊断仅输出缺失或无效变量名，不输出密钥值。
 
