@@ -8,7 +8,10 @@ import {
 } from "./a2ui.js";
 import type { RenderedRuntimeAction } from "./a2ui.js";
 
-const props = defineProps<{ surface: A2UISurface }>();
+const props = withDefaults(
+  defineProps<{ readOnly?: boolean; surface: A2UISurface }>(),
+  { readOnly: false },
+);
 const emit = defineEmits<{ action: [action: RenderedRuntimeAction] }>();
 const stringify = (value: unknown): string =>
   typeof value === "string" ||
@@ -71,8 +74,10 @@ function renderComponent(componentId: string): VNode | undefined {
       "button",
       {
         class: className,
+        disabled: props.readOnly,
         type: "button",
         onClick: () => {
+          if (props.readOnly) return;
           const action = createRenderedRuntimeAction(
             props.surface.surfaceId,
             component,
