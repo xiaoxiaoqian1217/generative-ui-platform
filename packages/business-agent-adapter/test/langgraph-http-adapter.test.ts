@@ -143,6 +143,50 @@ describe("LangGraphHttpBusinessAgentAdapter", () => {
     expect(observedBody).toEqual(request);
   });
 
+  it("accepts complete SSE business events before the terminal Run result", async () => {
+    const observedEvents: unknown[] = [];
+    const baseUrl = await startServer((_request, response) => {
+      response.writeHead(200, { "content-type": "text/event-stream" });
+      response.write(
+        `event: business-agent.event\ndata: ${JSON.stringify({
+          protocolVersion: "1.0",
+          eventId: "event-started",
+          requestId: "request-sse",
+          threadId: "thread-sse",
+          runId: "run-sse",
+          type: "business-agent.started",
+        })}\n\n`,
+      );
+      response.end(
+        `event: business-agent.result\ndata: ${JSON.stringify({
+          protocolVersion: "1.0",
+          requestId: "request-sse",
+          threadId: "thread-sse",
+          runId: "run-sse",
+          status: "completed",
+          content: { contentType: "markdown", markdown: "SSE result." },
+        })}\n\n`,
+      );
+    });
+    const adapter = new LangGraphHttpBusinessAgentAdapter({ baseUrl });
+
+    await expect(
+      adapter.run(
+        {
+          protocolVersion: "1.0",
+          requestId: "request-sse",
+          threadId: "thread-sse",
+          runId: "run-sse",
+          input: { message: "Query device status" },
+        },
+        { onEvent: (event) => observedEvents.push(event) },
+      ),
+    ).resolves.toMatchObject({ status: "completed" });
+    expect(observedEvents).toEqual([
+      expect.objectContaining({ type: "business-agent.started" }),
+    ]);
+  });
+
   it("normalizes an unreachable Agent after a finite number of retries", async () => {
     const adapter = new LangGraphHttpBusinessAgentAdapter({
       baseUrl: "http://127.0.0.1:1",

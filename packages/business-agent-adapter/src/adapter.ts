@@ -1,4 +1,5 @@
 import type {
+  BusinessAgentEvent,
   BusinessAgentResumeActionRequest,
   BusinessAgentResumeActionResult,
   BusinessAgentRunRequest,
@@ -8,6 +9,7 @@ import type {
 
 export interface BusinessAgentInvocationOptions {
   readonly signal?: AbortSignal;
+  readonly onEvent?: (event: BusinessAgentEvent) => void;
 }
 
 export class BusinessAgentAdapterRequestError extends Error {

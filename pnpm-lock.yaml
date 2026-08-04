@@ -28,6 +28,9 @@ importers:
       '@types/node':
         specifier: 24.0.15
         version: 24.0.15
+      '@types/ws':
+        specifier: 8.18.1
+        version: 8.18.1
       cspell:
         specifier: 9.1.1
         version: 9.1.1
@@ -52,6 +55,9 @@ importers:
       vitest:
         specifier: 3.2.6
         version: 3.2.6(@types/debug@4.1.13)(@types/node@24.0.15)(jiti@2.6.1)(tsx@4.20.3)(yaml@2.9.0)
+      ws:
+        specifier: 8.21.1
+        version: 8.21.1
 
   apps/agent-runtime-host:
     dependencies:
@@ -122,10 +128,16 @@ importers:
       fastify:
         specifier: 5.10.0
         version: 5.10.0
+      ws:
+        specifier: 8.21.1
+        version: 8.21.1
       zod:
         specifier: 3.25.76
         version: 3.25.76
     devDependencies:
+      '@types/ws':
+        specifier: 8.18.1
+        version: 8.18.1
       tsup:
         specifier: 8.5.0
         version: 8.5.0(jiti@2.6.1)(postcss@8.5.22)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.9.0)
@@ -141,6 +153,9 @@ importers:
 
   apps/web-workbench:
     dependencies:
+      '@copilotkit/core':
+        specifier: 1.64.1
+        version: 1.64.1(@ag-ui/core@0.0.57)(zod@3.25.76)
       '@generative-ui/compiler-contract':
         specifier: workspace:*
         version: link:../../packages/compiler-contract
@@ -4713,7 +4728,7 @@ snapshots:
 
   '@copilotkit/channels-ui@0.2.1(@ag-ui/core@0.0.57)':
     dependencies:
-      '@copilotkit/shared': 1.63.2(@ag-ui/core@0.0.57)
+      '@copilotkit/shared': 1.64.1(@ag-ui/core@0.0.57)
     transitivePeerDependencies:
       - '@ag-ui/core'
       - encoding
