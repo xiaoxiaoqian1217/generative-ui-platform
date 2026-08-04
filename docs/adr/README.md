@@ -43,6 +43,7 @@ UI Compiler Core、Presentation Router、Model Adapter、Catalog 和公共契约
 | [ADR-0020](./0020-workbench-runtime-read-contract-and-copilotkit-headless.md) | 已接受 | Workbench 与 Runtime Host | Workbench 通过 CopilotKit Headless 和只读 Runtime Contract 集成 |
 | [ADR-0021](./0021-retire-runnable-fixture-provider-mode.md) | 已接受 | 模型联调与测试 | 日常联调使用真实模型，测试使用进程内 Stub，退役可运行 Fixture Provider |
 | [ADR-0022](./0022-support-http-sse-and-websocket-business-agent-adapters.md) | 已接受 | Runtime Host 与 Business Agent | 当前支持 HTTP + SSE 与 WebSocket Adapter |
+| [ADR-0023](./0023-adopt-controlled-copilotkit-conversation-ui-and-platform-thread-history.md) | 已接受 | Workbench、Runtime Host 与 Business Agent | 受控 CopilotKit 会话 UI、内嵌 A2UI 与平台调试会话历史所有权 |
 
 以上表格突出当前跨模块和平台范围决策。
 完整 ADR 集合以本目录中的全部编号文件为准。
@@ -53,7 +54,7 @@ UI Compiler Core、Presentation Router、Model Adapter、Catalog 和公共契约
 - ADR 编号在仓库中必须唯一，已经使用的编号不得复用。
 - 创建 ADR 前必须扫描本目录中的全部编号文件，使用当前最大编号加一。
 - 被拒绝、废弃或被取代的 ADR 仍然保留原文件和编号。
-- 当前最新编号为 `0022`。
+- 当前最新编号为 `0023`。
 
 ## 状态规则
 

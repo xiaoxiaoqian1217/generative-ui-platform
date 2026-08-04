@@ -1,0 +1,38 @@
+{
+  "goal_id": "GOAL-WEB-COPILOTKIT-UI-001",
+  "title": "CopilotKit 会话 UI 与会话内 A2UI",
+  "canonical_goal": "docs/goals/GOAL-WEB-COPILOTKIT-UI-001.md",
+  "architecture_decisions": ["ADR-0020", "ADR-0023"],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "CopilotKit Vue 兼容基线",
+      "depends_on": []
+    },
+    {
+      "id": "TASK-002",
+      "title": "Conversation Turn 状态模型",
+      "depends_on": ["TASK-001"]
+    },
+    {
+      "id": "TASK-003",
+      "title": "受控 CopilotKit 会话视图",
+      "depends_on": ["TASK-002"]
+    },
+    {
+      "id": "TASK-004",
+      "title": "会话内 Markdown 与 A2UI",
+      "depends_on": ["TASK-003"]
+    },
+    {
+      "id": "TASK-005",
+      "title": "Run、Action 与错误交互",
+      "depends_on": ["TASK-004"]
+    },
+    {
+      "id": "TASK-006",
+      "title": "自动化验证与文档收口",
+      "depends_on": ["TASK-005"]
+    }
+  ]
+}
