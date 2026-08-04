@@ -11,6 +11,7 @@ import type { RenderedRuntimeAction } from "../renderer/a2ui.js";
 
 const props = defineProps<{
   inputValue: string;
+  isActionDisabled: boolean;
   isInputDisabled: boolean;
   isRunning: boolean;
   messages: Message[];
@@ -22,6 +23,7 @@ const emit = defineEmits<{
   stop: [];
   submitMessage: [value: string];
   action: [action: RenderedRuntimeAction];
+  retry: [turnId: string];
 }>();
 
 function turnForUserMessage(messageId: string): ConversationTurn | undefined {
@@ -48,8 +50,10 @@ function turnForUserMessage(messageId: string): ConversationTurn | undefined {
           <ConversationTurnPresentation
             v-if="message.role === 'user' && turnForUserMessage(message.id)"
             :messages="viewMessages"
+            :actions-disabled="isActionDisabled"
             :turn="turnForUserMessage(message.id)!"
             @action="emit('action', $event)"
+            @retry="emit('retry', $event)"
           />
         </template>
       </CopilotChatMessageView>

@@ -21,6 +21,19 @@ const markdownTurn: ConversationTurn = {
   userMessage: { content: "Show markdown", id: "turn-1:user" },
 };
 
+const failedTurn: ConversationTurn = {
+  businessSurfaces: [],
+  failure: {
+    code: "WORKBENCH_REQUEST_TIMEOUT",
+    message: "upstream response: secret diagnostic detail",
+    retryable: true,
+  },
+  requestId: "request-2",
+  status: "failed",
+  turnId: "turn-2",
+  userMessage: { content: "Show failure", id: "turn-2:user" },
+};
+
 describe("ConversationTurnPresentation", () => {
   it("renders markdown through a CopilotKit assistant message", () => {
     const wrapper = mount(
@@ -42,6 +55,34 @@ describe("ConversationTurnPresentation", () => {
 
     expect(wrapper.get('[data-testid="markdown-result"]').text()).toContain(
       "Safe response",
+    );
+  });
+
+  it("renders a safe Workbench failure in its own turn without an assistant message", () => {
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          return () =>
+            h(
+              CopilotKitConversationProvider,
+              { runtimeUrl: "http://127.0.0.1:8200/api/copilotkit" },
+              () =>
+                h(ConversationTurnPresentation, {
+                  messages: [],
+                  turn: failedTurn,
+                }),
+            );
+        },
+      }),
+    );
+
+    expect(wrapper.get('[data-testid="turn-failure"]').text()).toContain(
+      "WORKBENCH_REQUEST_TIMEOUT",
+    );
+    expect(wrapper.text()).toContain("请求超时，请重试。");
+    expect(wrapper.text()).not.toContain("secret diagnostic detail");
+    expect(wrapper.find('[data-testid="markdown-result"]').exists()).toBe(
+      false,
     );
   });
 });

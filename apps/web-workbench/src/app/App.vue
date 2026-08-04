@@ -175,20 +175,8 @@ const conversationThreadId = computed(() => {
   return undefined;
 });
 const configurationFailure = ref<DisplayError>();
-const error = computed<DisplayError | undefined>(() => {
-  if (configurationFailure.value !== undefined) return configurationFailure.value;
-  const failure = currentTurn.value?.failure;
-  return failure === undefined
-    ? undefined
-    : {
-        code: failure.code,
-        message: failure.message,
-        retryable: failure.retryable,
-        ...(failure.stage === undefined ? {} : { stage: failure.stage }),
-      };
-});
+const error = computed<DisplayError | undefined>(() => configurationFailure.value);
 const refreshNotice = ref("");
-const lastMessage = computed(() => currentTurn.value?.userMessage.content ?? "");
 const activeController = ref<AbortController>();
 const route = ref(resolveWorkbenchRoute(window.location.pathname));
 const settingsRuntimeHostUrl = ref(config.runtimeHostUrl);
@@ -244,7 +232,10 @@ const canSend = computed(
     configurationError === undefined,
 );
 const isInputDisabled = computed(
-  () => connectionState.value !== "connected" || configurationError !== undefined,
+  () =>
+    connectionState.value !== "connected" ||
+    configurationError !== undefined ||
+    conversation.value.activeOperation !== undefined,
 );
 const activeEndpoint = computed(() => endpoints.copilotKit);
 
@@ -313,13 +304,19 @@ function configureHeadlessRuntime(): void {
   }, 3_000);
 }
 
-function createRequest(message: string): RuntimeRunRequest {
-  const requestId =
+function createId(prefix: string): string {
+  return (
     globalThis.crypto.randomUUID?.() ??
-    `request-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  );
+}
+
+function createRequest(message: string): RuntimeRunRequest {
+  const requestId = createId("request");
   return {
     protocolVersion: "1.0",
     requestId,
+    runId: createId("run"),
     ...(conversationThreadId.value === undefined
       ? {}
       : { threadId: conversationThreadId.value }),
@@ -458,11 +455,11 @@ function cancelRequest(): void {
   activeController.value?.abort();
 }
 
-function retryLastRequest(): void {
-  if (lastMessage.value !== "") {
-    input.value = lastMessage.value;
-    void sendMessage(lastMessage.value);
-  }
+function retryTurn(turnId: string): void {
+  const turn = conversation.value.turns.find((item) => item.turnId === turnId);
+  if (turn === undefined || turn.failure?.retryable !== true) return;
+  input.value = turn.userMessage.content;
+  void sendMessage(turn.userMessage.content);
 }
 
 function selectScenario(message: string): void {
@@ -470,7 +467,13 @@ function selectScenario(message: string): void {
 }
 
 async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> {
-  if (!client || !result.value || result.value.status === "failed") return;
+  if (
+    !client ||
+    !result.value ||
+    result.value.status === "failed" ||
+    conversation.value.activeOperation !== undefined
+  )
+    return;
   if (
     rendered.requiresConfirmation &&
     !window.confirm(
@@ -486,8 +489,8 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
         surface.surfaceId === rendered.action.surfaceId && surface.status === "active",
     ),
   );
-  if (turn === undefined) return;
-  const requestId = globalThis.crypto.randomUUID?.() ?? `action-${Date.now()}`;
+  if (turn === undefined || turn.runtimeResult === undefined) return;
+  const requestId = createId("action");
   const nextConversation = startAction(conversation.value, {
     requestId,
     surfaceId: rendered.action.surfaceId,
@@ -502,8 +505,8 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
     const actionResult = await client.action({
       protocolVersion: "1.0",
       requestId,
-      threadId: result.value.threadId,
-      runId: result.value.runId,
+      threadId: turn.runtimeResult.threadId,
+      runId: turn.runtimeResult.runId,
       action: {
         ...rendered.action,
         ...(rendered.requiresConfirmation ? { approved: true } : {}),
@@ -527,12 +530,17 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
     await nextTick();
     runState.value = actionResult.status;
   } catch (caught) {
+    const displayError = displayErrorFromUnknown(caught);
     conversation.value = failOperation(
       conversation.value,
       turn.turnId,
-      turnFailure(displayErrorFromUnknown(caught)),
+      turnFailure(displayError),
+      displayError.code === "WORKBENCH_REQUEST_CANCELLED" ? "cancelled" : "failed",
     );
-    runState.value = "failed";
+    runState.value =
+      displayError.code === "WORKBENCH_REQUEST_CANCELLED"
+        ? "cancelled"
+        : "failed";
   } finally {
     if (activeController.value === controller) activeController.value = undefined;
   }
@@ -740,6 +748,7 @@ onBeforeUnmount(() => {
           >
             <ControlledCopilotChatView
               :input-value="input"
+              :is-action-disabled="conversation.activeOperation !== undefined"
               :is-input-disabled="isInputDisabled"
               :is-running="runState === 'running' || runState === 'rendering'"
               :messages="[...messages]"
@@ -747,6 +756,7 @@ onBeforeUnmount(() => {
               data-testid="controlled-copilot-chat"
               @action="handleA2UIAction"
               @input-change="input = $event"
+              @retry="retryTurn"
               @stop="cancelRequest"
               @submit-message="sendMessage($event)"
             />
@@ -761,14 +771,6 @@ onBeforeUnmount(() => {
             <p>{{ error.message }}</p>
             <code v-if="error.path">字段路径：{{ error.path }}</code>
           </div>
-          <button
-            v-if="error.retryable && lastMessage"
-            class="secondary-button"
-            type="button"
-            @click="retryLastRequest"
-          >
-            重试上次请求
-          </button>
         </section>
 
         <div v-if="result" class="results-grid">
