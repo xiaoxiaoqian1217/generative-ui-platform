@@ -88,7 +88,7 @@ $env:PRESENTATION_PROVIDER_SMOKE_MODEL_NAME = "<configured-model-name>"
 $env:PRESENTATION_PROVIDER_SMOKE_API_KEY = "<secret>"
 $env:PRESENTATION_PROVIDER_SMOKE_BASE_URL = "<optional-https-base-url>"
 $env:PRESENTATION_PROVIDER_SMOKE_ENDPOINT_ID = "<optional-endpoint-id>"
-pnpm --filter @generative-ui/presentation-pipeline test:provider-smoke
+真实 Provider 仅在 Workbench 本地联调中使用，不提供独立 smoke 命令。
 ```
 
 `PRESENTATION_PROVIDER_SMOKE_PROVIDER` 支持 `kimi`、`doubao`、`glm`、`qwen` 和 `openai-compatible`。

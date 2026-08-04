@@ -36,7 +36,7 @@ function run(command, args, cwd) {
 if (
   (await run(
     process.execPath,
-    [packageManagerCli, "--filter", "@generative-ui/web-workbench", "build"],
+    [packageManagerCli, "build:platform"],
     repositoryRoot,
   )) !== 0
 )
