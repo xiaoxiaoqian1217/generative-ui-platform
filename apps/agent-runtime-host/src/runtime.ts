@@ -1,4 +1,3 @@
-import { HttpAgent } from "@ag-ui/client";
 import {
   CopilotRuntime,
   copilotRuntimeNodeHttpEndpoint,
@@ -25,6 +24,7 @@ import type {
 } from "@generative-ui/runtime-contract";
 import type { RequestHandler } from "express";
 import type { RuntimeHostConfig } from "./config.js";
+import { CopilotKitRuntimeAgent } from "./copilotkit-runtime-agent.js";
 import { createRunOrchestrator, type RunOrchestrator } from "./orchestrator.js";
 import { createSurfaceContextStore } from "./surface-context-store.js";
 
@@ -80,23 +80,6 @@ export function createRuntimeHost(
   config: RuntimeHostConfig,
   dependencies: RuntimeHostDependencies = {},
 ): RuntimeHost {
-  const legacyAgUiAgent = new HttpAgent({
-    url: config.businessAgentUrl,
-  });
-
-  const runtime = new CopilotRuntime({
-    agents: {
-      [config.agentId]: legacyAgUiAgent,
-      default: legacyAgUiAgent,
-    },
-  });
-
-  const serviceAdapter = new ExperimentalEmptyAdapter();
-  const handler = copilotRuntimeNodeHttpEndpoint({
-    endpoint: config.endpoint,
-    runtime,
-    serviceAdapter,
-  }) as RequestHandler;
   const presentationPipeline =
     dependencies.presentationPipeline ??
     createEmbeddedPresentationPipeline(config);
@@ -124,6 +107,22 @@ export function createRuntimeHost(
           : config.presentationModel.registration.modelName,
     },
   });
+  const copilotKitAgent = new CopilotKitRuntimeAgent(
+    orchestrator,
+    config.agentId,
+  );
+  const runtime = new CopilotRuntime({
+    agents: {
+      [config.agentId]: copilotKitAgent,
+      default: copilotKitAgent,
+    },
+  });
+  const serviceAdapter = new ExperimentalEmptyAdapter();
+  const handler = copilotRuntimeNodeHttpEndpoint({
+    endpoint: config.endpoint,
+    runtime,
+    serviceAdapter,
+  }) as RequestHandler;
 
   return {
     handler,

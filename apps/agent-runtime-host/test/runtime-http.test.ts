@@ -1,14 +1,14 @@
-import { createServer } from "node:http";
 import { once } from "node:events";
-import express from "express";
+import { createServer } from "node:http";
 import { MockBusinessAgentAdapter } from "@generative-ui/business-agent-adapter";
+import express from "express";
 import { afterEach, describe, expect, it } from "vitest";
+import { createRuntimeHost } from "../src/runtime.js";
 import {
   attachRuntimeHttp,
   RUNTIME_DEPENDENCIES_HEALTH_PATH,
   RUNTIME_RUNS_PATH,
 } from "../src/runtime-http.js";
-import { createRuntimeHost } from "../src/runtime.js";
 
 const servers = new Set<ReturnType<typeof createServer>>();
 afterEach(async () => {
@@ -27,7 +27,6 @@ describe("Runtime HTTP transport", () => {
       port: 8200,
       endpoint: "/api/copilotkit",
       agentId: "business-agent",
-      businessAgentUrl: "http://unused",
       businessAgentContractUrl: "http://127.0.0.1:1",
       presentationModel: { mode: "fixture" },
     } as const;

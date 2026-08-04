@@ -1,67 +1,27 @@
 import { createServer } from "node:http";
-import express from "express";
 import { loadConfig } from "./config.js";
-import { attachDemoHttp, DEMO_HTTP_PATH } from "./demo-http.js";
-import {
-  attachDemoSocket,
-  attachRuntimeSocket,
-  DEMO_SOCKET_PATH,
-} from "./demo-socket.js";
+import { attachRuntimeSocket, RUNTIME_SOCKET_PATH } from "./demo-socket.js";
 import { createRuntimeHost } from "./runtime.js";
-import { attachRuntimeHttp } from "./runtime-http.js";
+import { createRuntimeHostApp } from "./runtime-host-app.js";
+import { RUNTIME_ACTIONS_PATH, RUNTIME_RUNS_PATH } from "./runtime-http.js";
 
 const config = loadConfig();
-const app = express();
 const host = createRuntimeHost(config);
-const { handler } = host;
-
-app.disable("x-powered-by");
-app.use(express.json({ limit: "1mb" }));
-
-app.get("/health", (_request, response) => {
-  response.set("Access-Control-Allow-Origin", "*");
-  response.json({
-    status: "ok",
-    service: "agent-runtime-host",
-    agentId: config.agentId,
-    endpoint: config.endpoint,
-    demoHttpPath: DEMO_HTTP_PATH,
-    demoSocketPath: DEMO_SOCKET_PATH,
-    businessAgentConnected: false,
-  });
-});
-
-attachDemoHttp(app);
-attachRuntimeHttp(app, host, config);
-app.use(config.endpoint, handler);
-
-app.use(
-  (
-    error: unknown,
-    _request: express.Request,
-    response: express.Response,
-    _next: express.NextFunction,
-  ) => {
-    console.error(error);
-    response.status(500).json({
-      error: "runtime_host_error",
-      message: error instanceof Error ? error.message : "Unknown error",
-    });
-  },
-);
-
-const server = createServer(app);
-attachDemoSocket(server);
+const server = createServer(createRuntimeHostApp(host, config));
 attachRuntimeSocket(server, host);
+const localAccessHost = config.host === "0.0.0.0" ? "127.0.0.1" : config.host;
 
 server.listen(config.port, config.host, () => {
   console.log(
-    `Agent Runtime Host listening at http://${config.host}:${config.port}${config.endpoint}`,
+    `Agent Runtime Host listening locally at http://${localAccessHost}:${config.port}`,
   );
   console.log(
-    `Mock HTTP demo listening at http://${config.host}:${config.port}${DEMO_HTTP_PATH}`,
+    `Runtime HTTP endpoints: POST ${RUNTIME_RUNS_PATH}, POST ${RUNTIME_ACTIONS_PATH}`,
   );
   console.log(
-    `Mock WebSocket demo listening at ws://${config.host}:${config.port}${DEMO_SOCKET_PATH}`,
+    `Runtime WebSocket endpoint: ws://${localAccessHost}:${config.port}${RUNTIME_SOCKET_PATH}`,
+  );
+  console.log(
+    `CopilotKit Headless endpoint: http://${localAccessHost}:${config.port}${config.endpoint}`,
   );
 });

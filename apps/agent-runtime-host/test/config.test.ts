@@ -8,7 +8,6 @@ describe("loadConfig", () => {
       port: 8200,
       endpoint: "/api/copilotkit",
       agentId: "business-agent",
-      businessAgentUrl: "http://localhost:8000/ag-ui",
       businessAgentContractUrl: "http://localhost:8300",
       presentationModel: { mode: "fixture" },
       runtime: { totalTimeoutMs: 15_000, maxConcurrentRuns: 16 },
@@ -22,7 +21,6 @@ describe("loadConfig", () => {
         PORT: "9000",
         COPILOTKIT_ENDPOINT: "/copilotkit",
         BUSINESS_AGENT_ID: "planner-agent",
-        BUSINESS_AGENT_URL: "http://localhost:9001/ag-ui",
         BUSINESS_AGENT_CONTRACT_URL: "http://localhost:9300",
       }),
     ).toEqual({
@@ -30,7 +28,6 @@ describe("loadConfig", () => {
       port: 9000,
       endpoint: "/copilotkit",
       agentId: "planner-agent",
-      businessAgentUrl: "http://localhost:9001/ag-ui",
       businessAgentContractUrl: "http://localhost:9300",
       presentationModel: { mode: "fixture" },
       runtime: { totalTimeoutMs: 15_000, maxConcurrentRuns: 16 },
