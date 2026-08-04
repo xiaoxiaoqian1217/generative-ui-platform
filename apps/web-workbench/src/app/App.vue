@@ -9,7 +9,19 @@ import {
   onBeforeUnmount,
   onMounted,
   ref,
+  shallowRef,
 } from "vue";
+import {
+  createConversationState,
+  failOperation,
+  resolveAction,
+  resolveRun,
+  setConversationInput,
+  startAction,
+  startRun,
+  type ConversationState,
+  type TurnFailure,
+} from "../conversation/conversation-store.js";
 import DiagnosticsPanel from "../diagnostics/DiagnosticsPanel.vue";
 import A2UIRenderer from "../renderer/A2UIRenderer.vue";
 import CatalogComponentPreview from "../catalog/CatalogComponentPreview.vue";
@@ -134,12 +146,38 @@ const workbenchVersion = __WORKBENCH_VERSION__;
 const connectionState = ref<ConnectionState>("connecting");
 const connectionNotice = ref("正在探测 Runtime Host");
 const runState = ref<RunState>("idle");
-const input = ref(pendingCase?.input ?? quickScenarios[0]?.message ?? "");
-const result = ref<RuntimeRunResult>();
-const conversationThreadId = ref<string>();
-const error = ref<DisplayError>();
+const conversation = shallowRef<ConversationState>(
+  createConversationState(pendingCase?.input ?? quickScenarios[0]?.message ?? ""),
+);
+const input = computed({
+  get: () => conversation.value.inputValue,
+  set: (value: string) => {
+    conversation.value = setConversationInput(conversation.value, value);
+  },
+});
+const currentTurn = computed(() => conversation.value.turns.at(-1));
+const result = computed(() => currentTurn.value?.runtimeResult);
+const conversationThreadId = computed(() => {
+  for (const turn of [...conversation.value.turns].reverse()) {
+    if (turn.threadId !== undefined) return turn.threadId;
+  }
+  return undefined;
+});
+const configurationFailure = ref<DisplayError>();
+const error = computed<DisplayError | undefined>(() => {
+  if (configurationFailure.value !== undefined) return configurationFailure.value;
+  const failure = currentTurn.value?.failure;
+  return failure === undefined
+    ? undefined
+    : {
+        code: failure.code,
+        message: failure.message,
+        retryable: failure.retryable,
+        ...(failure.stage === undefined ? {} : { stage: failure.stage }),
+      };
+});
 const refreshNotice = ref("");
-const lastMessage = ref("");
+const lastMessage = computed(() => currentTurn.value?.userMessage.content ?? "");
 const activeController = ref<AbortController>();
 const route = ref(resolveWorkbenchRoute(window.location.pathname));
 const settingsRuntimeHostUrl = ref(config.runtimeHostUrl);
@@ -244,7 +282,7 @@ function configureHeadlessRuntime(): void {
 
   if (configurationError !== undefined) {
     applyConnectionState("unavailable");
-    error.value = {
+    configurationFailure.value = {
       code: configurationError,
       message:
         "Runtime Host 地址配置无效，请检查 runtime-config.js 或 VITE_RUNTIME_HOST_URL。",
@@ -331,26 +369,39 @@ function displayErrorFromUnknown(value: unknown): DisplayError {
   };
 }
 
+function turnFailure(error: DisplayError): TurnFailure {
+  return {
+    code: error.code,
+    message: error.message,
+    retryable: error.retryable,
+    ...(error.stage === undefined ? {} : { stage: error.stage }),
+  };
+}
+
 async function sendMessage(message = input.value): Promise<void> {
   const normalizedMessage = message.trim();
   if (!client || normalizedMessage === "" || !canSend.value) {
     return;
   }
 
+  const request = createRequest(normalizedMessage);
+  const turnId = `turn-${request.requestId}`;
+  const nextConversation = startRun(conversation.value, {
+    message: normalizedMessage,
+    requestId: request.requestId,
+    turnId,
+  });
+  if (nextConversation === conversation.value) return;
+  conversation.value = nextConversation;
   const controller = new AbortController();
   activeController.value = controller;
-  error.value = undefined;
-  result.value = undefined;
   runState.value = "running";
-  lastMessage.value = normalizedMessage;
 
   try {
     const runtimeResult = await client.run(
-      createRequest(normalizedMessage),
+      request,
       controller.signal,
     );
-    result.value = runtimeResult;
-    conversationThreadId.value = runtimeResult.threadId;
     if (activeCase.value !== undefined) {
       caseEvaluation.value = evaluateCase(
         activeCase.value.expectation,
@@ -370,18 +421,27 @@ async function sendMessage(message = input.value): Promise<void> {
     }
     saveInspectionSnapshot(window.sessionStorage, runtimeResult);
     inspection.value = loadInspectionSnapshot(window.sessionStorage);
-    error.value = platformErrorFromResult(runtimeResult);
     if (runtimeResult.status === "failed") {
+      const failure = platformErrorFromResult(runtimeResult);
+      if (failure !== undefined)
+        conversation.value = failOperation(conversation.value, turnId, turnFailure(failure));
       runState.value = "failed";
       return;
     }
+
+    conversation.value = resolveRun(conversation.value, turnId, runtimeResult);
 
     runState.value = "rendering";
     await nextTick();
     runState.value = runtimeResult.status;
   } catch (caught) {
     const displayError = displayErrorFromUnknown(caught);
-    error.value = displayError;
+    conversation.value = failOperation(
+      conversation.value,
+      turnId,
+      turnFailure(displayError),
+      displayError.code === "WORKBENCH_REQUEST_CANCELLED" ? "cancelled" : "failed",
+    );
     runState.value =
       displayError.code === "WORKBENCH_REQUEST_CANCELLED"
         ? "cancelled"
@@ -419,14 +479,28 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
     )
   )
     return;
+  const turn = conversation.value.turns.find((item) =>
+    item.businessSurfaces.some(
+      (surface) =>
+        surface.surfaceId === rendered.action.surfaceId && surface.status === "active",
+    ),
+  );
+  if (turn === undefined) return;
+  const requestId = globalThis.crypto.randomUUID?.() ?? `action-${Date.now()}`;
+  const nextConversation = startAction(conversation.value, {
+    requestId,
+    surfaceId: rendered.action.surfaceId,
+    turnId: turn.turnId,
+  });
+  if (nextConversation === conversation.value) return;
+  conversation.value = nextConversation;
   const controller = new AbortController();
   activeController.value = controller;
-  error.value = undefined;
   runState.value = "running";
   try {
     const actionResult = await client.action({
       protocolVersion: "1.0",
-      requestId: globalThis.crypto.randomUUID?.() ?? `action-${Date.now()}`,
+      requestId,
       threadId: result.value.threadId,
       runId: result.value.runId,
       action: {
@@ -434,17 +508,29 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
         ...(rendered.requiresConfirmation ? { approved: true } : {}),
       },
     }, controller.signal);
-    result.value = actionResult;
-    conversationThreadId.value = actionResult.threadId;
     saveInspectionSnapshot(window.sessionStorage, actionResult);
     inspection.value = loadInspectionSnapshot(window.sessionStorage);
-    error.value = platformErrorFromResult(actionResult);
-    if (actionResult.status === "failed") { runState.value = "failed"; return; }
+    if (actionResult.status === "failed") {
+      const failure = platformErrorFromResult(actionResult);
+      if (failure !== undefined)
+        conversation.value = failOperation(
+          conversation.value,
+          turn.turnId,
+          turnFailure(failure),
+        );
+      runState.value = "failed";
+      return;
+    }
+    conversation.value = resolveAction(conversation.value, turn.turnId, actionResult);
     runState.value = "rendering";
     await nextTick();
     runState.value = actionResult.status;
   } catch (caught) {
-    error.value = displayErrorFromUnknown(caught);
+    conversation.value = failOperation(
+      conversation.value,
+      turn.turnId,
+      turnFailure(displayErrorFromUnknown(caught)),
+    );
     runState.value = "failed";
   } finally {
     if (activeController.value === controller) activeController.value = undefined;
