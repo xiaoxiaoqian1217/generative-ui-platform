@@ -1,14 +1,12 @@
 import { spawn } from "node:child_process";
-import { setTimeout as delay } from "node:timers/promises";
 import { join } from "node:path";
-import {
-  isPortAvailable,
-  platformPorts,
-  readProcessState,
-  repositoryRoot,
-} from "./platform-processes.mjs";
+import { setTimeout as delay } from "node:timers/promises";
+import { readProcessState, repositoryRoot } from "./platform-processes.mjs";
 
-const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const packageManagerCli = process.env.npm_execpath;
+if (packageManagerCli === undefined) {
+  throw new Error("PACKAGE_MANAGER_CLI_UNAVAILABLE");
+}
 const playwrightCli = join(
   repositoryRoot,
   "apps",
@@ -20,10 +18,9 @@ const playwrightCli = join(
 );
 function run(args, environment = {}) {
   return new Promise((resolve) => {
-    const child = spawn(pnpmCommand, args, {
+    const child = spawn(process.execPath, [packageManagerCli, ...args], {
       cwd: repositoryRoot,
       env: { ...process.env, ...environment },
-      shell: process.platform === "win32",
       stdio: "inherit",
       windowsHide: true,
     });
@@ -45,20 +42,15 @@ function runPlaywright(args, environment = {}) {
   });
 }
 
-async function waitForPlatformPortsAvailable(timeoutMs = 5_000) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const available = await Promise.all(
-      platformPorts.map(({ port }) => isPortAvailable(port)),
-    );
-    if (available.every(Boolean)) return true;
-    await delay(100);
-  }
-  return false;
-}
-
 async function runFixtureSuite(environment, grep) {
-  if ((await run(["dev:platform", "--", "--background"], environment)) !== 0)
+  const fixtureEnvironment = {
+    ...environment,
+    PRESENTATION_MODEL_PROVIDER: "fixture",
+  };
+  if (
+    (await run(["dev:platform", "--", "--background"], fixtureEnvironment)) !==
+    0
+  )
     throw new Error("PLATFORM_START_FAILED");
   let cleanupError;
   try {
@@ -79,7 +71,7 @@ async function runFixtureSuite(environment, grep) {
             "--require-running",
             "--require-build",
           ],
-          environment,
+          fixtureEnvironment,
         )) === 0
       )
         break;
@@ -88,16 +80,15 @@ async function runFixtureSuite(environment, grep) {
     }
     const result = await runPlaywright(
       ["test", "--config", "playwright.platform.config.ts", "--grep", grep],
-      environment,
+      fixtureEnvironment,
     );
     if (result !== 0) throw new Error("PLATFORM_E2E_FAILED");
   } finally {
-    await run(["stop:platform"]);
-    if ((await readProcessState()).length !== 0) {
+    if ((await run(["stop:platform"])) !== 0) {
       cleanupError = new Error("PLATFORM_PROCESS_CLEANUP_FAILED");
     }
-    if (!(await waitForPlatformPortsAvailable())) {
-      cleanupError ??= new Error("PLATFORM_PORT_CLEANUP_FAILED");
+    if ((await readProcessState()).length !== 0) {
+      cleanupError ??= new Error("PLATFORM_PROCESS_STATE_CLEANUP_FAILED");
     }
   }
   if (cleanupError) throw cleanupError;

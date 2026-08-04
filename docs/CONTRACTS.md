@@ -525,11 +525,9 @@ Business Agent Run、Business Agent Resume Action、Runtime Run、Runtime Action
 后续 `apps/business-agent-langgraph`、Business Agent Adapter、Agent Runtime Host、Workbench 和 Action 回传任务必须依赖该包，而不是在应用内重新定义相同公共消息。
 
 需废弃或迁移的类型如下。
-`apps/web-demo` 目前使用 `user_message`、`agent_message`、`system_message` 和 `error_message` 作为临时 Mock Demo 消息。
-这些消息只作为旧 Demo smoke 兼容层保留。
-TASK-005 和 TASK-006 引入 `/api/runs`、`/api/actions` 和 `/ws/runs` 后，Web 与 Runtime 的正式链路必须迁移到 `runtime-contract`。
-旧 Demo 测试迁移完成前不得直接删除旧消息。
-迁移完成后，应删除旧 Demo 私有消息或把它们限制为内部测试 Fixture。
+旧 Web Demo 浏览器应用已经删除。
+`user_message`、`agent_message`、`system_message` 和 `error_message` 私有消息仍仅作为 Runtime Host Mock HTTP 和 WebSocket 兼容 Fixture 使用。
+Web 与 Runtime 的正式链路使用 `runtime-contract` 提供的 `/api/runs`、`/api/actions` 和 `/ws/runs` 契约。
 
 存在语义冲突的类型如下。
 历史 `PresentationRequest` 曾作为 UI Compiler Service HTTP 输入描述。

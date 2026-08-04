@@ -116,7 +116,7 @@ Generative UI Platform 已逐步形成以下能力：
 - Markdown 安全处理；
 - Schema 校验和降级机制。
 
-现有 `apps/web-demo` 主要用于验证浏览器与 Runtime Host 之间的 HTTP 或 WebSocket 基础通信。
+已删除的 `apps/web-demo` 仅用于验证浏览器与 Runtime Host 之间的旧 Mock HTTP 或 WebSocket 基础通信。
 
 它不能作为长期开发和验收环境，原因包括：
 
