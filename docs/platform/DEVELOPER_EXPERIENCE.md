@@ -1,6 +1,6 @@
 # 平台开发者体验
 
-## 五分钟 Fixture 快速开始
+## 五分钟真实 Provider 快速开始
 
 需要 Node.js 24 或更高版本和 pnpm 10.13.1。
 
@@ -19,6 +19,7 @@ pnpm dev:platform
 ```
 
 启动器要求配置真实 Presentation Model 的服务端凭证。
+缺少配置时会失败，不会回退到 Fixture。
 
 访问 `http://127.0.0.1:5173`，依次尝试 HTTP、WebSocket、Markdown、设备状态和巡逻确认。
 
@@ -76,9 +77,10 @@ Workbench 依赖 Runtime Host，地址为 `http://127.0.0.1:5173`。
 
 `pnpm test:e2e:platform` 是唯一的自包含平台浏览器 E2E 入口。
 
-它确保 Chromium 可用，构建服务，隔离 Fixture 环境，启动三服务并检查健康度，保存 Playwright trace 与日志，然后清理进程和端口。
+它确保 Chromium 可用，构建 Workbench，并在测试进程内运行受控 Runtime Stub。
+该 Stub 不读取 Provider 配置，也不是可通过运行配置启用的 Fixture Provider。
 
-CI 使用同一 Fixture 路径运行 `pnpm validate`。
+CI 使用同一确定性测试替身运行 `pnpm validate`。
 
 真实 Provider smoke 不属于 CI，需本地显式执行 `pnpm test:provider-smoke`。
 

@@ -1,12 +1,16 @@
 # Generative UI Platform
 
-## 可复现 Fixture 快速开始
+## 真实 Provider 快速开始
 
-从干净克隆开始执行 `./scripts/bootstrap.ps1`，然后执行 `pnpm dev:platform`。
+从干净克隆开始执行 `./scripts/bootstrap.ps1`。
+在 `apps/agent-runtime-host/.env.local` 中配置真实 Presentation Model Provider 后，执行 `pnpm dev:platform`。
 
-Fixture 不需要模型密钥，浏览器入口是 `http://127.0.0.1:5173`。
+`pnpm dev:platform` 不会静默回退到 Fixture。
+缺少 Provider、模型名或 API Key 时启动会失败并指出缺失的配置项。
+浏览器入口是 `http://127.0.0.1:5173`。
 
-执行 `pnpm test:e2e:platform` 可运行自包含的三服务浏览器 E2E。
+执行 `pnpm test:e2e:platform` 可运行自包含、无需模型密钥的浏览器 E2E。
+测试仅在测试进程内注入确定性替身，不提供可运行的 Fixture Provider。
 
 完整的配置、单应用启动、真实 Provider、调试和排障说明见[平台开发者体验](./docs/platform/DEVELOPER_EXPERIENCE.md)。
 

@@ -149,7 +149,7 @@ if (requireRunning) {
 if (failures.length > 0) {
   process.stderr.write(
     `Platform environment check failed: ${failures.join(",")}\n` +
-      "Run `pnpm check:doctor -- --source --require-build --browser` for a local fixture diagnosis. Values are intentionally never printed.\n",
+      "Run `pnpm check:doctor -- --source --require-build --browser` for a local environment diagnosis. Values are intentionally never printed.\n",
   );
   process.exitCode = 1;
 } else {

@@ -123,8 +123,9 @@ pnpm verify:platform
 pnpm docs:check
 ```
 
-`pnpm test:e2e:platform` 会自行启动和停止三服务环境。
-该测试使用真实 Chromium 和进程内测试替身，覆盖 HTTP Markdown 与 A2UI、WebSocket、Action Resume、相关 ID 诊断及安全 Markdown 降级。
+`pnpm test:e2e:platform` 会启动受控的测试服务器。
+该测试使用真实 Chromium 和进程内测试替身，覆盖 Workbench 对 HTTP Markdown 与 A2UI 的渲染、CopilotKit 事件消费和安全 Markdown 降级。
+它不启动真实 Provider，也不将可运行的 Fixture Provider 作为测试依赖。
 `pnpm verify:platform` 依次构建、检查环境并执行同一套平台 E2E。
 
 ## 排障
@@ -135,7 +136,7 @@ pnpm docs:check
 | Workbench 显示 Runtime Host 不可用 | `http://127.0.0.1:8200/health`。 | 确认 `pnpm dev:platform` 仍在运行，并检查 Runtime Host 启动输出。 |
 | 依赖健康检查失败 | `http://127.0.0.1:8200/health/dependencies`。 | `BUSINESS_AGENT_UNREACHABLE` 表示 8300 不可达，`BUSINESS_AGENT_UNHEALTHY` 表示 Agent 响应异常。 |
 | 真实 Provider 无法启动 | Runtime Host 服务端环境变量。 | 核对 Provider、模型名、API Key、可选 Base URL 与 Endpoint ID，且不要把密钥写入前端变量。 |
-| 展示降级为 Markdown | Workbench 的 PresentationResult 与诊断摘要。 | Fixture 故障、Provider、候选校验或编译失败都会保留有效业务结果并安全降级。 |
+| 展示降级为 Markdown | Workbench 的 PresentationResult 与诊断摘要。 | 测试替身故障、Provider、候选校验或编译失败都会保留有效业务结果并安全降级。 |
 | Action 被拒绝 | Action 的 `threadId`、`runId`、`surfaceId`、`actionId`、Payload 和审批状态。 | 重新运行生成 Surface，并从当前 Surface 触发 Action；Surface 被消费后不能重放。 |
 
 ## 相关文档
