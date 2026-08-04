@@ -1,49 +1,28 @@
 import { spawn } from "node:child_process";
-import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import {
   assertPortsAvailable,
+  createWorkbenchEnvironment,
   readProcessState,
   removeProcessState,
-  repositoryRoot,
   stopTrackedPlatformProcesses,
   writeProcessState,
 } from "./platform-processes.mjs";
+import { platformServices, platformUrls } from "./platform-topology.mjs";
 
 const background = process.argv.includes("--background");
-const tsxCli = join(repositoryRoot, "node_modules", "tsx", "dist", "cli.mjs");
-const workbenchDirectory = join(repositoryRoot, "apps", "web-workbench");
-const webEnvironment = Object.fromEntries(
-  Object.entries(process.env).filter(([name]) => !name.startsWith("VITE_")),
-);
-const services = [
-  {
-    name: "Reference Business Agent",
-    cwd: join(repositoryRoot, "apps", "business-agent-langgraph"),
-    args: [tsxCli, "watch", "src/cli.ts"],
-    environment: {},
-  },
-  {
-    name: "Agent Runtime Host",
-    cwd: join(repositoryRoot, "apps", "agent-runtime-host"),
-    args: [tsxCli, "watch", "src/main.ts"],
-    environment: { BUSINESS_AGENT_CONTRACT_URL: "http://127.0.0.1:8300" },
-  },
-  {
-    name: "Generative UI Workbench",
-    cwd: workbenchDirectory,
-    args: [
-      join(workbenchDirectory, "node_modules", "vite", "bin", "vite.js"),
-      "--host",
-      "0.0.0.0",
-    ],
-    environment: {
-      ...webEnvironment,
-      VITE_RUNTIME_HOST_URL: "http://127.0.0.1:8200",
-      VITE_WORKBENCH_ENVIRONMENT: "platform-local",
-    },
-  },
-];
+const services = platformServices.map((service) => ({
+  ...service,
+  environment:
+    service.name === "Generative UI Workbench"
+      ? createWorkbenchEnvironment()
+      : {
+          ...process.env,
+          ...(service.name === "Agent Runtime Host"
+            ? { BUSINESS_AGENT_CONTRACT_URL: platformUrls.businessAgent }
+            : {}),
+        },
+}));
 
 if ((await readProcessState()).length > 0) {
   throw new Error("PLATFORM_ALREADY_RUNNING: run pnpm stop:platform first.");
@@ -60,10 +39,10 @@ async function waitForPlatformHealth() {
   for (let attempt = 0; attempt < 30; attempt += 1) {
     try {
       const [workbench, runtime, agent, dependencies] = await Promise.all([
-        fetch("http://127.0.0.1:5173/"),
-        fetch("http://127.0.0.1:8200/health"),
-        fetch("http://127.0.0.1:8300/health"),
-        fetch("http://127.0.0.1:8200/health/dependencies"),
+        fetch(`${platformUrls.workbench}/`),
+        fetch(`${platformUrls.runtimeHost}/health`),
+        fetch(`${platformUrls.businessAgent}/health`),
+        fetch(`${platformUrls.runtimeHost}/health/dependencies`),
       ]);
       const body = await dependencies.json();
       if (
@@ -88,7 +67,7 @@ try {
   for (const service of services) {
     const child = spawn(process.execPath, service.args, {
       cwd: service.cwd,
-      env: { ...process.env, ...service.environment },
+      env: service.environment,
       detached: true,
       stdio: background ? "ignore" : "inherit",
       windowsHide: true,

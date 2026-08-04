@@ -1,11 +1,7 @@
 import { spawn } from "node:child_process";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import {
-  readProcessState,
-  repositoryRoot,
-  waitForPlatformPortsAvailable,
-} from "./platform-processes.mjs";
+import { readProcessState, repositoryRoot } from "./platform-processes.mjs";
 
 const packageManagerCli = process.env.npm_execpath;
 if (packageManagerCli === undefined) {
@@ -88,12 +84,11 @@ async function runFixtureSuite(environment, grep) {
     );
     if (result !== 0) throw new Error("PLATFORM_E2E_FAILED");
   } finally {
-    await run(["stop:platform"]);
-    if ((await readProcessState()).length !== 0) {
+    if ((await run(["stop:platform"])) !== 0) {
       cleanupError = new Error("PLATFORM_PROCESS_CLEANUP_FAILED");
     }
-    if (!(await waitForPlatformPortsAvailable())) {
-      cleanupError ??= new Error("PLATFORM_PORT_CLEANUP_FAILED");
+    if ((await readProcessState()).length !== 0) {
+      cleanupError ??= new Error("PLATFORM_PROCESS_STATE_CLEANUP_FAILED");
     }
   }
   if (cleanupError) throw cleanupError;

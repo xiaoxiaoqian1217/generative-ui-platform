@@ -2,25 +2,33 @@ import { mkdir, readFile, readlink, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { dirname, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { fileURLToPath } from "node:url";
+import {
+  platformServices,
+  platformUrls,
+  repositoryRoot,
+} from "./platform-topology.mjs";
 
-export const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
+export { repositoryRoot } from "./platform-topology.mjs";
 export const stateFile = join(repositoryRoot, ".platform", "processes.json");
-export const platformPorts = Object.freeze([
-  { name: "Workbench", port: 5173 },
-  { name: "Agent Runtime Host", port: 8200 },
-  { name: "Reference Business Agent", port: 8300 },
-]);
-const platformServiceNames = new Set([
-  "Reference Business Agent",
-  "Agent Runtime Host",
-  "Generative UI Workbench",
-]);
-const platformProcessMarkers = new Map([
-  ["Reference Business Agent", "@generative-ui/business-agent-langgraph"],
-  ["Agent Runtime Host", "@generative-ui/agent-runtime-host"],
-  ["Generative UI Workbench", "@generative-ui/web-workbench"],
-]);
+export const platformPorts = Object.freeze(
+  platformServices.map(({ healthName: name, port }) =>
+    Object.freeze({ name, port }),
+  ),
+);
+
+export function createWorkbenchEnvironment(environment = process.env) {
+  return {
+    ...Object.fromEntries(
+      Object.entries(environment).filter(([name]) => !name.startsWith("VITE_")),
+    ),
+    VITE_RUNTIME_HOST_URL: platformUrls.runtimeHost,
+    VITE_WORKBENCH_ENVIRONMENT: "platform-local",
+  };
+}
+const platformServiceNames = new Set(platformServices.map(({ name }) => name));
+const platformProcessMarkers = new Map(
+  platformServices.map(({ name, processMarker }) => [name, processMarker]),
+);
 
 export async function readProcessState() {
   try {
@@ -98,7 +106,7 @@ export async function waitForPlatformPortsAvailable(
 }
 
 export async function stopProcessTree(pid) {
-  if (!Number.isSafeInteger(pid) || pid <= 0) return;
+  if (!Number.isSafeInteger(pid) || pid <= 0) return true;
   if (process.platform === "win32") {
     const { spawn } = await import("node:child_process");
     await new Promise((resolve) => {
@@ -109,21 +117,35 @@ export async function stopProcessTree(pid) {
       taskkill.once("close", resolve);
       taskkill.once("error", resolve);
     });
-    return;
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (processTreeStopSucceeded(isProcessRunning(pid))) return true;
+      await delay(100);
+    }
+    return false;
   }
 
-  if (!signalProcessGroup(pid, "SIGTERM")) return;
+  if (!signalProcessGroup(pid, "SIGTERM")) return true;
   for (let attempt = 0; attempt < 20; attempt += 1) {
     await delay(100);
-    if (!isProcessGroupRunning(pid)) return;
+    if (!isProcessGroupRunning(pid)) return true;
   }
   signalProcessGroup(pid, "SIGKILL");
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await delay(100);
+    if (!isProcessGroupRunning(pid)) return true;
+  }
+  return false;
+}
+
+export function processTreeStopSucceeded(processRunning) {
+  return !processRunning;
 }
 
 export async function stopTrackedPlatformProcesses(processes) {
-  await Promise.all(
+  const stopped = await Promise.all(
     processes.map(async ({ name, pid }) => {
-      if (await isPlatformProcess(pid, name)) await stopProcessTree(pid);
+      if (!(await isPlatformProcess(pid, name))) return true;
+      return stopProcessTree(pid);
     }),
   );
   if (process.platform === "win32" && processes.length > 0) {
@@ -138,19 +160,26 @@ export async function stopTrackedPlatformProcesses(processes) {
       netstat.once("error", () => resolve(""));
     });
     const pids = new Set();
+    const listenerPattern = new RegExp(
+      `:(${platformPorts.map(({ port }) => port).join("|")})\\s+\\S+\\s+LISTENING\\s+(\\d+)$`,
+      "u",
+    );
     for (const line of output.split(/\r?\n/u)) {
-      const match = /:(5173|8200|8300)\s+\S+\s+LISTENING\s+(\d+)$/u.exec(
-        line.trim(),
-      );
+      const match = listenerPattern.exec(line.trim());
       if (match) pids.add(Number(match[2]));
     }
-    await Promise.all(
+    const listenerProcessesStopped = await Promise.all(
       [...pids].map(async (pid) => {
-        if (await isPlatformProcess(pid)) await stopProcessTree(pid);
+        if (!(await isPlatformProcess(pid))) return true;
+        return stopProcessTree(pid);
       }),
     );
+    stopped.push(...listenerProcessesStopped);
   }
-  if (!(await waitForPlatformPortsAvailable())) {
+  if (
+    stopped.some((result) => !result) ||
+    !(await waitForPlatformPortsAvailable())
+  ) {
     throw new Error("PLATFORM_PROCESS_CLEANUP_FAILED");
   }
 }
@@ -171,7 +200,17 @@ function isProcessGroupRunning(pid) {
     return true;
   } catch (error) {
     if (error?.code === "ESRCH") return false;
-    throw error;
+    return true;
+  }
+}
+
+function isProcessRunning(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    if (error?.code === "ESRCH") return false;
+    return true;
   }
 }
 
