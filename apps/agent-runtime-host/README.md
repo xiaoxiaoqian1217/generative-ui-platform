@@ -66,9 +66,8 @@ Runtime Host 不包含业务推理、业务工具调用、UI Plan 生成或 A2UI
 | --- | --- | --- |
 | `HOST` | `127.0.0.1` | HTTP 监听地址。仅在已有认证、TLS、受控 CORS 和 WebSocket Origin 校验的部署边界内，才应改为非回环地址。 |
 | `PORT` | `8200` | HTTP 监听端口。 |
-| `COPILOTKIT_ENDPOINT` | `/api/copilotkit` | 面向前端的 CopilotKit Runtime 路径。 |
+| `COPILOTKIT_ENDPOINT` | `/api/copilotkit` | CopilotKit Headless 的 AG-UI Runtime 路径。 |
 | `BUSINESS_AGENT_ID` | `business-agent` | 面向前端暴露的业务 Agent 标识。 |
-| `BUSINESS_AGENT_URL` | `http://localhost:8000/ag-ui` | 仅兼容 CopilotKit AG-UI 端点使用的远程业务 Agent 地址；三服务开发验证链路使用下方 Contract 地址。 |
 | `BUSINESS_AGENT_CONTRACT_URL` | `http://localhost:8300` | Runtime Host 通过 Business Agent Adapter 使用的 Contract HTTP 基址。 |
 | `COPILOTKIT_TELEMETRY_DISABLED` | `true` | 是否关闭 CopilotKit 匿名遥测。 |
 | `PRESENTATION_MODEL_PROVIDER` | `fixture` | `fixture`、`kimi`、`doubao`、`glm`、`qwen` 或 `openai-compatible`。 |
@@ -106,7 +105,10 @@ Runtime WebSocket 接口为 `ws://localhost:8200/ws/runs`。
 `/api/actions` 和 WebSocket action 消息使用相同的 Action 契约。
 浏览器不连接 Reference Business Agent、Presentation Pipeline、UI Compiler Core 或 Model Provider。
 
-前端应使用 `http://localhost:8200/api/copilotkit` 作为 Runtime URL，并选择 `business-agent` 或默认 Agent。
+Workbench 应配置 Runtime Host 基地址 `http://127.0.0.1:8200`。
+它会使用 `POST /api/runs`、`POST /api/actions` 和 `ws://127.0.0.1:8200/ws/runs`。
+CopilotKit Headless 应使用 `http://127.0.0.1:8200/api/copilotkit` 作为 Runtime URL。
+该端点通过 Runtime Adapter 调用同一个 RunOrchestrator，不直接转发到 Business Agent。
 
 ## 当前范围
 

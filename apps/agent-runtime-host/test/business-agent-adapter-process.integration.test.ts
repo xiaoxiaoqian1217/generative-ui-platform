@@ -92,7 +92,6 @@ describe("Runtime Host Business Agent Adapter process integration", () => {
       port: 8200,
       endpoint: "/api/copilotkit",
       agentId: "business-agent",
-      businessAgentUrl: "http://127.0.0.1:8300/ag-ui",
       businessAgentContractUrl: baseUrl,
       presentationModel: { mode: "fixture" },
     });

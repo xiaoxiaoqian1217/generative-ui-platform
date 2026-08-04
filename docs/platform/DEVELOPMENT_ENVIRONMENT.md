@@ -120,6 +120,8 @@ Workbench 默认使用 HTTP，并在界面左侧显示 Runtime Host 地址与健
 
 Workbench 的 HTTP 端点是 `POST http://127.0.0.1:8200/api/runs` 与 `POST http://127.0.0.1:8200/api/actions`。
 Workbench 的 WebSocket 端点是 `ws://127.0.0.1:8200/ws/runs`。
+使用 CopilotKit Headless 的前端应配置 `http://127.0.0.1:8200/api/copilotkit` 作为 Runtime URL。
+该端点通过 Runtime Adapter 使用同一个 RunOrchestrator，并以 AG-UI 事件发送 PresentationResult。
 两种传输共享同一个 RunOrchestrator、Runtime Contract、Action 校验和 Presentation Pipeline。
 在 Workbench 左侧选择“WebSocket”，再重复“设备状态”和“巡防方案”流程即可验证等价编排。
 

@@ -27,7 +27,8 @@ TASK-006 建立了 `apps/web-workbench`，作为平台长期开发、联调和�
 
 `apps/web-workbench` 是唯一的平台 Web 开发、联调和验收入口。
 旧 `apps/web-demo`、专用构建命令和专用测试已经删除。
-Runtime Host 的旧 Mock HTTP 和 WebSocket 端点仅保留为兼容 Fixture，不再作为浏览器入口或平台验收证据。
+Runtime Host 不再挂载旧 Mock HTTP 和 WebSocket 端点。
+相关单元测试 Fixture 仍可直接使用，不能作为浏览器入口或平台验收证据。
 
 ## 删除条件
 

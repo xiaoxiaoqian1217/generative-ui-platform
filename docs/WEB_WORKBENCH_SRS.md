@@ -653,7 +653,15 @@ Runtime Host 校验 Action 并通过 Business Agent Adapter 恢复 Agent Run，�
 
 MVP 必须支持仓库当前约定的 HTTP 和 WebSocket 通信。
 
-未来可以通过 Runtime Adapter 支持 AG-UI 等协议，但不得影响页面和 Renderer 核心。
+使用 CopilotKit Headless 的前端必须通过 Agent Runtime Host 的 AG-UI Adapter 通信。
+
+AG-UI Adapter 必须调用与 HTTP 和 WebSocket 相同的 RunOrchestrator，不得绕过 Presentation Pipeline。
+
+当前组件 Action 仍通过 Runtime Host 的 `/api/actions` 回传并由同一个 RunOrchestrator 编排。
+
+将 CopilotKit 前端 Tool Call 映射为组件 Action 需要单独的契约与实施范围。
+
+引入 AG-UI 不得影响页面和 Renderer 核心。
 
 ### FR-004 Runtime 配置展示
 

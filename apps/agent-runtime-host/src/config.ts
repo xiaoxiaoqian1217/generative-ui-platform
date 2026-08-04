@@ -21,7 +21,6 @@ export interface RuntimeHostConfig {
   port: number;
   endpoint: string;
   agentId: string;
-  businessAgentUrl: string;
   businessAgentContractUrl: string;
   presentationModel: RuntimeHostPresentationModelConfig;
   runtime?: { totalTimeoutMs: number; maxConcurrentRuns: number };
@@ -144,7 +143,6 @@ export function loadConfig(
     port: readPort(env.PORT),
     endpoint: env.COPILOTKIT_ENDPOINT ?? "/api/copilotkit",
     agentId: env.BUSINESS_AGENT_ID ?? "business-agent",
-    businessAgentUrl: env.BUSINESS_AGENT_URL ?? "http://localhost:8000/ag-ui",
     businessAgentContractUrl:
       env.BUSINESS_AGENT_CONTRACT_URL ?? "http://localhost:8300",
     presentationModel: readPresentationModelConfig(env),
