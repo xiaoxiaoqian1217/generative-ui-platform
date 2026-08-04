@@ -1,5 +1,15 @@
 # Generative UI Platform
 
+## 可复现 Fixture 快速开始
+
+从干净克隆开始执行 `./scripts/bootstrap.ps1`，然后执行 `pnpm dev:platform`。
+
+Fixture 不需要模型密钥，浏览器入口是 `http://127.0.0.1:5173`。
+
+执行 `pnpm test:e2e:platform` 可运行自包含的三服务浏览器 E2E。
+
+完整的配置、单应用启动、真实 Provider、调试和排障说明见[平台开发者体验](./docs/platform/DEVELOPER_EXPERIENCE.md)。
+
 面向 Agent 应用的生成式 UI 编译与交互运行基础设施仓库。
 
 ## 当前定位

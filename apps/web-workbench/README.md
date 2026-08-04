@@ -1,5 +1,21 @@
 # Generative UI Workbench
 
+## 开发者入口
+
+先启动 Agent Runtime Host，再在本目录运行 `pnpm dev`。
+
+开发命令加载 `.env` 与 `.env.local`，进程环境变量优先。
+
+成功后访问 `http://127.0.0.1:5173`。
+
+停止前台进程使用 Ctrl+C。
+
+Workbench 只能配置 `VITE_RUNTIME_HOST_URL` 与 `VITE_WORKBENCH_ENVIRONMENT`。
+
+不得将 Provider、API Key 或 Business Agent 地址写入 `VITE_*`。
+
+Runtime Host 不可用时检查 `http://127.0.0.1:8200/health` 和 `VITE_RUNTIME_HOST_URL`。
+
 `apps/web-workbench` 是 Generative UI Platform 的 Vue 3 Frontend Runtime 参考实现和长期开发验证工作台。
 它只连接 Agent Runtime Host，并用于开发、联调、诊断和基础验收。
 它不是正式业务产品，也不承担 Business Agent 适配、Run 编排或 UI 编译。

@@ -170,7 +170,12 @@ export async function stopTrackedPlatformProcesses(processes) {
     }
     const listenerProcessesStopped = await Promise.all(
       [...pids].map(async (pid) => {
-        if (!(await isPlatformProcess(pid))) return true;
+        const belongsToTrackedTree = await isWindowsProcessDescendant(
+          pid,
+          new Set(processes.map(({ pid: trackedPid }) => trackedPid)),
+        );
+        if (!(await isPlatformProcess(pid)) && !belongsToTrackedTree)
+          return true;
         return stopProcessTree(pid);
       }),
     );
@@ -182,6 +187,42 @@ export async function stopTrackedPlatformProcesses(processes) {
   ) {
     throw new Error("PLATFORM_PROCESS_CLEANUP_FAILED");
   }
+}
+
+async function isWindowsProcessDescendant(pid, ancestors) {
+  if (process.platform !== "win32") return false;
+  let current = pid;
+  const seen = new Set();
+  while (current > 0 && !seen.has(current)) {
+    if (ancestors.has(current)) return true;
+    seen.add(current);
+    const parent = await readWindowsParentProcessId(current);
+    if (parent === undefined) return false;
+    current = parent;
+  }
+  return false;
+}
+
+async function readWindowsParentProcessId(pid) {
+  const { spawn } = await import("node:child_process");
+  const command =
+    "(Get-CimInstance Win32_Process -Filter 'ProcessId = " +
+    `${pid}` +
+    "').ParentProcessId";
+  return new Promise((resolve) => {
+    let stdout = "";
+    const child = spawn("powershell", ["-NoProfile", "-Command", command], {
+      windowsHide: true,
+    });
+    child.stdout.on("data", (chunk) => {
+      stdout += String(chunk);
+    });
+    child.once("close", () => {
+      const parent = Number(stdout.trim());
+      resolve(Number.isSafeInteger(parent) && parent > 0 ? parent : undefined);
+    });
+    child.once("error", () => resolve(undefined));
+  });
 }
 
 function signalProcessGroup(pid, signal) {

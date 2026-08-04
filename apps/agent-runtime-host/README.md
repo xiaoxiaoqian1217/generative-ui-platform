@@ -2,6 +2,22 @@
 
 # Agent Runtime Host
 
+## 开发者入口
+
+先启动 Reference Business Agent，再在本目录运行 `pnpm dev`。
+
+开发命令加载 `.env` 与 `.env.local`，进程环境变量优先。
+
+Fixture 是默认 Provider，因此正常开发不需要密钥。
+
+成功后检查 `http://127.0.0.1:8200/health` 和 `http://127.0.0.1:8200/health/dependencies`。
+
+停止前台进程使用 Ctrl+C。
+
+真实 Provider 前先运行 `pnpm check:doctor -- --provider`，并只在服务器进程中设置密钥。
+
+`BUSINESS_AGENT_UNREACHABLE` 表示 8300 服务尚未启动或 `BUSINESS_AGENT_CONTRACT_URL` 不正确。
+
 `agent-runtime-host` 是 Generative UI Platform 的 CopilotKit Runtime 集成层。
 它位于前端和兼容 AG-UI 的远程业务 Agent 之间。
 

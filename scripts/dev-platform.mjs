@@ -1,5 +1,10 @@
 import { spawn } from "node:child_process";
+import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
+import {
+  loadDevelopmentEnvironment,
+  redactEnvironmentError,
+} from "./environment.mjs";
 import {
   assertPortsAvailable,
   createWorkbenchEnvironment,
@@ -8,9 +13,73 @@ import {
   stopTrackedPlatformProcesses,
   writeProcessState,
 } from "./platform-processes.mjs";
-import { platformServices, platformUrls } from "./platform-topology.mjs";
+import {
+  platformServices,
+  platformUrls,
+  repositoryRoot,
+} from "./platform-topology.mjs";
 
 const background = process.argv.includes("--background");
+const realProvider = process.argv.includes("--provider=real");
+if (
+  process.argv.some(
+    (argument) =>
+      argument.startsWith("--provider=") && argument !== "--provider=real",
+  )
+)
+  throw new Error(
+    "PLATFORM_PROVIDER_INVALID: use --provider=real or omit the option for fixture.",
+  );
+loadDevelopmentEnvironment(join(repositoryRoot, "apps", "agent-runtime-host"));
+const pnpmCli = process.env.npm_execpath;
+if (!pnpmCli) throw new Error("PACKAGE_MANAGER_CLI_UNAVAILABLE");
+if (realProvider) {
+  const providerCheck = spawn(
+    process.execPath,
+    ["scripts/check-platform-environment.mjs", "--provider"],
+    {
+      cwd: repositoryRoot,
+      stdio: "inherit",
+      env: process.env,
+      windowsHide: true,
+    },
+  );
+  if (
+    (await new Promise((resolve) =>
+      providerCheck.once("exit", (code) => resolve(code ?? 1)),
+    )) !== 0
+  )
+    throw new Error("PLATFORM_PROVIDER_CONFIGURATION_INVALID");
+}
+if ((await readProcessState()).length > 0) {
+  throw new Error("PLATFORM_ALREADY_RUNNING: run pnpm stop:platform first.");
+}
+await assertPortsAvailable();
+const build = spawn(
+  process.execPath,
+  [
+    pnpmCli,
+    "exec",
+    "turbo",
+    "run",
+    "build",
+    "--filter=@generative-ui/web-workbench...",
+    "--filter=@generative-ui/agent-runtime-host...",
+    "--filter=@generative-ui/business-agent-langgraph...",
+  ],
+  {
+    cwd: repositoryRoot,
+    stdio: "inherit",
+    env: process.env,
+    windowsHide: true,
+  },
+);
+if (
+  (await new Promise((resolve) =>
+    build.once("exit", (code) => resolve(code ?? 1)),
+  )) !== 0
+)
+  throw new Error("PLATFORM_BUILD_FAILED");
 const services = platformServices.map((service) => ({
   ...service,
   environment:
@@ -18,22 +87,38 @@ const services = platformServices.map((service) => ({
       ? createWorkbenchEnvironment()
       : {
           ...process.env,
+          ...(realProvider ? {} : { PRESENTATION_MODEL_PROVIDER: "fixture" }),
+          ...(service.name === "Reference Business Agent"
+            ? { BUSINESS_AGENT_PORT: String(service.port) }
+            : {}),
           ...(service.name === "Agent Runtime Host"
-            ? { BUSINESS_AGENT_CONTRACT_URL: platformUrls.businessAgent }
+            ? {
+                PORT: String(service.port),
+                BUSINESS_AGENT_CONTRACT_URL: platformUrls.businessAgent,
+              }
             : {}),
         },
 }));
-
-if ((await readProcessState()).length > 0) {
-  throw new Error("PLATFORM_ALREADY_RUNNING: run pnpm stop:platform first.");
-}
-await assertPortsAvailable();
 
 const children = [];
 const cleanup = async () => {
   await stopTrackedPlatformProcesses(children);
   await removeProcessState();
 };
+
+function attachForegroundLogs(child, name) {
+  const prefix = `[${name}] `;
+  for (const stream of [child.stdout, child.stderr]) {
+    stream?.on("data", (chunk) => {
+      const message = redactEnvironmentError(String(chunk))
+        .split(/\r?\n/u)
+        .filter(Boolean)
+        .map((line) => `${prefix}${line}\n`)
+        .join("");
+      process.stdout.write(message);
+    });
+  }
+}
 
 async function waitForPlatformHealth() {
   for (let attempt = 0; attempt < 30; attempt += 1) {
@@ -62,6 +147,34 @@ async function waitForPlatformHealth() {
   throw new Error("PLATFORM_HEALTH_TIMEOUT");
 }
 
+async function waitForServiceHealth(service) {
+  const url =
+    service.name === "Generative UI Workbench"
+      ? `${platformUrls.workbench}/`
+      : service.name === "Agent Runtime Host"
+        ? `${platformUrls.runtimeHost}/health/dependencies`
+        : `${platformUrls.businessAgent}/health`;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    try {
+      const response = await fetch(url);
+      const body =
+        service.name === "Agent Runtime Host"
+          ? await response.json()
+          : undefined;
+      if (
+        response.ok &&
+        (service.name !== "Agent Runtime Host" ||
+          body.dependencies?.businessAgent?.status === "ready")
+      )
+        return;
+    } catch {
+      // The named service is still starting.
+    }
+    await delay(1_000);
+  }
+  throw new Error(`PLATFORM_SERVICE_HEALTH_TIMEOUT:${service.name}`);
+}
+
 let started = false;
 try {
   for (const service of services) {
@@ -69,7 +182,7 @@ try {
       cwd: service.cwd,
       env: service.environment,
       detached: true,
-      stdio: background ? "ignore" : "inherit",
+      stdio: background ? "ignore" : ["ignore", "pipe", "pipe"],
       windowsHide: true,
     });
     child.once("error", (error) =>
@@ -78,7 +191,9 @@ try {
       ),
     );
     if (background) child.unref();
+    if (!background) attachForegroundLogs(child, service.name);
     children.push(child);
+    await waitForServiceHealth(service);
   }
   await writeProcessState(
     children.map((child, index) => ({
@@ -87,7 +202,7 @@ try {
     })),
   );
   process.stdout.write(
-    "Platform starting: Workbench :5173, Runtime Host :8200, Reference Business Agent :8300.\n",
+    `Platform starting in ${realProvider ? "real Provider" : "fixture"} mode: Workbench :${platformServices[2].port}, Runtime Host :${platformServices[1].port}, Reference Business Agent :${platformServices[0].port}.\n`,
   );
   await waitForPlatformHealth();
   started = true;
