@@ -1,3 +1,4 @@
+import type { UserMessage } from "@ag-ui/core";
 import type { PresentationResult } from "@generative-ui/presentation-contract";
 import type { RuntimeRunResult } from "@generative-ui/runtime-contract";
 
@@ -73,6 +74,22 @@ export function setConversationInput(
   inputValue: string,
 ): ConversationState {
   return { ...state, inputValue };
+}
+
+/**
+ * Projects the caller-owned conversation into the minimal AG-UI messages that
+ * the controlled chat view needs. Presentation content deliberately stays out
+ * of this projection: Markdown and A2UI are rendered by their dedicated,
+ * validated Workbench paths.
+ */
+export function conversationMessages(
+  state: ConversationState,
+): readonly UserMessage[] {
+  return state.turns.map((turn) => ({
+    content: turn.userMessage.content,
+    id: turn.userMessage.id,
+    role: "user",
+  }));
 }
 
 export function startRun(

@@ -490,7 +490,7 @@ pre {
   background: var(--red);
 }
 
-.composer-card textarea {
+.composer-card textarea:not([data-copilotkit-input]) {
   display: block;
   width: 100%;
   min-height: 118px;
@@ -504,7 +504,7 @@ pre {
   line-height: 1.65;
 }
 
-.composer-card textarea::placeholder {
+.composer-card textarea:not([data-copilotkit-input])::placeholder {
   color: #9ba5a0;
 }
 

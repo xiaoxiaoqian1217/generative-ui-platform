@@ -3,8 +3,10 @@ import type {
   RuntimeRunRequest,
   RuntimeRunResult,
 } from "@generative-ui/runtime-contract";
+import type { Message } from "@ag-ui/core";
 import {
   computed,
+  defineAsyncComponent,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -13,6 +15,7 @@ import {
 } from "vue";
 import {
   createConversationState,
+  conversationMessages,
   failOperation,
   resolveAction,
   resolveRun,
@@ -77,6 +80,13 @@ import {
   workbenchRouteLabel,
   WORKBENCH_ROUTES,
 } from "./routes.js";
+
+const ControlledCopilotChatView = defineAsyncComponent(
+  () => import("../conversation/ControlledCopilotChatView.vue"),
+);
+const CopilotKitConversationProvider = defineAsyncComponent(
+  () => import("../conversation/CopilotKitConversationProvider.vue"),
+);
 
 type RunState =
   | "idle"
@@ -155,6 +165,9 @@ const input = computed({
     conversation.value = setConversationInput(conversation.value, value);
   },
 });
+const messages = computed<readonly Message[]>(() =>
+  conversationMessages(conversation.value),
+);
 const currentTurn = computed(() => conversation.value.turns.at(-1));
 const result = computed(() => currentTurn.value?.runtimeResult);
 const conversationThreadId = computed(() => {
@@ -244,6 +257,9 @@ const canSend = computed(
     runState.value !== "rendering" &&
     connectionState.value === "connected" &&
     configurationError === undefined,
+);
+const isInputDisabled = computed(
+  () => connectionState.value !== "connected" || configurationError !== undefined,
 );
 const activeEndpoint = computed(() => endpoints.copilotKit);
 
@@ -723,47 +739,31 @@ onBeforeUnmount(() => {
           {{ refreshNotice }}
         </div>
 
-        <section class="composer-card">
+        <section class="composer-card conversation-card">
           <div class="composer-header">
             <div>
               <p class="eyebrow">PLAYGROUND</p>
-              <h2>运行一次展示请求</h2>
+              <h2>受控会话</h2>
             </div>
             <div class="run-state" :data-state="runState" data-testid="run-status">
               <span></span>{{ runLabels[runState] }}
             </div>
           </div>
-          <textarea
-            v-model="input"
-            aria-label="用户输入"
-            data-testid="message-input"
-            maxlength="10000"
-            placeholder="向 Runtime Host 发送一条消息…"
-            @keydown.ctrl.enter="sendMessage()"
-          ></textarea>
-          <div class="composer-footer">
-            <span>Ctrl + Enter 发送 · 防止重复提交 · 最长 10,000 字符</span>
-            <div class="button-group">
-              <button
-                v-if="runState === 'running' || runState === 'rendering'"
-                class="secondary-button"
-                data-testid="cancel-run"
-                type="button"
-                @click="cancelRequest"
-              >
-                取消
-              </button>
-              <button
-                class="primary-button"
-                :disabled="!canSend"
-                data-testid="send-run"
-                type="button"
-                @click="sendMessage()"
-              >
-                运行请求 <span>↗</span>
-              </button>
-            </div>
-          </div>
+          <CopilotKitConversationProvider
+            :runtime-url="endpoints.copilotKit"
+            data-testid="copilotkit-conversation"
+          >
+            <ControlledCopilotChatView
+              :input-value="input"
+              :is-input-disabled="isInputDisabled"
+              :is-running="runState === 'running' || runState === 'rendering'"
+              :messages="[...messages]"
+              data-testid="controlled-copilot-chat"
+              @input-change="input = $event"
+              @stop="cancelRequest"
+              @submit-message="sendMessage($event)"
+            />
+          </CopilotKitConversationProvider>
         </section>
 
         <section v-if="error" class="error-card" data-testid="error-state">
