@@ -1,7 +1,7 @@
 # Cursor Repository Rules
 
 Follow `AGENTS.md` as the source of truth for repository, output, and pull request rules.
-Follow `docs/REQUIREMENTS.md` for product scope and public contracts.
+Use the scope-specific documentation sources listed in `AGENTS.md` for product scope and public contracts.
 Do not duplicate rules from either file here.
 
 ## Commit messages

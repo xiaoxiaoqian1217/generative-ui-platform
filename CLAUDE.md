@@ -1,11 +1,12 @@
 # Claude Code Instructions
 
-Follow `AGENTS.md` and `docs/REQUIREMENTS.md` as the primary repository instructions.
+Follow `AGENTS.md` as the primary repository instructions.
+Select the applicable platform or Compiler documentation source according to its scope rules.
 
 Before coding:
 
 1. Identify the affected module and its allowed dependencies.
-2. Confirm the task is inside MVP scope.
+2. Confirm the task is inside the current approved scope.
 3. Reuse shared contracts rather than redefining types.
 
 Before finishing:
