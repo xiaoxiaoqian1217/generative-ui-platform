@@ -1,0 +1,8 @@
+/*
+ * CopilotKit scopes its component reset and visual rules to [data-copilotkit].
+ * It also declares inert global custom properties and @property registrations.
+ * Keep this import separate so the future conversation route is the only
+ * visual consumer; the route integration must retain non-conversation visual
+ * regression coverage.
+ */
+@import "@copilotkit/vue/styles.css";

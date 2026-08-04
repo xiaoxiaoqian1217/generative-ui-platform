@@ -36,6 +36,16 @@ Runtime Host 不可用时检查 `http://127.0.0.1:8200/health` 和 `VITE_RUNTIME
 - 使用受控 Component Registry 渲染 A2UI，并将用户 Action 回传 Runtime Host。
 - 对需要审批的 Action 请求浏览器显式确认。
 
+## CopilotKit Vue 兼容基线
+
+Workbench 固定使用 `@copilotkit/core` 与 `@copilotkit/vue` `1.64.1`。
+Runtime Host 继续固定 `@copilotkit/runtime` `1.63.2`，因为升级到 `1.64.1` 会引入 `@copilotkit/channels-core` 对 Vitest 4 的强制 peer dependency，而平台当前固定 Vitest `3.2.6`。
+这组版本共享 AG-UI `0.0.57`，并通过现有 Headless Client 与 Runtime Host E2E 验证运行协议。
+`@copilotkit/vue/v2` 仅使用受控的 `CopilotChatView` 和 Provider 外壳，不使用 `CopilotChat`、托管线程或 License 配置。
+CopilotKit 的样式由 `src/styles/copilotkit.css` 单独引入；组件重置和可见样式限定在 `[data-copilotkit]`，但包内也会声明全局 CSS 自定义属性与 `@property` 注册。
+当前 Workbench 尚未导入会话视图，因此不会加载这份样式；会话路由接入时必须保留非会话路由的视觉回归覆盖。
+如果后续 CopilotKit 升级破坏受控视图的消息、输入或停止事件，应先回退 `@copilotkit/vue` 与 `@copilotkit/core` 到 `1.64.1`，并保留 Runtime Host `1.63.2`，直到在独立兼容任务中完成 Vitest 与 Runtime 的协调升级。
+
 ## 架构边界
 
 Workbench 只读取以下浏览器配置：
