@@ -1,16 +1,17 @@
-# TASK-006：Presentation Snapshot 回放
+# TASK-006：保留策略、双侧删除与部分失败恢复
 
 ## 目标
 
-安全回放与当前 Workbench 兼容的历史 Markdown 和 A2UI。
+交付调试历史的三十天保留、资源治理、Runtime 与 Checkpoint 协调删除，以及可重试的部分失败恢复。
 
 ## 交付
 
-- 使用保存的契约版本、Catalog 身份和 Compiler 版本验证快照。
-- 兼容快照在原会话轮次中只读回放。
-- 不兼容快照显示安全诊断和受限的显式 Raw Viewer。
-- 不自动迁移、重新编译、部分渲染或重新调用模型。
-- 历史 Surface 永远不能产生 Action。
+- 默认清理三十天前的非活动历史。
+- 提供单线程删除和清空全部调试历史。
+- 协调 Runtime Thread Repository 与 Business Agent Checkpoint Store 删除。
+- 显式显示 completed、partial 和 failed 删除结果。
+- 提供安全的人工重试和孤立记录诊断。
+- 不自动重复执行 Run 或 Action。
 
 ## 验收
 
@@ -21,4 +22,4 @@
 
 ## 依赖
 
-TASK-002 和 TASK-005。
+TASK-003、TASK-004 和 TASK-005。

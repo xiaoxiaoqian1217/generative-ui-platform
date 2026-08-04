@@ -1,23 +1,23 @@
-# TASK-005：Run、Action 与错误交互
+# TASK-005：CopilotKit 会话 UI 自动化验收与文档收口
 
 ## 目标
 
-将 Run、Action Resume、失败、取消和重试绑定到会话轮次。
+以确定性自动化和文档收口交付 CopilotKit 会话 UI 改造，并形成后续持久化调试会话的已合并基线。
 
 ## 交付
 
-- Run 和 Action 执行期间阻止新的提交和其他 Action。
-- 将 Action Resume 的新 PresentationResult 原位更新到所属轮次。
-- 将失败和取消显示为 Workbench Turn Failure，而不是 Assistant Message。
-- 提供使用新 `requestId` 和 `runId` 的显式重试。
-- 保留确认型 Action 的风险元数据和用户批准门槛。
+- 覆盖 Conversation Store 状态转换的单元测试。
+- 覆盖受控 CopilotChatView、Markdown、A2UI 和错误状态的组件测试。
+- 覆盖提交、停止、重试、Action Resume 和历史 Surface 只读的浏览器 E2E。
+- 更新 Workbench README、开发环境、架构和演示说明。
+- 记录兼容依赖的升级影响与回退条件。
 
 ## 验收
 
-- 乱序响应不会把错误 Surface 标记为当前结果。
-- 历史 Surface 的按钮和表单不能发出 Action。
-- 用户取消不会触发自动重试。
-- 错误只显示稳定代码和安全摘要，详细关联信息留在 Inspect。
+- Workbench 类型检查、单元测试、E2E 和构建通过。
+- 受影响的平台 E2E 通过。
+- `pnpm docs:check` 通过。
+- 自动化不访问真实模型或 CopilotKit 托管服务。
 
 ## 依赖
 

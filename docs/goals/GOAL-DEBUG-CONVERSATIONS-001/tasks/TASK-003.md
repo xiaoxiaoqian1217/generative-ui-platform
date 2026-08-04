@@ -1,8 +1,8 @@
-# TASK-003：Business Agent Checkpoint Store
+# TASK-003：跨重启恢复 Business Agent 工作流
 
 ## 目标
 
-将 Reference Business Agent 的内存 LangGraph Checkpoint Store 替换为可持久化开发实现。
+让 Reference Business Agent 使用 Shared Thread Identity 在进程重启后恢复暂停工作流和 Action Resume，同时保持业务状态独立所有权。
 
 ## 交付
 
@@ -18,6 +18,7 @@
 - 删除 checkpoint 后同一线程不能恢复旧业务状态。
 - Business Agent 存储不包含 PresentationResult、A2UI、Catalog 或前端组件信息。
 - HTTP + SSE 和 WebSocket Adapter 行为等价。
+- Checkpoint 仅由 Business Agent 管理，且不存储 PresentationResult、A2UI、Catalog 或前端组件信息。
 
 ## 依赖
 

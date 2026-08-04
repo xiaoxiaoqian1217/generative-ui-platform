@@ -1,6 +1,6 @@
 # GOAL-DEBUG-CONVERSATIONS-001 子任务包
 
-该目录将持久调试会话与历史回放拆分为可独立实施的任务。
+该目录将持久调试会话与历史回放拆分为可独立验收的端到端任务。
 总目标和边界以 [`../GOAL-DEBUG-CONVERSATIONS-001.md`](../GOAL-DEBUG-CONVERSATIONS-001.md) 为准。
 
 本 Goal 只能在 `GOAL-WEB-COPILOTKIT-UI-001` 已合并到远端 `main` 后开始。
@@ -10,20 +10,13 @@
 ## 内容
 
 - `tasks.json`：机器可读的任务依赖和验收摘要。
-- `tasks/TASK-001.md` 至 `tasks/TASK-008.md`：可独立实施的任务说明。
+- `tasks/TASK-001.md` 至 `tasks/TASK-007.md`：可独立实施的任务说明。
 
 ## 推荐顺序
 
 ```text
-TASK-001
-├── TASK-002
-└── TASK-003
-
-TASK-002 + TASK-003 → TASK-004
-TASK-001 + TASK-004 → TASK-005
-TASK-002 + TASK-005 → TASK-006
-TASK-004 + TASK-005 + TASK-006 → TASK-007
-TASK-007 → TASK-008
+TASK-001 → TASK-002 → TASK-004 → TASK-005 → TASK-006 → TASK-007
+          └── TASK-003 ───────────────────────────────┘
 ```
 
 ## 执行边界

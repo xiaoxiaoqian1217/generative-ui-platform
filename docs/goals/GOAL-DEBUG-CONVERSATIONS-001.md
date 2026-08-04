@@ -83,15 +83,14 @@ SQLite 文件不得进入构建产物、容器镜像或源代码提交。
 任务包位于 [`./GOAL-DEBUG-CONVERSATIONS-001/`](./GOAL-DEBUG-CONVERSATIONS-001/README.md)。
 
 ```text
-TASK-001 Thread Contract 与数据安全模型
-├── TASK-002 Runtime Thread Repository
-└── TASK-003 Business Agent Checkpoint Store
-
-TASK-002 + TASK-003 → TASK-004 Thread 编排与一致性
-TASK-001 + TASK-004 → TASK-005 Workbench 线程管理
-TASK-002 + TASK-005 → TASK-006 Presentation Snapshot 回放
-TASK-004 + TASK-005 + TASK-006 → TASK-007 保留、删除与部分失败恢复
-TASK-007 → TASK-008 自动化验证与文档收口
+TASK-001 调试会话契约与安全边界
+  → TASK-002 持久化调试会话的运行闭环
+      → TASK-004 Workbench 调试会话管理
+          → TASK-005 只读回放历史 Presentation Snapshot
+              → TASK-006 保留策略、双侧删除与部分失败恢复
+                  → TASK-007 调试会话自动化验收与运维文档收口
+  → TASK-003 跨重启恢复 Business Agent 工作流
+      → TASK-006 保留策略、双侧删除与部分失败恢复
 ```
 
 ## 11. 完成条件
