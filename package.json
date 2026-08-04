@@ -21,7 +21,7 @@
     "build:platform": "turbo run build",
     "check:boundaries": "node scripts/check-dependency-boundaries.mjs",
     "typecheck": "turbo run typecheck",
-    "test": "pnpm build && vitest run tests/workspace && node scripts/check-contract-package-installation.mjs && turbo run test && pnpm test:e2e:web-workbench && pnpm test:e2e:platform",
+    "test": "pnpm build && vitest run tests/workspace && node scripts/check-contract-package-installation.mjs && turbo run test --concurrency=1 && pnpm test:e2e:web-workbench && pnpm test:e2e:platform",
     "test:web-workbench": "pnpm --filter @generative-ui/web-workbench test",
     "test:e2e:web-workbench": "pnpm --filter @generative-ui/web-workbench test:e2e",
     "test:e2e:platform": "node scripts/test-e2e-platform.mjs",
