@@ -26,6 +26,7 @@ describe("loadConfig", () => {
       endpoint: "/copilotkit",
       agentId: "planner-agent",
       businessAgentContractUrl: "http://localhost:9300",
+      businessAgentTransport: "http-sse",
       presentationModel: expect.objectContaining({ mode: "provider" }),
       runtime: { totalTimeoutMs: 15_000, maxConcurrentRuns: 16 },
     });

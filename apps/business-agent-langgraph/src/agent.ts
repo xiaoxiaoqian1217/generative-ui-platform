@@ -9,6 +9,7 @@ import { Command, isInterrupted } from "@langchain/langgraph";
 import {
   CONFIRM_PATROL_ACTION_ID,
   CONFIRM_PATROL_ACTION_TYPE,
+  textConfirmationIntentContent,
 } from "./business-tools.js";
 import {
   createReferenceBusinessGraph,
@@ -121,14 +122,10 @@ export class ReferenceBusinessAgent implements BusinessAgentApplication {
         const checkpoint = await this.#graph.getState(config);
         if (checkpoint.next.length > 0) {
           if (isExplicitConfirmation(request.input.message)) {
-            const state = await this.#graph.invoke(
-              new Command({ resume: true }),
-              config,
+            return completedResult(
+              request,
+              textConfirmationIntentContent(checkpoint.values.request.runId),
             );
-            if (isInterrupted(state) || state.content === undefined) {
-              throw new Error("AGENT_TEXT_CONFIRMATION_INCOMPLETE");
-            }
-            return completedResult(request, state.content);
           }
           return failedResult(request, {
             code: "ACTION_CONFLICT",

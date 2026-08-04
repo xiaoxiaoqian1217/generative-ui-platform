@@ -137,7 +137,12 @@ describe("Business Agent Contract", () => {
       status: "completed",
       content: {
         contentType: "structured-data",
-        data: { kind: "patrol-task", status: "confirmed" },
+        data: {
+          kind: "confirmation-intent",
+          pausedRunId: draftRequest.runId,
+          actionId: "confirm-patrol-plan",
+          actionType: "patrol.confirm",
+        },
       },
     });
     expect(validateBusinessAgentRunResult(result)).toMatchObject({
