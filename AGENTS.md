@@ -18,7 +18,8 @@ Roadmap 不自动授权实现。
 
 ## Branch and worktree
 
-- Goal、Issue 或用户要求 Pull Request 时，必须使用从最新 `origin/main` 创建的独立任务分支和 worktree。
+- 仅当用户明确声明当前工作是一个 Goal 时，必须使用从最新 `origin/main` 创建的独立任务分支和 worktree。
+- Issue、Pull Request、小型代码改动和文档改动默认可以在当前工作树完成；只有用户明确要求时才创建独立分支或 worktree。
 - 任务分支使用 `--no-track`，不得跟踪 `origin/main`。
 - 小型只读检查和文档维护可以不创建 worktree，但必须先检查分支和工作树状态。
 - 任务依赖未合并到远端 `main` 时必须暂停。
