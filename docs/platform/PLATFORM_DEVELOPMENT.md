@@ -44,8 +44,9 @@ pnpm verify:platform
 
 `check:platform-environment` 验证 Node、pnpm、禁止的 Compiler 配置、浏览器环境变量和端口可用性。
 向该命令传入 `--require-build` 时还会验证三个构建产物。
-`test:e2e:platform` 复用 `dev:platform --background` 和 `stop:platform` 管理生命周期，然后执行完整三服务浏览器 E2E。
-该 E2E 覆盖 HTTP 与 WebSocket、Markdown 与 A2UI、Action Resume 和 Fixture 故障下的安全降级。
+`test:e2e:platform` 会先构建全部 workspace 服务依赖，再使用受控测试服务执行确定性浏览器 E2E。
+该 E2E 不启动可运行 Fixture Provider，也不依赖真实 Provider 凭证。
+HTTP 与 WebSocket 的 Runtime 编排、Markdown 与 A2UI、Action Resume 和安全降级由契约、集成和浏览器测试共同覆盖。
 
 运行中的服务可使用下列命令进行额外检查。
 

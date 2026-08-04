@@ -15,7 +15,6 @@
     "check:platform-environment": "node scripts/check-platform-environment.mjs --require-build",
     "check:doctor": "node scripts/check-platform-environment.mjs",
     "setup": "node scripts/setup-development.mjs",
-    "test:provider-smoke": "node scripts/provider-smoke.mjs",
     "build": "turbo run build",
     "build:web-workbench": "pnpm --filter @generative-ui/web-workbench build",
     "build:platform": "turbo run build",

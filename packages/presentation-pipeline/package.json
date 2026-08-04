@@ -15,7 +15,6 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --out-dir dist",
     "test": "vitest run",
-    "test:provider-smoke": "node scripts/run-provider-smoke.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
