@@ -23,15 +23,16 @@ Runtime Host 不可用时检查 `http://127.0.0.1:8200/health` 和 `VITE_RUNTIME
 ## 当前能力
 
 - 使用 Vue 3、Vite 和 TypeScript 构建，不依赖公共 CDN。
-- 从单一 Runtime Host 地址派生 HTTP、WebSocket 和健康探测端点。
-- 在 HTTP `/api/runs` 与 WebSocket `/ws/runs` 之间切换。
+- 从单一 Runtime Host 地址派生运行、只读查询和健康探测端点。
+- 提供 Playground、Inspect、Cases、Catalog、Scenarios 和 Settings 六个稳定路由。
 - 使用 `packages/runtime-contract` 校验所有 Run 请求和结果。
 - 安全展示 Markdown，并转义原始 HTML 和危险链接。
 - 查看完整 PresentationResult。
 - 在用户显式开启后，以只读、限长文本查看 A2UI Raw Operations。
 - 显示连接、重连、恢复、运行、降级、失败和页面刷新状态。
 - 显示环境、Workbench 版本、关联 ID 和 Runtime Host 安全诊断摘要。
-- 提供四个场景快捷输入。
+- 提供参考场景快捷输入与 Runtime Host 场景元数据查看。
+- 提供本地案例库、JSON 导入导出与单例重放。
 - 使用受控 Component Registry 渲染 A2UI，并将用户 Action 回传 Runtime Host。
 - 对需要审批的 Action 请求浏览器显式确认。
 
@@ -48,7 +49,8 @@ Runtime Host 地址会派生以下端点：
 ```text
 <runtime-host>/health/dependencies
 <runtime-host>/api/runs
-<runtime-host>/ws/runs
+<runtime-host>/api/catalog
+<runtime-host>/api/scenarios
 ```
 
 ## 本地运行
@@ -98,7 +100,7 @@ pnpm test:e2e:web-workbench
 ```
 
 静态构建输出位于 `apps/web-workbench/dist`。
-基础 E2E 使用真实 Chromium、可发布静态构建和同源 Runtime Host Fixture，覆盖 HTTP、WebSocket、断线恢复、刷新、安全 Markdown、PresentationResult、诊断、受控 A2UI Raw Viewer 和 Action Resume。
+基础 E2E 使用真实 Chromium、可发布静态构建与进程内受控测试替身，覆盖运行、刷新、安全 Markdown、PresentationResult、诊断、受控 A2UI Raw Viewer 和 Action Resume。
 
 ## 容器发布
 
