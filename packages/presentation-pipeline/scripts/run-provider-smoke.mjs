@@ -14,10 +14,14 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-const executable = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const packageManagerCli = process.env.npm_execpath;
+if (packageManagerCli === undefined || packageManagerCli.trim() === "") {
+  process.stderr.write("Provider smoke test requires npm_execpath.\n");
+  process.exit(1);
+}
 const result = spawnSync(
-  executable,
-  ["exec", "vitest", "run", "test/provider-smoke.test.ts"],
+  process.execPath,
+  [packageManagerCli, "exec", "vitest", "run", "test/provider-smoke.test.ts"],
   {
     cwd: new URL("..", import.meta.url),
     env: {
