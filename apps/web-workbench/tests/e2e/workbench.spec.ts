@@ -1,4 +1,10 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+
+const chatInput = (page: Page) =>
+  page.getByRole("textbox", { name: "Type a message..." });
+
+const sendMessage = (page: Page) =>
+  page.getByRole("button", { name: "Send message" });
 
 test.beforeEach(async ({ request }) => {
   await request.post("/__control__/restore");
@@ -14,8 +20,8 @@ test("CopilotKit Headless renders safe Markdown, PresentationResult and diagnost
   await expect(page.getByTestId("connection-status")).toHaveText(
     "Runtime Host 可用",
   );
-  await page.getByTestId("message-input").fill("展示 Markdown");
-  await page.getByTestId("send-run").click();
+  await chatInput(page).fill("展示 Markdown");
+  await sendMessage(page).click();
 
   await expect(page.getByTestId("run-status")).toContainText("已完成");
   await expect(
@@ -38,8 +44,8 @@ test("CopilotKit Headless keeps A2UI raw data controlled", async ({ page }) => {
     "Runtime Host 可用",
   );
 
-  await page.getByTestId("message-input").fill("返回 A2UI");
-  await page.getByTestId("send-run").click();
+  await chatInput(page).fill("返回 A2UI");
+  await sendMessage(page).click();
   await expect(page.getByTestId("run-status")).toContainText("已完成");
   await expect(page.getByTestId("a2ui-renderer")).toContainText("Ready");
   await expect(page.getByTestId("a2ui-raw-content")).toHaveCount(0);
@@ -63,7 +69,7 @@ test("Headless reports an initial outage and recovers", async ({ page }) => {
   await expect(page.getByTestId("connection-status")).toHaveText(
     "Runtime Host 不可用",
   );
-  await expect(page.getByTestId("send-run")).toBeDisabled();
+  await expect(sendMessage(page)).toBeDisabled();
 
   await page.request.post("/__control__/runtime-up");
   await expect(page.getByTestId("connection-notice")).toHaveText(
@@ -75,8 +81,8 @@ test("Headless reports an initial outage and recovers", async ({ page }) => {
     "Runtime Host 可用",
   );
 
-  await page.getByTestId("message-input").fill("恢复后的结果");
-  await page.getByTestId("send-run").click();
+  await chatInput(page).fill("恢复后的结果");
+  await sendMessage(page).click();
   await expect(page.getByTestId("markdown-result")).toBeVisible();
 
   await page.request.post("/__control__/runtime-down");
@@ -84,7 +90,7 @@ test("Headless reports an initial outage and recovers", async ({ page }) => {
     "Runtime Host 不可用",
     { timeout: 10_000 },
   );
-  await expect(page.getByTestId("send-run")).toBeDisabled();
+  await expect(sendMessage(page)).toBeDisabled();
 
   await page.request.post("/__control__/runtime-up");
 });

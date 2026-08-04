@@ -36,6 +36,7 @@ describe("ControlledCopilotChatView", () => {
               () =>
                 h(ControlledCopilotChatView, {
                   inputValue: "初始输入",
+                  isInputDisabled: false,
                   isRunning: false,
                   messages: [message],
                 }),
@@ -49,5 +50,36 @@ describe("ControlledCopilotChatView", () => {
     expect(wrapper.text()).toContain("受控消息");
     await chat.find("textarea").setValue("新的受控输入");
     expect(chat.emitted("inputChange")).toEqual([["新的受控输入"]]);
+  });
+
+  it("keeps the default CopilotKit input inaccessible while the caller cannot submit", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ agents: [] }), { status: 200 }),
+        ),
+    );
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          return () =>
+            h(
+              CopilotKitConversationProvider,
+              { runtimeUrl: "http://127.0.0.1:8200/api/copilotkit" },
+              () =>
+                h(ControlledCopilotChatView, {
+                  inputValue: "",
+                  isInputDisabled: true,
+                  isRunning: false,
+                  messages: [],
+                }),
+            );
+        },
+      }),
+    );
+
+    expect(wrapper.find("textarea").attributes("disabled")).toBeDefined();
   });
 });

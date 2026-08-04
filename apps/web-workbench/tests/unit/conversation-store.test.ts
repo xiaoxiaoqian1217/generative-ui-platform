@@ -1,6 +1,7 @@
 import type { RuntimeRunResult } from "@generative-ui/runtime-contract";
 import { describe, expect, it } from "vitest";
 import {
+  conversationMessages,
   createConversationState,
   failOperation,
   resolveAction,
@@ -29,6 +30,22 @@ function a2uiResult(surfaceId: string): RuntimeRunResult {
 }
 
 describe("Conversation Store", () => {
+  it("projects only caller-owned user messages for the controlled chat", () => {
+    const state = resolveRun(
+      startRun(createConversationState(), {
+        message: "展示 A2UI",
+        requestId: "request-1",
+        turnId: "turn-1",
+      }),
+      "turn-1",
+      a2uiResult("surface-1"),
+    );
+
+    expect(conversationMessages(state)).toEqual([
+      { content: "展示 A2UI", id: "turn-1:user", role: "user" },
+    ]);
+  });
+
   it("permits only one active operation", () => {
     const running = startRun(createConversationState(), {
       message: "第一条消息",
