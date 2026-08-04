@@ -1,6 +1,6 @@
 # 平台开发者体验
 
-## 五分钟真实 Provider 快速开始
+## 五分钟 Fixture 快速开始
 
 需要 Node.js 24 或更高版本和 pnpm 10.13.1。
 
@@ -18,7 +18,7 @@ Linux 或 WSL：
 pnpm dev:platform
 ```
 
-启动器要求在服务端环境中配置真实 Presentation Model 的凭证。
+启动器要求配置真实 Presentation Model 的服务端凭证。
 
 访问 `http://127.0.0.1:5173`，依次尝试 HTTP、WebSocket、Markdown、设备状态和巡逻确认。
 
@@ -38,7 +38,7 @@ pnpm dev:platform
 | Agent Runtime Host | `apps/agent-runtime-host/.env[.local]` | `HOST=127.0.0.1`，`PORT=8200`，`BUSINESS_AGENT_CONTRACT_URL=http://localhost:8300`，以及应用 README 列出的真实 Provider、超时和并发变量。 |
 | Workbench | `apps/web-workbench/.env[.local]` | `VITE_RUNTIME_HOST_URL` 和 `VITE_WORKBENCH_ENVIRONMENT`。 |
 
-CI 和平台 E2E 使用进程内确定性替身或受控测试服务，因此不会读取或依赖真实 Provider 配置。
+CI 和平台 E2E 使用进程内确定性替身，因此不会读取或依赖真实 Provider 配置。
 
 真实 Provider 要求显式 `PRESENTATION_MODEL_PROVIDER`、`PRESENTATION_MODEL_NAME` 和 `PRESENTATION_MODEL_API_KEY`。
 
@@ -76,13 +76,11 @@ Workbench 依赖 Runtime Host，地址为 `http://127.0.0.1:5173`。
 
 `pnpm test:e2e:platform` 是唯一的自包含平台浏览器 E2E 入口。
 
-它确保 Chromium 可用，构建全部 workspace 服务依赖，并通过受控测试服务运行确定性浏览器验证。
+它确保 Chromium 可用，构建服务，隔离 Fixture 环境，启动三服务并检查健康度，保存 Playwright trace 与日志，然后清理进程和端口。
 
-该测试不启动可运行 Fixture Provider，也不把外部模型可用性作为 CI 条件。
+CI 使用同一 Fixture 路径运行 `pnpm validate`。
 
-CI 使用同一受控测试路径运行 `pnpm validate`。
-
-真实 Provider 仅通过 Workbench 进行开发人员联调，不属于 CI 或合并门槛。
+真实 Provider smoke 不属于 CI，需本地显式执行 `pnpm test:provider-smoke`。
 
 ## Doctor 与排障
 

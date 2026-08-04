@@ -77,7 +77,7 @@ Adapter 不记录完整 Prompt、Authorization、Provider 原始响应或错误�
 可选的 `onInvocationSummary` 只接收供应商无关的耗时、Token Usage、安全 Response ID 和稳定错误码。
 Provider 候选保持为 `unknown`，必须继续通过 Router 的 `validatePresentationDecision` 和 UI Compiler Core 的 Catalog 约束。
 
-## 真实 Provider 本地联调
+## 真实 Provider Smoke Test
 
 常规 `pnpm test` 不产生模型费用，真实调用默认跳过。
 专用命令会在缺少必填配置时失败，避免把未执行误报为通过。
@@ -88,7 +88,7 @@ $env:PRESENTATION_PROVIDER_SMOKE_MODEL_NAME = "<configured-model-name>"
 $env:PRESENTATION_PROVIDER_SMOKE_API_KEY = "<secret>"
 $env:PRESENTATION_PROVIDER_SMOKE_BASE_URL = "<optional-https-base-url>"
 $env:PRESENTATION_PROVIDER_SMOKE_ENDPOINT_ID = "<optional-endpoint-id>"
-真实 Provider 仅在 Workbench 本地联调中使用，不提供独立 smoke 命令。
+pnpm --filter @generative-ui/presentation-pipeline test:provider-smoke
 ```
 
 `PRESENTATION_PROVIDER_SMOKE_PROVIDER` 支持 `kimi`、`doubao`、`glm`、`qwen` 和 `openai-compatible`。

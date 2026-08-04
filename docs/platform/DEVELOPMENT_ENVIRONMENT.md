@@ -123,7 +123,7 @@ pnpm verify:platform
 pnpm docs:check
 ```
 
-`pnpm test:e2e:platform` 会构建 workspace 依赖并启动受控测试服务。
+`pnpm test:e2e:platform` 会自行启动和停止三服务环境。
 该测试使用真实 Chromium 和进程内测试替身，覆盖 HTTP Markdown 与 A2UI、WebSocket、Action Resume、相关 ID 诊断及安全 Markdown 降级。
 `pnpm verify:platform` 依次构建、检查环境并执行同一套平台 E2E。
 
