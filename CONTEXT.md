@@ -196,3 +196,28 @@ _Avoid_: 仓库级平台规范
 **平台级规范**:
 `docs/platform/` 中描述跨子系统范围、架构和开发环境的文档。
 _Avoid_: Compiler 内部详细设计
+
+**Conversation Surface**:
+Workbench 中承载用户消息、已验证 Markdown 和会话内 Business Surface 的交互区域。
+它不拥有 Business Agent 业务状态，也不生成 PresentationResult。
+_Avoid_: Business Agent、Presentation Pipeline
+
+**Business Surface**:
+由 Frontend Runtime 根据已验证 A2UI 渲染的可视化业务结果和可操作区域。
+它产生的 Action 必须继续经 Agent Runtime Host 校验。
+_Avoid_: CopilotKit Tool、任意前端代码
+
+**Debug Conversation**:
+由 Agent Runtime Host 管理、可在 Workbench 中切换和诊断的用户可见会话记录。
+Business Agent 的工作流状态由独立 Checkpoint Store 持有，两者通过同一个 threadId 关联。
+_Avoid_: 浏览器聊天缓存、Business Agent checkpoint
+
+**Presentation Snapshot**:
+为调试复现保存的已验证 PresentationResult 及其版本和安全关联信息。
+历史加载只读回放该快照，不重新调用模型或 UI Compiler Core。
+_Avoid_: 结果缓存、重新生成的历史界面
+
+**Shared Thread Identity**:
+Runtime Host 的 Debug Conversation 与 Business Agent checkpoint 共用的 threadId。
+它只关联两个权威数据源，不合并二者的数据所有权。
+_Avoid_: 共享数据库、分布式事务

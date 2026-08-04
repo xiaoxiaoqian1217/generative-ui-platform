@@ -1,0 +1,49 @@
+{
+  "goal_id": "GOAL-DEBUG-CONVERSATIONS-001",
+  "title": "持久调试会话与历史回放",
+  "canonical_goal": "docs/goals/GOAL-DEBUG-CONVERSATIONS-001.md",
+  "goal_dependencies": ["GOAL-WEB-COPILOTKIT-UI-001"],
+  "architecture_decisions": ["ADR-0023"],
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Thread Contract 与数据安全模型",
+      "depends_on": []
+    },
+    {
+      "id": "TASK-002",
+      "title": "Runtime Thread Repository",
+      "depends_on": ["TASK-001"]
+    },
+    {
+      "id": "TASK-003",
+      "title": "Business Agent Checkpoint Store",
+      "depends_on": ["TASK-001"]
+    },
+    {
+      "id": "TASK-004",
+      "title": "Thread 编排与一致性",
+      "depends_on": ["TASK-002", "TASK-003"]
+    },
+    {
+      "id": "TASK-005",
+      "title": "Workbench 线程管理",
+      "depends_on": ["TASK-001", "TASK-004"]
+    },
+    {
+      "id": "TASK-006",
+      "title": "Presentation Snapshot 回放",
+      "depends_on": ["TASK-002", "TASK-005"]
+    },
+    {
+      "id": "TASK-007",
+      "title": "保留、删除与部分失败恢复",
+      "depends_on": ["TASK-004", "TASK-005", "TASK-006"]
+    },
+    {
+      "id": "TASK-008",
+      "title": "自动化验证与文档收口",
+      "depends_on": ["TASK-007"]
+    }
+  ]
+}
