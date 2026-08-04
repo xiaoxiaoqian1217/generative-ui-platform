@@ -89,8 +89,14 @@ const services = platformServices.map((service) => ({
       : {
           ...process.env,
           ...(realProvider ? {} : { PRESENTATION_MODEL_PROVIDER: "fixture" }),
+          ...(service.name === "Reference Business Agent"
+            ? { BUSINESS_AGENT_PORT: String(service.port) }
+            : {}),
           ...(service.name === "Agent Runtime Host"
-            ? { BUSINESS_AGENT_CONTRACT_URL: platformUrls.businessAgent }
+            ? {
+                PORT: String(service.port),
+                BUSINESS_AGENT_CONTRACT_URL: platformUrls.businessAgent,
+              }
             : {}),
         },
 }));
@@ -101,19 +107,8 @@ const cleanup = async () => {
   await removeProcessState();
 };
 
-async function attachLogs(child, name) {
+function attachForegroundLogs(child, name) {
   const prefix = `[${name}] `;
-  const destination = background
-    ? await open(
-        join(
-          repositoryRoot,
-          ".platform",
-          "logs",
-          `${name.replaceAll(/[^a-z0-9]+/giu, "-").toLowerCase()}.log`,
-        ),
-        "a",
-      )
-    : undefined;
   for (const stream of [child.stdout, child.stderr]) {
     stream?.on("data", (chunk) => {
       const message = redactEnvironmentError(String(chunk))
@@ -121,8 +116,7 @@ async function attachLogs(child, name) {
         .filter(Boolean)
         .map((line) => `${prefix}${line}\n`)
         .join("");
-      if (destination) destination.write(message);
-      else process.stdout.write(message);
+      process.stdout.write(message);
     });
   }
 }
@@ -185,11 +179,29 @@ async function waitForServiceHealth(service) {
 let started = false;
 try {
   for (const service of services) {
+    let log;
+    if (background) {
+      await mkdir(join(repositoryRoot, ".platform", "logs"), {
+        recursive: true,
+      });
+      log = await open(
+        join(
+          repositoryRoot,
+          ".platform",
+          "logs",
+          `${service.name.replaceAll(/[^a-z0-9]+/giu, "-").toLowerCase()}.log`,
+        ),
+        "a",
+      );
+      await log.writeFile(`[${service.name}] process log\n`);
+    }
     const child = spawn(process.execPath, service.args, {
       cwd: service.cwd,
       env: service.environment,
       detached: true,
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: background
+        ? ["ignore", log.fd, log.fd]
+        : ["ignore", "pipe", "pipe"],
       windowsHide: true,
     });
     child.once("error", (error) =>
@@ -198,11 +210,7 @@ try {
       ),
     );
     if (background) child.unref();
-    if (background)
-      await mkdir(join(repositoryRoot, ".platform", "logs"), {
-        recursive: true,
-      });
-    await attachLogs(child, service.name);
+    if (!background) attachForegroundLogs(child, service.name);
     children.push(child);
     await waitForServiceHealth(service);
   }
@@ -213,7 +221,7 @@ try {
     })),
   );
   process.stdout.write(
-    `Platform starting in ${realProvider ? "real Provider" : "fixture"} mode: Workbench :5173, Runtime Host :8200, Reference Business Agent :8300.\n`,
+    `Platform starting in ${realProvider ? "real Provider" : "fixture"} mode: Workbench :${platformServices[2].port}, Runtime Host :${platformServices[1].port}, Reference Business Agent :${platformServices[0].port}.\n`,
   );
   await waitForPlatformHealth();
   started = true;

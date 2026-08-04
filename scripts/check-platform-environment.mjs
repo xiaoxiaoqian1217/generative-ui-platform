@@ -106,7 +106,7 @@ if (requireRunning) {
   for (const service of platformPorts) {
     try {
       const response = await fetch(
-        `http://127.0.0.1:${service.port}${service.port === 5173 ? "/" : "/health"}`,
+        `http://127.0.0.1:${service.port}${service.name === "Workbench" ? "/" : "/health"}`,
       );
       if (!response.ok) failures.push(`SERVICE_UNHEALTHY:${service.name}`);
     } catch {
@@ -114,7 +114,13 @@ if (requireRunning) {
     }
   }
   try {
-    const response = await fetch("http://127.0.0.1:8200/health/dependencies");
+    const runtime = platformPorts.find(
+      ({ name }) => name === "Agent Runtime Host",
+    );
+    if (!runtime) throw new Error("RUNTIME_HOST_PORT_UNAVAILABLE");
+    const response = await fetch(
+      `http://127.0.0.1:${runtime.port}/health/dependencies`,
+    );
     const body = await response.json();
     if (
       !response.ok ||

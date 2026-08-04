@@ -16,6 +16,10 @@ const playwrightCli = join(
   "test",
   "cli.js",
 );
+const platformOffset = process.env.PLATFORM_PORT_OFFSET ?? "0";
+const workbenchPort = 5173 + Number(platformOffset);
+if (!Number.isSafeInteger(workbenchPort))
+  throw new Error("PLATFORM_PORT_OFFSET_INVALID");
 async function ensureChromium() {
   const code = await runPlaywright(["install", "chromium"]);
   if (code !== 0) throw new Error("PLAYWRIGHT_CHROMIUM_UNAVAILABLE");
@@ -24,7 +28,12 @@ function run(args, environment = {}) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [packageManagerCli, ...args], {
       cwd: repositoryRoot,
-      env: { ...process.env, ...environment },
+      env: {
+        ...process.env,
+        npm_config_user_agent:
+          process.env.npm_config_user_agent ?? "pnpm/10.13.1",
+        ...environment,
+      },
       stdio: "inherit",
       windowsHide: true,
     });
@@ -46,10 +55,30 @@ function runPlaywright(args, environment = {}) {
   });
 }
 
+function runNode(args, environment = {}) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, args, {
+      cwd: repositoryRoot,
+      env: {
+        ...process.env,
+        npm_config_user_agent:
+          process.env.npm_config_user_agent ?? "pnpm/10.13.1",
+        ...environment,
+      },
+      stdio: "inherit",
+      windowsHide: true,
+    });
+    child.once("exit", (code) => resolve(code ?? 1));
+    child.once("error", () => resolve(1));
+  });
+}
+
 async function runFixtureSuite(environment, grep) {
   const fixtureEnvironment = {
     ...environment,
     PRESENTATION_MODEL_PROVIDER: "fixture",
+    PLATFORM_PORT_OFFSET: platformOffset,
+    PLATFORM_WORKBENCH_URL: `http://127.0.0.1:${workbenchPort}`,
   };
   if (
     (await run(["dev:platform", "--", "--background"], fixtureEnvironment)) !==
@@ -67,10 +96,8 @@ async function runFixtureSuite(environment, grep) {
     }
     for (let attempt = 0; attempt < 30; attempt += 1) {
       if (
-        (await run(
+        (await runNode(
           [
-            "exec",
-            "node",
             "scripts/check-platform-environment.mjs",
             "--require-running",
             "--require-build",
