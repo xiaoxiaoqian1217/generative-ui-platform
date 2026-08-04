@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import type { PresentationResult } from "@generative-ui/presentation-contract";
-import type { RuntimeActionEnvelope } from "@generative-ui/runtime-contract";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import {
   applyA2UIOperations,
   destroySurface,
   type A2UISurface,
 } from "./a2ui.js";
+import type { RenderedRuntimeAction } from "./a2ui.js";
 import A2UISurfaceRenderer from "./A2UISurfaceRenderer.vue";
 
 const props = defineProps<{ presentation: PresentationResult }>();
-const emit = defineEmits<{ action: [action: RuntimeActionEnvelope] }>();
+const emit = defineEmits<{ action: [action: RenderedRuntimeAction] }>();
 const surfaces = ref<ReadonlyMap<string, A2UISurface>>(new Map());
 const activeSurfaceId = ref<string>();
 watch(

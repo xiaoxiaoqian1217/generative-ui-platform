@@ -268,3 +268,24 @@ export function createRuntimeAction(
     ...(Object.keys(payload).length === 0 ? {} : { payload: resolvedPayload }),
   };
 }
+
+export interface RenderedRuntimeAction {
+  readonly action: RuntimeActionEnvelope;
+  readonly requiresConfirmation: boolean;
+  readonly destructive: boolean;
+}
+
+export function createRenderedRuntimeAction(
+  surfaceId: string,
+  component: A2UIComponent,
+  dataModel: A2UIDataModel | undefined,
+): RenderedRuntimeAction | undefined {
+  const action = createRuntimeAction(surfaceId, component, dataModel);
+  const context = component.action?.event.context;
+  if (!action || context === undefined) return undefined;
+  return {
+    action,
+    requiresConfirmation: context.requiresApproval,
+    destructive: context.destructive,
+  };
+}

@@ -29,6 +29,17 @@ function presentationEvent(result: RuntimeRunResult): BaseEvent | undefined {
   };
 }
 
+function runtimeResultEvent(result: RuntimeRunResult): BaseEvent {
+  return {
+    type: EventType.CUSTOM,
+    name: "generative-ui.runtime-run-result",
+    value: {
+      mappingVersion: "1.0",
+      result,
+    },
+  };
+}
+
 function errorEvent(
   result: Extract<RuntimeRunResult, { status: "failed" }>,
 ): BaseEvent {
@@ -85,6 +96,7 @@ export class CopilotKitRuntimeAgent extends AbstractAgent {
         .then((result) => {
           const event = presentationEvent(result);
           if (event) observer.next(event);
+          observer.next(runtimeResultEvent(result));
           if (result.status === "failed") {
             observer.next(errorEvent(result));
           } else {

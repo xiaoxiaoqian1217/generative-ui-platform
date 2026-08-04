@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { RuntimeActionEnvelope } from "@generative-ui/runtime-contract";
 import { computed, h, type VNode } from "vue";
 import {
-  createRuntimeAction,
+  createRenderedRuntimeAction,
   isRenderableComponent,
   resolveDynamicValue,
   type A2UISurface,
 } from "./a2ui.js";
+import type { RenderedRuntimeAction } from "./a2ui.js";
 
 const props = defineProps<{ surface: A2UISurface }>();
-const emit = defineEmits<{ action: [action: RuntimeActionEnvelope] }>();
+const emit = defineEmits<{ action: [action: RenderedRuntimeAction] }>();
 const stringify = (value: unknown): string =>
   typeof value === "string" ||
   typeof value === "number" ||
@@ -73,7 +73,7 @@ function renderComponent(componentId: string): VNode | undefined {
         class: className,
         type: "button",
         onClick: () => {
-          const action = createRuntimeAction(
+          const action = createRenderedRuntimeAction(
             props.surface.surfaceId,
             component,
             props.surface.dataModel,

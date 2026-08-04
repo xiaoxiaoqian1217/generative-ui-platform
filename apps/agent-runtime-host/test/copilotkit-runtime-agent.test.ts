@@ -78,6 +78,27 @@ describe("CopilotKitRuntimeAgent", () => {
           },
         },
       },
+      {
+        type: EventType.CUSTOM,
+        name: "generative-ui.runtime-run-result",
+        value: {
+          mappingVersion: "1.0",
+          result: {
+            protocolVersion: "1.0",
+            requestId: "request-1",
+            threadId: "thread-1",
+            runId: "run-1",
+            presentationRequestId: "presentation-1",
+            status: "completed",
+            presentation: {
+              requestId: "presentation-1",
+              status: "completed",
+              mode: "markdown",
+              markdown: "# Status\n",
+            },
+          },
+        },
+      },
       { type: EventType.RUN_FINISHED, threadId: "thread-1", runId: "run-1" },
     ]);
   });
