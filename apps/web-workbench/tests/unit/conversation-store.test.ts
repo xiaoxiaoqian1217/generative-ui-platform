@@ -1,4 +1,7 @@
-import type { RuntimeRunResult } from "@generative-ui/runtime-contract";
+import type {
+  RuntimeActionResult,
+  RuntimeRunResult,
+} from "@generative-ui/runtime-contract";
 import { describe, expect, it } from "vitest";
 import {
   conversationMessages,
@@ -24,6 +27,30 @@ function a2uiResult(surfaceId: string): RuntimeRunResult {
     protocolVersion: "1.0",
     requestId: "request-1",
     runId: "run-1",
+    status: "completed",
+    threadId: "thread-1",
+  };
+}
+
+function actionResult(
+  surfaceId: string,
+  requestId = "action-1",
+  sourcePresentationRequestId = "presentation-request",
+): RuntimeActionResult {
+  return {
+    actionId: "confirm",
+    presentation: {
+      mode: "generative-ui",
+      operations: [],
+      requestId: "presentation-request",
+      status: "completed",
+      surfaceId,
+    },
+    presentationRequestId: "presentation-request",
+    protocolVersion: "1.0",
+    requestId,
+    runId: "run-1",
+    sourcePresentationRequestId,
     status: "completed",
     threadId: "thread-1",
   };
@@ -80,7 +107,7 @@ describe("Conversation Store", () => {
     const resolved = resolveAction(
       runningAction,
       "turn-1",
-      a2uiResult("surface-2"),
+      actionResult("surface-2"),
     );
 
     expect(resolved.turns[0]).not.toHaveProperty("assistantMessage");
@@ -116,5 +143,63 @@ describe("Conversation Store", () => {
       status: "pending",
       userMessage: { content: "失败后重试" },
     });
+  });
+
+  it("does not retry a cancelled turn or accept a late run result", () => {
+    const cancelled = failOperation(
+      startRun(createConversationState(), {
+        message: "取消后不重试",
+        requestId: "request-1",
+        turnId: "turn-1",
+      }),
+      "turn-1",
+      {
+        code: "WORKBENCH_REQUEST_CANCELLED",
+        message: "取消",
+        retryable: false,
+      },
+      "cancelled",
+    );
+
+    expect(
+      retryTurn(cancelled, "turn-1", {
+        message: "ignored",
+        requestId: "request-2",
+        turnId: "turn-2",
+      }),
+    ).toBe(cancelled);
+    expect(resolveRun(cancelled, "turn-1", a2uiResult("surface-late"))).toBe(
+      cancelled,
+    );
+  });
+
+  it("keeps an Action result from a different request or source presentation out of the turn", () => {
+    const started = startAction(
+      resolveRun(
+        startRun(createConversationState(), {
+          message: "展示表单",
+          requestId: "request-1",
+          turnId: "turn-1",
+        }),
+        "turn-1",
+        a2uiResult("surface-1"),
+      ),
+      { requestId: "action-1", surfaceId: "surface-1", turnId: "turn-1" },
+    );
+
+    expect(
+      resolveAction(
+        started,
+        "turn-1",
+        actionResult("surface-2", "action-late"),
+      ),
+    ).toBe(started);
+    expect(
+      resolveAction(
+        started,
+        "turn-1",
+        actionResult("surface-2", "action-1", "presentation-late"),
+      ),
+    ).toBe(started);
   });
 });

@@ -36,6 +36,7 @@ describe("ControlledCopilotChatView", () => {
               () =>
                 h(ControlledCopilotChatView, {
                   inputValue: "初始输入",
+                  isActionDisabled: false,
                   isInputDisabled: false,
                   isRunning: false,
                   messages: [message],
@@ -72,6 +73,7 @@ describe("ControlledCopilotChatView", () => {
               () =>
                 h(ControlledCopilotChatView, {
                   inputValue: "",
+                  isActionDisabled: false,
                   isInputDisabled: true,
                   isRunning: false,
                   messages: [],

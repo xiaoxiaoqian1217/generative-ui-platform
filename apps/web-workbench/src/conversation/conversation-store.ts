@@ -1,6 +1,9 @@
 import type { UserMessage } from "@ag-ui/core";
 import type { PresentationResult } from "@generative-ui/presentation-contract";
-import type { RuntimeRunResult } from "@generative-ui/runtime-contract";
+import type {
+  RuntimeActionResult,
+  RuntimeRunResult,
+} from "@generative-ui/runtime-contract";
 
 export type ConversationOperationKind = "action" | "run";
 
@@ -239,12 +242,20 @@ export function startAction(
 export function resolveAction(
   state: ConversationState,
   turnId: string,
-  result: RuntimeRunResult,
+  result: RuntimeActionResult,
 ): ConversationState {
   if (
     state.activeOperation?.kind !== "action" ||
     state.activeOperation.turnId !== turnId ||
+    state.activeOperation.requestId !== result.requestId ||
     result.status === "failed"
+  )
+    return state;
+
+  const targetTurn = state.turns.find((turn) => turn.turnId === turnId);
+  if (
+    targetTurn === undefined ||
+    targetTurn.presentationRequestId !== result.sourcePresentationRequestId
   )
     return state;
 
@@ -271,6 +282,11 @@ export function retryTurn(
   input: StartRunInput,
 ): ConversationState {
   const turn = state.turns.find((item) => item.turnId === turnId);
-  if (turn === undefined || state.activeOperation !== undefined) return state;
+  if (
+    turn === undefined ||
+    turn.failure?.retryable !== true ||
+    state.activeOperation !== undefined
+  )
+    return state;
   return startRun(state, { ...input, message: turn.userMessage.content });
 }
