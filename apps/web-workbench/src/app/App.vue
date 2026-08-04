@@ -46,8 +46,10 @@ import {
   exportCustomCases,
   importCustomCases,
   loadCustomCases,
+  loadCaseFailureDiagnosis,
   consumePendingCase,
   saveCustomCases,
+  saveCaseFailureDiagnosis,
   savePendingCase,
   evaluateCase,
   type CaseEvaluation,
@@ -152,6 +154,7 @@ const caseImport = ref("");
 const caseNotice = ref("");
 const activeCase = ref<WorkbenchCase | undefined>(pendingCase);
 const caseEvaluation = ref<CaseEvaluation>();
+const latestCaseFailure = ref(loadCaseFailureDiagnosis(window.localStorage));
 const allCases = computed(() => [...BUILTIN_CASES, ...customCases.value]);
 const inspection = ref<InspectionSnapshot | undefined>(loadInspectionSnapshot(window.sessionStorage));
 
@@ -356,6 +359,14 @@ async function sendMessage(message = input.value): Promise<void> {
       caseNotice.value = caseEvaluation.value.passed
         ? `用例“${activeCase.value.title}”通过语义断言。`
         : `用例“${activeCase.value.title}”失败：${caseEvaluation.value.failures.join(" ")}`;
+    }
+    if (activeCase.value !== undefined && caseEvaluation.value?.passed === false) {
+      saveCaseFailureDiagnosis(
+        window.localStorage,
+        activeCase.value.id,
+        caseEvaluation.value,
+      );
+      latestCaseFailure.value = loadCaseFailureDiagnosis(window.localStorage);
     }
     saveInspectionSnapshot(window.sessionStorage, runtimeResult);
     inspection.value = loadInspectionSnapshot(window.sessionStorage);
@@ -756,6 +767,7 @@ onBeforeUnmount(() => {
             <label>导入或导出本地案例 JSON<textarea v-model="caseImport" data-testid="case-json" rows="8"></textarea></label>
             <div class="button-group"><button class="secondary-button" data-testid="export-cases" type="button" @click="exportCases">导出 JSON</button><button class="primary-button" data-testid="import-cases" type="button" @click="importCases">导入 JSON</button></div>
             <p v-if="caseNotice" data-testid="case-notice">{{ caseNotice }}</p>
+            <p v-if="latestCaseFailure" data-testid="case-failure-diagnosis">{{ latestCaseFailure.caseId }} · {{ latestCaseFailure.failures.join(' ') }}</p>
           </template>
           <template v-else-if="route === '/catalog'">
             <p>此页仅查看 Runtime Host 提供的受 Schema 校验 Catalog 摘要和受控组件预览。</p>
