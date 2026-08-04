@@ -50,7 +50,7 @@ jobs:
             echo "available=false" >> "${GITHUB_OUTPUT}"
             echo "::warning::Dependency graph is unavailable (HTTP ${status}); dependency review is skipped. Enable it in repository security settings to activate this check."
           fi
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/dependency-review-action@v5
         if: steps.dependency-graph.outputs.available == 'true'
 
   dependency-audit:
