@@ -103,6 +103,5 @@ docker build \
 ## Web Demo 迁移决策
 
 `apps/web-workbench` 是当前平台开发、联调和验收的 Web 入口。
-`apps/web-demo` 暂时保留为旧 Mock HTTP/WebSocket 协议的兼容 Smoke，不再承载新增 Workbench 能力。
-在 Runtime Host 平台编排和后续全链路迁移完成前，仓库继续运行原 Demo 的构建和测试。
-迁移依据和删除条件记录在 [`../../docs/platform/WEB_DEMO_MIGRATION.md`](../../docs/platform/WEB_DEMO_MIGRATION.md)。
+旧 Web Demo 已在 Workbench 和平台 E2E 覆盖 HTTP、WebSocket、A2UI 与 Action 闭环后删除。
+迁移依据和完成状态记录在 [`../../docs/platform/WEB_DEMO_MIGRATION.md`](../../docs/platform/WEB_DEMO_MIGRATION.md)。

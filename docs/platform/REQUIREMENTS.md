@@ -8,7 +8,7 @@
 ## 1. 建设背景
 
 仓库当前已不再只验证 UI Compiler Core 和独立 UI Compiler Service 的历史 MVP。
-Agent Runtime Host、Web Demo 和 Generative UI Workbench 已进入仓库，下一阶段需要验证 Business Agent 接入、嵌入式 Presentation Pipeline、浏览器 A2UI 渲染和 Action 回传的完整链路。
+Agent Runtime Host 和 Generative UI Workbench 已进入仓库，当前阶段需要验证 Business Agent 接入、嵌入式 Presentation Pipeline、浏览器 A2UI 渲染和 Action 回传的完整链路。
 
 ```text
 用户输入
