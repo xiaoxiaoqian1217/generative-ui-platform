@@ -22,9 +22,12 @@ import {
   setConversationInput,
   startAction,
   startRun,
+  restoreConversationHistory,
   type ConversationState,
   type TurnFailure,
 } from "../conversation/conversation-store.js";
+import { archiveRuntimeThread, createRuntimeThread, deleteRuntimeThread, getRuntimeThread, listRuntimeThreads, renameRuntimeThread } from "../runtime/thread-client.js";
+import type { RuntimeThread } from "@generative-ui/runtime-contract";
 import DiagnosticsPanel from "../diagnostics/DiagnosticsPanel.vue";
 import CatalogComponentPreview from "../catalog/CatalogComponentPreview.vue";
 import A2UIRawViewer from "../renderer/A2UIRawViewer.vue";
@@ -194,6 +197,10 @@ const caseEvaluation = ref<CaseEvaluation>();
 const latestCaseFailure = ref(loadCaseFailureDiagnosis(window.localStorage));
 const allCases = computed(() => [...BUILTIN_CASES, ...customCases.value]);
 const inspection = ref<InspectionSnapshot | undefined>(loadInspectionSnapshot(window.sessionStorage));
+const threads = ref<readonly RuntimeThread[]>([]);
+const nextThreadCursor = ref<string>();
+const selectedThreadId = ref<string>();
+const threadNotice = ref("");
 
 let client: RuntimeTransportClient | undefined;
 let clientGeneration = 0;
@@ -428,6 +435,8 @@ async function sendMessage(message = input.value): Promise<void> {
     }
 
     conversation.value = resolveRun(conversation.value, turnId, runtimeResult);
+    selectedThreadId.value = runtimeResult.threadId;
+    void refreshThreads();
 
     runState.value = "rendering";
     await nextTick();
@@ -550,6 +559,27 @@ function reconnect(): void {
   configureHeadlessRuntime();
 }
 
+async function refreshThreads(): Promise<void> {
+  try { const page = await listRuntimeThreads(endpoints.threads); threads.value = page.items; nextThreadCursor.value = page.nextCursor; threadNotice.value = ""; } catch { threadNotice.value = "无法加载调试会话。"; }
+}
+
+async function loadMoreThreads(): Promise<void> { if (nextThreadCursor.value === undefined) return; try { const page = await listRuntimeThreads(endpoints.threads, nextThreadCursor.value); threads.value = [...threads.value, ...page.items]; nextThreadCursor.value = page.nextCursor; } catch { threadNotice.value = "无法加载更多会话。"; } }
+
+async function selectThread(threadId: string): Promise<void> {
+  try { const detail = await getRuntimeThread(endpoints.threads, threadId); selectedThreadId.value = detail.thread.threadId; conversation.value = restoreConversationHistory(detail); runState.value = "idle"; } catch { threadNotice.value = "无法加载会话历史。"; }
+}
+
+async function newThread(): Promise<void> {
+  try { const thread = await createRuntimeThread(endpoints.threads); await refreshThreads(); await selectThread(thread.threadId); } catch { threadNotice.value = "无法创建调试会话。"; }
+}
+
+async function removeThread(threadId: string): Promise<void> {
+  try { const status = await deleteRuntimeThread(endpoints.threads, threadId); threadNotice.value = status === "completed" ? "会话已删除。" : `删除结果：${status}`; if (selectedThreadId.value === threadId) { selectedThreadId.value = undefined; conversation.value = createConversationState(); } await refreshThreads(); } catch { threadNotice.value = "删除会话失败。"; }
+}
+
+async function renameThread(thread: RuntimeThread): Promise<void> { const title = window.prompt("会话名称", thread.title); if (!title?.trim()) return; try { await renameRuntimeThread(endpoints.threads, thread.threadId, title); await refreshThreads(); } catch { threadNotice.value = "重命名会话失败。"; } }
+async function archiveThread(threadId: string): Promise<void> { try { await archiveRuntimeThread(endpoints.threads, threadId); await refreshThreads(); } catch { threadNotice.value = "归档会话失败。"; } }
+
 async function loadReadOnlyData(): Promise<void> {
   if (route.value !== "/catalog" && route.value !== "/scenarios") return;
   readOnlyNotice.value = "正在读取 Runtime Host 元数据…";
@@ -629,6 +659,7 @@ onMounted(() => {
       "页面已刷新，本地运行记录已重置，Runtime Host 配置已重新加载。";
   }
   configureHeadlessRuntime();
+  void refreshThreads();
   void loadReadOnlyData();
   if (pendingCase !== undefined) window.setTimeout(() => void sendMessage(pendingCase.input), 0);
 });
@@ -675,6 +706,13 @@ onBeforeUnmount(() => {
 
     <main v-if="route === '/playground'" class="workspace">
       <aside class="control-rail">
+        <section class="rail-section" data-testid="thread-list">
+          <div class="section-heading"><div><p class="eyebrow">DEBUG HISTORY</p><h2>调试会话</h2></div><button class="secondary-button" type="button" @click="newThread">新建</button></div>
+          <p v-if="threadNotice">{{ threadNotice }}</p>
+          <p v-if="threads.length === 0">暂无会话。</p>
+          <div class="scenario-list"><div v-for="thread in threads" :key="thread.threadId"><button class="scenario-button" :class="{ active: selectedThreadId === thread.threadId }" type="button" @click="selectThread(thread.threadId)"><strong>{{ thread.title }}</strong><span>{{ thread.status }}</span></button><button class="secondary-button" type="button" @click="renameThread(thread)">重命名</button><button class="secondary-button" type="button" @click="archiveThread(thread.threadId)">归档</button><button class="secondary-button" type="button" @click="removeThread(thread.threadId)">删除</button></div></div>
+          <button v-if="nextThreadCursor" class="secondary-button full" type="button" @click="loadMoreThreads">加载更多</button>
+        </section>
         <section class="rail-section runtime-card">
           <div class="section-heading">
             <div>

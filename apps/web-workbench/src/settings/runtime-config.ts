@@ -21,6 +21,7 @@ export interface RuntimeEndpoints {
   runs: string;
   scenarios: string;
   socket: string;
+  threads: string;
 }
 
 const INVALID_RUNTIME_HOST_URL = "WORKBENCH_RUNTIME_HOST_URL_INVALID";
@@ -80,6 +81,7 @@ export function createRuntimeEndpoints(
     runs: new URL("/api/runs", host).toString(),
     scenarios: new URL("/api/scenarios", host).toString(),
     socket: socket.toString(),
+    threads: new URL("/api/threads", host).toString(),
   };
 }
 

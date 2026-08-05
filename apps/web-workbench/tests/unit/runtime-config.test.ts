@@ -15,6 +15,7 @@ describe("Workbench Runtime Host configuration", () => {
         runs: "https://runtime.test.example/api/runs",
         scenarios: "https://runtime.test.example/api/scenarios",
         socket: "wss://runtime.test.example/ws/runs",
+        threads: "https://runtime.test.example/api/threads",
       },
     );
   });
