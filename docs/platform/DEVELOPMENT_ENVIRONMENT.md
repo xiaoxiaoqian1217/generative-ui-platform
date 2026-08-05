@@ -33,6 +33,14 @@ UI Compiler Core 是唯一可信的 A2UI 生产者。
 
 ## 安装和启动
 
+### 调试会话开发数据
+
+Runtime Host 默认将用户可见的调试线程、轮次和已验证 Presentation Snapshot 写入 `.platform/runtime-threads.sqlite`。
+该文件仅用于本地开发验证，已被 Git 忽略，不能复制进镜像、构建产物或日志。
+可通过 `RUNTIME_THREAD_DATABASE_PATH` 指定隔离的数据文件；自动化测试必须使用临时目录。
+Runtime Host 不保存 Provider 原始响应、密钥、UI Plan、UI IR、未清理业务数据或日志。
+Business Agent 的工作流 checkpoint 必须使用其独立的数据存储，仅以 `threadId` 与 Runtime 历史关联。
+
 需要 Node.js 24 或更高版本及 pnpm 10.13.1。
 新克隆仓库必须使用冻结锁文件安装。
 

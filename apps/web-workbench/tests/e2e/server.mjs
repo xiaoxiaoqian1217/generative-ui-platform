@@ -7,6 +7,26 @@ const appRoot = fileURLToPath(new URL("../..", import.meta.url));
 const distRoot = join(appRoot, "dist");
 const port = Number(process.env.WEB_WORKBENCH_E2E_PORT ?? "4173");
 let runtimeAvailable = true;
+let threadSequence = 0;
+const threads = new Map();
+
+function timestamp() {
+  return new Date().toISOString();
+}
+
+function createThread(title = "New debug conversation") {
+  const createdAt = timestamp();
+  const thread = {
+    contractVersion: "1.0",
+    createdAt,
+    status: "active",
+    threadId: `thread-history-${++threadSequence}`,
+    title,
+    updatedAt: createdAt,
+  };
+  threads.set(thread.threadId, { thread, turns: [] });
+  return thread;
+}
 
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
@@ -160,6 +180,32 @@ const server = createServer(async (request, response) => {
     });
     return;
   }
+  if (request.method === "GET" && url.pathname === "/api/threads") {
+    json(response, 200, {
+      items: [...threads.values()].map((item) => item.thread),
+    });
+    return;
+  }
+  if (request.method === "POST" && url.pathname === "/api/threads") {
+    const body = await readJson(request);
+    json(
+      response,
+      201,
+      createThread(typeof body.title === "string" ? body.title : undefined),
+    );
+    return;
+  }
+  const threadMatch = url.pathname.match(/^\/api\/threads\/([^/]+)$/);
+  if (threadMatch && request.method === "GET") {
+    const detail = threads.get(decodeURIComponent(threadMatch[1]));
+    json(response, detail ? 200 : 404, detail ?? { code: "THREAD_NOT_FOUND" });
+    return;
+  }
+  if (threadMatch && request.method === "DELETE") {
+    threads.delete(decodeURIComponent(threadMatch[1]));
+    json(response, 200, { status: "completed" });
+    return;
+  }
   if (request.method === "GET" && url.pathname === "/api/copilotkit/info") {
     if (!runtimeAvailable) {
       json(response, 503, { status: "unavailable" });
@@ -226,6 +272,8 @@ const server = createServer(async (request, response) => {
   }
   if (request.method === "POST" && url.pathname === "/__control__/restore") {
     runtimeAvailable = true;
+    threads.clear();
+    threadSequence = 0;
     response.writeHead(204).end();
     return;
   }

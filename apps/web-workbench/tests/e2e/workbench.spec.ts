@@ -67,6 +67,23 @@ test("refresh explicitly reports reset state", async ({ page }) => {
   await expect(page.getByTestId("run-status")).toContainText("等待发送");
 });
 
+test("debug conversation can be created, selected and deleted through Runtime thread APIs", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const threadList = page.getByTestId("thread-list");
+  await expect(threadList).toBeVisible();
+
+  await threadList.getByRole("button").first().click();
+  await expect(threadList.locator("strong")).toHaveText([
+    "New debug conversation",
+  ]);
+
+  // Buttons are: new thread, select thread, rename, archive, delete.
+  await threadList.getByRole("button").nth(4).click();
+  await expect(threadList.locator("strong")).toHaveCount(0);
+});
+
 test("Headless reports an initial outage and recovers", async ({ page }) => {
   await page.request.post("/__control__/runtime-down");
   await page.goto("/");
