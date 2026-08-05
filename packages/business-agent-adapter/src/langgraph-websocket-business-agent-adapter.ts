@@ -186,6 +186,21 @@ export class LangGraphWebSocketBusinessAgentAdapter
     );
   }
 
+  async deleteThread(
+    threadId: string,
+    options: BusinessAgentInvocationOptions = {},
+  ): Promise<void> {
+    const endpoint = new URL(this.#url);
+    endpoint.protocol = endpoint.protocol === "wss:" ? "https:" : "http:";
+    endpoint.pathname = `/api/threads/${encodeURIComponent(threadId)}`;
+    const response = await fetch(endpoint, {
+      method: "DELETE",
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
+    });
+    if (!response.ok && response.status !== 404)
+      throw new Error("BUSINESS_AGENT_CHECKPOINT_DELETE_FAILED");
+  }
+
   async resumeAction(
     request: BusinessAgentResumeActionRequest,
     options: BusinessAgentInvocationOptions = {},

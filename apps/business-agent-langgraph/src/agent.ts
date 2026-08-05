@@ -5,6 +5,7 @@ import type {
   BusinessAgentRunResult,
   PlatformError,
 } from "@generative-ui/runtime-contract";
+import type { MemorySaver } from "@langchain/langgraph";
 import { Command, isInterrupted } from "@langchain/langgraph";
 import {
   CONFIRM_PATROL_ACTION_ID,
@@ -92,8 +93,22 @@ export interface BusinessAgentApplication {
 }
 
 export class ReferenceBusinessAgent implements BusinessAgentApplication {
-  readonly #graph = createReferenceBusinessGraph();
+  readonly #graph;
+  readonly #checkpointer: MemorySaver | undefined;
   readonly #threadOperations = new Map<string, Promise<void>>();
+
+  constructor(
+    checkpointer?: Parameters<typeof createReferenceBusinessGraph>[0],
+  ) {
+    this.#checkpointer = checkpointer;
+    this.#graph = createReferenceBusinessGraph(checkpointer);
+  }
+
+  async deleteThread(threadId: string): Promise<void> {
+    await this.#serialized(threadId, async () => {
+      await this.#checkpointer?.deleteThread(threadId);
+    });
+  }
 
   async #serialized<T>(
     threadId: string,

@@ -1,6 +1,7 @@
 export interface BusinessAgentConfiguration {
   host: string;
   port: number;
+  checkpointDatabasePath: string;
 }
 
 export function createBusinessAgentConfiguration(
@@ -15,5 +16,11 @@ export function createBusinessAgentConfiguration(
   if (!Number.isSafeInteger(port) || port < 0 || port > 65_535) {
     throw new Error("BUSINESS_AGENT_PORT must be an integer from 0 to 65535.");
   }
-  return { host, port };
+  return {
+    host,
+    port,
+    checkpointDatabasePath:
+      env.BUSINESS_AGENT_CHECKPOINT_DATABASE_PATH ??
+      ".platform/business-checkpoints.sqlite",
+  };
 }

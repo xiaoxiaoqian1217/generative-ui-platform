@@ -361,6 +361,21 @@ export class LangGraphHttpBusinessAgentAdapter implements BusinessAgentAdapter {
     );
   }
 
+  async deleteThread(
+    threadId: string,
+    options: BusinessAgentInvocationOptions = {},
+  ): Promise<void> {
+    const response = await fetch(
+      new URL(`api/threads/${encodeURIComponent(threadId)}`, this.#baseUrl),
+      {
+        method: "DELETE",
+        ...(options.signal === undefined ? {} : { signal: options.signal }),
+      },
+    );
+    if (!response.ok && response.status !== 404)
+      throw new Error("BUSINESS_AGENT_CHECKPOINT_DELETE_FAILED");
+  }
+
   async resumeAction(
     request: BusinessAgentResumeActionRequest,
     options: BusinessAgentInvocationOptions = {},

@@ -1,14 +1,22 @@
+import { ReferenceBusinessAgent } from "./agent.js";
+import { SqliteCheckpointStore } from "./checkpoint-store.js";
 import { createBusinessAgentConfiguration } from "./config.js";
 import { createBusinessAgentServer } from "./http-server.js";
 
 async function start(): Promise<void> {
   const configuration = createBusinessAgentConfiguration();
-  const server = createBusinessAgentServer();
+  const checkpoints = new SqliteCheckpointStore(
+    configuration.checkpointDatabasePath,
+  );
+  const server = createBusinessAgentServer(
+    new ReferenceBusinessAgent(checkpoints),
+  );
   let closing = false;
   const close = async () => {
     if (closing) return;
     closing = true;
     await server.closeGracefully();
+    checkpoints.close();
   };
   process.once("SIGINT", () => void close());
   process.once("SIGTERM", () => void close());
