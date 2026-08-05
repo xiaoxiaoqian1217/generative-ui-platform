@@ -7,8 +7,11 @@ const appRoot = fileURLToPath(new URL("../..", import.meta.url));
 const distRoot = join(appRoot, "dist");
 const port = Number(process.env.WEB_WORKBENCH_E2E_PORT ?? "4173");
 let runtimeAvailable = true;
+let retryableTimeoutRequests = 0;
 let threadSequence = 0;
 const threads = new Map();
+const wait = (milliseconds) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 function timestamp() {
   return new Date().toISOString();
@@ -83,12 +86,27 @@ function runtimeResult(request) {
                     id: "root",
                     component: "Card",
                     title: { path: "/sourceData/title" },
-                    children: ["summary"],
+                    children: ["summary", "continue"],
                   },
                   {
                     id: "summary",
                     component: "Text",
                     text: { path: "/sourceData/summary" },
+                  },
+                  {
+                    id: "continue",
+                    component: "Button",
+                    label: "继续",
+                    action: {
+                      event: {
+                        name: "fixture.continue",
+                        context: {
+                          actionId: "continue",
+                          destructive: false,
+                          requiresApproval: false,
+                        },
+                      },
+                    },
                   },
                 ],
               },
@@ -227,7 +245,14 @@ const server = createServer(async (request, response) => {
       return;
     }
     const body = await readJson(request);
-    const result = runtimeResult(copilotRunRequest(body));
+    const runRequest = copilotRunRequest(body);
+    if (runRequest.message.content.includes("缓慢")) await wait(2_000);
+    if (
+      runRequest.message.content.includes("超时后重试") &&
+      retryableTimeoutRequests++ === 0
+    )
+      await wait(2_000);
+    const result = runtimeResult(runRequest);
     response.writeHead(200, {
       "cache-control": "no-store",
       connection: "keep-alive",
@@ -256,6 +281,55 @@ const server = createServer(async (request, response) => {
     response.end();
     return;
   }
+  if (request.method === "POST" && url.pathname === "/api/actions") {
+    const body = await readJson(request);
+    const presentationRequestId = `presentation-action-${body.requestId}`;
+    json(response, 200, {
+      protocolVersion: "1.0",
+      requestId: body.requestId,
+      threadId: body.threadId,
+      runId: body.runId,
+      sourcePresentationRequestId: `presentation-${body.runId.replace(/^run-/u, "")}`,
+      presentationRequestId,
+      actionId: body.action.actionId,
+      status: "completed",
+      presentation: {
+        requestId: presentationRequestId,
+        status: "completed",
+        mode: "generative-ui",
+        surfaceId: "surface-e2e-resumed",
+        operations: [
+          {
+            version: "v0.9",
+            createSurface: {
+              surfaceId: "surface-e2e-resumed",
+              catalogId: "fixture",
+            },
+          },
+          {
+            version: "v0.9",
+            updateComponents: {
+              surfaceId: "surface-e2e-resumed",
+              components: [
+                {
+                  id: "root",
+                  component: "Card",
+                  title: "Resumed",
+                  children: ["summary"],
+                },
+                {
+                  id: "summary",
+                  component: "Text",
+                  text: "Action 已原位恢复",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    return;
+  }
   if (request.method === "POST" && url.pathname === "/api/runs") {
     if (!runtimeAvailable) {
       json(response, 503, { status: "unavailable" });
@@ -272,6 +346,7 @@ const server = createServer(async (request, response) => {
   }
   if (request.method === "POST" && url.pathname === "/__control__/restore") {
     runtimeAvailable = true;
+    retryableTimeoutRequests = 0;
     threads.clear();
     threadSequence = 0;
     response.writeHead(204).end();
