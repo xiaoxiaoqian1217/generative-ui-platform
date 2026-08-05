@@ -27,6 +27,8 @@ import {
   completedBusinessAgentRunResultSchema,
   completedRuntimeActionResultSchema,
   completedRuntimeRunResultSchema,
+  conversationTurnStatusSchema,
+  createRuntimeThreadRequestSchema,
   failedBusinessAgentResumeActionResultSchema,
   failedBusinessAgentRunResultSchema,
   failedRuntimeActionResultSchema,
@@ -37,21 +39,33 @@ import {
   platformErrorSchema,
   type RuntimeActionRequest,
   type RuntimeActionResult,
+  type RuntimeConversationTurn,
   type RuntimeRunRequest,
   type RuntimeRunResult,
+  type RuntimeThread,
+  type RuntimeThreadDetail,
+  type RuntimeThreadPage,
   type RuntimeWebSocketInboundMessage,
   type RuntimeWebSocketOutboundMessage,
+  renameRuntimeThreadRequestSchema,
   runtimeActionEnvelopeSchema,
   runtimeActionRequestSchema,
   runtimeActionResultSchema,
+  runtimeConversationTurnSchema,
   runtimeDiagnosticStageNameSchema,
   runtimeDiagnosticStageSchema,
   runtimeDiagnosticStageStatusSchema,
   runtimeDiagnosticsCorrelationSchema,
   runtimeDiagnosticsSummarySchema,
+  runtimePresentationSnapshotSchema,
   runtimeProtocolVersionSchema,
   runtimeRunRequestSchema,
   runtimeRunResultSchema,
+  runtimeThreadContractVersionSchema,
+  runtimeThreadDetailSchema,
+  runtimeThreadPageSchema,
+  runtimeThreadSchema,
+  runtimeThreadStatusSchema,
   runtimeWebSocketInboundMessageSchema,
   runtimeWebSocketOutboundMessageSchema,
 } from "./schemas.js";
@@ -139,6 +153,10 @@ const commonReferencedSchemas = [
   runtimeActionEnvelopeSchema,
   businessAgentContextSchema,
   businessAgentEventSchema,
+  runtimeThreadContractVersionSchema,
+  runtimeThreadStatusSchema,
+  conversationTurnStatusSchema,
+  runtimePresentationSnapshotSchema,
 ] as const;
 
 function addSchemaOnce(ajv: Ajv, seenIds: Set<string>, schema: TSchema): void {
@@ -477,6 +495,53 @@ export const validateRuntimeWebSocketInboundMessage = createValidator<
   "RUNTIME_WEBSOCKET_MESSAGE_INVALID",
   "Runtime WebSocket Inbound Message",
   [runtimeRunRequestSchema, runtimeActionRequestSchema],
+);
+
+export const validateRuntimeThread = createValidator<
+  RuntimeThread,
+  "RUNTIME_RUN_RESULT_INVALID"
+>(runtimeThreadSchema, "RUNTIME_RUN_RESULT_INVALID", "Runtime Thread");
+export const validateRuntimeConversationTurn = createValidator<
+  RuntimeConversationTurn,
+  "RUNTIME_RUN_RESULT_INVALID"
+>(
+  runtimeConversationTurnSchema,
+  "RUNTIME_RUN_RESULT_INVALID",
+  "Runtime Conversation Turn",
+);
+export const validateRuntimeThreadPage = createValidator<
+  RuntimeThreadPage,
+  "RUNTIME_RUN_RESULT_INVALID"
+>(
+  runtimeThreadPageSchema,
+  "RUNTIME_RUN_RESULT_INVALID",
+  "Runtime Thread Page",
+  [runtimeThreadSchema],
+);
+export const validateRuntimeThreadDetail = createValidator<
+  RuntimeThreadDetail,
+  "RUNTIME_RUN_RESULT_INVALID"
+>(
+  runtimeThreadDetailSchema,
+  "RUNTIME_RUN_RESULT_INVALID",
+  "Runtime Thread Detail",
+  [runtimeThreadSchema, runtimeConversationTurnSchema],
+);
+export const validateCreateRuntimeThreadRequest = createValidator<
+  { title?: string },
+  "RUNTIME_RUN_RESULT_INVALID"
+>(
+  createRuntimeThreadRequestSchema,
+  "RUNTIME_RUN_RESULT_INVALID",
+  "Create Runtime Thread Request",
+);
+export const validateRenameRuntimeThreadRequest = createValidator<
+  { title: string },
+  "RUNTIME_RUN_RESULT_INVALID"
+>(
+  renameRuntimeThreadRequestSchema,
+  "RUNTIME_RUN_RESULT_INVALID",
+  "Rename Runtime Thread Request",
 );
 
 const validateRuntimeWebSocketOutboundMessageEnvelope = createValidator<
