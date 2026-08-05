@@ -117,6 +117,7 @@ CopilotKit Headless 应使用 `http://127.0.0.1:8200/api/copilotkit` 作为 Runt
 ## 当前范围
 
 当前 Host 不实现正式业务 Agent、线程持久化、认证或前端业务工具。
-Reference Business Agent 的内存 Checkpoint 仅用于开发验证，进程重启后会丢失。
+Reference Business Agent 使用独立 SQLite Checkpoint Store 保存私有工作流状态。
+Runtime Host 只通过 shared `threadId` 与其关联。
 当前 Host 不启用 CopilotKit 自动 A2UI 生成功能。
 所有 A2UI 均由 Presentation Pipeline 调用 UI Compiler Core 产生。

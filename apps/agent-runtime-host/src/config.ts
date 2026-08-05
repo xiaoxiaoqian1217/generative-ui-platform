@@ -19,6 +19,7 @@ export interface RuntimeHostConfig {
   businessAgentTransport?: "http-sse" | "websocket";
   presentationModel: RuntimeHostPresentationModelConfig;
   runtime?: { totalTimeoutMs: number; maxConcurrentRuns: number };
+  threadDatabasePath?: string;
 }
 
 export class RuntimeHostConfigurationError extends Error {
@@ -148,5 +149,8 @@ export function loadConfig(
         1_000,
       ),
     }),
+    ...(env.RUNTIME_THREAD_DATABASE_PATH === undefined
+      ? {}
+      : { threadDatabasePath: env.RUNTIME_THREAD_DATABASE_PATH }),
   };
 }

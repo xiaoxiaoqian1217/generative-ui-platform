@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node ../../scripts/dev-application.mjs runtime",
-    "build": "tsup src/main.ts --format esm --clean --out-dir dist",
+    "build": "tsup src/main.ts --format esm --external node:sqlite --clean --out-dir dist",
     "start": "node dist/main.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
