@@ -20,12 +20,12 @@
     "@generative-ui/presentation-pipeline": "workspace:*",
     "@generative-ui/presentation-contract": "workspace:*",
     "@generative-ui/runtime-contract": "workspace:*",
-    "express": "5.1.0",
+    "express": "5.2.1",
     "openai": "6.48.0",
     "rxjs": "7.8.1"
   },
   "devDependencies": {
-    "@types/express": "5.0.3",
+    "@types/express": "5.0.6",
     "tsup": "8.5.0",
     "tsx": "4.20.3",
     "typescript": "5.8.3",
