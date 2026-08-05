@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
-const props = defineProps<{ operations: readonly Record<string, unknown>[] }>();
+const props = defineProps<{
+  operations?: readonly Record<string, unknown>[];
+  value?: unknown;
+}>();
 const MAX_RAW_CHARACTERS = 64_000;
 const revealed = ref(false);
 const formatted = computed(() => {
-  const raw = JSON.stringify(props.operations, null, 2);
+  const raw = JSON.stringify(props.value ?? props.operations ?? [], null, 2);
   return raw.length <= MAX_RAW_CHARACTERS
     ? raw
     : `${raw.slice(0, MAX_RAW_CHARACTERS)}\n… 已截断`;
 });
 
 watch(
-  () => props.operations,
+  () => props.value ?? props.operations,
   () => {
     revealed.value = false;
   },

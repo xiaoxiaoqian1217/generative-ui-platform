@@ -9,6 +9,7 @@ import {
   failOperation,
   resolveAction,
   resolveRun,
+  restoreConversationHistory,
   retryTurn,
   startAction,
   startRun,
@@ -87,6 +88,52 @@ describe("Conversation Store", () => {
         turnId: "turn-2",
       }),
     ).toBe(running);
+  });
+
+  it("keeps an incompatible persisted snapshot out of rendering and exposes it only for raw inspection", () => {
+    const restored = restoreConversationHistory({
+      thread: {
+        contractVersion: "1.0",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        status: "active",
+        threadId: "thread-1",
+        title: "history",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+      turns: [
+        {
+          contractVersion: "1.0",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          requestId: "request-1",
+          runId: "run-1",
+          snapshot: {
+            catalogId: "retired-catalog",
+            catalogVersion: "0.9.0",
+            compilerVersion: "0.9.0",
+            contractVersion: "1.0",
+            presentation: {
+              mode: "generative-ui",
+              operations: [],
+              requestId: "presentation-history",
+              status: "completed",
+              surfaceId: "surface-history",
+            },
+          },
+          status: "completed",
+          threadId: "thread-1",
+          turnId: "turn-1",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+          userMessage: "history",
+        },
+      ],
+    });
+
+    expect(restored.turns[0]).toMatchObject({
+      businessSurfaces: [],
+      failure: { code: "HISTORY_SNAPSHOT_INCOMPATIBLE" },
+      historicalSnapshotRaw: { catalogId: "retired-catalog" },
+    });
+    expect(restored.turns[0]?.presentation).toBeUndefined();
   });
 
   it("keeps an A2UI-only turn free of assistant text and makes the prior surface historical", () => {

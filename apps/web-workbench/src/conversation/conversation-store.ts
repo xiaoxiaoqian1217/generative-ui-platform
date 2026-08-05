@@ -3,6 +3,7 @@ import type { PresentationResult } from "@generative-ui/presentation-contract";
 import type {
   RuntimeActionResult,
   RuntimeRunResult,
+  RuntimeThreadDetail,
 } from "@generative-ui/runtime-contract";
 
 export type ConversationOperationKind = "action" | "run";
@@ -34,6 +35,8 @@ export interface BusinessSurface {
 export interface ConversationTurn {
   readonly businessSurfaces: readonly BusinessSurface[];
   readonly failure?: TurnFailure;
+  /** An incompatible persisted snapshot may only be inspected as bounded raw data. */
+  readonly historicalSnapshotRaw?: unknown;
   readonly presentation?: PresentationResult;
   readonly presentationRequestId?: string;
   readonly requestId: string;
@@ -70,6 +73,56 @@ export interface StartActionInput {
 
 export function createConversationState(inputValue = ""): ConversationState {
   return { inputValue, turns: [] };
+}
+
+/** Historical snapshots are read-only: no restored business surface is active. */
+export function restoreConversationHistory(
+  detail: RuntimeThreadDetail,
+): ConversationState {
+  return {
+    inputValue: "",
+    turns: detail.turns.map((turn) => {
+      const compatible =
+        turn.snapshot?.contractVersion === "1.0" &&
+        turn.snapshot.catalogId === "fixture" &&
+        turn.snapshot.catalogVersion === "1.0.0" &&
+        turn.snapshot.compilerVersion === "1.0.0";
+      const presentation = compatible ? turn.snapshot?.presentation : undefined;
+      return {
+        businessSurfaces:
+          presentation !== undefined &&
+          presentation.status !== "failed" &&
+          presentation.mode === "generative-ui"
+            ? [
+                {
+                  presentation,
+                  status: "historical" as const,
+                  surfaceId: presentation.surfaceId,
+                },
+              ]
+            : [],
+        requestId: turn.requestId,
+        runId: turn.runId,
+        status: turn.status === "history-write-failed" ? "failed" : turn.status,
+        threadId: turn.threadId,
+        turnId: turn.turnId,
+        userMessage: { content: turn.userMessage, id: `${turn.turnId}:user` },
+        ...(presentation === undefined ? {} : { presentation }),
+        ...(!compatible && turn.snapshot !== undefined
+          ? {
+              failure: {
+                code: "HISTORY_SNAPSHOT_INCOMPATIBLE",
+                message:
+                  "The stored snapshot is incompatible with this Workbench.",
+                retryable: false,
+                stage: "history",
+              },
+              historicalSnapshotRaw: turn.snapshot,
+            }
+          : {}),
+      };
+    }),
+  };
 }
 
 export function setConversationInput(
