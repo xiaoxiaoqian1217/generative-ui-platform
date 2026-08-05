@@ -60,6 +60,54 @@ test("CopilotKit Headless keeps A2UI raw data controlled", async ({ page }) => {
   );
 });
 
+test("stop cancels a turn and Action Resume retires its previous Surface", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await chatInput(page).fill("缓慢响应");
+  await sendMessage(page).click();
+  const stop = page.getByRole("button", { name: "停止生成" });
+  await expect(stop).toBeVisible();
+  await stop.click();
+  await expect(page.getByTestId("run-status")).toContainText("已取消");
+  await expect(page.getByTestId("turn-failure")).toContainText(
+    "WORKBENCH_REQUEST_CANCELLED",
+  );
+
+  await chatInput(page).fill("返回 A2UI");
+  await sendMessage(page).click();
+  const buttons = page
+    .getByTestId("controlled-copilot-chat")
+    .getByRole("button", { name: "继续" });
+  await expect(buttons).toHaveCount(1);
+  await buttons.first().click();
+  await expect(page.getByTestId("controlled-copilot-chat")).toContainText(
+    "Resumed",
+  );
+  await expect(buttons).toHaveCount(1);
+  await expect(buttons.first()).toBeDisabled();
+});
+
+test("a retryable timeout can be explicitly retried in its turn", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "generative-ui.workbench.settings.v1",
+      JSON.stringify({ requestTimeoutMs: 1_000, showDebugDetails: false }),
+    );
+  });
+  await page.goto("/");
+  await chatInput(page).fill("超时后重试");
+  await sendMessage(page).click();
+  await expect(page.getByTestId("turn-failure")).toContainText(
+    "WORKBENCH_REQUEST_TIMEOUT",
+  );
+  await page.getByRole("button", { name: "重试" }).click();
+  await expect(page.getByTestId("run-status")).toContainText("已完成");
+  await expect(page.getByTestId("markdown-result")).toBeVisible();
+});
+
 test("refresh explicitly reports reset state", async ({ page }) => {
   await page.goto("/");
   await page.reload();
