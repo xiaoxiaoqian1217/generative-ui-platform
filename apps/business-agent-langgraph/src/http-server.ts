@@ -189,6 +189,22 @@ export function createBusinessAgentServer(
     return reply.header("x-request-id", result.requestId).send(result);
   });
 
+  app.delete("/api/threads/:threadId", async (request, reply) => {
+    const params = request.params as { threadId?: unknown };
+    if (typeof params.threadId !== "string" || params.threadId.length === 0)
+      return reply.code(400).send(invalidRequest(params));
+    if (!(agent instanceof ReferenceBusinessAgent))
+      return reply
+        .code(501)
+        .send({
+          code: "REQUEST_INVALID",
+          message: "Checkpoint deletion is unavailable.",
+          retryable: false,
+        });
+    await agent.deleteThread(params.threadId);
+    return reply.code(204).send();
+  });
+
   app.setNotFoundHandler((_request, reply) => {
     return reply.code(404).send({
       code: "REQUEST_INVALID",

@@ -40,9 +40,10 @@ Agent Runtime Host resolves the original Surface and validates the Catalog, Acti
 - `POST /api/runs`：执行 Business Agent Run Contract。
 - `POST /api/actions`：执行 Business Agent Resume Action Contract。
 
-生成巡逻计划时，Run 会在内存 Checkpoint 中暂停。
+生成巡逻计划时，Run 会在独立 SQLite Checkpoint 中暂停。
 后续 Action 必须使用相同的 `threadId` 和 `runId`，并提交 `patrol.confirm` Action。
-内存 Checkpoint 只用于开发验证，进程重启后不会保留。
+开发环境默认使用 `.platform/business-checkpoints.sqlite`，可通过 `BUSINESS_AGENT_CHECKPOINT_DATABASE_PATH` 指定隔离路径。
+该数据库仅保存 LangGraph 私有工作流状态，重启后可按 `threadId` 恢复，且不保存 PresentationResult、A2UI、Catalog 或前端组件信息。
 
 ## 本地运行
 

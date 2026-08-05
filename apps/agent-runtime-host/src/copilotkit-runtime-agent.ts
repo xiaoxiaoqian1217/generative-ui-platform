@@ -4,7 +4,10 @@ import { type BaseEvent, EventType, type RunAgentInput } from "@ag-ui/core";
 import { createPresentationResultEvent } from "@generative-ui/ag-ui-adapter";
 import type { RuntimeRunResult } from "@generative-ui/runtime-contract";
 import { Observable } from "rxjs";
-import type { RunOrchestrator } from "./orchestrator.js";
+
+interface RuntimeRunGateway {
+  run(input: unknown, signal?: AbortSignal): Promise<RuntimeRunResult>;
+}
 
 function latestUserMessage(input: RunAgentInput): string | undefined {
   const message = [...input.messages]
@@ -54,7 +57,7 @@ export class CopilotKitRuntimeAgent extends AbstractAgent {
   private readonly runtimeAgentId: string;
 
   constructor(
-    private readonly orchestrator: RunOrchestrator,
+    private readonly orchestrator: RuntimeRunGateway,
     agentId: string,
   ) {
     super({ agentId, description: "Generative UI Platform Runtime Agent" });

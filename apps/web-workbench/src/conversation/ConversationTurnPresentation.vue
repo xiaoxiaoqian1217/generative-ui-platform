@@ -4,6 +4,7 @@ import type { ConversationTurn } from "./conversation-store.js";
 import { computed } from "vue";
 import { CopilotChatAssistantMessage } from "@copilotkit/vue/v2";
 import A2UIRenderer from "../renderer/A2UIRenderer.vue";
+import A2UIRawViewer from "../renderer/A2UIRawViewer.vue";
 import type { RenderedRuntimeAction } from "../renderer/a2ui.js";
 import MarkdownRenderer from "../renderer/MarkdownRenderer.vue";
 
@@ -66,6 +67,11 @@ function surfaceMessage(surfaceId: string): AssistantMessage {
       重试
     </button>
   </section>
+
+  <A2UIRawViewer
+    v-if="turn.historicalSnapshotRaw !== undefined"
+    :value="turn.historicalSnapshotRaw"
+  />
 
   <CopilotChatAssistantMessage
     v-if="markdownMessage"

@@ -18,6 +18,127 @@ export type RuntimeProtocolVersion = Static<
   typeof runtimeProtocolVersionSchema
 >;
 
+/** The separately-versioned, user-visible debug history format. */
+export const runtimeThreadContractVersionSchema = Type.Literal("1.0", {
+  $id: "https://generative-ui.dev/schemas/runtime/thread-contract-version/1.0",
+});
+export type RuntimeThreadContractVersion = Static<
+  typeof runtimeThreadContractVersionSchema
+>;
+
+export const runtimeThreadStatusSchema = Type.Union(
+  [Type.Literal("active"), Type.Literal("archived")],
+  { $id: "https://generative-ui.dev/schemas/runtime/thread-status/1.0" },
+);
+export type RuntimeThreadStatus = Static<typeof runtimeThreadStatusSchema>;
+
+export const conversationTurnStatusSchema = Type.Union(
+  [
+    Type.Literal("pending"),
+    Type.Literal("completed"),
+    Type.Literal("failed"),
+    Type.Literal("cancelled"),
+    Type.Literal("history-write-failed"),
+  ],
+  {
+    $id: "https://generative-ui.dev/schemas/runtime/conversation-turn-status/1.0",
+  },
+);
+export type ConversationTurnStatus = Static<
+  typeof conversationTurnStatusSchema
+>;
+
+export const runtimeThreadSchema = Type.Object(
+  {
+    contractVersion: Type.Ref(runtimeThreadContractVersionSchema),
+    threadId: nonEmptyStringSchema,
+    title: nonEmptyStringSchema,
+    status: Type.Ref(runtimeThreadStatusSchema),
+    createdAt: nonEmptyStringSchema,
+    updatedAt: nonEmptyStringSchema,
+  },
+  {
+    additionalProperties: false,
+    $id: "https://generative-ui.dev/schemas/runtime/thread/1.0",
+  },
+);
+export type RuntimeThread = Static<typeof runtimeThreadSchema>;
+
+export const runtimePresentationSnapshotSchema = Type.Object(
+  {
+    contractVersion: Type.Ref(runtimeThreadContractVersionSchema),
+    catalogId: nonEmptyStringSchema,
+    catalogVersion: nonEmptyStringSchema,
+    compilerVersion: nonEmptyStringSchema,
+    presentation: Type.Ref(presentationResultSchema),
+  },
+  {
+    additionalProperties: false,
+    $id: "https://generative-ui.dev/schemas/runtime/presentation-snapshot/1.0",
+  },
+);
+export type RuntimePresentationSnapshot = Static<
+  typeof runtimePresentationSnapshotSchema
+>;
+
+export const runtimeConversationTurnSchema = Type.Object(
+  {
+    contractVersion: Type.Ref(runtimeThreadContractVersionSchema),
+    turnId: nonEmptyStringSchema,
+    threadId: nonEmptyStringSchema,
+    requestId: nonEmptyStringSchema,
+    runId: nonEmptyStringSchema,
+    userMessage: nonEmptyStringSchema,
+    status: Type.Ref(conversationTurnStatusSchema),
+    createdAt: nonEmptyStringSchema,
+    updatedAt: nonEmptyStringSchema,
+    // Kept as a code string so the thread schema remains loadable before the
+    // platform-error schema declaration below.
+    errorCode: Type.Optional(nonEmptyStringSchema),
+    snapshot: Type.Optional(Type.Ref(runtimePresentationSnapshotSchema)),
+  },
+  {
+    additionalProperties: false,
+    $id: "https://generative-ui.dev/schemas/runtime/conversation-turn/1.0",
+  },
+);
+export type RuntimeConversationTurn = Static<
+  typeof runtimeConversationTurnSchema
+>;
+
+export const runtimeThreadPageSchema = Type.Object(
+  {
+    items: Type.Array(Type.Ref(runtimeThreadSchema)),
+    nextCursor: Type.Optional(nonEmptyStringSchema),
+  },
+  {
+    additionalProperties: false,
+    $id: "https://generative-ui.dev/schemas/runtime/thread-page/1.0",
+  },
+);
+export type RuntimeThreadPage = Static<typeof runtimeThreadPageSchema>;
+
+export const runtimeThreadDetailSchema = Type.Object(
+  {
+    thread: Type.Ref(runtimeThreadSchema),
+    turns: Type.Array(Type.Ref(runtimeConversationTurnSchema)),
+  },
+  {
+    additionalProperties: false,
+    $id: "https://generative-ui.dev/schemas/runtime/thread-detail/1.0",
+  },
+);
+export type RuntimeThreadDetail = Static<typeof runtimeThreadDetailSchema>;
+
+export const createRuntimeThreadRequestSchema = Type.Object(
+  { title: Type.Optional(Type.String({ minLength: 1, maxLength: 120 })) },
+  { additionalProperties: false },
+);
+export const renameRuntimeThreadRequestSchema = Type.Object(
+  { title: Type.String({ minLength: 1, maxLength: 120 }) },
+  { additionalProperties: false },
+);
+
 export const platformErrorCodeSchema = Type.Union(
   [
     Type.Literal("REQUEST_INVALID"),
@@ -35,6 +156,9 @@ export const platformErrorCodeSchema = Type.Union(
     Type.Literal("PRESENTATION_PIPELINE_ERROR"),
     Type.Literal("PRESENTATION_RESULT_INVALID"),
     Type.Literal("INTERNAL_ERROR"),
+    Type.Literal("THREAD_NOT_FOUND"),
+    Type.Literal("HISTORY_RESOURCE_LIMIT"),
+    Type.Literal("HISTORY_WRITE_FAILED"),
   ],
   {
     $id: "https://generative-ui.dev/schemas/runtime/error-code/1.0",

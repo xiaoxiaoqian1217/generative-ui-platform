@@ -21,6 +21,11 @@ export class BusinessAgentAdapterRequestError extends Error {
 }
 
 export interface BusinessAgentAdapter {
+  /** Private lifecycle operation; never exposed to Web clients. */
+  deleteThread?(
+    threadId: string,
+    options?: BusinessAgentInvocationOptions,
+  ): Promise<void>;
   run(
     request: BusinessAgentRunRequest,
     options?: BusinessAgentInvocationOptions,
