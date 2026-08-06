@@ -88,6 +88,15 @@ const ControlledCopilotChatView = defineAsyncComponent(
 const CopilotKitConversationProvider = defineAsyncComponent(
   () => import("../conversation/CopilotKitConversationProvider.vue"),
 );
+// PROTOTYPE(issue-179)：仅开发环境且存在 ?variant= 参数时启用。
+const PrototypeExecutionMap = import.meta.env.DEV
+  ? defineAsyncComponent(
+      () => import("../prototype/execution-map/PrototypeExecutionMap.vue"),
+    )
+  : undefined;
+const showExecutionMapPrototype =
+  import.meta.env.DEV &&
+  new URLSearchParams(window.location.search).has("variant");
 
 type RunState =
   | "idle"
@@ -849,7 +858,13 @@ onBeforeUnmount(() => {
     </main>
     <main v-else class="workspace static-workbench-page" :data-testid="`route-${route.slice(1)}`">
       <section class="main-stage">
-        <section class="composer-card">
+        <section v-if="route === '/prototype-inspect'" :style="{ width: '80vw' }">
+          <p class="eyebrow">PROTOTYPE INSPECT</p>
+          <h2>Prototype Inspect</h2>
+          <PrototypeExecutionMap v-if="showExecutionMapPrototype" />
+          <p v-else>原型仅在开发环境且 URL 携带 ?variant= 参数时启用。</p>
+        </section>
+        <section v-else class="composer-card">
           <p class="eyebrow">{{ workbenchRouteLabel(route).toUpperCase() }}</p>
           <h2>{{ workbenchRouteLabel(route) }}</h2>
           <template v-if="route === '/inspect'">

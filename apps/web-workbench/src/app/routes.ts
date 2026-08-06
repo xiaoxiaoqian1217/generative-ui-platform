@@ -5,6 +5,7 @@ export const WORKBENCH_ROUTES = [
   "/catalog",
   "/scenarios",
   "/settings",
+  "/prototype-inspect",
 ] as const;
 
 export type WorkbenchRoute = (typeof WORKBENCH_ROUTES)[number];
@@ -23,5 +24,6 @@ export function workbenchRouteLabel(route: WorkbenchRoute): string {
     "/catalog": "Catalog",
     "/scenarios": "Scenarios",
     "/settings": "Settings",
+    "/prototype-inspect": "Prototype Inspect",
   }[route];
 }
