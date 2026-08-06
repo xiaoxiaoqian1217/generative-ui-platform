@@ -88,6 +88,9 @@ const ControlledCopilotChatView = defineAsyncComponent(
 const CopilotKitConversationProvider = defineAsyncComponent(
   () => import("../conversation/CopilotKitConversationProvider.vue"),
 );
+const Issue174WorkbenchPrototype = defineAsyncComponent(
+  () => import("../prototype/Issue174WorkbenchPrototype.vue"),
+);
 
 type RunState =
   | "idle"
@@ -182,6 +185,10 @@ const error = computed<DisplayError | undefined>(() => configurationFailure.valu
 const refreshNotice = ref("");
 const activeController = ref<AbortController>();
 const route = ref(resolveWorkbenchRoute(window.location.pathname));
+const issue174PrototypeEnabled =
+  import.meta.env.DEV &&
+  route.value === "/playground" &&
+  new URLSearchParams(window.location.search).has("variant");
 const settingsRuntimeHostUrl = ref(config.runtimeHostUrl);
 const settingsTimeoutMs = ref(String(initialLocalSettings.requestTimeoutMs));
 const settingsShowDebugDetails = ref(initialLocalSettings.showDebugDetails);
@@ -675,7 +682,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="workbench-shell">
+  <Issue174WorkbenchPrototype v-if="issue174PrototypeEnabled" />
+  <div v-else class="workbench-shell">
     <header class="topbar">
       <div class="brand-lockup">
         <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
