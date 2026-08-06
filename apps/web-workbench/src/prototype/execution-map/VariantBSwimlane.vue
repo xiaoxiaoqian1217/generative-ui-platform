@@ -7,6 +7,7 @@ import StatusPill from "./StatusPill.vue";
 import {
   NODE_LABELS,
   NODE_ORDER,
+  findProtoExchange,
   type ProtoNodeId,
   type ProtoScenario,
   type ProtoStatus,
@@ -66,17 +67,14 @@ const selectedEvent = computed(() =>
   props.scenario.turn.timeline.find((event) => event.sequence === selectedSequence.value),
 );
 
-const selectedContext = computed(() => {
+const selectedExchange = computed(() => {
   const event = selectedEvent.value;
-  if (event === undefined) return undefined;
-  for (const operation of props.scenario.turn.operations) {
-    const node = operation.nodes.find((item) => item.id === event.node);
-    if (node === undefined) continue;
-    const stage = node.substages.find((item) => event.label.includes(item.label) || item.label.includes(event.label));
-    const exchange = node.exchanges.find((item) => event.label.includes(item.label) || item.label.includes(event.label));
-    return { node, stage, exchange };
-  }
-  return undefined;
+  if (event?.ref === undefined) return undefined;
+  return findProtoExchange(
+    props.scenario.turn,
+    event.ref.node,
+    event.ref.exchange,
+  );
 });
 </script>
 
@@ -143,32 +141,22 @@ const selectedContext = computed(() => {
             <div><dt>时间偏移</dt><dd>+{{ selectedEvent.atOffsetMs }} ms</dd></div>
             <div><dt>状态</dt><dd><StatusPill :status="selectedEvent.status ?? 'ok'" /></dd></div>
           </dl>
-          <template v-if="selectedContext?.exchange">
-            <h5>关联请求与返回（原始 JSON 直通）</h5>
-            <p class="ctx-line"><strong>{{ selectedContext.exchange.label }}</strong></p>
-            <div v-if="selectedContext.exchange.request" class="ctx-block">
-              <span class="ctx-side">→ 请求<template v-if="selectedContext.exchange.request.artifact"> · {{ selectedContext.exchange.request.artifact.label }} <StatusPill :artifact="selectedContext.exchange.request.artifact.state" /></template></span>
-              <JsonTree v-if="selectedContext.exchange.request.payload !== undefined" :value="selectedContext.exchange.request.payload" />
-              <p v-else class="ctx-note">{{ selectedContext.exchange.request.summary }}</p>
+          <template v-if="selectedExchange">
+            <h5>输入与输出（原始 JSON 直通）</h5>
+            <p class="ctx-line"><strong>{{ selectedExchange.label }}</strong></p>
+            <div v-if="selectedExchange.request" class="ctx-block">
+              <span class="ctx-side">→ 请求<template v-if="selectedExchange.request.artifact"> · {{ selectedExchange.request.artifact.label }} <StatusPill :artifact="selectedExchange.request.artifact.state" /></template></span>
+              <JsonTree v-if="selectedExchange.request.payload !== undefined" :value="selectedExchange.request.payload" />
+              <p v-else class="ctx-note">{{ selectedExchange.request.summary }}</p>
             </div>
-            <div v-if="selectedContext.exchange.response" class="ctx-block">
-              <span class="ctx-side">← 返回<template v-if="selectedContext.exchange.response.artifact"> · {{ selectedContext.exchange.response.artifact.label }} <StatusPill :artifact="selectedContext.exchange.response.artifact.state" /></template></span>
-              <JsonTree v-if="selectedContext.exchange.response.payload !== undefined" :value="selectedContext.exchange.response.payload" />
-              <p v-else class="ctx-note">{{ selectedContext.exchange.response.summary }}</p>
+            <div v-if="selectedExchange.response" class="ctx-block">
+              <span class="ctx-side">← 返回<template v-if="selectedExchange.response.artifact"> · {{ selectedExchange.response.artifact.label }} <StatusPill :artifact="selectedExchange.response.artifact.state" /></template></span>
+              <JsonTree v-if="selectedExchange.response.payload !== undefined" :value="selectedExchange.response.payload" />
+              <p v-else class="ctx-note">{{ selectedExchange.response.summary }}</p>
             </div>
-            <p v-if="selectedContext.exchange.note" class="ctx-note">{{ selectedContext.exchange.note }}</p>
+            <p v-if="selectedExchange.note" class="ctx-note">{{ selectedExchange.note }}</p>
           </template>
-          <template v-else-if="selectedContext?.stage">
-            <h5>关联子阶段</h5>
-            <p class="ctx-line">
-              {{ selectedContext.stage.label }}
-              <StatusPill :status="selectedContext.stage.status" />
-              <span v-if="selectedContext.stage.durationMs !== undefined">{{ selectedContext.stage.durationMs }} ms</span>
-            </p>
-            <p v-if="selectedContext.stage.errorCode" class="ctx-line">错误代码：<code>{{ selectedContext.stage.errorCode }}</code></p>
-            <p v-if="selectedContext.stage.fieldPath" class="ctx-line">字段路径：<code>{{ selectedContext.stage.fieldPath }}</code></p>
-          </template>
-          <p v-else class="ctx-note">该事件属于 {{ NODE_LABELS[selectedEvent.node] }} 节点的常规过程事件。</p>
+          <p v-else class="ctx-note">过程事件（{{ selectedEvent.kind }}）：不产生契约边界 Artifact，没有可展示的 JSON 输入输出。</p>
         </template>
         <template v-else>
           <p class="eyebrow">EVENT DETAIL</p>

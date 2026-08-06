@@ -77,6 +77,7 @@ export interface ProtoTimelineEvent {
   label: string;
   status?: ProtoStatus;
   atOffsetMs: number;
+  ref?: { node: ProtoNodeId; exchange: string };
 }
 
 export interface ProtoTurn {
@@ -513,6 +514,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "message",
       label: "用户消息提交",
       atOffsetMs: 0,
+      ref: { node: "workbench", exchange: "run-request" },
     },
     {
       sequence: 2,
@@ -520,6 +522,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "run",
       label: "Run 开始（run-71c）",
       atOffsetMs: 12,
+      ref: { node: "runtime-host", exchange: "event-projection" },
     },
     {
       sequence: 3,
@@ -541,6 +544,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "tool-call",
       label: "Tool Call：query_device_status",
       atOffsetMs: 1180,
+      ref: { node: "business-agent", exchange: "tool-call" },
     },
     {
       sequence: 6,
@@ -548,6 +552,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "tool-result",
       label: "Tool Result：12 台设备",
       atOffsetMs: 2660,
+      ref: { node: "business-agent", exchange: "tool-call" },
     },
     {
       sequence: 7,
@@ -555,6 +560,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "message",
       label: "最终 AgentContent（structured）",
       atOffsetMs: 2790,
+      ref: { node: "agent-adapter", exchange: "agent-invoke" },
     },
     {
       sequence: 8,
@@ -562,6 +568,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "diagnostic",
       label: "Router 判定 generative-ui",
       atOffsetMs: 2810,
+      ref: { node: "presentation", exchange: "presentation-exchange" },
     },
     {
       sequence: 9,
@@ -569,6 +576,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "diagnostic",
       label: "Model Adapter 产出 UI Plan Candidate",
       atOffsetMs: 4200,
+      ref: { node: "presentation", exchange: "presentation-exchange" },
     },
     {
       sequence: 10,
@@ -576,6 +584,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "diagnostic",
       label: "UI IR 构建完成",
       atOffsetMs: 4260,
+      ref: { node: "compiler", exchange: "compile-exchange" },
     },
     {
       sequence: 11,
@@ -583,6 +592,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "diagnostic",
       label: "A2UI 编译与 Schema 校验通过",
       atOffsetMs: 4310,
+      ref: { node: "compiler", exchange: "compile-exchange" },
     },
     {
       sequence: 12,
@@ -590,6 +600,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "run",
       label: "Run 完成，PresentationResult 就绪",
       atOffsetMs: 4330,
+      ref: { node: "workbench", exchange: "run-request" },
     },
     {
       sequence: 13,
@@ -597,6 +608,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "renderer",
       label: "A2UI Surface 渲染成功",
       atOffsetMs: 4940,
+      ref: { node: "workbench", exchange: "run-request" },
     },
     {
       sequence: 14,
@@ -839,6 +851,7 @@ function compileFallback(): ProtoScenario {
         status: "degraded" as const,
         label: "Fallback：生成安全 Markdown",
         atOffsetMs: 4240,
+        ref: { node: "presentation" as const, exchange: "fallback-exchange" },
       };
     if (event.sequence === 13)
       return { ...event, label: "降级 Markdown 渲染成功" };
@@ -1008,6 +1021,7 @@ function actionResume(): ProtoScenario {
       kind: "message",
       label: "用户消息提交",
       atOffsetMs: 0,
+      ref: { node: "workbench", exchange: "run-request" },
     },
     {
       sequence: 2,
@@ -1015,6 +1029,7 @@ function actionResume(): ProtoScenario {
       kind: "run",
       label: "Run 开始（run-71c）",
       atOffsetMs: 12,
+      ref: { node: "runtime-host", exchange: "event-projection" },
     },
     {
       sequence: 3,
@@ -1022,6 +1037,7 @@ function actionResume(): ProtoScenario {
       kind: "tool-call",
       label: "Tool Call：query_device_status",
       atOffsetMs: 1180,
+      ref: { node: "business-agent", exchange: "tool-call" },
     },
     {
       sequence: 4,
@@ -1036,6 +1052,7 @@ function actionResume(): ProtoScenario {
       kind: "diagnostic",
       label: "首个 A2UI Surface 编译完成",
       atOffsetMs: 4360,
+      ref: { node: "compiler", exchange: "compile-exchange" },
     },
     {
       sequence: 6,
@@ -1043,6 +1060,7 @@ function actionResume(): ProtoScenario {
       kind: "renderer",
       label: "Surface 渲染（含确认按钮）",
       atOffsetMs: 4980,
+      ref: { node: "workbench", exchange: "run-request" },
     },
     {
       sequence: 7,
@@ -1050,6 +1068,7 @@ function actionResume(): ProtoScenario {
       kind: "action",
       label: "用户确认 Action：shutdown_devices",
       atOffsetMs: 12400,
+      ref: { node: "workbench", exchange: "action-exchange" },
     },
     {
       sequence: 8,
@@ -1057,6 +1076,7 @@ function actionResume(): ProtoScenario {
       kind: "action",
       label: "Action Receipt 提交回执（op-act）",
       atOffsetMs: 12430,
+      ref: { node: "workbench", exchange: "action-exchange" },
     },
     {
       sequence: 9,
@@ -1071,6 +1091,7 @@ function actionResume(): ProtoScenario {
       kind: "resume",
       label: "Action Resume：工作流恢复",
       atOffsetMs: 12660,
+      ref: { node: "business-agent", exchange: "tool-call" },
     },
     {
       sequence: 11,
@@ -1078,6 +1099,7 @@ function actionResume(): ProtoScenario {
       kind: "tool-result",
       label: "Tool Result：2 台已停运",
       atOffsetMs: 14350,
+      ref: { node: "business-agent", exchange: "tool-call" },
     },
     {
       sequence: 12,
@@ -1085,6 +1107,7 @@ function actionResume(): ProtoScenario {
       kind: "diagnostic",
       label: "追加 AgentContent 进入生成式路由",
       atOffsetMs: 14500,
+      ref: { node: "presentation", exchange: "presentation-exchange" },
     },
     {
       sequence: 13,
@@ -1092,6 +1115,7 @@ function actionResume(): ProtoScenario {
       kind: "diagnostic",
       label: "第二个 A2UI Surface 编译完成",
       atOffsetMs: 14620,
+      ref: { node: "compiler", exchange: "compile-exchange" },
     },
     {
       sequence: 14,
@@ -1099,6 +1123,7 @@ function actionResume(): ProtoScenario {
       kind: "renderer",
       label: "追加 Assistant Presentation 渲染",
       atOffsetMs: 15080,
+      ref: { node: "workbench", exchange: "action-exchange" },
     },
   ];
   return {
@@ -1301,4 +1326,17 @@ export function resolvePrototypeScenario(
     PROTOTYPE_SCENARIOS.find((scenario) => scenario.id === id) ??
     PROTOTYPE_SCENARIOS[0]!
   );
+}
+
+export function findProtoExchange(
+  turn: ProtoTurn,
+  nodeId: ProtoNodeId,
+  exchangeId: string,
+): ProtoExchange | undefined {
+  for (const operation of turn.operations) {
+    const node = operation.nodes.find((item) => item.id === nodeId);
+    const exchange = node?.exchanges.find((item) => item.id === exchangeId);
+    if (exchange !== undefined) return exchange;
+  }
+  return undefined;
 }
