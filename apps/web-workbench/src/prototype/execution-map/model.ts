@@ -228,19 +228,6 @@ function baseNodes(): ProtoNode[] {
           id: "render-result",
           label: "A2UI Surface 渲染结果",
           status: "ok",
-          request: {
-            summary: "PresentationResult（A2UI 三操作序列）作为渲染输入",
-            payload: {
-              presentationId: "pres-a01-1",
-              a2uiRef: "artifact://a2ui/turn-a01",
-              surfaces: ["surface-a01-main"],
-            },
-            artifact: {
-              label: "PresentationResult（A2UI）",
-              state: "inline",
-              sizeLabel: "8.3 KB",
-            },
-          },
           response: {
             summary: "Surface 渲染成功：1 个 Card 根 + 2 个受控组件",
             payload: {
@@ -532,19 +519,6 @@ function baseNodes(): ProtoNode[] {
           id: "plan-candidate",
           label: "UI Plan Candidate（Model Adapter 产出）",
           status: "ok",
-          request: {
-            summary: "AgentContent + Presentation Decision 作为模型规划输入",
-            payload: {
-              contentRef: "artifact://agent-content/turn-a01",
-              decision: "generative-ui",
-              catalogVersion: "1.4.0",
-            },
-            artifact: {
-              label: "规划输入引用",
-              state: "inline",
-              sizeLabel: "0.4 KB",
-            },
-          },
           response: {
             summary: "Plan 选择 Alert + Table（均为 Catalog 受控组件）",
             payload: {
@@ -627,15 +601,6 @@ function baseNodes(): ProtoNode[] {
           id: "ui-ir",
           label: "UI IR（可信中间表示）",
           status: "ok",
-          request: {
-            summary: "校验通过的 Plan + 12 条设备数据",
-            payload: { dataItems: 12, bindings: ["$.devices[*]"] },
-            artifact: {
-              label: "IR 构建输入",
-              state: "inline",
-              sizeLabel: "7.1 KB",
-            },
-          },
           response: {
             summary: "UI IR 9 节点、14 个绑定，布局规范化完成",
             payload: {
@@ -655,15 +620,6 @@ function baseNodes(): ProtoNode[] {
           id: "a2ui",
           label: "A2UI（v0.9 操作序列）",
           status: "ok",
-          request: {
-            summary: "UI IR 作为编译输入",
-            payload: { irRef: "artifact://ui-ir/turn-a01" },
-            artifact: {
-              label: "UI IR 引用",
-              state: "inline",
-              sizeLabel: "0.2 KB",
-            },
-          },
           response: {
             summary:
               "A2UI v0.9 三操作序列（createSurface / updateComponents / updateDataModel）",
