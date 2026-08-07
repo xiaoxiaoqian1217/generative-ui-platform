@@ -225,6 +225,49 @@ function baseNodes(): ProtoNode[] {
           },
         },
         {
+          id: "render-result",
+          label: "A2UI Surface 渲染结果",
+          status: "ok",
+          request: {
+            summary: "PresentationResult（A2UI 三操作序列）作为渲染输入",
+            payload: {
+              presentationId: "pres-a01-1",
+              a2uiRef: "artifact://a2ui/turn-a01",
+              surfaces: ["surface-a01-main"],
+            },
+            artifact: {
+              label: "PresentationResult（A2UI）",
+              state: "inline",
+              sizeLabel: "8.3 KB",
+            },
+          },
+          response: {
+            summary: "Surface 渲染成功：1 个 Card 根 + 2 个受控组件",
+            payload: {
+              surfaceId: "surface-a01-main",
+              root: "Card",
+              renderedComponents: [
+                {
+                  componentId: "alert-1",
+                  componentType: "Alert",
+                  status: "rendered",
+                },
+                {
+                  componentId: "table-1",
+                  componentType: "Table",
+                  status: "rendered",
+                },
+              ],
+              actionBindings: ["shutdown_devices"],
+            },
+            artifact: {
+              label: "Rendered Surface",
+              state: "inline",
+              sizeLabel: "0.9 KB",
+            },
+          },
+        },
+        {
           id: "renderer-report",
           label: "Renderer 诊断结果",
           status: "ok",
@@ -706,7 +749,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "tool-result",
       label: "Tool Result：12 台设备",
       atOffsetMs: 2660,
-      ref: { node: "business-agent", exchange: "tool-call" },
+      ref: { node: "business-agent", exchange: "tool-result" },
     },
     {
       sequence: 7,
@@ -762,7 +805,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "renderer",
       label: "A2UI Surface 渲染成功",
       atOffsetMs: 4940,
-      ref: { node: "workbench", exchange: "run-result" },
+      ref: { node: "workbench", exchange: "render-result" },
     },
     {
       sequence: 14,
@@ -1282,7 +1325,7 @@ function actionResume(): ProtoScenario {
       kind: "renderer",
       label: "Surface 渲染（含确认按钮）",
       atOffsetMs: 4980,
-      ref: { node: "workbench", exchange: "run-result" },
+      ref: { node: "workbench", exchange: "render-result" },
     },
     {
       sequence: 7,
@@ -1345,7 +1388,7 @@ function actionResume(): ProtoScenario {
       kind: "renderer",
       label: "追加 Assistant Presentation 渲染",
       atOffsetMs: 15080,
-      ref: { node: "workbench", exchange: "action-result" },
+      ref: { node: "workbench", exchange: "render-result" },
     },
   ];
   return {
