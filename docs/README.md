@@ -30,10 +30,14 @@
 
 ## 当前阶段 Goal
 
-- [GOAL-DEV-ENV-001](./goals/GOAL-DEV-ENV-001.md)
-- [Goal 子任务包](./goals/GOAL-DEV-ENV-001/README.md)
+- [GOAL-DEV-ENV-001](./goals/GOAL-DEV-ENV-001.md)（已完成，构成当前基线）
+- [GOAL-WEB-WORKBENCH-001](./goals/GOAL-WEB-WORKBENCH-001.md)
+- [GOAL-WEB-COPILOTKIT-UI-001](./goals/GOAL-WEB-COPILOTKIT-UI-001.md)
+- [GOAL-DEBUG-CONVERSATIONS-001](./goals/GOAL-DEBUG-CONVERSATIONS-001.md)
+- [GOAL-DEV-ENV-001 子任务包](./goals/GOAL-DEV-ENV-001/README.md)
 
 Goal 定义阶段性交付范围和验收标准，不是独立产品定义。
+各 Goal 之间的依赖顺序见各自文档的基线与前置依赖章节。
 
 ## UI Compiler 子系统
 

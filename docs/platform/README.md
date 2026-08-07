@@ -9,10 +9,13 @@
 - [架构简图](./SYSTEM_ARCHITECTURE.md)
 - [开发验证环境](./DEVELOPMENT_ENVIRONMENT.md)
 - [平台范围调整摘要](./SCOPE_DECISION.md)
+- [平台一键开发环境实现说明](./PLATFORM_DEVELOPMENT.md)
+- [平台开发者体验](./DEVELOPER_EXPERIENCE.md)
+- [Web Demo 迁移决策](./WEB_DEMO_MIGRATION.md)
 - [ADR-0018：平台全链路开发验证环境范围](../adr/0018-expand-repository-scope-to-platform-validation-environment.md)
 - [ADR-0019：Presentation Pipeline 嵌入 Agent Runtime Host](../adr/0019-embed-presentation-pipeline-in-agent-runtime-host.md)
 - [架构决策记录索引](../adr/README.md)
-- [当前 Goal](../goals/GOAL-DEV-ENV-001.md)
+- [阶段 Goal 文档](../goals/)
 
 ## 规范关系
 

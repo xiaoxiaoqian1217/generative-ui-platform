@@ -5,6 +5,7 @@ playwright-report/
 test-results/
 .turbo/
 .platform/
+.codex-temp/
 .env
 .env.*
 !.env.example
