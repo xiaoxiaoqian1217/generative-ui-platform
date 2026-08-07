@@ -207,7 +207,7 @@ function baseNodes(): ProtoNode[] {
               runId: "run-71c",
               presentation: {
                 mode: "generative-ui",
-                surfaces: ["surface-device-table", "surface-alert-banner"],
+                surfaceIds: ["surface-a01-main", "surface-a01-alert"],
                 operations: 3,
               },
               diagnostics: { stages: 6, totalDurationMs: 4970 },
@@ -417,16 +417,19 @@ function baseNodes(): ProtoNode[] {
           },
           response: {
             summary:
-              "decision: generative-ui；Plan 含 DeviceTable + AlertBanner",
+              "decision: generative-ui；Plan 选择 Alert + Table（均为 Catalog 受控组件）",
             payload: {
               decision: "generative-ui",
               plan: {
-                components: [
-                  { type: "AlertBanner", props: { level: "warning" } },
-                  { type: "DeviceTable", props: { pageSize: 10 } },
+                componentPreferences: [
+                  { componentType: "Alert", reason: "存在 warning 级别告警" },
+                  { componentType: "Table", reason: "12 条设备记录对比展示" },
                 ],
                 actions: [
-                  { type: "shutdown_devices", requiresConfirmation: true },
+                  {
+                    actionType: "shutdown_devices",
+                    requiresConfirmation: true,
+                  },
                 ],
               },
             },
@@ -485,13 +488,34 @@ function baseNodes(): ProtoNode[] {
             },
           },
           response: {
-            summary: "UI IR 9 节点；A2UI 2 个 Surface，全部组件在 Catalog 内",
+            summary:
+              "UI IR 9 节点；A2UI v0.9 三操作序列（createSurface / updateComponents / updateDataModel）",
             payload: {
               ir: { nodes: 9, bindings: 14 },
-              a2ui: {
-                version: "0.9.1",
-                surfaces: ["surface-device-table", "surface-alert-banner"],
-              },
+              a2uiOperations: [
+                {
+                  version: "v0.9",
+                  createSurface: { surfaceId: "surface-a01-main" },
+                },
+                {
+                  version: "v0.9",
+                  updateComponents: {
+                    surfaceId: "surface-a01-main",
+                    components: [
+                      { componentId: "root", componentType: "Card" },
+                      { componentId: "alert-1", componentType: "Alert" },
+                      { componentId: "table-1", componentType: "Table" },
+                    ],
+                  },
+                },
+                {
+                  version: "v0.9",
+                  updateDataModel: {
+                    surfaceId: "surface-a01-main",
+                    pointers: { "/table-1/rows": 12 },
+                  },
+                },
+              ],
               diagnostics: [],
             },
             artifact: {
@@ -761,7 +785,7 @@ function compileFallback(): ProtoScenario {
       durationMs: 16,
       errorCode: "UI_PLAN_VALIDATION_FAILED",
       fieldPath: "components[2].props.deviceId",
-      detail: "DeviceTable 缺少必需 props.deviceId 绑定",
+      detail: "Table 缺少必需 props.deviceId 绑定",
     },
     { id: "build-ir", label: "构建可信 UI IR", status: "skipped" },
     { id: "compile-a2ui", label: "编译 A2UI + Schema 校验", status: "skipped" },
@@ -789,7 +813,7 @@ function compileFallback(): ProtoScenario {
               code: "UI_PLAN_VALIDATION_FAILED",
               stage: "schema-validation",
               path: "components[2].props.deviceId",
-              message: "DeviceTable 缺少必需 props.deviceId 绑定",
+              message: "Table 缺少必需 props.deviceId 绑定",
               retryable: false,
             },
           ],
@@ -925,7 +949,7 @@ function actionResume(): ProtoScenario {
           runId: "run-71c",
           action: {
             name: "shutdown_devices",
-            surfaceId: "surface-device-table",
+            surfaceId: "surface-a01-main",
             sourceTurnId: "turn-d04",
             approved: true,
             arguments: { deviceIds: ["cam-07", "cam-11"] },
