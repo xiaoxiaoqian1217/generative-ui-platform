@@ -173,7 +173,7 @@ function baseNodes(): ProtoNode[] {
       exchanges: [
         {
           id: "run-request",
-          label: "RuntimeRunRequest / RuntimeRunResult",
+          label: "RuntimeRunRequest",
           status: "ok",
           request: {
             summary:
@@ -198,6 +198,11 @@ function baseNodes(): ProtoNode[] {
               sizeLabel: "2.1 KB",
             },
           },
+        },
+        {
+          id: "run-result",
+          label: "RuntimeRunResult / PresentationResult",
+          status: "ok",
           response: {
             summary:
               "status: completed；presentation.mode: generative-ui；2 个 Surface",
@@ -216,6 +221,27 @@ function baseNodes(): ProtoNode[] {
               label: "RuntimeRunResult",
               state: "inline",
               sizeLabel: "18.4 KB",
+            },
+          },
+        },
+        {
+          id: "renderer-report",
+          label: "Renderer 诊断结果",
+          status: "ok",
+          response: {
+            summary:
+              "组件级渲染结果追加（componentId / presentationId / status）",
+            payload: {
+              presentationId: "pres-a01-1",
+              components: [
+                { componentId: "alert-1", status: "rendered" },
+                { componentId: "table-1", status: "rendered" },
+              ],
+            },
+            artifact: {
+              label: "Renderer 诊断",
+              state: "inline",
+              sizeLabel: "0.6 KB",
             },
           },
         },
@@ -340,7 +366,7 @@ function baseNodes(): ProtoNode[] {
       exchanges: [
         {
           id: "tool-call",
-          label: "Tool Call：query_device_status",
+          label: "Tool Call 参数：query_device_status",
           status: "ok",
           request: {
             summary: "{ campus: “park-3”, deviceTypes: [“camera”] }",
@@ -355,6 +381,11 @@ function baseNodes(): ProtoNode[] {
               sizeLabel: "0.4 KB",
             },
           },
+        },
+        {
+          id: "tool-result",
+          label: "Tool Result：query_device_status",
+          status: "ok",
           response: {
             summary: "12 台设备，2 台离线，1 台告警",
             payload: {
@@ -369,6 +400,31 @@ function baseNodes(): ProtoNode[] {
               label: "Tool Result",
               state: "inline",
               sizeLabel: "2.6 KB",
+            },
+          },
+        },
+        {
+          id: "agent-content",
+          label: "AgentContent（最终）",
+          status: "ok",
+          response: {
+            summary: "AgentContent: structured device-status payload",
+            payload: {
+              kind: "structured",
+              schema: "device-status/v1",
+              data: {
+                campus: "park-3",
+                devices: [
+                  { id: "cam-03", status: "warning" },
+                  { id: "cam-07", status: "offline" },
+                  { id: "cam-11", status: "offline" },
+                ],
+              },
+            },
+            artifact: {
+              label: "AgentContent",
+              state: "inline",
+              sizeLabel: "3.3 KB",
             },
           },
         },
@@ -398,8 +454,8 @@ function baseNodes(): ProtoNode[] {
       ],
       exchanges: [
         {
-          id: "presentation-exchange",
-          label: "Presentation Request / Decision + UI Plan Candidate",
+          id: "route-decision",
+          label: "Presentation Request / Presentation Decision",
           status: "ok",
           request: {
             summary: "mode: auto；catalog: security-base@1.4.0；locale: zh-CN",
@@ -416,27 +472,54 @@ function baseNodes(): ProtoNode[] {
             },
           },
           response: {
-            summary:
-              "decision: generative-ui；Plan 选择 Alert + Table（均为 Catalog 受控组件）",
+            summary: "decision: generative-ui（structured → 生成式路由）",
             payload: {
               decision: "generative-ui",
-              plan: {
-                componentPreferences: [
-                  { componentType: "Alert", reason: "存在 warning 级别告警" },
-                  { componentType: "Table", reason: "12 条设备记录对比展示" },
-                ],
-                actions: [
-                  {
-                    actionType: "shutdown_devices",
-                    requiresConfirmation: true,
-                  },
-                ],
-              },
+              reason: "structured AgentContent 且数据规模适合生成式展示",
+              fallback: "markdown",
             },
             artifact: {
-              label: "Presentation Decision / UI Plan Candidate",
+              label: "Presentation Decision",
               state: "inline",
-              sizeLabel: "6.8 KB",
+              sizeLabel: "0.6 KB",
+            },
+          },
+        },
+        {
+          id: "plan-candidate",
+          label: "UI Plan Candidate（Model Adapter 产出）",
+          status: "ok",
+          request: {
+            summary: "AgentContent + Presentation Decision 作为模型规划输入",
+            payload: {
+              contentRef: "artifact://agent-content/turn-a01",
+              decision: "generative-ui",
+              catalogVersion: "1.4.0",
+            },
+            artifact: {
+              label: "规划输入引用",
+              state: "inline",
+              sizeLabel: "0.4 KB",
+            },
+          },
+          response: {
+            summary: "Plan 选择 Alert + Table（均为 Catalog 受控组件）",
+            payload: {
+              componentPreferences: [
+                { componentType: "Alert", reason: "存在 warning 级别告警" },
+                { componentType: "Table", reason: "12 条设备记录对比展示" },
+              ],
+              actions: [
+                {
+                  actionType: "shutdown_devices",
+                  requiresConfirmation: true,
+                },
+              ],
+            },
+            artifact: {
+              label: "UI Plan Candidate",
+              state: "inline",
+              sizeLabel: "6.2 KB",
             },
           },
         },
@@ -470,58 +553,105 @@ function baseNodes(): ProtoNode[] {
       ],
       exchanges: [
         {
-          id: "compile-exchange",
-          label: "UICompileRequest / UICompileResult",
+          id: "plan-validation",
+          label: "UI Plan Candidate / Validation Result",
           status: "ok",
           request: {
-            summary: "plan + catalog + data（12 台设备）",
+            summary: "plan + catalog（security-base@1.4.0）",
             payload: {
               catalogVersion: "1.4.0",
-              componentCount: 2,
-              dataItems: 12,
-              limits: { maxDataItems: 500, compileTimeoutMs: 4000 },
+              componentPreferences: ["Alert", "Table"],
+              actionRefs: ["shutdown_devices"],
             },
             artifact: {
-              label: "UICompileRequest",
+              label: "UI Plan Candidate",
               state: "inline",
-              sizeLabel: "9.7 KB",
+              sizeLabel: "6.2 KB",
             },
           },
           response: {
             summary:
-              "UI IR 9 节点；A2UI v0.9 三操作序列（createSurface / updateComponents / updateDataModel）",
+              "Validation Result：valid，组件、Props、Action 全部通过权威校验",
+            payload: { valid: true, errors: [] },
+            artifact: {
+              label: "Validation Result",
+              state: "inline",
+              sizeLabel: "0.3 KB",
+            },
+          },
+        },
+        {
+          id: "ui-ir",
+          label: "UI IR（可信中间表示）",
+          status: "ok",
+          request: {
+            summary: "校验通过的 Plan + 12 条设备数据",
+            payload: { dataItems: 12, bindings: ["$.devices[*]"] },
+            artifact: {
+              label: "IR 构建输入",
+              state: "inline",
+              sizeLabel: "7.1 KB",
+            },
+          },
+          response: {
+            summary: "UI IR 9 节点、14 个绑定，布局规范化完成",
             payload: {
-              ir: { nodes: 9, bindings: 14 },
-              a2uiOperations: [
-                {
-                  version: "v0.9",
-                  createSurface: { surfaceId: "surface-a01-main" },
-                },
-                {
-                  version: "v0.9",
-                  updateComponents: {
-                    surfaceId: "surface-a01-main",
-                    components: [
-                      { componentId: "root", componentType: "Card" },
-                      { componentId: "alert-1", componentType: "Alert" },
-                      { componentId: "table-1", componentType: "Table" },
-                    ],
-                  },
-                },
-                {
-                  version: "v0.9",
-                  updateDataModel: {
-                    surfaceId: "surface-a01-main",
-                    pointers: { "/table-1/rows": 12 },
-                  },
-                },
-              ],
-              diagnostics: [],
+              nodes: 9,
+              bindings: 14,
+              root: "root",
+              layout: "summary",
             },
             artifact: {
-              label: "UI IR / A2UI",
+              label: "UI IR",
               state: "inline",
-              sizeLabel: "14.2 KB",
+              sizeLabel: "5.9 KB",
+            },
+          },
+        },
+        {
+          id: "a2ui",
+          label: "A2UI（v0.9 操作序列）",
+          status: "ok",
+          request: {
+            summary: "UI IR 作为编译输入",
+            payload: { irRef: "artifact://ui-ir/turn-a01" },
+            artifact: {
+              label: "UI IR 引用",
+              state: "inline",
+              sizeLabel: "0.2 KB",
+            },
+          },
+          response: {
+            summary:
+              "A2UI v0.9 三操作序列（createSurface / updateComponents / updateDataModel）",
+            payload: [
+              {
+                version: "v0.9",
+                createSurface: { surfaceId: "surface-a01-main" },
+              },
+              {
+                version: "v0.9",
+                updateComponents: {
+                  surfaceId: "surface-a01-main",
+                  components: [
+                    { componentId: "root", componentType: "Card" },
+                    { componentId: "alert-1", componentType: "Alert" },
+                    { componentId: "table-1", componentType: "Table" },
+                  ],
+                },
+              },
+              {
+                version: "v0.9",
+                updateDataModel: {
+                  surfaceId: "surface-a01-main",
+                  pointers: { "/table-1/rows": 12 },
+                },
+              },
+            ],
+            artifact: {
+              label: "A2UI",
+              state: "inline",
+              sizeLabel: "8.3 KB",
             },
           },
         },
@@ -584,7 +714,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "message",
       label: "最终 AgentContent（structured）",
       atOffsetMs: 2790,
-      ref: { node: "agent-adapter", exchange: "agent-invoke" },
+      ref: { node: "business-agent", exchange: "agent-content" },
     },
     {
       sequence: 8,
@@ -592,7 +722,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "diagnostic",
       label: "Router 判定 generative-ui",
       atOffsetMs: 2810,
-      ref: { node: "presentation", exchange: "presentation-exchange" },
+      ref: { node: "presentation", exchange: "route-decision" },
     },
     {
       sequence: 9,
@@ -600,7 +730,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "diagnostic",
       label: "Model Adapter 产出 UI Plan Candidate",
       atOffsetMs: 4200,
-      ref: { node: "presentation", exchange: "presentation-exchange" },
+      ref: { node: "presentation", exchange: "plan-candidate" },
     },
     {
       sequence: 10,
@@ -608,7 +738,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "diagnostic",
       label: "UI IR 构建完成",
       atOffsetMs: 4260,
-      ref: { node: "compiler", exchange: "compile-exchange" },
+      ref: { node: "compiler", exchange: "ui-ir" },
     },
     {
       sequence: 11,
@@ -616,7 +746,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "diagnostic",
       label: "A2UI 编译与 Schema 校验通过",
       atOffsetMs: 4310,
-      ref: { node: "compiler", exchange: "compile-exchange" },
+      ref: { node: "compiler", exchange: "a2ui" },
     },
     {
       sequence: 12,
@@ -624,7 +754,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "run",
       label: "Run 完成，PresentationResult 就绪",
       atOffsetMs: 4330,
-      ref: { node: "workbench", exchange: "run-request" },
+      ref: { node: "workbench", exchange: "run-result" },
     },
     {
       sequence: 13,
@@ -632,7 +762,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "renderer",
       label: "A2UI Surface 渲染成功",
       atOffsetMs: 4940,
-      ref: { node: "workbench", exchange: "run-request" },
+      ref: { node: "workbench", exchange: "run-result" },
     },
     {
       sequence: 14,
@@ -640,6 +770,7 @@ function baseTimeline(): ProtoTimelineEvent[] {
       kind: "diagnostic",
       label: "Renderer 诊断追加回传",
       atOffsetMs: 4970,
+      ref: { node: "workbench", exchange: "renderer-report" },
     },
   ];
 }
@@ -698,11 +829,16 @@ function markdownDirect(): ProtoScenario {
   ];
   presentation.exchanges = [
     {
-      id: "presentation-exchange",
-      label: "Presentation Request / Decision",
+      id: "route-decision",
+      label: "Presentation Request / Presentation Decision",
       status: "ok",
       request: {
         summary: "mode: auto；content: Markdown 周报",
+        payload: {
+          mode: "auto",
+          locale: "zh-CN",
+          contentKind: "markdown",
+        },
         artifact: {
           label: "Presentation Request",
           state: "inline",
@@ -711,6 +847,7 @@ function markdownDirect(): ProtoScenario {
       },
       response: {
         summary: "decision: markdown（直通，不改写业务内容）",
+        payload: { decision: "markdown", reason: "markdown AgentContent 直通" },
         artifact: {
           label: "Presentation Decision",
           state: "inline",
@@ -792,13 +929,17 @@ function compileFallback(): ProtoScenario {
   ];
   compiler.exchanges = [
     {
-      id: "compile-exchange",
-      label: "UICompileRequest / Validation Result",
+      id: "plan-validation",
+      label: "UI Plan Candidate / Validation Result",
       status: "failed",
       request: {
-        summary: "plan + catalog + data",
+        summary: "plan + catalog（security-base@1.4.0）",
+        payload: {
+          catalogVersion: "1.4.0",
+          componentPreferences: ["Alert", "Table"],
+        },
         artifact: {
-          label: "UICompileRequest",
+          label: "UI Plan Candidate",
           state: "inline",
           sizeLabel: "9.4 KB",
         },
@@ -849,6 +990,11 @@ function compileFallback(): ProtoScenario {
       response: {
         summary:
           "mode: markdown；携带 degradationReasonCode=UI_PLAN_VALIDATION_FAILED",
+        payload: {
+          mode: "markdown",
+          degradationReasonCode: "UI_PLAN_VALIDATION_FAILED",
+          markdownRef: "artifact://fallback-markdown/turn-c03",
+        },
         artifact: {
           label: "PresentationResult",
           state: "inline",
@@ -867,6 +1013,7 @@ function compileFallback(): ProtoScenario {
         status: "failed" as const,
         label: "UI Plan 校验失败：components[2].props.deviceId",
         atOffsetMs: 4230,
+        ref: { node: "compiler" as const, exchange: "plan-validation" },
       };
     if (event.sequence === 11)
       return {
@@ -937,8 +1084,8 @@ function actionResume(): ProtoScenario {
   ];
   resumeWorkbench.exchanges = [
     {
-      id: "action-exchange",
-      label: "RuntimeActionRequest / RuntimeActionResult",
+      id: "action-request",
+      label: "RuntimeActionRequest",
       status: "ok",
       request: {
         summary:
@@ -961,6 +1108,11 @@ function actionResume(): ProtoScenario {
           sizeLabel: "1.5 KB",
         },
       },
+    },
+    {
+      id: "action-result",
+      label: "RuntimeActionResult",
+      status: "ok",
       response: {
         summary: "status: completed；追加 1 个 Assistant Presentation",
         payload: {
@@ -975,6 +1127,29 @@ function actionResume(): ProtoScenario {
           label: "RuntimeActionResult",
           state: "inline",
           sizeLabel: "7.9 KB",
+        },
+      },
+    },
+  ];
+  const resumeRuntimeHost = findNode(resumeNodes, "runtime-host");
+  resumeRuntimeHost.exchanges = [
+    ...resumeRuntimeHost.exchanges,
+    {
+      id: "action-receipt",
+      label: "RuntimeActionReceipt（提交回执）",
+      status: "ok",
+      response: {
+        summary: "Action 已受理，在来源 Turn 内创建新 Operation op-act",
+        payload: {
+          operationId: "op-act",
+          acceptedAt: "+12430ms",
+          sourceTurnId: "turn-d04",
+          surfaceId: "surface-a01-main",
+        },
+        artifact: {
+          label: "RuntimeActionReceipt",
+          state: "inline",
+          sizeLabel: "0.4 KB",
         },
       },
     },
@@ -1005,7 +1180,7 @@ function actionResume(): ProtoScenario {
   resumeAgent.exchanges = [
     {
       id: "tool-call",
-      label: "Tool Call：shutdown_devices",
+      label: "Tool Call 参数：shutdown_devices",
       status: "ok",
       request: {
         summary: "{ deviceIds: [“cam-07”, “cam-11”] }",
@@ -1016,6 +1191,11 @@ function actionResume(): ProtoScenario {
           sizeLabel: "0.3 KB",
         },
       },
+    },
+    {
+      id: "tool-result",
+      label: "Tool Result：shutdown_devices",
+      status: "ok",
       response: {
         summary: "2 台设备已停运",
         payload: {
@@ -1028,6 +1208,24 @@ function actionResume(): ProtoScenario {
           label: "Tool Result",
           state: "inline",
           sizeLabel: "0.5 KB",
+        },
+      },
+    },
+    {
+      id: "agent-content",
+      label: "AgentContent（追加）",
+      status: "ok",
+      response: {
+        summary: "追加 AgentContent：停运结果",
+        payload: {
+          kind: "structured",
+          schema: "device-shutdown-result/v1",
+          data: { shutdown: ["cam-07", "cam-11"], remainingOffline: 0 },
+        },
+        artifact: {
+          label: "AgentContent",
+          state: "inline",
+          sizeLabel: "1.1 KB",
         },
       },
     },
@@ -1076,7 +1274,7 @@ function actionResume(): ProtoScenario {
       kind: "diagnostic",
       label: "首个 A2UI Surface 编译完成",
       atOffsetMs: 4360,
-      ref: { node: "compiler", exchange: "compile-exchange" },
+      ref: { node: "compiler", exchange: "a2ui" },
     },
     {
       sequence: 6,
@@ -1084,7 +1282,7 @@ function actionResume(): ProtoScenario {
       kind: "renderer",
       label: "Surface 渲染（含确认按钮）",
       atOffsetMs: 4980,
-      ref: { node: "workbench", exchange: "run-request" },
+      ref: { node: "workbench", exchange: "run-result" },
     },
     {
       sequence: 7,
@@ -1092,7 +1290,7 @@ function actionResume(): ProtoScenario {
       kind: "action",
       label: "用户确认 Action：shutdown_devices",
       atOffsetMs: 12400,
-      ref: { node: "workbench", exchange: "action-exchange" },
+      ref: { node: "workbench", exchange: "action-request" },
     },
     {
       sequence: 8,
@@ -1100,7 +1298,7 @@ function actionResume(): ProtoScenario {
       kind: "action",
       label: "Action Receipt 提交回执（op-act）",
       atOffsetMs: 12430,
-      ref: { node: "workbench", exchange: "action-exchange" },
+      ref: { node: "runtime-host", exchange: "action-receipt" },
     },
     {
       sequence: 9,
@@ -1123,7 +1321,7 @@ function actionResume(): ProtoScenario {
       kind: "tool-result",
       label: "Tool Result：2 台已停运",
       atOffsetMs: 14350,
-      ref: { node: "business-agent", exchange: "tool-call" },
+      ref: { node: "business-agent", exchange: "tool-result" },
     },
     {
       sequence: 12,
@@ -1131,7 +1329,7 @@ function actionResume(): ProtoScenario {
       kind: "diagnostic",
       label: "追加 AgentContent 进入生成式路由",
       atOffsetMs: 14500,
-      ref: { node: "presentation", exchange: "presentation-exchange" },
+      ref: { node: "presentation", exchange: "plan-candidate" },
     },
     {
       sequence: 13,
@@ -1139,7 +1337,7 @@ function actionResume(): ProtoScenario {
       kind: "diagnostic",
       label: "第二个 A2UI Surface 编译完成",
       atOffsetMs: 14620,
-      ref: { node: "compiler", exchange: "compile-exchange" },
+      ref: { node: "compiler", exchange: "a2ui" },
     },
     {
       sequence: 14,
@@ -1147,7 +1345,7 @@ function actionResume(): ProtoScenario {
       kind: "renderer",
       label: "追加 Assistant Presentation 渲染",
       atOffsetMs: 15080,
-      ref: { node: "workbench", exchange: "action-exchange" },
+      ref: { node: "workbench", exchange: "action-result" },
     },
   ];
   return {
@@ -1242,16 +1440,22 @@ function safetyBoundary(): ProtoScenario {
   agent.exchanges = [
     {
       id: "tool-call",
-      label: "Tool Call：export_device_registry",
+      label: "Tool Call 参数：export_device_registry",
       status: "ok",
       request: {
         summary: "{ campus: “park-3” }",
+        payload: { campus: "park-3", format: "registry" },
         artifact: {
           label: "Tool Call 参数",
           state: "inline",
           sizeLabel: "0.2 KB",
         },
       },
+    },
+    {
+      id: "tool-result",
+      label: "Tool Result：export_device_registry",
+      status: "ok",
       response: {
         summary:
           "设备注册表 38 MB，超出内联上限，经 Artifact Storage Router 落对象存储。",
@@ -1289,13 +1493,23 @@ function safetyBoundary(): ProtoScenario {
       detail: "浏览器只能追加受控结果，不覆盖后端阶段诊断。",
     },
   ];
-  const timeline = cloneTimeline(baseTimeline()).map((event) => {
-    if (event.sequence === 5)
-      return { ...event, label: "Tool Call：export_device_registry" };
-    if (event.sequence === 6)
-      return { ...event, label: "Tool Result：38 MB（storageRef）" };
-    return event;
-  });
+  const timeline = cloneTimeline(baseTimeline()).map(
+    (event): ProtoTimelineEvent => {
+      if (event.sequence === 5)
+        return {
+          ...event,
+          label: "Tool Call：export_device_registry",
+          ref: { node: "business-agent", exchange: "tool-call" },
+        };
+      if (event.sequence === 6)
+        return {
+          ...event,
+          label: "Tool Result：38 MB（storageRef）",
+          ref: { node: "business-agent", exchange: "tool-result" },
+        };
+      return event;
+    },
+  );
   timeline.push({
     sequence: 15,
     node: "workbench",
@@ -1303,6 +1517,7 @@ function safetyBoundary(): ProtoScenario {
     label: "Renderer 组件级诊断追加（第二批）",
     atOffsetMs: 5360,
     status: "ok",
+    ref: { node: "workbench", exchange: "renderer-report" },
   });
   return {
     id: "safety-boundary",
