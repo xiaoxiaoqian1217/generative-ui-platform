@@ -19,12 +19,16 @@
 不得通过代码、测试或文档静默覆盖当前架构。
 详细规则以根目录 `AGENTS.md` 为准。
 
+ADR-0024 已确认的六项 Runtime Truth 冲突及迁移规则见 [Runtime Truth Model 迁移与冲突处置](./platform/RUNTIME_TRUTH_MIGRATION.md)。
+在旧 Workbench SRS、历史 Goal、Runtime Contract 或实现完成物理迁移前，与 ADR-0024 冲突的旧语义只作为兼容或历史背景。
+
 ## 平台级规范
 
 - [平台文档索引](./platform/README.md)
 - [平台级需求](./platform/REQUIREMENTS.md)
 - [平台级架构](./platform/ARCHITECTURE.md)
 - [平台架构简图](./platform/SYSTEM_ARCHITECTURE.md)
+- [Runtime Truth Model 迁移与冲突处置](./platform/RUNTIME_TRUTH_MIGRATION.md)
 - [全链路开发验证环境](./platform/DEVELOPMENT_ENVIRONMENT.md)
 - [平台范围调整摘要](./platform/SCOPE_DECISION.md)
 
@@ -60,6 +64,7 @@ Goal 定义阶段性交付范围和验收标准，不是独立产品定义。
 - [Workbench 需求规格](./WEB_WORKBENCH_SRS.md)
 
 Workbench 是 Frontend Runtime 参考实现和平台开发验证环境，不是独立企业业务产品。
+Workbench SRS 中与 ADR-0024 冲突的 Runtime Truth、Diagnostic Recovery 和 Run-centric 条款，以 ADR-0024 与 Runtime Truth 迁移说明为准。
 
 ## 架构决策
 
