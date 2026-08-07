@@ -48,7 +48,7 @@ Diagnostic Event 和 Artifact 是诊断投影，不是 Runtime 当前状态恢�
 | [ADR-0020](./0020-workbench-runtime-read-contract-and-copilotkit-headless.md) | 已接受 | Workbench 与 Runtime Host | Workbench 通过 CopilotKit Headless 和只读 Runtime Contract 集成 |
 | [ADR-0021](./0021-retire-runnable-fixture-provider-mode.md) | 已接受 | 模型联调与测试 | 日常联调使用真实模型，测试使用进程内 Stub，退役可运行 Fixture Provider |
 | [ADR-0022](./0022-support-http-sse-and-websocket-business-agent-adapters.md) | 已接受 | Runtime Host 与 Business Agent | 当前支持 HTTP + SSE 与 WebSocket Adapter |
-| [ADR-0023](./0023-adopt-controlled-copilotkit-conversation-ui-and-platform-thread-history.md) | 已接受 | Workbench、Runtime Host 与 Business Agent | 受控 CopilotKit 会话 UI、内嵌 A2UI 与平台调试会话历史所有权 |
+| [ADR-0023](./0023-adopt-controlled-copilotkit-conversation-ui-and-platform-thread-history.md) | 部分被 ADR-0024 取代 | Workbench、Runtime Host 与 Business Agent | 受控 CopilotKit 会话 UI 和历史所有权继续有效；Run-centric 交互事实语义由 ADR-0024 取代 |
 | [ADR-0024](./0024-adopt-runtime-truth-model-and-safe-command-admission.md) | 已接受 | Runtime Host、Workbench、Runtime Contract | Thread/Turn/Operation/Surface/Command 事实模型、安全 Command Admission、Runtime Repository 与 Diagnostics 解耦 |
 
 以上表格突出当前跨模块和平台范围决策。
