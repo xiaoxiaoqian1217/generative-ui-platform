@@ -25,6 +25,11 @@ Agent Runtime Host 是平台统一后端入口和应用组合根。
 原 UI Compiler Service 的展示应用能力迁移为独立 `presentation-pipeline` Package，并嵌入 Agent Runtime Host 运行。
 UI Compiler Core、Presentation Router、Model Adapter、Catalog 和公共契约继续保持独立 Package 边界。
 
+Agent Runtime Host 同时是平台交互事实权威。
+Runtime Thread、Turn、Operation、Command Admission、Surface Lifecycle 和可信 Presentation Snapshot 由 Runtime Host 管理。
+Business Agent 继续拥有业务 State、Checkpoint 和业务副作用语义。
+Diagnostic Event 和 Artifact 是诊断投影，不是 Runtime 当前状态恢复的唯一权威来源。
+
 ## 关键决策入口
 
 | ADR | 状态 | 适用范围 | 说明 |
@@ -44,6 +49,7 @@ UI Compiler Core、Presentation Router、Model Adapter、Catalog 和公共契约
 | [ADR-0021](./0021-retire-runnable-fixture-provider-mode.md) | 已接受 | 模型联调与测试 | 日常联调使用真实模型，测试使用进程内 Stub，退役可运行 Fixture Provider |
 | [ADR-0022](./0022-support-http-sse-and-websocket-business-agent-adapters.md) | 已接受 | Runtime Host 与 Business Agent | 当前支持 HTTP + SSE 与 WebSocket Adapter |
 | [ADR-0023](./0023-adopt-controlled-copilotkit-conversation-ui-and-platform-thread-history.md) | 已接受 | Workbench、Runtime Host 与 Business Agent | 受控 CopilotKit 会话 UI、内嵌 A2UI 与平台调试会话历史所有权 |
+| [ADR-0024](./0024-adopt-runtime-truth-model-and-safe-command-admission.md) | 已接受 | Runtime Host、Workbench、Runtime Contract | Thread/Turn/Operation/Surface/Command 事实模型、安全 Command Admission、Runtime Repository 与 Diagnostics 解耦 |
 
 以上表格突出当前跨模块和平台范围决策。
 完整 ADR 集合以本目录中的全部编号文件为准。
@@ -54,7 +60,7 @@ UI Compiler Core、Presentation Router、Model Adapter、Catalog 和公共契约
 - ADR 编号在仓库中必须唯一，已经使用的编号不得复用。
 - 创建 ADR 前必须扫描本目录中的全部编号文件，使用当前最大编号加一。
 - 被拒绝、废弃或被取代的 ADR 仍然保留原文件和编号。
-- 当前最新编号为 `0023`。
+- 当前最新编号为 `0024`。
 
 ## 状态规则
 
@@ -73,6 +79,14 @@ UI Compiler Core、Presentation Router、Model Adapter、Catalog 和公共契约
 2. 更新旧 ADR 的状态或关系说明；
 3. 更新本索引中的状态和说明；
 4. 检查需求、架构、Goal 和编码 Agent 规则是否需要同步。
+
+如果新 ADR 只是细化旧 ADR 且不否定其核心决策，可以保持旧 ADR 为“已接受”，但新 ADR 必须明确关系和新增约束。
+
+## 架构冲突规则
+
+任何新文档、Goal 或实现如果与当前有效 ADR 发生实质冲突，不得静默覆盖。
+必须先标记冲突、说明影响并取得用户/架构决策者确认。
+只有确认修改当前架构后，才创建或接受新的 ADR，并同步更新受影响的规范和实现计划。
 
 ## 何时需要 ADR
 
@@ -98,6 +112,8 @@ UI Compiler Core、Presentation Router、Model Adapter、Catalog 和公共契约
 
 以下决策应在对应实现开始前分别评审：
 
-- Runtime Host 与 Business Agent Adapter 的稳定边界；
-- Frontend Runtime、Component Registry 和 A2UI Renderer 的信任边界；
-- Action、安全审批和跨模块状态所有权。
+- Runtime Kernel 是否需要提取为独立 workspace package；
+- A2UI 版本 Encoder 和 v1 迁移策略；
+- Frontend Runtime、Component Registry 和 A2UI Renderer 更细粒度的信任边界；
+- Markdown 自动增强为 Generative UI；
+- Interaction Gateway、多 Agent 路由与多实例部署。
