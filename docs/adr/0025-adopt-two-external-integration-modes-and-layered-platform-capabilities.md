@@ -73,6 +73,30 @@ Generative UI 至少包含两类能力：
 UI Compiler Core、Presentation Pipeline、PlatformRunService、Runtime Kernel 需要保持清晰职责边界。
 这些边界用于安全、复用、测试和演进，不意味着每一个内部层都必须成为一种产品接入模式。
 
+### 5. 过程事实与最终展示必须分流
+
+Business Agent 的工具调用、工具结果、进度、步骤、Interrupt 等过程事件，描述的是“执行过程中发生了什么”。
+最终 `AgentContent` 描述的是 Business Agent 主动提交给展示层的业务结果。
+
+两者具有不同语义，因此不得默认进入同一处理链路：
+
+```text
+Business Agent public process events
+→ Runtime Event / AG-UI / Diagnostics
+
+Final AgentContent
+→ Presentation Pipeline
+→ Markdown / Generative UI
+```
+
+Presentation Pipeline 的职责是把最终业务结果投影为可信展示，不是解释、总结或重新编排 Business Agent 的执行轨迹。
+
+因此：
+
+> **Tool Call / Tool Result 默认不进入 Presentation Pipeline；只有最终 AgentContent 进入 Presentation Pipeline。**
+
+如果某个工具结果需要成为最终 UI 的业务内容，应由 Business Agent 明确把相关公开业务数据纳入最终 `AgentContent`，而不是由 Runtime Host 或 Presentation Model 从 Tool Event 中推断。
+
 ## 决策
 
 平台对外只定义两种主要接入模式：
@@ -238,6 +262,60 @@ Business Agent 决定：业务事情有没有真的发生
 Runtime Host 决定：这次用户操作有没有被平台正式接受
 ```
 
+### Business Agent 过程事件与最终展示分流
+
+Business Agent 可以主动公开过程事件，例如：
+
+- Tool Call started / completed；
+- Tool Result 的公开部分；
+- Step / Progress / Activity；
+- Interrupt / Confirmation request；
+- 其他明确属于公共 Agent Contract 的业务事件。
+
+这些事件由 Business Agent 对其业务内容和公开范围负责，Business Agent Adapter 只负责契约校验、协议映射和关联标识，不总结、改写或重新解释业务事实。
+
+Runtime Host 对公开过程事件执行的是投影，而不是 Presentation：
+
+```text
+Business Agent
+│
+├── Public Tool / Progress / Interrupt Events
+│        ↓
+│   Business Agent Adapter
+│        ↓
+│   PlatformRuntimeEvent
+│        ├── AG-UI Projection → Workbench
+│        └── Diagnostic Projection → Diagnostic Recorder
+│
+└── Final AgentContent
+         ↓
+   Presentation Pipeline
+         ↓
+   Markdown / Generative UI
+```
+
+平台必须保持以下不变量：
+
+- Tool Call 由 Business Agent 决定和执行，Runtime Host 不成为 Business Tool Executor；
+- Tool Call / Tool Result 默认不进入 Presentation Pipeline；
+- Presentation Model 不得从过程事件重新解释“业务结果是什么”；
+- 只有 Business Agent 主动提交的最终 `AgentContent` 进入 Presentation Pipeline；
+- 如果 Tool Result 中的业务数据需要进入最终 UI，Business Agent 必须显式将该数据纳入最终 `AgentContent`；
+- Business Agent 私有 State、Checkpoint、内部 Tool Call、模型推理和 Provider 原始响应不得因为过程事件投影而进入平台公共边界。
+
+这同时区分两种容易混淆的行为：
+
+```text
+Business Tool Call
+= Agent 自己决定调用
+= Business Agent 执行
+
+UI Action
+= 用户提出交互意图
+= Runtime Host 执行 Command Admission
+= 接纳后协调 Business Agent Resume
+```
+
 ---
 
 ## 3. 两种模式的保证矩阵
@@ -316,6 +394,8 @@ Runtime Operation
 → Runtime Projection
 ```
 
+同时负责接收 Business Agent Adapter 产生的公共过程事件，并把它们交给 Runtime Event 投影链路；这些过程事件不经 Presentation Pipeline。
+
 它不得拥有第二套 Runtime 状态机，也不得重新解释 Business Agent 的业务事实。
 
 是否将代码名称改为 `AgentInteractionService` 属于后续实现命名决策，不影响本 ADR 的职责语义。
@@ -358,6 +438,15 @@ if Java Agent
 - 返回最终 `AgentContent`；
 - 对可交互业务支持 Resume；
 - 对可能产生不确定副作用的业务提供 Reconcile 或业务幂等能力。
+
+Adapter 对公开过程事件只做：
+
+- 契约校验；
+- Agent 私有协议到平台公共事件的映射；
+- thread / operation / tool 等关联标识补充；
+- 拒绝不符合公共契约的事件。
+
+Adapter 不得把 Tool Event 转换为最终 `AgentContent`，也不得总结、改写或重新判断 Business Agent 的业务内容。
 
 具体 Adapter SPI 和公共 API Schema 后续单独定义，但不得要求 Business Agent 理解 A2UI、Vue/React、CopilotKit 或 Runtime Surface 内部状态。
 
@@ -483,6 +572,7 @@ Internal Capability Layers
 - Runtime Host 不再为了“通用”侵入所有外部 Agent 系统；
 - Agent Adapter 成为真正的 Framework 隔离边界；
 - UI Compiler Core 保持可信边界但不被过度产品化；
+- Business Agent 执行过程与最终 Presentation 不会被模型链路混为一谈；
 - 后续 SDK/API 可以围绕真实用户场景设计，而不是暴露内部模块树。
 
 ### 代价与约束
@@ -491,7 +581,8 @@ Internal Capability Layers
 - 文档、SDK 和示例必须明确区分两种模式的保证范围；
 - 不能把“生成了可交互 A2UI”表述成“平台已经保证交互不重复”；
 - Presentation Pipeline 需要保持足够独立，不能依赖 Runtime Kernel 才能工作；
-- Agent Runtime Integration 仍需建设稳定的 Agent Adapter Contract。
+- Agent Runtime Integration 仍需建设稳定的 Agent Adapter Contract；
+- Business Agent 公共过程事件需要稳定 Schema 和 AG-UI / Diagnostic 投影，但不得成为最终业务结果的替代来源。
 
 ---
 
@@ -501,8 +592,11 @@ Internal Capability Layers
 2. 在 `docs/platform/REQUIREMENTS.md` 中区分 Presentation Safety 与 Interaction Safety；
 3. 定义 Presentation Integration 的最小公共输入/输出契约；
 4. 定义不依赖 LangGraph、CopilotKit 的 Business Agent Adapter SPI；
-5. Runtime Contract 继续按 ADR-0024 迁移；
-6. 示例与 E2E 至少分别覆盖：
+5. 将 Business Agent 公共过程事件正式建模为稳定 Contract，并贯通 `Business Agent Adapter → PlatformRuntimeEvent → AG-UI / Diagnostics`；
+6. 明确 Tool Call / Tool Result 默认不进入 Presentation Pipeline，只有最终 `AgentContent` 进入；
+7. Runtime Contract 继续按 ADR-0024 迁移；
+8. 示例与 E2E 至少分别覆盖：
    - 已有 Agent Runtime 只使用 Presentation；
    - Business Agent 完整接入 Runtime Host；
-7. 如果未来提出独立 Presentation Service、新的部署端口或独立 Runtime Kernel Package，必须单独评审，不由本 ADR 自动授权。
+   - Business Agent Tool / Progress 事件可实时显示但不会被 Presentation Pipeline 消费；
+9. 如果未来提出独立 Presentation Service、新的部署端口或独立 Runtime Kernel Package，必须单独评审，不由本 ADR 自动授权。
