@@ -21,14 +21,21 @@ Compiler MVP 形成时期的 ADR 继续约束 Compiler 子系统。
 ## 当前平台后端决策
 
 当前目标架构不再把 UI Compiler 作为独立部署服务。
-Agent Runtime Host 是平台统一后端入口和应用组合根。
+Agent Runtime Host 是完整 Agent Runtime Integration 的平台后端入口和应用组合根。
 原 UI Compiler Service 的展示应用能力迁移为独立 `presentation-pipeline` Package，并嵌入 Agent Runtime Host 运行。
 UI Compiler Core、Presentation Router、Model Adapter、Catalog 和公共契约继续保持独立 Package 边界。
 
-Agent Runtime Host 同时是平台交互事实权威。
+Agent Runtime Host 同时是完整 Runtime 接入时的交互事实权威。
 Runtime Thread、Turn、Operation、Command Admission、Surface Lifecycle 和可信 Presentation Snapshot 由 Runtime Host 管理。
 Business Agent 继续拥有业务 State、Checkpoint 和业务副作用语义。
 Diagnostic Event 和 Artifact 是诊断投影，不是 Runtime 当前状态恢复的唯一权威来源。
+
+平台对外采用两种主要接入模式：
+
+- **Presentation Integration**：已有 Agent Runtime 的系统只使用 Markdown / Generative UI Presentation 能力；平台保证展示安全，Action Admission、幂等和恢复由调用方 Runtime 负责；
+- **Agent Runtime Integration**：已有 Business Agent 接入 Runtime Host，由平台同时提供 Presentation Safety 和 ADR-0024 定义的 Interaction Safety。
+
+UI Compiler Core、Presentation Pipeline、PlatformRunService 和 Runtime Kernel 是内部能力层次，不再作为 Level 1–4 四种产品接入等级。
 
 ## 关键决策入口
 
@@ -50,6 +57,7 @@ Diagnostic Event 和 Artifact 是诊断投影，不是 Runtime 当前状态恢�
 | [ADR-0022](./0022-support-http-sse-and-websocket-business-agent-adapters.md) | 已接受 | Runtime Host 与 Business Agent | 当前支持 HTTP + SSE 与 WebSocket Adapter |
 | [ADR-0023](./0023-adopt-controlled-copilotkit-conversation-ui-and-platform-thread-history.md) | 部分被 ADR-0024 取代 | Workbench、Runtime Host 与 Business Agent | 受控 CopilotKit 会话 UI 和历史所有权继续有效；Run-centric 交互事实语义由 ADR-0024 取代 |
 | [ADR-0024](./0024-adopt-runtime-truth-model-and-safe-command-admission.md) | 已接受 | Runtime Host、Workbench、Runtime Contract | Thread/Turn/Operation/Surface/Command 事实模型、安全 Command Admission、Runtime Repository 与 Diagnostics 解耦 |
+| [ADR-0025](./0025-adopt-two-external-integration-modes-and-layered-platform-capabilities.md) | 已接受 | 平台接入、Presentation、Runtime Host | 对外采用 Presentation Integration 与 Agent Runtime Integration；内部能力继续分层，并区分 Presentation Safety 与 Interaction Safety |
 
 以上表格突出当前跨模块和平台范围决策。
 完整 ADR 集合以本目录中的全部编号文件为准。
@@ -60,7 +68,7 @@ Diagnostic Event 和 Artifact 是诊断投影，不是 Runtime 当前状态恢�
 - ADR 编号在仓库中必须唯一，已经使用的编号不得复用。
 - 创建 ADR 前必须扫描本目录中的全部编号文件，使用当前最大编号加一。
 - 被拒绝、废弃或被取代的 ADR 仍然保留原文件和编号。
-- 当前最新编号为 `0024`。
+- 当前最新编号为 `0025`。
 
 ## 状态规则
 
@@ -112,6 +120,8 @@ Diagnostic Event 和 Artifact 是诊断投影，不是 Runtime 当前状态恢�
 
 以下决策应在对应实现开始前分别评审：
 
+- Presentation Integration 的公共 API 形态，以及是否保持 Package / 应用内调用还是未来引入独立部署；
+- Business Agent Adapter SPI 的最小能力与版本策略；
 - Runtime Kernel 是否需要提取为独立 workspace package；
 - A2UI 版本 Encoder 和 v1 迁移策略；
 - Frontend Runtime、Component Registry 和 A2UI Renderer 更细粒度的信任边界；
