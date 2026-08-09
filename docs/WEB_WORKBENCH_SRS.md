@@ -22,12 +22,13 @@
 
 ## 0.1 本文负责什么
 
-本文是 Generative UI Workbench 的产品合同，只回答四个问题：
+本文是 Generative UI Workbench 的产品合同，回答五个问题：
 
-1. Workbench 是什么；
-2. 用户可以用它做什么；
-3. Workbench 必须遵守哪些平台边界；
-4. 什么情况下可以认为 MVP 完成。
+1. 为什么需要 Workbench；
+2. Workbench 是什么；
+3. 用户可以用它做什么；
+4. Workbench 必须遵守哪些平台边界；
+5. 什么情况下可以认为 MVP 完成。
 
 ## 0.2 Canonical Sources
 
@@ -46,25 +47,89 @@
 
 ---
 
-# 1. 产品定位与 MVP 范围
+# 1. 产品背景、目的与范围
 
-## 1.1 产品定位
+## 1.1 产品背景：为什么需要 Workbench
+
+Agent 应用的前端已经不只是“输入一句话、显示一段文本”。一个真实交互过程可能同时包含：
+
+- 多轮 Conversation；
+- Business Agent 主动公开的消息、进度、状态和工具调用；
+- Markdown 与结构化 Generative UI；
+- 可操作的 Business Surface；
+- Action、人工确认和业务副作用；
+- 页面刷新、连接中断和 Runtime Host 重启后的状态恢复；
+- 跨 Agent、Runtime、Presentation、Compiler、Renderer 和 Action 边界的问题定位。
+
+如果没有统一的 Reference Frontend，平台开发和联调通常会退化为临时 Demo 页面、接口工具、浏览器状态和分散日志的组合。这样可以验证单个接口，却很难稳定回答：
+
+- 用户实际看到的完整交互是否成立；
+- Agent 公开过程与最终 Presentation 是否正确衔接；
+- Markdown、Generative UI 和受控 Action 是否能在同一 Conversation 中工作；
+- 某个 Action 为什么被允许、拒绝或失效；
+- 刷新或 Runtime Host 重启后，当前交互状态是否仍然正确；
+- 问题究竟发生在 Agent、Runtime、Presentation、Compiler、Renderer、Action 还是 Diagnostics。
+
+因此平台需要一个统一、可运行、可恢复、可诊断的官方 Web 参考环境，而不是继续依赖临时调试页面。
+
+## 1.2 产品目的
+
+Workbench 的目的不是复制 Runtime Host 或 Business Agent，而是提供一个统一的 Web 产品环境，验证 Generative UI Platform 是否真正形成可用的端到端交互闭环。
+
+它应使开发者能够证明：
+
+- Agent 交互能够在浏览器中连续运行；
+- Markdown 和 Generative UI 能够以安全、受控方式呈现；
+- 用户 Action 和高风险 Confirmation 不会绕过 Runtime 权威边界；
+- Conversation 在刷新和 Runtime Host 重启后仍能恢复到正确状态；
+- 当链路异常时，可以从用户看到的问题继续进入逐 Turn / Operation 调查。
+
+一句话目的：
+
+> 让 Generative UI Platform 的完整交互链路在一个官方 Web 环境中可运行、可操作、可恢复、可诊断，并能作为后续应用接入的 Frontend Runtime 参考实现。
+
+## 1.3 Workbench 是什么
 
 Generative UI Workbench 是：
 
 > Generative UI Platform 的官方 Frontend Runtime 参考实现，以及面向 Agent Runtime Host 的开发、联调、运行验证和逐 Turn 诊断工作台。
 
-Workbench 的价值不是复制 Runtime 或 Business Agent，而是让开发者能够在一个统一 Web 环境中完成：
+从产品角色看，它同时承担：
 
-- 与 Business Agent 进行多轮交互；
-- 查看 Business Agent 主动公开的运行过程；
-- 查看 Markdown 或 Generative UI Presentation；
-- 操作受控 Interactive Surface；
-- 在刷新或 Runtime Host 重启后恢复 Conversation；
-- 定位某个 Turn / Operation 的问题；
-- 判断问题属于 Agent、Presentation、Compiler、Renderer、Action 还是 Diagnostic 层。
+- Runtime Host 的统一 Web 交互入口；
+- Conversation-first Agent 客户端；
+- Markdown 与受控 Generative UI 的运行环境；
+- Interactive Surface 与 Confirmation 的用户交互环境；
+- Debug Conversation 与逐 Turn Inspect 的开发调查入口；
+- Component、Action 和 Reference Scenario 的验证环境。
 
-## 1.2 Workbench 不是什么
+Workbench 是面向平台开发与集成验证的开发者产品，不是最终业务生产前端。
+
+## 1.4 谁使用 Workbench
+
+Workbench 的主要用户包括：
+
+- 平台开发者：验证 Runtime Host、Presentation、Diagnostics 等平台链路；
+- Business Agent 开发者：验证 Agent 主动公开事件、最终内容和恢复交互；
+- 前端组件 / Action 开发者：验证受控组件、Action 与业务 Surface；
+- 测试人员：执行端到端场景并定位失败位置；
+- 架构师和产品负责人：验证平台职责边界与 MVP 是否成立；
+- 编码 Agent：读取稳定产品合同并据此拆解实现与测试任务。
+
+## 1.5 用户可以用 Workbench 做什么
+
+从用户任务角度，Workbench 至少支持以下核心工作：
+
+1. **进行 Agent Conversation**：创建、继续和打开多轮 Conversation，并查看 Agent 主动公开的运行过程；
+2. **查看最终 Presentation**：在同一 Conversation 中查看 Markdown 或受控 Generative UI；
+3. **操作受控 Business Surface**：执行允许的前端交互，对高风险操作完成明确确认，并看到平台对 Command 的接纳或拒绝结果；
+4. **恢复历史与当前状态**：页面刷新、重新打开 Conversation 或 Runtime Host 重启后，继续查看正确的当前交互状态，而不是依赖浏览器旧状态；
+5. **调查某个 Turn 的问题**：进入 Inspect，查看 Operation、阶段、耗时、错误、公开输入输出和 Diagnostic Artifact；
+6. **验证平台扩展能力**：通过 Catalog、Scenarios 和 Settings 验证组件、Action、参考场景和运行环境配置。
+
+这些是 Workbench 的用户任务；其底层 Runtime 状态机、Command Admission 算法和数据 Schema 由对应 Canonical Source 定义。
+
+## 1.6 Workbench 不是什么
 
 Workbench MUST NOT 成为：
 
@@ -79,7 +144,7 @@ Workbench MUST NOT 成为：
 - 完整 Case / Assertion / Regression 平台；
 - 正式智慧安防生产系统。
 
-## 1.3 MVP 核心能力
+## 1.7 MVP 核心能力
 
 MVP Release Gate 只看以下五类产品能力是否成立。
 
@@ -117,7 +182,7 @@ MVP Release Gate 只看以下五类产品能力是否成立。
 - 能定位 Operation、阶段、输入输出、错误、降级和诊断缺口；
 - 大型 Artifact 能安全、有界查看。
 
-## 1.4 Release Invariants
+## 1.8 Release Invariants
 
 以下不是独立功能模块，而是所有 MVP 能力都必须满足的发布底线：
 
@@ -129,7 +194,7 @@ MVP Release Gate 只看以下五类产品能力是否成立。
 - Workbench 不得从本地缓存、历史 A2UI、Diagnostic Event 或旧 `runId` 推导新的 Runtime Truth；
 - Workbench 必须能够独立构建和部署。
 
-## 1.5 Supporting Capability
+## 1.9 Supporting Capability
 
 以下能力允许在 MVP 周边建设，但不阻塞 MVP Release：
 
@@ -141,7 +206,7 @@ MVP Release Gate 只看以下五类产品能力是否成立。
 - 运行统计和链路性能分析；
 - 外部 Trace 系统关联。
 
-## 1.6 Post-MVP
+## 1.10 Post-MVP
 
 以下能力不属于当前 MVP：
 
@@ -691,8 +756,8 @@ Workbench Core、Runtime Kernel 和 UI Compiler Core 不应包含智慧安防专
 
 仅当以下条件全部满足时，才能认为 Workbench MVP 达到本规格：
 
-1. §1.3 五类 MVP 核心能力均已实现；
-2. §1.4 Release Invariants 全部满足；
+1. §1.7 五类 MVP 核心能力均已实现；
+2. §1.8 Release Invariants 全部满足；
 3. §5 六个 Acceptance Scenario 全部通过；
 4. 不存在已知的 Workbench 绕过 Runtime Host 权威状态的问题；
 5. 不存在会导致重复高风险业务副作用的前端交互缺陷；
