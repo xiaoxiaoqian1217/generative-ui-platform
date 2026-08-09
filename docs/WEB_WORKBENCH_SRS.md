@@ -118,14 +118,15 @@ Workbench 的主要用户包括：
 
 ## 1.5 用户可以用 Workbench 做什么
 
-从用户任务角度，Workbench 至少支持以下核心工作：
+从用户任务角度，Workbench 的核心工作是：
 
 1. **进行 Agent Conversation**：创建、继续和打开多轮 Conversation，并查看 Agent 主动公开的运行过程；
 2. **查看最终 Presentation**：在同一 Conversation 中查看 Markdown 或受控 Generative UI；
 3. **操作受控 Business Surface**：执行允许的前端交互，对高风险操作完成明确确认，并看到平台对 Command 的接纳或拒绝结果；
 4. **恢复历史与当前状态**：页面刷新、重新打开 Conversation 或 Runtime Host 重启后，继续查看正确的当前交互状态，而不是依赖浏览器旧状态；
-5. **调查某个 Turn 的问题**：进入 Inspect，查看 Operation、阶段、耗时、错误、公开输入输出和 Diagnostic Artifact；
-6. **验证平台扩展能力**：通过 Catalog、Scenarios 和 Settings 验证组件、Action、参考场景和运行环境配置。
+5. **调查某个 Turn 的问题**：进入 Inspect，查看 Operation、阶段、耗时、错误、公开输入输出和 Diagnostic Artifact。
+
+此外，Workbench MAY 提供 Catalog、Scenarios、Settings 等 Supporting Developer Tools，用于提高组件、Action、参考场景和运行环境配置的验证效率；这些工具不决定核心 MVP 是否成立。
 
 这些是 Workbench 的用户任务；其底层 Runtime 状态机、Command Admission 算法和数据 Schema 由对应 Canonical Source 定义。
 
@@ -198,6 +199,8 @@ MVP Release Gate 只看以下五类产品能力是否成立。
 
 以下能力允许在 MVP 周边建设，但不阻塞 MVP Release：
 
+- Catalog、Scenarios、Settings 等 Developer Tools；
+- Conversation 重命名、归档、删除、排序和 Archived 分组等管理体验；
 - Diagnostic Bundle Export；
 - 完整 Object Storage / 多后端 Artifact Storage Router；
 - JSON Path 搜索；
@@ -228,11 +231,6 @@ MVP Release Gate 只看以下五类产品能力是否成立。
 Workbench 默认采用 Conversation-first 外壳：
 
 ```text
-Top Navigation
-├── Catalog
-├── Scenarios
-└── Settings
-
 Conversation Sidebar
 └── Debug Conversations
 
@@ -241,6 +239,11 @@ Conversation Flow
 ├── Agent Message / Public Activity
 ├── Markdown Result
 └── Inline Business Surface
+
+Supporting Developer Tools（可选）
+├── Catalog
+├── Scenarios
+└── Settings
 ```
 
 Conversation 是默认工作上下文。
@@ -257,16 +260,20 @@ Workbench MUST NOT 维护一套与 Conversation History 分离的长期 Playgrou
 
 ## 2.3 Conversation Sidebar
 
-Conversation Sidebar 至少支持：
+Conversation Sidebar MUST 支持：
 
 - 创建；
 - 打开；
+- 多轮 Conversation 切换；
+- 跨刷新恢复。
+
+Conversation Sidebar SHOULD 支持：
+
 - 重命名；
 - 归档；
 - 删除入口；
 - 最近活跃排序；
-- Archived 分组；
-- 跨刷新恢复。
+- Archived 分组。
 
 Sidebar 保持单一职责，不承载 Catalog、Scenario 或全局 Inspect 工具。
 
@@ -349,13 +356,11 @@ Inspect 必须可深链接访问。
 
 Inspect 不应作为 Conversation Flow 的常驻复杂面板。
 
-## 2.8 Tool Pages
+## 2.8 Supporting Developer Tools
 
-MVP 顶级工具页：
+Catalog、Scenarios、Settings MAY 作为顶级 Developer Tools 提供，用于提高扩展验证和环境配置效率。
 
-- Catalog；
-- Scenarios；
-- Settings。
+这些页面不属于 MVP Release Gate；缺失时不得阻止 Conversation、Presentation、Safe Interaction、Recovery 和 Inspect 五类核心能力的验收。
 
 Cases 不属于当前 MVP 信息架构。
 
@@ -371,11 +376,16 @@ Workbench MUST 支持：
 - 多 Turn 交互；
 - Conversation List；
 - 打开历史 Conversation；
+- 页面刷新后的恢复；
+- Runtime Host 重启后的恢复体验。
+
+Workbench SHOULD 支持：
+
 - 重命名；
 - 归档；
 - 删除入口；
-- 页面刷新后的恢复；
-- Runtime Host 重启后的恢复体验。
+- 最近活跃排序；
+- Archived 分组。
 
 打开历史 Conversation 本身 MUST NOT 创建新的执行、重复原业务副作用或把历史内容静默变成当前交互状态。
 
@@ -523,11 +533,11 @@ MVP Release Gate 要求：
 
 完整多后端 Object Storage、高级搜索和流式导出属于 Supporting Capability。
 
-## 3.6 C6 — Tools & Deployment
+## 3.6 Supporting Developer Tools & Deployment
 
 ### Catalog
 
-Catalog 应至少提供：
+Catalog MAY 提供：
 
 - Component Name；
 - Version；
@@ -539,18 +549,18 @@ Catalog 应至少提供：
 
 ### Scenarios
 
-Scenario 页面用于浏览和启动通用或领域 Reference Scenario。
+Scenarios MAY 用于浏览和启动通用或领域 Reference Scenario。
 
 领域能力通过 Scenario Package 扩展，不进入 Workbench Core 或 UI Compiler Core 的业务判断。
 
 ### Settings
 
-Settings 至少可以配置：
+Settings MAY 提供以下非敏感配置：
 
 - Runtime Host 地址；
 - Scenario；
 - 请求相关前端配置；
-- Debug / Artifact 查看相关非敏感配置。
+- Debug / Artifact 查看相关配置。
 
 敏感密钥 MUST NOT 进入浏览器构建产物。
 
