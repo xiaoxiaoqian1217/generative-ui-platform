@@ -1,6 +1,6 @@
 # ADR-0023：采用受控 CopilotKit 会话 UI 与平台调试会话历史
 
-- **状态：** 已接受
+- **状态：** 部分被 ADR-0024 取代
 - **日期：** 2026-08-04
 
 ## 背景
@@ -91,3 +91,7 @@ CopilotKit 托管线程会引入平台外的数据所有权、许可和同步依
 本 ADR 扩展 ADR-0020，但不取代 CopilotKit Headless、Workbench 只连接 Agent Runtime Host、以及只读 Runtime Contract 的既有决定。
 本 ADR 不改变 ADR-0019 对 Presentation Pipeline 和 UI Compiler Core 的职责划分。
 本 ADR 将长期调试会话引入未来独立 Goal，当前 Goal 的非目标在该 Goal 获批前继续有效。
+
+ADR-0024 保留本 ADR 关于受控 CopilotKit UI、Runtime Host 的 Thread/Presentation/Surface 所有权、Business Agent Checkpoint 所有权、Historical Surface 只读回放和 shared `threadId` 的核心决定。
+ADR-0024 取代并细化本 ADR 中把一次交互主要表达为 Run、把 Surface 生命周期依附于 Run、以及由旧 Turn/Run 状态承载完整运行事实的语义。
+迁移后应使用 Thread、Turn、Operation、Surface 和 Command Admission 作为 Runtime Host 的交互事实模型。
