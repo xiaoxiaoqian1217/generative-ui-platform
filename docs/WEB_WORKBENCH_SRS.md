@@ -22,7 +22,7 @@
 
 ## 0.1 本文负责什么
 
-本文是 Generative UI Workbench 的产品合同，回答四个问题：
+本文是 Generative UI Workbench 的产品合同，只回答四个问题：
 
 1. Workbench 是什么；
 2. 用户可以用它做什么；
@@ -42,7 +42,7 @@
 | UI Compiler 内部设计 | `docs/ARCHITECTURE.md`、`docs/Generative_UI_Compiler_Design.md` |
 | 实施顺序、优先级与任务拆分 | Goal / Task / Issue |
 
-当本文与上述更高层 Runtime / Platform 权威文档冲突时，本文不得自行重新定义 Runtime 语义，应修正 Workbench 行为以符合当前平台规则。
+当本文与更高层 Runtime / Platform 权威文档冲突时，本文不得自行重新定义 Runtime 语义，应修正 Workbench 行为以符合当前平台规则。
 
 ---
 
@@ -79,36 +79,37 @@ Workbench MUST NOT 成为：
 - 完整 Case / Assertion / Regression 平台；
 - 正式智慧安防生产系统。
 
-## 1.3 MVP Release Gate
+## 1.3 MVP 核心能力
 
-MVP 是否可以发布，只看以下六类能力是否成立：
+MVP Release Gate 只看以下五类产品能力是否成立。
 
 ### G1 Conversation
 
 - Conversation-first 多轮交互；
 - Conversation History；
-- 刷新恢复；
-- Runtime Host 重启后的可恢复体验。
+- 页面刷新后恢复；
+- 历史浏览不会自行触发新的执行或业务副作用。
 
 ### G2 Presentation
 
 - 安全 Markdown；
-- A2UI；
+- 受控 A2UI；
 - Inline Business Surface；
 - Fallback / degraded 状态可见。
 
 ### G3 Safe Interaction
 
-- Action / Confirmation；
+- Action；
+- Confirmation；
 - Command 提交；
-- duplicate / stale / rejected 状态反馈；
-- 不允许浏览器绕过 Runtime Host 的 Command Admission。
+- duplicate / stale / rejected / no-longer-actionable 等结果反馈；
+- Workbench 不绕过 Runtime Host 的 Command Admission。
 
 ### G4 Recovery
 
-- Workbench 始终以 Runtime Host 返回的权威交互状态为准；
-- 历史浏览不默认重新执行原 Business Agent 请求；
-- `indeterminate` 能被正确展示并进入 Reconcile 流程。
+- Runtime Host 重启后恢复正确的当前交互体验；
+- Workbench 始终以 Runtime Host 返回的权威状态为准；
+- `indeterminate` 能被正确展示并进入 Reconcile / 恢复流程。
 
 ### G5 Inspect
 
@@ -116,15 +117,19 @@ MVP 是否可以发布，只看以下六类能力是否成立：
 - 能定位 Operation、阶段、输入输出、错误、降级和诊断缺口；
 - 大型 Artifact 能安全、有界查看。
 
-### G6 Security
+## 1.4 Release Invariants
+
+以下不是独立功能模块，而是所有 MVP 能力都必须满足的发布底线：
 
 - 不执行任意模型生成代码；
-- Registry-only Component / Action；
-- Markdown 安全处理；
-- 禁止披露数据不进入 Workbench；
-- 诊断失败不得污染正常业务结果。
+- 只允许受控组件和受控 Action；
+- Markdown 必须安全处理；
+- 平台禁止披露的数据不得进入 Workbench；
+- Diagnostic failure 不得把已确定的 Runtime / Business 结果伪装成业务失败；
+- Workbench 不得从本地缓存、历史 A2UI、Diagnostic Event 或旧 `runId` 推导新的 Runtime Truth；
+- Workbench 必须能够独立构建和部署。
 
-## 1.4 Supporting Capability
+## 1.5 Supporting Capability
 
 以下能力允许在 MVP 周边建设，但不阻塞 MVP Release：
 
@@ -136,7 +141,7 @@ MVP 是否可以发布，只看以下六类能力是否成立：
 - 运行统计和链路性能分析；
 - 外部 Trace 系统关联。
 
-## 1.5 Post-MVP
+## 1.6 Post-MVP
 
 以下能力不属于当前 MVP：
 
@@ -218,13 +223,13 @@ Business Surface 是业务展示内容，而不是调试容器。
 Workbench MUST：
 
 - 在 Conversation Flow 中内联展示 Surface；
-- 通过 Component Registry 渲染受控 A2UI；
+- 通过受控组件集合渲染 A2UI；
 - 使用 Runtime Host 返回的 Surface 状态决定当前交互能力；
 - 不依据浏览器本地缓存自行判断某个历史 Action 仍然有效。
 
 ### 2.5.1 Historical Surface 的交互规则
 
-从第一性原理区分两类行为：
+必须区分两类行为。
 
 **Local UI Interaction** 不改变 Runtime Truth 或 Business Truth，例如：
 
@@ -242,7 +247,7 @@ Workbench MUST：
 
 - MUST NOT 使用历史授权、历史 revision、历史 run 上下文直接重放旧 Runtime / Business Action；
 - MVP 中，旧 Surface 上的状态变更型 Runtime / Business Action 默认禁用；
-- 用户若确实需要再次执行，应进入一个新的、由 Runtime Host 重新校验的当前交互上下文；
+- 用户若确实需要再次执行，应进入新的、由 Runtime Host 重新校验的当前交互上下文；
 - 未来若支持“从历史内容重新执行”，也必须产生新的 Command / 当前 Surface 或等价的新权威上下文，而不是重新激活已经消费的旧 Surface。
 
 因此：
@@ -256,7 +261,7 @@ Turn 状态默认保持克制：
 - running：显示进行中；
 - degraded：显示降级原因入口；
 - failed：显示失败；
-- indeterminate：必须明确显示结果未知并提供后续处理入口；
+- indeterminate：明确显示结果未知并提供后续处理入口；
 - completed：默认不留下额外完成标记。
 
 开发诊断入口按需出现，可通过 hover、focus 或适配触屏设备的等价方式访问。
@@ -307,13 +312,13 @@ Workbench MUST 支持：
 - 页面刷新后的恢复；
 - Runtime Host 重启后的恢复体验。
 
-打开历史 Conversation MUST NOT 默认重新执行 Business Agent、Presentation Pipeline 或 UI Compiler Core。
+打开历史 Conversation 本身 MUST NOT 创建新的执行、重复原业务副作用或把历史内容静默变成当前交互状态。
 
 ## 3.2 C2 — Agent Interaction
 
 Workbench 的 Agent 交互 MUST 使用 Runtime Host 提供的 AG-UI 入口。
 
-当前参考实现可以使用 CopilotKit Runtime 的 HTTP POST + SSE。
+当前参考实现使用 CopilotKit Runtime 的 HTTP POST + SSE。
 
 Workbench MUST：
 
@@ -347,7 +352,7 @@ Workbench MUST：
 
 Workbench MUST：
 
-- 仅通过 Component Registry 加载真实组件；
+- 只允许平台注册的组件类型；
 - 校验组件类型和 Props；
 - 对未知组件显示明确错误或安全降级；
 - MUST NOT 执行模型生成的任意 JavaScript、Vue、React 或动态模块代码。
@@ -374,7 +379,28 @@ Workbench MUST 正确处理至少以下反馈：
 - indeterminate；
 - reconcile-required。
 
-高风险业务行为必须在用户明确确认后才允许继续提交受控意图。
+### Frontend Action Safety
+
+Workbench 只允许已注册的 Frontend Action。
+
+每个可执行 Action 至少应有：
+
+- 明确的 Action 标识；
+- 参数约束；
+- 风险 / Confirmation 要求；
+- 受控执行入口。
+
+### Confirmation
+
+对于高风险业务行为，Workbench 必须在用户确认前展示足够的决策上下文，至少包括适用的：
+
+- 操作名称；
+- 目标对象；
+- 关键参数；
+- 影响范围；
+- 风险提示。
+
+用户明确确认后，Workbench 才允许继续提交受控意图。
 
 Workbench MUST NOT：
 
@@ -415,6 +441,8 @@ Inspect 至少应能够展示：
 - Diagnostic completeness。
 
 对于正式公开契约边界上的输入输出，Workbench SHOULD 优先展示平台实际提供的原始结构化 Artifact，而不是把它重新解释成另一份业务事实。
+
+只有在 Artifact 不可披露、超过保护限制、尚未加载或只能以 storage reference 提供时，才使用摘要或占位信息作为兜底。
 
 具体 Event / Artifact 字段由 Runtime / Diagnostic Contract 定义，本文不复制 Schema。
 
@@ -503,8 +531,8 @@ Diagnostic Event / Artifact 缺失或保存失败时：
 Workbench MUST：
 
 - 将模型和 Agent 输出视为不可信输入；
-- Registry-only 渲染组件；
-- Registry-only 执行 Frontend Action；
+- 只渲染受控组件；
+- 只执行受控 Frontend Action；
 - 校验 Props 和 Action 参数；
 - 安全处理 Markdown；
 - 不执行任意模型生成代码；
@@ -554,16 +582,16 @@ MVP 验收采用少量黑盒场景验证产品结果，不在本文验证 Runtim
 ## A1 — Conversation & Presentation
 
 **Given** Workbench 已连接 Runtime Host。  
-**When** 用户连续发送多轮消息，Business Agent 发布公开过程事件，并分别产生 Markdown 与 Generative UI Presentation。  
+**When** 用户连续发送多轮消息，并分别得到 Markdown 与 Generative UI 结果。  
 **Then**：
 
 - Conversation 正常形成多轮历史；
-- 公开过程事件可见；
+- 公开过程信息可见；
 - Markdown 安全渲染；
-- A2UI 通过 Component Registry 渲染；
+- 合法 Generative UI 正常渲染；
 - Inline Surface 位于 Conversation Flow；
 - 页面刷新后 Conversation 可重新打开；
-- 历史浏览不重新执行原 Business Agent 请求。
+- 仅打开历史 Conversation 不会产生新的执行或业务副作用。
 
 ## A2 — Interactive Surface Safety
 
@@ -571,8 +599,8 @@ MVP 验收采用少量黑盒场景验证产品结果，不在本文验证 Runtim
 **When** 分别发生正常提交、重复提交、stale revision，以及对 Historical Surface 尝试执行旧业务 Action。  
 **Then**：
 
-- 正常提交可以进入 Runtime Host 的正式处理流程；
-- duplicate 不产生重复业务执行；
+- 正常提交得到明确的接纳或拒绝结果；
+- duplicate 不产生重复业务执行或副作用；
 - stale 被明确拒绝或要求刷新；
 - Historical Surface 仍可查看和执行纯 Local UI Interaction；
 - Historical Surface 的旧 Runtime / Business Action 不得直接重放；
@@ -581,16 +609,19 @@ MVP 验收采用少量黑盒场景验证产品结果，不在本文验证 Runtim
 ## A3 — Confirmation & Side-effect Boundary
 
 **Given** Surface 中存在一个高风险业务操作。  
-**When** 用户尚未确认。  
-**Then** Workbench 不得绕过确认继续提交该高风险意图。
+**When** 用户进入确认步骤。  
+**Then**：
+
+- 用户能看到操作名称、目标对象、关键参数以及适用的影响范围 / 风险提示；
+- 用户确认前，该高风险意图不会进入正式执行；
+- 用户取消后，不会产生该业务副作用。
 
 **When** 用户明确确认并提交。  
 **Then**：
 
-- Workbench 将意图交给 Runtime Host；
-- Workbench 不直接调用后端业务工具；
-- Runtime Host 返回 accepted / rejected 等结果后，Workbench 正确展示；
-- 下游失败不得导致 Workbench 自动重新激活已经消费的旧 Surface。
+- Workbench 显示平台返回的接纳或拒绝结果；
+- 同一确认意图不会因双击或重试产生重复业务副作用；
+- 下游失败不会使旧 Surface 自动恢复为可再次执行状态。
 
 ## A4 — Restart Recovery
 
@@ -599,9 +630,9 @@ MVP 验收采用少量黑盒场景验证产品结果，不在本文验证 Runtim
 **Then**：
 
 - Workbench 能重新打开 Conversation；
-- 当前交互状态以 Runtime Host 恢复结果为准；
-- 不重新执行历史 Agent 请求；
-- Diagnostic Store 部分缺失只导致诊断不完整提示，不改变用户看到的 Runtime 当前状态。
+- 当前交互状态与 Runtime Host 恢复结果一致；
+- 不重新执行历史业务请求；
+- 即使部分诊断历史不可用，也只显示诊断不完整，不改变当前交互状态。
 
 ## A5 — Indeterminate & Reconcile
 
@@ -617,17 +648,17 @@ MVP 验收采用少量黑盒场景验证产品结果，不在本文验证 Runtim
 
 ## A6 — Inspect, Failure Isolation & Security
 
-**Given** 一个 Turn 同时包含正常事件、Diagnostic Gap、大型 Artifact、Artifact Persistence Failure 和不安全输入。  
+**Given** 一个 Turn 同时存在诊断缺口、大型 Artifact、Artifact 保存失败和不安全内容。  
 **When** 用户进入 Inspect。  
 **Then**：
 
 - 能定位主要职责边界与 Operation；
-- 能看到顺序、阶段、耗时、错误和 Artifact；
-- sequence / diagnostic gap 被明确标识；
+- 能看到顺序、阶段、耗时、错误和可披露 Artifact；
+- 诊断缺口被明确标识；
 - 大型 Artifact 不默认完整加载；
-- Artifact persistence failure 被明确显示；
+- Artifact 保存失败被明确显示；
 - 诊断故障不把正常业务结果改写成失败；
-- 未注册 Component / Action 不执行；
+- 未允许的 Component / Action 不执行；
 - 危险 Markdown 被安全处理；
 - 平台禁止披露的数据不出现在 Workbench。
 
@@ -660,10 +691,11 @@ Workbench Core、Runtime Kernel 和 UI Compiler Core 不应包含智慧安防专
 
 仅当以下条件全部满足时，才能认为 Workbench MVP 达到本规格：
 
-1. §1.3 六类 MVP Release Gate 均已实现；
-2. §5 六个 Acceptance Scenario 全部通过；
-3. 不存在已知的 Workbench 绕过 Runtime Host 权威状态的问题；
-4. 不存在会导致重复高风险业务副作用的前端交互缺陷；
-5. Runtime Host 重启后 Workbench 能恢复正确的当前交互体验；
-6. Diagnostic failure 不会让 Workbench 错误改写 Runtime / Business 结果；
-7. Workbench 可以独立构建并部署。
+1. §1.3 五类 MVP 核心能力均已实现；
+2. §1.4 Release Invariants 全部满足；
+3. §5 六个 Acceptance Scenario 全部通过；
+4. 不存在已知的 Workbench 绕过 Runtime Host 权威状态的问题；
+5. 不存在会导致重复高风险业务副作用的前端交互缺陷；
+6. Runtime Host 重启后 Workbench 能恢复正确的当前交互体验；
+7. Diagnostic failure 不会让 Workbench 错误改写 Runtime / Business 结果；
+8. Workbench 可以独立构建并部署。
