@@ -185,7 +185,10 @@ Surface 至少具有：
 - `presentationRole`；
 - `interactionState`。
 
-历史 Surface 必须只读。
+Historical Presentation 可以继续展示；平台不得把“historical”解释为禁止展开、复制、查看详情等纯本地 UI 行为。
+Historical Surface 不得携带可直接重放的旧 Action Authority：只有 `current + actionable` 的 Surface 才能通过 Runtime Command Admission。
+如果用户需要基于历史内容再次发起 Runtime / Business Action，必须创建新的 Command，并由 Runtime Host 在新的当前权威上下文中重新校验；不得重新激活已经消费的旧 Surface。
+
 已经 `consumed` 的 Surface 不得因为下游失败自动恢复为 `actionable`。
 
 ### 6.6 Command Admission

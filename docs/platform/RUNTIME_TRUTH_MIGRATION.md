@@ -34,7 +34,18 @@ Turn 是稳定的用户可见会话位置，Operation 是 Runtime Host 正式接
 目标模型把 Surface 作为 Runtime Domain 权威对象，至少拥有 `revision`、`presentationRole` 和 `interactionState`。
 交互状态采用 `actionable -> claimed -> consumed`，并由可事务更新的 Runtime Repository 保存。
 
-**决议：以 ADR-0024 为准。**
+这里需要区分“历史展示”与“历史执行授权”：
+
+- Historical Presentation / Surface 仍可以保留不改变 Runtime Truth 或 Business Truth 的本地查看交互，例如展开、复制、查看详情、查看原始 A2UI / Artifact 或打开 Inspect；
+- Historical Surface 不得复用历史授权、历史 revision、历史 `runId` 或其他旧运行上下文，直接重放可能创建 Operation 或触发业务副作用的 Runtime / Business Action；
+- Command Admission 仍只接受满足当前 Runtime Truth 的受控上下文，例如 `current + actionable` Surface；
+- 如果用户希望基于历史内容再次执行，应创建新的 Command，并由 Runtime Host 重新校验后产生新的当前 Surface、Operation 或等价的权威交互上下文，而不是重新激活已经消费或历史化的旧 Surface。
+
+因此，迁移目标不是“历史 UI 完全不可交互”，而是：
+
+> Historical Presentation 可继续查看；Historical Action Authority 不可直接重放。
+
+**决议：以 ADR-0024 的 Runtime Host 权威与安全 Command Admission 原则为准。**
 
 ### 2.4 超时、断线与不确定结果
 
@@ -76,6 +87,9 @@ Diagnostic Event Replay 只用于补齐时间线体验，事件缺口只能导�
 - 新代码不得根据 Diagnostic Event 反推并覆盖 Runtime Repository 的权威状态；
 - 新 Action 路径必须向 Command Admission 和幂等语义收敛；
 - 已消费 Surface 不得因为 Business Agent 失败、超时或结果未知而自动恢复 actionable；
+- Historical Surface 不得复用旧授权或旧运行上下文直接产生新的 Runtime / Business Action；
+- 本地查看型交互不改变 Runtime Truth 或 Business Truth，可以继续作用于历史 Presentation；
+- 需要基于历史内容再次执行时，必须重新进入 Runtime Host 的当前 Command Admission 流程并产生新的权威交互上下文；
 - `indeterminate` 必须通过 Reconcile、业务幂等键或 Business Agent 明确恢复语义关闭；
 - Compatibility Adapter 可以接受旧请求，但进入 Runtime Kernel 后必须转换为新领域语义。
 
@@ -101,8 +115,9 @@ Diagnostic Event Replay 只用于补齐时间线体验，事件缺口只能导�
 - Presentation Pipeline 嵌入 Runtime Host；
 - Business Agent 不输出 UI Plan Candidate 或 A2UI；
 - UI Compiler Core 是唯一可信 A2UI 生产者；
-- 历史 Presentation Snapshot 按兼容性规则只读回放；
-- Historical Surface 不可重新执行 Action。
+- 历史 Presentation Snapshot 保持可查看和不可变；
+- 历史 Presentation 上的本地查看型 UI 交互可以继续存在；
+- Historical Action Authority 不可被直接重放；需要再次执行时必须经过新的 Runtime Host Command Admission 与新的权威交互上下文。
 
 ## 6. 后续冲突处理
 

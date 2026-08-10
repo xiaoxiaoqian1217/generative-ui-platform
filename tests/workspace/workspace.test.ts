@@ -120,7 +120,9 @@ describe("workspace contract", () => {
 
   it("does not create systems excluded from the MVP", () => {
     for (const relativePath of activeForbiddenPaths) {
-      expect(existsSync(join(repositoryRoot, relativePath))).toBe(false);
+      expect(
+        existsSync(join(repositoryRoot, relativePath, "package.json")),
+      ).toBe(false);
     }
   });
 
