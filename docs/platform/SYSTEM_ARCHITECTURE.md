@@ -1,143 +1,189 @@
 # 平台系统架构
 
-本文描述 Generative UI Platform 的当前跨子系统关系。
-Runtime 状态所有权与安全 Action 语义以 ADR-0024 为准。
-Workbench Agent 协议与 Transport 分层以 ADR-0026 为准。
+本文描述 ADR-0027 下的当前系统主线。
 
-## 主链路
+## 当前主链路
 
 ```text
-Workbench
-   │ AG-UI
-   │ current transport: HTTP POST + SSE
-   ▼
+Business Agent / Existing Agent Runtime
+        │
+        │ Final AgentContent / Business Data
+        ▼
+┌──────────────────────────────────────────────┐
+│ Generative UI Presentation Core              │
+│                                              │
+│ Presentation Router                          │
+│   ├── Markdown                               │
+│   │     └── safe Markdown PresentationResult │
+│   │                                          │
+│   └── Structured Business Data               │
+│           ↓                                  │
+│    Presentation Model                        │
+│           ↓                                  │
+│    untrusted UI Plan Candidate               │
+│           ↓                                  │
+│    UI Compiler Core                          │
+│           ↓                                  │
+│    trusted A2UI PresentationResult           │
+└─────────────────────┬────────────────────────┘
+                      │
+                      ▼
+              Controlled Renderer
+```
+
+## Workbench
+
+```text
+AgentContent / Scenario
+        ↓
+┌────────────────────────────────────┐
+│ Generative UI Workbench            │
+│                                    │
+│ Input                              │
+│ Presentation Decision              │
+│ UI Plan Candidate                  │
+│ Validation / Compiler Result       │
+│ trusted A2UI                       │
+│ Rendered UI                        │
+│ Theme / Catalog / Viewport         │
+│ Compare / Reliability              │
+└────────────────────────────────────┘
+```
+
+Workbench 当前是 Generative UI Lab。
+它用于验证 Presentation 质量和可靠性，而不是当前阶段的 Agent Runtime 管理产品。
+
+## 当前 Reference Integration
+
+现有代码仍提供一条完整参考链路：
+
+```text
+Reference Business Agent
+        │ private HTTP+SSE / WebSocket / ...
+        ▼
+Business Agent Adapter
+        ▼
 Agent Runtime Host
-   ├── Embedded CopilotKit Runtime
-   ├── PlatformRunService
-   │     ▼
-   │   Runtime Kernel
-   │   ├── Runtime Repository
-   │   │   ├── Thread
-   │   │   ├── Turn
-   │   │   ├── Operation
-   │   │   ├── Command Admission
-   │   │   └── Surface Lifecycle / Presentation Snapshot
-   │   ├── Business Agent Adapter
-   │   │     │ private HTTP+SSE / WebSocket / ...
-   │   │     ▼
-   │   │   Business Agent
-   │   │   ├── Business State / Checkpoint
-   │   │   ├── Backend Tools / Side Effects
-   │   │   ├── Public Process Events
-   │   │   └── Final AgentContent
-   │   └── Embedded Presentation Pipeline
-   │         ├── Markdown → PresentationResult
-   │         └── Structured Data
-   │               → Presentation Router / Model Adapter
-   │               → untrusted UI Plan Candidate
-   │               → UI Compiler Core
-   │               → A2UI PresentationResult
-   └── Runtime Event Projection
-         ├── AG-UI → Workbench
-         └── Diagnostics → Diagnostic Store
+├── current CopilotKit / AG-UI integration
+├── server-side Presentation Model credentials
+└── Embedded Presentation Pipeline
+        ▼
+Workbench
 ```
 
-Business Agent 公开的消息、活动、进度、状态、Tool Call / Tool Result 和 Interrupt 等过程事件通过 Runtime Event Projection 进入 Workbench 和 Diagnostics。
-只有最终 AgentContent 进入 Presentation Pipeline。
+这条链路属于 Supporting Integration。
 
-## 协议与 Transport
+Business Agent 不需要实现 AG-UI。
+CopilotKit / AG-UI 不属于 Generative UI Core 的强制协议。
+
+如果未来替换 CopilotKit，只需要替换对应 Integration Adapter 和接入层。
+Presentation Pipeline、UI Compiler Core、Component Catalog 和 Theme Contract 不应因此改变。
+
+## Core / Supporting / Deferred
 
 ```text
-Workbench ↔ Runtime Host
-Application protocol: AG-UI
-Current transport: HTTP POST + SSE
-Future option: AG-UI over WebSocket
+Core
+├── Presentation Contract
+├── Presentation Router
+├── Presentation Model Adapter
+├── UI Plan Candidate
+├── UI Compiler Core
+├── Component Catalog
+├── Theme / Presentation Context
+├── Controlled Renderer contracts
+└── Reliability Evaluation
 
-Runtime Host ↔ Business Agent
-Private Business Agent Adapter protocol
-Transport: HTTP + SSE / WebSocket / in-process / ...
+Supporting
+├── Generative UI Workbench
+├── Agent Runtime Host
+├── CopilotKit / AG-UI
+├── Business Agent Adapter
+├── Reference Business Agent
+└── Development / E2E tooling
 
-Non-Agent query
-REST
+Deferred Runtime Platform
+├── Runtime Thread / Turn / Operation
+├── Runtime Repository
+├── Surface Lifecycle
+├── Command Admission
+├── Runtime-owned Conversation History
+├── Recovery / Reconcile
+└── Runtime Truth Diagnostics
 ```
 
-HTTP、SSE 和 WebSocket 不与 AG-UI 作为并列 Agent 业务协议。
-更换 Transport 不得复制 Runtime Kernel、Runtime Repository、Command Admission 或 Surface 状态机。
-
-迁移期仍存在的 `/api/runs`、`/api/actions`、`/ws/runs` 等端点只作为 compatibility / debug adapter，不是 Workbench 的规范 Agent 应用协议。
-
-## 事实所有权
+## 信任边界
 
 ```text
-Business Agent                  Agent Runtime Host
-──────────────                  ──────────────────
-Business State                  Runtime Thread
-Checkpoint                      Turn
-Backend Tool State              Operation
-Business Side Effects           Command Admission
-                                Surface Lifecycle
-                                Presentation Snapshot
-
-                 ↓ projection only ↓
-
-               AG-UI / A2UI / Diagnostics
+Business Agent
+owns Business Truth
+        ↓
+Final AgentContent
+        ↓
+Presentation Model
+produces untrusted candidate
+        ↓
+UI Compiler Core
+owns trusted A2UI compilation boundary
+        ↓
+Controlled Renderer
+renders only registered capabilities
 ```
 
-Business Agent 与 Runtime Host 通过 `threadId`、`operationId`、可选 `agentRunId` 等关联标识协作，但不合并各自的权威状态。
+Business Agent 不输出 UI Plan 或 A2UI。
+Presentation Model 不修改 Business Truth。
+Renderer 不执行模型生成的任意代码。
 
-## 职责边界
-
-- Workbench 只连接 Agent Runtime Host；
-- Workbench Agent 交互只使用 AG-UI；
-- CopilotKit 是嵌入 Runtime Host 的 Adapter / Infrastructure，不拥有 Runtime Truth；
-- Runtime Kernel 是 Runtime Host 内逻辑层，不是独立服务；
-- Runtime Repository 是 Thread、Turn、Operation、Command 和 Surface 的权威状态源；
-- Business Agent 拥有业务状态、Checkpoint、后端工具和业务副作用语义；
-- Business Agent 可以公开过程事件，并以 Markdown 或结构化业务数据作为最终 AgentContent；
-- Business Agent 不输出 UI Plan Candidate 或 A2UI；
-- Business Agent 不要求实现 AG-UI，私有接入协议由 Adapter 隔离；
-- Model Adapter 位于 Presentation Pipeline，输出不可信候选结果；
-- UI Compiler Core 是唯一可信 A2UI 生产者；
-- Diagnostic Store 是观察投影，可以不完整，不能覆盖 Runtime Repository 真相。
-
-## Action / Command 回传
+## Theme / Presentation Context
 
 ```text
-Frontend Runtime
-→ Command(commandId, surfaceId, actionId, expectedRevision, input)
-→ Agent Runtime Host
-→ Runtime Kernel
-   ├── idempotency check
-   ├── validate current + actionable Surface
-   ├── CAS actionable → claimed
-   ├── transaction: create Operation + save Command + consumed
-   └── commit
-→ Business Agent Adapter
-→ Business Agent Resume / Execute
-→ Operation Outcome
-   ├── completed
-   ├── failed
-   ├── cancelled
-   └── indeterminate
-→ Presentation Pipeline
-→ New trusted Presentation / Surface
+AgentContent
++ Component Catalog
++ Theme / Presentation Context
++ Viewport Context
+        ↓
+Presentation Model
+        ↓
+UI Plan Candidate
+        ↓
+UI Compiler Core
 ```
 
-已经 `consumed` 的旧 Surface 不因为下游失败自动恢复为 `actionable`。
-如果业务结果无法确定，Runtime Host 使用 `indeterminate` 并通过 Reconcile 或新的受控交互关闭不确定状态。
+Theme 可以改变视觉表达。
+Theme 不得改变业务事实、获得额外 Action Authority 或绕过 Compiler Policy。
 
-## 恢复
+## Deferred Agent Runtime Integration
+
+已有 Runtime-first 设计继续由 ADR-0024、ADR-0025 和 ADR-0026 约束。
+
+当平台未来真正拥有用户 Action 的执行权威时，可以重新激活：
 
 ```text
-Workbench reconnect / Runtime Host restart
-→ Runtime Repository Snapshot
-→ rebuild Thread / Turn / Operation / Surface truth
-→ optional Diagnostic Event replay for timeline
+Thread
+Turn
+Operation
+Surface
+Command Admission
+Runtime Repository
+Recovery
+Reconcile
+Diagnostics
 ```
 
-Diagnostic Event 缺失只影响诊断完整性，不改变 Runtime Truth。
+这些能力解决 Stateful Interaction Runtime 问题。
+它们当前不属于 Presentation-first MVP Release Gate。
 
-## 当前范围
+本次 Scope Reset 不要求删除现有实现。
+已有 Runtime 路径继续存在期间，不得放宽其幂等、Surface、历史 Action Authority 和 Command Admission 安全规则。
 
-当前阶段使用单一 Reference Business Agent 验证完整链路。
-Interaction Gateway、多 Agent 自动路由、多 Agent 协作、分布式 Exactly Once 和 Runtime Kernel 独立服务仍属于未来范围。
+## 当前范围判断
+
+一个新功能只有在直接提升以下至少一项时才属于当前主线：
+
+- AgentContent → Presentation 语义正确性；
+- 生成 UI 视觉质量；
+- Theme 一致性；
+- UI Plan → trusted A2UI 安全与可靠性；
+- Workbench 调试、比较或评测效率；
+- Core 必需的最小 Integration。
+
+其他通用 Agent Runtime 能力默认 Deferred。
