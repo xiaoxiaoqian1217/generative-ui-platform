@@ -18,7 +18,7 @@
 
 ---
 
-# 0. 文档边界与权威来源
+## 0. 文档边界与权威来源
 
 ## 0.1 本文负责什么
 
@@ -47,7 +47,7 @@
 
 ---
 
-# 1. 产品背景、目的与范围
+## 1. 产品背景、目的与范围
 
 ## 1.1 产品背景：为什么需要 Workbench
 
@@ -224,7 +224,7 @@ MVP Release Gate 只看以下五类产品能力是否成立。
 
 ---
 
-# 2. 产品体验与信息架构
+## 2. 产品体验与信息架构
 
 ## 2.1 Conversation-first
 
@@ -366,9 +366,9 @@ Cases 不属于当前 MVP 信息架构。
 
 ---
 
-# 3. Workbench 核心能力与外部契约
+## 3. Workbench 核心能力与外部契约
 
-## 3.1 C1 — Conversation
+## 3.1 C1 - Conversation
 
 Workbench MUST 支持：
 
@@ -389,7 +389,7 @@ Workbench SHOULD 支持：
 
 打开历史 Conversation 本身 MUST NOT 创建新的执行、重复原业务副作用或把历史内容静默变成当前交互状态。
 
-## 3.2 C2 — Agent Interaction
+## 3.2 C2 - Agent Interaction
 
 Workbench 的 Agent 交互 MUST 使用 Runtime Host 提供的 AG-UI 入口。
 
@@ -413,7 +413,7 @@ Workbench MUST NOT：
 
 HTTP、SSE、WebSocket 只是 Transport，不构成并列业务协议。
 
-## 3.3 C3 — Presentation
+## 3.3 C3 - Presentation
 
 ### Markdown
 
@@ -438,7 +438,7 @@ Workbench 只消费平台返回的 Presentation，不生成 UI Plan，也不编�
 
 具体 Presentation Pipeline 与 UI Compiler Core 语义见平台架构和 Compiler 文档。
 
-## 3.4 C4 — User Interaction
+## 3.4 C4 - User Interaction
 
 Workbench 负责表达用户意图，不拥有 Command Admission 权威。
 
@@ -486,7 +486,7 @@ Workbench MUST NOT：
 
 Command Admission、幂等、Surface revision 与 Operation 的完整语义以 ADR-0024 和平台 Runtime Contract 为准。
 
-## 3.5 C5 — Inspect & Artifact
+## 3.5 C5 - Inspect & Artifact
 
 Inspect 的目标是：
 
@@ -576,7 +576,7 @@ Workbench MUST：
 
 ---
 
-# 4. Cross-cutting Constraints
+## 4. Cross-cutting Constraints
 
 ## 4.1 Authority Consistency
 
@@ -650,11 +650,11 @@ MVP 优先验证：
 
 ---
 
-# 5. MVP Acceptance
+## 5. MVP Acceptance
 
 MVP 验收采用少量黑盒场景验证产品结果，不在本文验证 Runtime Kernel 的具体内部算法。
 
-## A1 — Conversation & Presentation
+## A1 - Conversation & Presentation
 
 **Given** Workbench 已连接 Runtime Host。  
 **When** 用户连续发送多轮消息，并分别得到 Markdown 与 Generative UI 结果。  
@@ -668,7 +668,7 @@ MVP 验收采用少量黑盒场景验证产品结果，不在本文验证 Runtim
 - 页面刷新后 Conversation 可重新打开；
 - 仅打开历史 Conversation 不会产生新的执行或业务副作用。
 
-## A2 — Interactive Surface Safety
+## A2 - Interactive Surface Safety
 
 **Given** 当前存在一个可执行 Surface。  
 **When** 分别发生正常提交、重复提交、stale revision，以及对 Historical Surface 尝试执行旧业务 Action。  
@@ -681,7 +681,7 @@ MVP 验收采用少量黑盒场景验证产品结果，不在本文验证 Runtim
 - Historical Surface 的旧 Runtime / Business Action 不得直接重放；
 - 若需要再次执行，必须进入新的、经 Runtime Host 重新校验的当前交互上下文。
 
-## A3 — Confirmation & Side-effect Boundary
+## A3 - Confirmation & Side-effect Boundary
 
 **Given** Surface 中存在一个高风险业务操作。  
 **When** 用户进入确认步骤。  
@@ -698,7 +698,7 @@ MVP 验收采用少量黑盒场景验证产品结果，不在本文验证 Runtim
 - 同一确认意图不会因双击或重试产生重复业务副作用；
 - 下游失败不会使旧 Surface 自动恢复为可再次执行状态。
 
-## A4 — Restart Recovery
+## A4 - Restart Recovery
 
 **Given** 已存在多 Turn Conversation、Presentation 与交互状态。  
 **When** Runtime Host 完全停止后重新启动。  
@@ -709,7 +709,7 @@ MVP 验收采用少量黑盒场景验证产品结果，不在本文验证 Runtim
 - 不重新执行历史业务请求；
 - 即使部分诊断历史不可用，也只显示诊断不完整，不改变当前交互状态。
 
-## A5 — Indeterminate & Reconcile
+## A5 - Indeterminate & Reconcile
 
 **Given** 某次操作可能已经触发业务副作用。  
 **When** 因连接或协议中断无法确认最终结果。  
@@ -721,7 +721,7 @@ MVP 验收采用少量黑盒场景验证产品结果，不在本文验证 Runtim
 - 用户可以进入平台定义的 Reconcile / 恢复流程；
 - Reconcile 完成后展示确定结果。
 
-## A6 — Inspect, Failure Isolation & Security
+## A6 - Inspect, Failure Isolation & Security
 
 **Given** 一个 Turn 同时存在诊断缺口、大型 Artifact、Artifact 保存失败和不安全内容。  
 **When** 用户进入 Inspect。  
@@ -739,7 +739,7 @@ MVP 验收采用少量黑盒场景验证产品结果，不在本文验证 Runtim
 
 ---
 
-# Appendix A — Reference Scenario（非规范性）
+## Appendix A - Reference Scenario（非规范性）
 
 智慧安防与空地多智能体巡防是首个 Reference Scenario，用于证明 Workbench 的通用能力，而不是定义 Workbench 产品边界。
 
@@ -762,7 +762,7 @@ Workbench Core、Runtime Kernel 和 UI Compiler Core 不应包含智慧安防专
 
 ---
 
-# MVP 完成条件
+## MVP 完成条件
 
 仅当以下条件全部满足时，才能认为 Workbench MVP 达到本规格：
 
