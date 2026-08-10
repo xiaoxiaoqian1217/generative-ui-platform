@@ -42,7 +42,6 @@ ADR-0026 已确认 Workbench / Runtime Host 的 Agent 协议分层：AG-UI 是�
 ## 当前阶段 Goal
 
 - [GOAL-DEV-ENV-001](./goals/GOAL-DEV-ENV-001.md)（已完成，历史交付基线）
-- [GOAL-WEB-WORKBENCH-001](./goals/GOAL-WEB-WORKBENCH-001.md)
 - [GOAL-WEB-COPILOTKIT-UI-001](./goals/GOAL-WEB-COPILOTKIT-UI-001.md)
 - [GOAL-DEBUG-CONVERSATIONS-001](./goals/GOAL-DEBUG-CONVERSATIONS-001.md)
 - [GOAL-DEV-ENV-001 子任务包](./goals/GOAL-DEV-ENV-001/README.md)
