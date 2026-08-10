@@ -64,6 +64,12 @@ git push -u origin codex/issue-N:refs/heads/codex/issue-N
 ### Platform boundaries
 
 - Web MUST connect only to Agent Runtime Host.
+- Workbench Agent interaction MUST use AG-UI as the single application protocol exposed by Runtime Host.
+- HTTP, SSE, and WebSocket MUST be treated as Transport mechanisms, not as Agent business protocols parallel to AG-UI.
+- The current Workbench reference Transport is AG-UI over HTTP POST + SSE through the embedded CopilotKit Runtime.
+- New Workbench Agent features MUST NOT introduce a separate custom HTTP Run protocol or WebSocket Run protocol alongside AG-UI.
+- Existing `/api/runs`, `/api/actions`, or `/ws/runs` paths MAY remain during migration only as compatibility / debug adapters and MUST converge on the same Runtime Domain semantics.
+- Business Agent private HTTP + SSE / WebSocket protocols belong behind Business Agent Adapter and MUST NOT be exposed to Workbench.
 - Business Agent MUST own business reasoning, business state, checkpoints, backend tools, and business side-effect semantics.
 - Business Agent MUST output only Markdown or structured business data as final AgentContent.
 - Business Agent MUST NOT output UI Plan Candidate, A2UI, HTML, Vue, React, or component selections.
@@ -115,6 +121,7 @@ git push -u origin codex/issue-N:refs/heads/codex/issue-N
 ### Framework positioning
 
 - CopilotKit Runtime is an embedded Adapter / Infrastructure dependency.
+- CopilotKit provides the current AG-UI entry point but MUST NOT define Runtime Domain semantics.
 - CopilotKit MUST NOT own Runtime Thread, Operation, Surface, Command idempotency, or Presentation decisions.
 - Replacing CopilotKit MUST NOT require changing Runtime Domain semantics.
 - Runtime Kernel is a logical layer inside Agent Runtime Host and MUST NOT automatically become a new service or package.
