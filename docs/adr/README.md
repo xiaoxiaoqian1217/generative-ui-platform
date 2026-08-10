@@ -3,7 +3,9 @@
 该目录保存 Generative UI Platform 的架构决策记录。
 
 ADR 记录已经接受、被取代或明确拒绝的重要架构决策，以及决策背景、约束和后果。
-需求文档描述系统必须实现什么；架构文档描述系统如何组织；ADR 解释为什么选择某个长期方案。
+需求文档描述系统必须实现什么。
+架构文档描述系统如何组织。
+ADR 解释为什么选择某个长期方案。
 
 ## 适用范围
 
@@ -11,35 +13,84 @@ ADR 可以属于以下范围：
 
 - 仓库级平台范围；
 - Generative UI Compiler 子系统；
-- Agent Runtime Host；
-- Frontend Runtime 和 A2UI Renderer；
+- Presentation Pipeline；
+- Generative UI Workbench；
+- Agent Runtime Host 与 Framework Integration；
 - 跨子系统契约、安全、可靠性和可观测性。
 
 Compiler MVP 形成时期的 ADR 继续约束 Compiler 子系统。
 平台级 ADR 不得无意放宽 Compiler 已接受的输入信任、Catalog、Model Adapter、UI Plan Candidate 和 A2UI 编译边界。
 
-## 当前平台后端决策
+## 当前产品主线
 
-当前目标架构不再把 UI Compiler 作为独立部署服务。
-Agent Runtime Host 是完整 Agent Runtime Integration 的平台后端入口和应用组合根。
-原 UI Compiler Service 的展示应用能力迁移为独立 `presentation-pipeline` Package，并嵌入 Agent Runtime Host 运行。
-UI Compiler Core、Presentation Router、Model Adapter、Catalog 和公共契约继续保持独立 Package 边界。
+ADR-0027 将当前阶段重新收敛为 **Presentation-first Generative UI**。
 
-Agent Runtime Host 同时是完整 Runtime 接入时的交互事实权威。
-Runtime Thread、Turn、Operation、Command Admission、Surface Lifecycle 和可信 Presentation Snapshot 由 Runtime Host 管理。
-Business Agent 继续拥有业务 State、Checkpoint 和业务副作用语义。
-Diagnostic Event 和 Artifact 是诊断投影，不是 Runtime 当前状态恢复的唯一权威来源。
+当前 North Star 是：
 
-Workbench 与 Runtime Host 之间以 AG-UI 作为唯一 Agent 应用协议。
-当前参考 Transport 为 CopilotKit Runtime 的 HTTP POST + SSE 路径。
-HTTP、SSE 和 WebSocket 只属于 Transport；Runtime Host 与 Business Agent 的 HTTP + SSE / WebSocket 则属于 Business Agent Adapter 私有接入边界。
+> 将 Business Agent 或已有 Agent Runtime 产生的 Markdown / structured AgentContent，转换为美观、可靠、主题一致且受控的 Presentation。
 
-平台对外采用两种主要接入模式：
+当前 Active Product Track 是 ADR-0025 定义的 **Presentation Integration**。
 
-- **Presentation Integration**：已有 Agent Runtime 的系统只使用 Markdown / Generative UI Presentation 能力；平台保证展示安全，Action Admission、幂等和恢复由调用方 Runtime 负责；
-- **Agent Runtime Integration**：已有 Business Agent 接入 Runtime Host，由平台同时提供 Presentation Safety 和 ADR-0024 定义的 Interaction Safety。
+核心链路为：
 
-UI Compiler Core、Presentation Pipeline、PlatformRunService 和 Runtime Kernel 是内部能力层次，不再作为 Level 1–4 四种产品接入等级。
+```text
+AgentContent
+    ↓
+Presentation Router
+    ├── Markdown → safe Markdown PresentationResult
+    └── Structured Business Data
+              ↓
+      Presentation Model
+              ↓
+      untrusted UI Plan Candidate
+              ↓
+      UI Compiler Core
+              ↓
+      trusted A2UI PresentationResult
+```
+
+UI Compiler Core、Presentation Pipeline、Component Catalog、Theme / Presentation Context、受控 Renderer 和 Generative UI reliability evaluation 属于当前 Core。
+
+Generative UI Workbench 当前定位为 **Generative UI Lab / 可视化开发调试工作台**。
+CopilotKit、AG-UI、Reference Business Agent、Business Agent Adapter 和 Agent Runtime Host 属于 Supporting Integration。
+
+## Deferred Runtime Platform
+
+ADR-0024 和 ADR-0025 定义的 Agent Runtime Integration 设计继续保留。
+
+以下能力当前统一视为 Deferred：
+
+- Runtime Thread / Turn / Operation；
+- Runtime Repository；
+- Surface Lifecycle；
+- Command Admission；
+- Runtime-owned Conversation History；
+- Recovery / Reconcile；
+- Runtime Truth Diagnostics；
+- 完整 Agent Runtime Platform。
+
+这些设计不是错误，也不要求立即删除。
+已有 Runtime 路径继续存在期间仍必须遵守 ADR-0024 的安全规则。
+但它们不再是当前 Presentation-first MVP 的 Release Gate，也不得在没有新的明确范围确认时继续扩展。
+
+## Framework 与协议定位
+
+Generative UI Core 必须保持 Agent Framework 中立。
+
+当前参考 Agent Runtime Integration 仍可使用：
+
+```text
+Workbench ↔ Runtime Host
+Application protocol: AG-UI
+Current transport: HTTP POST + SSE
+```
+
+ADR-0026 继续约束这条参考路径。
+但 AG-UI 和 CopilotKit 不成为 Presentation Core 的强制外部协议或产品边界。
+
+Presentation Pipeline 当前可以按照 ADR-0019 继续作为 Package 嵌入 Agent Runtime Host。
+这一部署方式是当前参考组合方式，不意味着 Runtime Host 是 Generative UI Core 的长期唯一宿主。
+Presentation Integration 的稳定公共 API 形态仍需要后续独立决策。
 
 ## 关键决策入口
 
@@ -52,17 +103,18 @@ UI Compiler Core、Presentation Pipeline、PlatformRunService 和 Runtime Kernel
 | [ADR-0012](./0012-typebox-and-ajv-schema-validation.md) | 已接受 | 公共契约 | TypeBox 和 Ajv Schema 校验 |
 | [ADR-0014](./0014-markdown-sanitizer.md) | 已接受 | Presentation Pipeline | Markdown 清理边界继续有效，运行宿主由 ADR-0019 调整 |
 | [ADR-0015](./0015-presentation-router-and-model-adapter.md) | 已接受 | Presentation Pipeline | Presentation Router 和 Model Adapter 边界继续有效 |
-| [ADR-0016](./0016-fastify-http-lifecycle.md) | 部分被 ADR-0019 取代 | HTTP 生命周期 | 独立 Compiler HTTP 所有权被取消；取消、超时和关闭语义迁移到 Runtime Host |
+| [ADR-0016](./0016-fastify-http-lifecycle.md) | 部分被 ADR-0019 取代 | HTTP 生命周期 | 独立 Compiler HTTP 所有权被取消；取消、超时和关闭语义迁移到参考 Runtime Host |
 | [ADR-0017](./0017-http-observability-and-sensitive-data.md) | 部分被 ADR-0019 取代 | 可观测性 | 独立 Compiler HTTP 终局被取消；安全字段和敏感数据策略继续有效 |
-| [ADR-0018](./0018-expand-repository-scope-to-platform-validation-environment.md) | 部分被 ADR-0019 取代 | 仓库级平台 | 仓库范围扩展为平台全链路验证环境；独立 Compiler 部署结论被调整 |
-| [ADR-0019](./0019-embed-presentation-pipeline-in-agent-runtime-host.md) | 已接受 | 平台后端与 Compiler | 取消独立 UI Compiler Service 应用，将 Presentation Pipeline 嵌入 Runtime Host |
-| [ADR-0020](./0020-workbench-runtime-read-contract-and-copilotkit-headless.md) | 部分被 ADR-0026 取代 | Workbench 与 Runtime Host | CopilotKit Headless 与只读 Runtime Contract 继续有效；并列 HTTP/WebSocket Run 入口语义由 ADR-0026 取代 |
+| [ADR-0018](./0018-expand-repository-scope-to-platform-validation-environment.md) | 部分被 ADR-0019、ADR-0027 取代 | 仓库级平台 | 全链路 Runtime-first 当前阶段范围被 ADR-0027 收敛为 Presentation-first |
+| [ADR-0019](./0019-embed-presentation-pipeline-in-agent-runtime-host.md) | 已接受 | 参考平台后端与 Compiler | Presentation Pipeline 当前作为 Package 嵌入 Runtime Host；不定义 Core 必须绑定 Runtime Host |
+| [ADR-0020](./0020-workbench-runtime-read-contract-and-copilotkit-headless.md) | 部分被 ADR-0026 取代 | Workbench 与 Runtime Host | 现有 Runtime Integration 兼容规则；并列 HTTP/WebSocket Run 入口语义由 ADR-0026 取代 |
 | [ADR-0021](./0021-retire-runnable-fixture-provider-mode.md) | 已接受 | 模型联调与测试 | 日常联调使用真实模型，测试使用进程内 Stub，退役可运行 Fixture Provider |
-| [ADR-0022](./0022-support-http-sse-and-websocket-business-agent-adapters.md) | 已接受 | Runtime Host 与 Business Agent | 当前支持 HTTP + SSE 与 WebSocket Business Agent Adapter；不定义 Workbench Agent 协议 |
-| [ADR-0023](./0023-adopt-controlled-copilotkit-conversation-ui-and-platform-thread-history.md) | 部分被 ADR-0024 取代 | Workbench、Runtime Host 与 Business Agent | 受控 CopilotKit 会话 UI 和历史所有权继续有效；Run-centric 交互事实语义由 ADR-0024 取代 |
-| [ADR-0024](./0024-adopt-runtime-truth-model-and-safe-command-admission.md) | 已接受 | Runtime Host、Workbench、Runtime Contract | Thread/Turn/Operation/Surface/Command 事实模型、安全 Command Admission、Runtime Repository 与 Diagnostics 解耦 |
-| [ADR-0025](./0025-adopt-two-external-integration-modes-and-layered-platform-capabilities.md) | 已接受 | 平台接入、Presentation、Runtime Host | 对外采用 Presentation Integration 与 Agent Runtime Integration；内部能力继续分层，并区分 Presentation Safety 与 Interaction Safety |
-| [ADR-0026](./0026-adopt-ag-ui-as-workbench-runtime-application-protocol.md) | 已接受 | Workbench、Runtime Host、协议边界 | AG-UI 是唯一 Workbench Agent 应用协议；HTTP/SSE/WebSocket 仅为 Transport，Business Agent 私有协议由 Adapter 隔离 |
+| [ADR-0022](./0022-support-http-sse-and-websocket-business-agent-adapters.md) | 已接受 | Runtime Host 与 Business Agent | Supporting Business Agent Adapter Transport；不定义 Presentation Core 协议 |
+| [ADR-0023](./0023-adopt-controlled-copilotkit-conversation-ui-and-platform-thread-history.md) | 部分被 ADR-0024 取代 | Deferred Runtime Integration | Conversation UI 可作为参考集成保留，但不再是当前 MVP Release Gate |
+| [ADR-0024](./0024-adopt-runtime-truth-model-and-safe-command-admission.md) | 已接受，当前阶段 Deferred | Agent Runtime Integration | Runtime Truth 与安全 Command Admission；继续约束已有路径，不驱动当前 Presentation MVP |
+| [ADR-0025](./0025-adopt-two-external-integration-modes-and-layered-platform-capabilities.md) | 已接受，由 ADR-0027 细化当前优先级 | 平台接入 | Presentation Integration 当前 Active；Agent Runtime Integration 当前 Deferred |
+| [ADR-0026](./0026-adopt-ag-ui-as-workbench-runtime-application-protocol.md) | 已接受 | Supporting Runtime Integration | AG-UI 约束当前 Workbench ↔ Runtime Host 参考路径，不约束 Presentation Core |
+| [ADR-0027](./0027-refocus-current-phase-on-presentation-first-generative-ui.md) | 已接受 | 当前仓库阶段范围 | 回归 Presentation-first 主线，Workbench 定位为 Generative UI Lab，冻结 Runtime Platform 扩张 |
 
 以上表格突出当前跨模块和平台范围决策。
 完整 ADR 集合以本目录中的全部编号文件为准。
@@ -73,7 +125,7 @@ UI Compiler Core、Presentation Pipeline、PlatformRunService 和 Runtime Kernel
 - ADR 编号在仓库中必须唯一，已经使用的编号不得复用。
 - 创建 ADR 前必须扫描本目录中的全部编号文件，使用当前最大编号加一。
 - 被拒绝、废弃或被取代的 ADR 仍然保留原文件和编号。
-- 当前最新编号为 `0026`。
+- 当前最新编号为 `0027`。
 
 ## 状态规则
 
@@ -85,6 +137,8 @@ UI Compiler Core、Presentation Pipeline、PlatformRunService 和 Runtime Kernel
 - `已废弃`：不再适用于当前系统；
 - `部分被 ADR-NNNN 取代`；
 - `已被 ADR-NNNN 取代`。
+
+当一个仍然有效的 ADR 只是不再属于当前阶段 Active Scope 时，可以保留“已接受”，并通过后续 ADR 和索引明确标记为 Deferred。
 
 新 ADR 改变旧决策时，必须同时：
 
@@ -125,10 +179,12 @@ UI Compiler Core、Presentation Pipeline、PlatformRunService 和 Runtime Kernel
 
 以下决策应在对应实现开始前分别评审：
 
-- Presentation Integration 的公共 API 形态，以及是否保持 Package / 应用内调用还是未来引入独立部署；
+- Presentation Integration 的稳定公共 API 形态；
+- Theme / Presentation Context 的公共契约；
+- Generative UI reliability evaluation 的指标与测试模型；
 - Business Agent Adapter SPI 的最小能力与版本策略；
-- Runtime Kernel 是否需要提取为独立 workspace package；
 - A2UI 版本 Encoder 和 v1 迁移策略；
 - Frontend Runtime、Component Registry 和 A2UI Renderer 更细粒度的信任边界；
 - Markdown 自动增强为 Generative UI；
+- 恢复 Agent Runtime Integration 的明确业务触发条件；
 - Interaction Gateway、多 Agent 路由与多实例部署。
