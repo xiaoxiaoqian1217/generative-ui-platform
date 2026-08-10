@@ -101,7 +101,10 @@ git push -u origin codex/issue-N:refs/heads/codex/issue-N
 - Surface lifecycle belongs to Runtime Host, not A2UI, CopilotKit, or the browser.
 - Surface interaction states MUST distinguish at least `actionable`, `claimed`, `consumed`, and `disabled`.
 - Presentation role MUST distinguish `current` and `historical` independently from interaction state.
-- Historical Surface MUST be read-only.
+- Historical Presentation MAY keep local-only UI interactions that do not mutate Runtime Truth or Business Truth, such as expand/collapse, copy, view details, inspect raw A2UI or Artifacts, and open Inspect.
+- Only a Surface projected by Runtime Host as `current + actionable` MAY submit a Runtime / Business Action.
+- Historical Action Authority MUST NOT be replayed by reusing historical authorization, revision, `runId`, or other stale execution context.
+- Re-executing an action derived from historical content MUST enter a new Runtime Host-validated current interaction context and use a new Command / current Surface or equivalent new authoritative context.
 - A consumed Surface MUST NOT be silently reactivated after downstream failure.
 - Browser Action requests MUST NOT treat `runId` as authoritative execution context.
 - Runtime Host MUST resolve execution context from `surfaceId` and persisted Runtime state.
