@@ -1,5 +1,20 @@
 # GOAL-WEB-COPILOTKIT-UI-001：CopilotKit 会话 UI 与会话内 A2UI
 
+## 0. 后续架构取代说明
+
+本 Goal 记录受控 CopilotKit 会话 UI 建设阶段的目标和交付背景。
+其中“受控 CopilotKit 会话 UI、会话内 Markdown/A2UI、Workbench 只连接 Runtime Host”的核心方向继续有效。
+
+以下旧 Runtime 语义已被后续 ADR 取代：
+
+- “Headless Client 是与 HTTP / WebSocket 并列的 Run 传输入口”已被 ADR-0026 取代；当前 Workbench 只使用 AG-UI 作为 Agent 应用协议，当前参考 Transport 为 HTTP POST + SSE；
+- Turn 直接绑定唯一 `runId`、单活动 Run / Action、Action Resume 作为权威交互模型的语义已被 ADR-0024 的 Thread / Turn / Operation / Surface / Command Admission 取代；
+- Workbench 只拥有前端临时 UI 状态，Runtime Thread、Turn、Operation、Surface 和 Command 的权威状态属于 Runtime Host；
+- Historical Presentation 可以继续保留本地查看交互，但历史 Action Authority 不得直接重放，具体语义以当前 Workbench SRS 和 ADR-0024 为准。
+
+后续实现以 `docs/WEB_WORKBENCH_SRS.md`、ADR-0024、ADR-0026 和平台 Architecture / Requirements 为准。
+以下正文保留为阶段性 Goal 历史。
+
 ## 1. 目标
 
 将 Web Workbench 的自定义主会话交互迁移到受控的 CopilotKit Vue 会话 UI。
@@ -90,3 +105,9 @@ TASK-001 CopilotKit Vue 受控会话基础
 - Runtime Host 和 Business Agent 不因会话 UI 产生新的展示职责。
 - 现有 Inspect、Cases、Catalog、Scenarios 和 Settings 能力不回归。
 - 自动化和文档验证全部通过。
+
+## 10. 当前解释入口
+
+- Workbench 产品合同：[`../WEB_WORKBENCH_SRS.md`](../WEB_WORKBENCH_SRS.md)
+- Runtime Truth：[`../adr/0024-adopt-runtime-truth-model-and-safe-command-admission.md`](../adr/0024-adopt-runtime-truth-model-and-safe-command-admission.md)
+- Workbench Agent 协议：[`../adr/0026-adopt-ag-ui-as-workbench-runtime-application-protocol.md`](../adr/0026-adopt-ag-ui-as-workbench-runtime-application-protocol.md)

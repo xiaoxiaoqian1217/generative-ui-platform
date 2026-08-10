@@ -1,5 +1,20 @@
 # GOAL-DEV-ENV-001：生成式 UI 平台全链路开发验证环境建设
 
+## 0. 后续架构取代说明
+
+本 Goal 已完成，正文继续保留其形成时的交付目标、实现背景和验收事实。
+后续实现不得把正文中的旧协议与 Run-centric 表述继续当作当前架构规范。
+
+以下语义已被后续 ADR 明确取代：
+
+- “Workbench 使用 HTTP 和 WebSocket 两套并列 Agent 运行入口”已被 ADR-0026 取代；当前以 AG-UI 作为唯一 Workbench Agent 应用协议，HTTP POST + SSE 是当前参考 Transport；
+- “Runtime Host 主要拥有 Run / Action Resume 生命周期”已被 ADR-0024 细化为 Thread、Turn、Operation、Command Admission、Surface Lifecycle 和 Runtime Repository；
+- 浏览器 `runId` 不再是 Action 权威执行上下文；新交互应收敛到 Command Admission；
+- Runtime Host 与 Business Agent 的 HTTP + SSE / WebSocket 仍可保留，但它们属于 Business Agent Adapter 私有 Transport，不是 Workbench Agent 协议。
+
+后续实现与文档以 ADR-0024、ADR-0026、`docs/platform/REQUIREMENTS.md` 和 `docs/platform/ARCHITECTURE.md` 为准。
+本 Goal 以下正文只作为历史交付记录保留。
+
 ## 1. 文档用途
 
 本文件是 GOAL-DEV-ENV-001 的唯一总目标说明。
@@ -202,6 +217,8 @@ TASK-001 起持续建设 TASK-011
 - 开发环境：[`../platform/DEVELOPMENT_ENVIRONMENT.md`](../platform/DEVELOPMENT_ENVIRONMENT.md)
 - ADR-0018：[`../adr/0018-expand-repository-scope-to-platform-validation-environment.md`](../adr/0018-expand-repository-scope-to-platform-validation-environment.md)
 - ADR-0019：[`../adr/0019-embed-presentation-pipeline-in-agent-runtime-host.md`](../adr/0019-embed-presentation-pipeline-in-agent-runtime-host.md)
+- ADR-0024：[`../adr/0024-adopt-runtime-truth-model-and-safe-command-admission.md`](../adr/0024-adopt-runtime-truth-model-and-safe-command-admission.md)
+- ADR-0026：[`../adr/0026-adopt-ag-ui-as-workbench-runtime-application-protocol.md`](../adr/0026-adopt-ag-ui-as-workbench-runtime-application-protocol.md)
 - Compiler MVP 需求：[`../REQUIREMENTS.md`](../REQUIREMENTS.md)
 - Compiler MVP 架构：[`../ARCHITECTURE.md`](../ARCHITECTURE.md)
 - Compiler 设计：[`../Generative_UI_Compiler_Design.md`](../Generative_UI_Compiler_Design.md)

@@ -4,6 +4,17 @@
 
 已完成。
 
+## 后续协议取代说明
+
+本文记录旧 Web Demo 退役并迁移到 Workbench 时的历史事实。
+正文中的 `/api/runs`、`/ws/runs`、HTTP / WebSocket 双入口和 Run Contract 表述反映当时的实现基线，不再代表当前 Workbench Agent 协议。
+
+当前规范以 ADR-0026 为准：Workbench 与 Runtime Host 之间只使用 AG-UI 作为 Agent 应用协议，当前参考 Transport 为 HTTP POST + SSE。
+旧 HTTP / WebSocket Run 端点如仍存在，只作为 compatibility / debug adapter。
+Runtime Truth 和 Action 权威语义以 ADR-0024 为准。
+
+本文以下正文保留为历史迁移记录，不据此新增协议或 Runtime Domain 语义。
+
 ## 背景
 
 `apps/web-demo` 是用于验证旧 Mock HTTP 和 WebSocket 文本闭环的单文件静态页面。
@@ -48,3 +59,8 @@ Runtime Host 不再挂载旧 Mock HTTP 和 WebSocket 端点。
 Workbench 只配置 Runtime Host 地址。
 迁移不会引入 UI Compiler URL、Business Agent 私有地址或其他浏览器后端直连。
 真实 A2UI Renderer 和 Action 闭环继续分别由 TASK-007 和 TASK-008 实现。
+
+当前协议和 Runtime 语义请参考：
+
+- [ADR-0024：Runtime Truth Model 与安全 Command Admission](../adr/0024-adopt-runtime-truth-model-and-safe-command-admission.md)
+- [ADR-0026：AG-UI Agent 应用协议边界](../adr/0026-adopt-ag-ui-as-workbench-runtime-application-protocol.md)

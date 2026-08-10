@@ -64,6 +64,12 @@ git push -u origin codex/issue-N:refs/heads/codex/issue-N
 ### Platform boundaries
 
 - Web MUST connect only to Agent Runtime Host.
+- Workbench Agent interaction MUST use AG-UI as the single application protocol exposed by Runtime Host.
+- HTTP, SSE, and WebSocket MUST be treated as Transport mechanisms, not as Agent business protocols parallel to AG-UI.
+- The current Workbench reference Transport is AG-UI over HTTP POST + SSE through the embedded CopilotKit Runtime.
+- New Workbench Agent features MUST NOT introduce a separate custom HTTP Run protocol or WebSocket Run protocol alongside AG-UI.
+- Existing `/api/runs`, `/api/actions`, or `/ws/runs` paths MAY remain during migration only as compatibility / debug adapters and MUST converge on the same Runtime Domain semantics.
+- Business Agent private HTTP + SSE / WebSocket protocols belong behind Business Agent Adapter and MUST NOT be exposed to Workbench.
 - Business Agent MUST own business reasoning, business state, checkpoints, backend tools, and business side-effect semantics.
 - Business Agent MUST output only Markdown or structured business data as final AgentContent.
 - Business Agent MUST NOT output UI Plan Candidate, A2UI, HTML, Vue, React, or component selections.
@@ -95,7 +101,10 @@ git push -u origin codex/issue-N:refs/heads/codex/issue-N
 - Surface lifecycle belongs to Runtime Host, not A2UI, CopilotKit, or the browser.
 - Surface interaction states MUST distinguish at least `actionable`, `claimed`, `consumed`, and `disabled`.
 - Presentation role MUST distinguish `current` and `historical` independently from interaction state.
-- Historical Surface MUST be read-only.
+- Historical Presentation MAY keep local-only UI interactions that do not mutate Runtime Truth or Business Truth, such as expand/collapse, copy, view details, inspect raw A2UI or Artifacts, and open Inspect.
+- Only a Surface projected by Runtime Host as `current + actionable` MAY submit a Runtime / Business Action.
+- Historical Action Authority MUST NOT be replayed by reusing historical authorization, revision, `runId`, or other stale execution context.
+- Re-executing an action derived from historical content MUST enter a new Runtime Host-validated current interaction context and use a new Command / current Surface or equivalent new authoritative context.
 - A consumed Surface MUST NOT be silently reactivated after downstream failure.
 - Browser Action requests MUST NOT treat `runId` as authoritative execution context.
 - Runtime Host MUST resolve execution context from `surfaceId` and persisted Runtime state.
@@ -115,6 +124,7 @@ git push -u origin codex/issue-N:refs/heads/codex/issue-N
 ### Framework positioning
 
 - CopilotKit Runtime is an embedded Adapter / Infrastructure dependency.
+- CopilotKit provides the current AG-UI entry point but MUST NOT define Runtime Domain semantics.
 - CopilotKit MUST NOT own Runtime Thread, Operation, Surface, Command idempotency, or Presentation decisions.
 - Replacing CopilotKit MUST NOT require changing Runtime Domain semantics.
 - Runtime Kernel is a logical layer inside Agent Runtime Host and MUST NOT automatically become a new service or package.
