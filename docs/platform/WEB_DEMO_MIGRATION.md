@@ -21,7 +21,7 @@ Runtime Truth 和 Action 权威语义以 ADR-0024 为准。
 它通过公共 CDN 加载 Vue，并分别配置 Mock HTTP 和 WebSocket 完整端点。
 它不具备 Runtime Contract、PresentationResult、安全 Markdown、诊断、可部署前端工程或长期维护结构。
 
-TASK-006 建立了 `apps/web-workbench`，作为平台长期开发、联调和验收的正式 Web 入口。
+`apps/web-workbench` 是平台长期开发、联调和验收的正式 Web 入口。
 
 ## 决策
 
@@ -51,14 +51,14 @@ Runtime Host 不再挂载旧 Mock HTTP 和 WebSocket 端点。
 - 仓库开发文档和 CI 不再引用旧 Demo 命令；
 - 删除变更通过最新 `origin/main` 的完整验证。
 
-前四项由 GOAL-DEV-ENV-001 的 Runtime、Workbench 和平台 E2E 实现满足。
+前四项由现有 Runtime、Workbench 和平台 E2E 实现满足。
 最后一项在删除变更同步最新 `origin/main` 后通过完整验证闭合。
 
 ## 架构影响
 
 Workbench 只配置 Runtime Host 地址。
 迁移不会引入 UI Compiler URL、Business Agent 私有地址或其他浏览器后端直连。
-真实 A2UI Renderer 和 Action 闭环继续分别由 TASK-007 和 TASK-008 实现。
+真实 A2UI Renderer 和 Action 闭环继续由当前 Workbench 与 Runtime Host 实现。
 
 当前协议和 Runtime 语义请参考：
 

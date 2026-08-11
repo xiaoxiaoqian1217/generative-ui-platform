@@ -137,7 +137,6 @@ ADR-0024 继续约束已有 Agent Runtime Integration 路径安全行为。
 - [平台一键开发环境实现说明](./PLATFORM_DEVELOPMENT.md)
 - [平台开发者体验](./DEVELOPER_EXPERIENCE.md)
 - [Web Demo 迁移决策](./WEB_DEMO_MIGRATION.md)
-- [阶段 Goal 文档](../goals/)
 
 ## Compiler 子系统基线
 

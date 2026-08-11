@@ -47,7 +47,6 @@ ADR-0019 只调整旧 Compiler MVP 文档中独立 `ui-compiler-service` 的部�
 - [平台文档索引](../platform/README.md)
 - [平台级需求](../platform/REQUIREMENTS.md)
 - [平台级架构](../platform/ARCHITECTURE.md)
-- [当前 Goal](../goals/GOAL-DEV-ENV-001.md)
 - [ADR 索引](../adr/README.md)
 
 ## 修改原则

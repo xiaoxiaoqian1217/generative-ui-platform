@@ -66,15 +66,15 @@ Diagnostic Event Replay 只用于补齐时间线体验，事件缺口只能导�
 
 在 `docs/WEB_WORKBENCH_SRS.md` 完成物理文本迁移前，其中与本节冲突的 DR-007、AR-011 及同义条款均视为被 ADR-0024 取代。
 
-### 2.6 GOAL-DEBUG-CONVERSATIONS-001 的旧 Turn / Run 语义
+### 2.6 旧 Turn / Run 语义
 
-旧 Goal 使用 pending Turn、Run 终局以及 `completed | failed | cancelled | history-write-failed` 描述持久会话状态。
+旧实现使用 pending Turn、Run 终局以及 `completed | failed | cancelled | history-write-failed` 描述持久会话状态。
 目标模型改为 Runtime Repository 保存 Thread、Turn、Operation、Surface、Command Admission 和 Presentation Snapshot。
 执行终局由 Operation Outcome 表达，历史写入状态独立表达。
 
 **决议：以 ADR-0024 为准。**
 
-该 Goal 的历史交付事实继续保留，但其中与 ADR-0024 冲突的状态语义仅作为旧实现背景，不再约束后续实现。
+其中与 ADR-0024 冲突的状态语义仅作为旧实现背景，不再约束后续实现。
 
 ## 3. 迁移原则
 

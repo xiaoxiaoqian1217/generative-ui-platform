@@ -10,7 +10,6 @@
 - 平台架构：`docs/platform/ARCHITECTURE.md`。
 - Workbench 产品合同：`docs/WEB_WORKBENCH_SRS.md`。
 - 开发验证环境：`docs/platform/DEVELOPMENT_ENVIRONMENT.md`。
-- 当前 Goal：`docs/goals/` 下已批准 Goal。
 - Compiler 内部需求：`docs/REQUIREMENTS.md`。
 - Compiler 内部架构与设计：`docs/ARCHITECTURE.md`、`docs/Generative_UI_Compiler_Design.md`。
 - 范围摘要：`docs/platform/SCOPE_DECISION.md`。
@@ -25,7 +24,8 @@
 6. Roadmap 和说明性文档。
 
 ADR-0027 改变了当前阶段优先级。
-旧 Goal、SRS、README 或实现中的 Runtime-first Release Gate 如果与 ADR-0027 冲突，只保留为历史或兼容背景。
+已执行的旧 Goal 不再作为仓库内的常驻规范来源。
+SRS、README 或实现中的 Runtime-first Release Gate 如果与 ADR-0027 冲突，只保留为历史或兼容背景。
 
 旧 Compiler MVP 文档必须保留。
 它们继续约束 Compiler 子系统，但不再单独代表整个仓库范围。

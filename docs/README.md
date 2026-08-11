@@ -1,6 +1,6 @@
 # 文档导航
 
-本目录按平台规范、阶段 Goal、子系统基线和架构决策组织。
+本目录按平台规范、子系统基线和架构决策组织。
 
 当前阶段以 ADR-0027 定义的 **Presentation-first Generative UI** 为主线。
 
@@ -107,33 +107,6 @@ Workbench 当前是 **真实 Agent 驱动的 Generative UI Lab**。
 - Rendered UI；
 - Theme / Catalog / Viewport；
 - fallback / Reliability。
-
-## Goal 状态
-
-### Active
-
-当前没有由旧 Runtime-first Goal 自动授权的新增 Runtime Platform 工作。
-新的 Active Goal 必须符合 ADR-0027 Feature Admission Gate。
-
-### Completed / Historical
-
-- [GOAL-DEV-ENV-001](./goals/GOAL-DEV-ENV-001.md)（已完成，历史交付基线）
-- [GOAL-DEV-ENV-001 子任务包](./goals/GOAL-DEV-ENV-001/README.md)
-
-### Deferred / Historical Runtime-first
-
-- [GOAL-WEB-COPILOTKIT-UI-001](./goals/GOAL-WEB-COPILOTKIT-UI-001.md)
-- [GOAL-DEBUG-CONVERSATIONS-001](./goals/GOAL-DEBUG-CONVERSATIONS-001.md)
-
-这些 Goal 继续保留历史决策和实现事实，但不得自动授权：
-
-- long-term Conversation History；
-- Conversation Management；
-- Runtime Recovery；
-- Command Admission 产品化；
-- 完整 Runtime Diagnostics。
-
-如果其中某个子能力仅用于维持真实 Agent Conversation → AgentContent → Presentation 主链路，可以在新的明确 Issue / Goal 中重新收敛范围后实施。
 
 ## Compiler 子系统
 
