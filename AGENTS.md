@@ -63,41 +63,54 @@ Roadmap 不自动授权实现。
 
 当前 North Star：
 
-> 将 Business Agent 或已有 Agent Runtime 产生的 Markdown / structured AgentContent，转换为美观、可靠、主题一致且受控的 Presentation。
+> 将 Business Agent 或已有 Agent Runtime 产生的 Final AgentContent，转换为可靠、主题一致且受控的 Presentation，并通过真实 Agent Conversation 验证这条链路。
 
-当前核心链路：
+当前主链路：
 
 ```text
-AgentContent
+User natural language
+    ↓
+Workbench / Business Frontend
+    ↓
+Business Agent / Existing Agent Runtime
+    ↓
+Final AgentContent
     ↓
 Presentation Router
-    ├── Markdown → safe Markdown PresentationResult
-    └── Structured Business Data
+    ├── deterministic decision
+    └── semantic analysis required
               ↓
-      Presentation Model
+       Presentation Model
               ↓
-      untrusted UI Plan Candidate
+    Presentation Decision
+      ├── markdown
+      └── generative-ui
               ↓
-      UI Compiler Core
+       UI Plan Candidate
               ↓
-      trusted A2UI PresentationResult
+       UI Compiler Core
+              ↓
+       trusted A2UI
 ```
+
+AgentContent 是系统边界和可观察对象，不是当前 Workbench 的主要人工输入。
 
 ## Current feature admission gate
 
 当前阶段新增功能必须至少直接提升以下一项：
 
 1. `AgentContent → Presentation` 的语义正确性；
-2. 生成 UI 的视觉质量；
-3. Theme / Presentation Context 一致性；
-4. untrusted UI Plan → trusted A2UI 的安全性和可靠性；
-5. Generative UI 的可调试、可比较、可评测能力；
-6. Core 必需且最小的 Framework / Runtime Integration。
+2. Theme / Presentation Context 一致性；
+3. untrusted UI Plan → trusted A2UI 的安全性和可靠性；
+4. 真实 Agent 驱动 Generative UI 的可调试、可比较、可验证能力；
+5. Core 必需且最小的 Framework / Runtime Integration。
+
+真实 Agent Conversation 属于第 4 / 5 类，允许继续建设满足主链路所需的最小能力。
 
 如果一个任务主要解决的是：
 
 - 通用 Agent Runtime；
-- Conversation Service；
+- long-term Conversation Service；
 - Runtime-owned History；
 - Workflow Recovery；
 - Runtime Repository；
@@ -105,6 +118,8 @@ Presentation Router
 
 则默认属于 Deferred。
 不得仅因为相关代码已经存在就继续扩张。
+
+当前不建设 Presentation Quality 自动评分体系，除非后续有新的明确范围授权。
 
 ## Core architecture rules
 
@@ -119,8 +134,11 @@ Presentation Router
 ### Presentation Pipeline
 
 - Presentation Pipeline owns final AgentContent → Presentation conversion.
-- Markdown AgentContent SHOULD form safe Markdown PresentationResult without model rewriting by default.
-- Structured AgentContent MAY enter Presentation Model and Generative UI compilation.
+- Markdown and structured business data both MAY enter Presentation Router after sanitize / validation.
+- Presentation Router MUST follow ADR-0015: deterministic decision is allowed; Presentation Model is called only when semantic presentation analysis is required.
+- Presentation Decision MUST remain `markdown | generative-ui`.
+- Only `generative-ui` Decision carries a complete UI Plan Candidate.
+- Content type MUST NOT be treated as presentation mode.
 - Presentation Model belongs to Presentation Pipeline and MUST NOT be used for Business Agent reasoning.
 - Presentation Model MAY understand business content for presentation planning but MUST NOT alter Business Truth.
 - Presentation Model output is always untrusted.
@@ -135,13 +153,15 @@ Presentation Router
 - Invalid model output MUST fail or degrade explicitly.
 - Model-generated executable code MUST NOT be executed.
 
-### Theme / Presentation Context
+### Catalog / Theme / Presentation Context
 
-- Theme is part of the current Presentation product scope.
-- Theme MAY influence controlled design tokens, component variants, density, layout preferences, typography, spacing and viewport adaptation.
-- Theme MUST NOT change Business Truth.
-- Theme MUST NOT bypass Compiler validation or grant new business Action authority.
-- Theme / Presentation Context contracts SHOULD remain independent from concrete Agent Frameworks.
+- Component Catalog is the capability authority: it defines what components, props, nesting and actions are allowed.
+- Theme is visual expression only.
+- Theme MAY influence controlled design tokens, typography, spacing, density, layout preferences and Catalog-authorized component variants.
+- Theme MUST NOT add or remove Catalog capability.
+- Theme MUST NOT grant new business Action authority.
+- Theme MUST NOT change Business Truth or bypass Compiler validation.
+- When both are needed, Presentation Context / Profile SHOULD carry `catalogRef` and `themeRef` separately.
 
 ### Dependency direction
 
@@ -154,23 +174,29 @@ Presentation Router
 
 ## Workbench rules
 
-`apps/web-workbench` is currently a **Generative UI Lab / visual development and validation workbench**.
+`apps/web-workbench` is currently a **real Agent-driven Generative UI Lab / visual development and validation workbench**.
+
+The Workbench primary input is natural language Conversation.
+Final AgentContent is produced by Business Agent / Existing Agent Runtime and MAY be inspected, but manual AgentContent JSON input MUST NOT become the main Workbench product flow.
 
 New Workbench work SHOULD prioritize:
 
-- AgentContent / Reference Scenario input;
+- natural-language Agent Conversation sufficient to produce real AgentContent;
+- public Agent activity display;
+- final Presentation rendering;
+- AgentContent inspection;
 - Presentation Decision inspection;
 - UI Plan Candidate inspection;
 - Validation / Compiler Result inspection;
 - trusted A2UI inspection;
 - controlled Renderer preview;
 - Theme / Catalog / Viewport;
-- Compare;
-- Reliability / fallback scenarios.
+- reliability / fallback scenarios.
 
 Workbench MUST NOT:
 
 - become Business Agent;
+- require developers to manually produce AgentContent as the main workflow;
 - generate a second independent UI Plan;
 - bypass Presentation Pipeline;
 - bypass UI Compiler Core;
@@ -178,7 +204,18 @@ Workbench MUST NOT:
 - execute arbitrary model-generated HTML / JavaScript;
 - hold Presentation Model Provider credentials.
 
-Conversation-first, Runtime-owned History, Thread / Turn / Operation product views, Runtime Recovery, Command Admission, Reconcile and full Runtime Diagnostics are not current Workbench Release Gates.
+Real Agent Conversation is NOT Deferred.
+
+The following Conversation / Runtime capabilities are Deferred:
+
+- long-term Runtime-owned Conversation History;
+- Rename / Archive / Delete / Clear-all management;
+- Thread / Turn / Operation product views;
+- Runtime Host restart recovery;
+- Runtime Recovery / Reconcile;
+- Command Admission productization;
+- full Runtime Diagnostics.
+
 Existing implementation MAY remain until an explicit cleanup task decides otherwise.
 
 ## Supporting framework integration rules
@@ -199,7 +236,7 @@ ADR-0026 continues to govern this reference path.
 Business Agent private HTTP + SSE / WebSocket protocols remain behind Business Agent Adapter.
 Business Agent does not need to implement AG-UI.
 
-Replacing CopilotKit MUST NOT require changing Presentation Pipeline, UI Compiler Core, Component Catalog or Theme semantics.
+Replacing CopilotKit MUST NOT require changing Presentation Router, Presentation Decision, UI Compiler Core, Component Catalog or Theme semantics.
 
 Current scope MUST NOT implement `apps/interaction-gateway` or multi-Agent routing without a new accepted decision.
 
@@ -209,11 +246,11 @@ ADR-0024 and the Agent Runtime Integration half of ADR-0025 remain valid but are
 
 The following are not current feature-development priorities:
 
-- Runtime Thread / Turn / Operation;
+- Runtime Thread / Turn / Operation product model;
 - Runtime Repository;
-- Surface Lifecycle;
-- Command Admission;
-- Runtime-owned Conversation History;
+- Surface Lifecycle productization;
+- Command Admission productization;
+- long-term Runtime-owned Conversation History;
 - Recovery / Reconcile;
 - Runtime Truth Diagnostics;
 - full Agent Runtime Platform.
@@ -260,13 +297,20 @@ Code changes must run validation matching the affected scope.
 For Presentation Core changes, prioritize tests for:
 
 - AgentContent contracts;
-- Presentation routing;
+- ADR-0015 presentation routing;
 - model candidate validation;
 - Compiler rejection;
 - Catalog / Props / Binding / Action constraints;
-- Theme invariants;
+- Theme / Catalog separation;
 - safe Renderer behavior;
 - fallback and reliability scenarios.
+
+For Workbench changes, prioritize tests for:
+
+- natural-language Conversation → Business Agent → AgentContent;
+- public activity vs Final AgentContent separation;
+- Presentation Inspect trace;
+- safe rendering and fallback.
 
 ## Coding standards
 
