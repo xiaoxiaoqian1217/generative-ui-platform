@@ -6,114 +6,142 @@
 
 当前阶段范围以 [ADR-0027](../adr/0027-refocus-current-phase-on-presentation-first-generative-ui.md) 为准。
 ADR-0018 保留平台扩展历史。
+ADR-0019 已部分被 ADR-0027 取代。
 ADR-0025 保留 Presentation Integration 与 Agent Runtime Integration 两种长期接入模式。
 
 ## 当前 North Star
 
-Generative UI Platform 当前阶段只聚焦一个核心问题：
+> 将 Business Agent 或已有 Agent Runtime 产生的 Final AgentContent，转换为可靠、主题一致且受控的 Presentation，并通过真实 Agent Conversation 验证这条链路。
 
-> 将 Business Agent 或已有 Agent Runtime 产生的 Markdown / structured AgentContent，转换为美观、可靠、主题一致且受控的 Presentation。
-
-当前核心链路为：
+当前端到端参考流程：
 
 ```text
-AgentContent
-    ↓
-Presentation Router
-    ├── Markdown → safe Markdown PresentationResult
-    └── Structured Business Data
-              ↓
-      Presentation Model
-              ↓
-      untrusted UI Plan Candidate
-              ↓
-      UI Compiler Core
-              ↓
-      trusted A2UI PresentationResult
+Natural Language
+→ Business Agent
+→ Final AgentContent
+→ Presentation Router
+→ Presentation Decision
+   ├── markdown
+   └── generative-ui + UI Plan Candidate
+→ UI Compiler Core
+→ trusted Presentation
+→ Workbench Renderer
 ```
+
+AgentContent 是可观察边界，不是 Workbench 当前主要人工输入。
 
 ## Active Core
 
-当前 Core 包括：
-
 - AgentContent / Presentation Contract；
 - Presentation Router；
+- Presentation Decision；
 - Presentation Model Adapter；
 - UI Plan Candidate；
 - UI Compiler Core；
 - Component Catalog；
-- Validation / Policy / Binding / Action Descriptor 约束；
+- Validation / Policy / Binding / Action Descriptor；
 - trusted A2UI / PresentationResult；
-- 受控 Renderer；
+- Controlled Renderer contract；
 - Theme / Presentation Context；
-- Generative UI reliability evaluation。
+- Reliability Validation。
 
 ## Supporting
 
-以下能力当前用于接入、调试、演示和验证 Core：
-
 - Generative UI Workbench；
-- Agent Runtime Host；
+- real Agent Conversation reference experience；
+- Reference Integration Host；
 - CopilotKit Runtime；
 - AG-UI；
 - Business Agent Adapter；
 - Reference Business Agent；
 - Reference Scenarios；
-- 开发环境与 E2E。
+- Development / E2E tooling。
 
-Supporting 能力不得反向定义 Core 的产品边界。
+Workbench 当前是 **真实 Agent 驱动的 Generative UI Lab**。
 
-Generative UI Workbench 当前定位为 **Generative UI Lab / 可视化开发调试工作台**。
-它优先验证 AgentContent、Presentation Decision、UI Plan、Validation、A2UI、Renderer、Theme、Catalog 和生成稳定性。
+Reference Integration Host 当前负责把 Agent Integration、Business Agent Adapter 和 Presentation Pipeline 组装成可运行参考链路。
 
-Agent Runtime Host 当前定位为参考 Integration Host。
-它可以继续承载 CopilotKit / AG-UI 参考路径和 Presentation Pipeline，但不是当前产品核心。
+Supporting 不得反向定义 Core 产品边界。
+
+## Presentation Router
+
+ADR-0015 继续有效。
+
+Markdown 和 structured data 都可以进入 Router。
+Router 可以确定性决策；只有需要展示语义分析时才调用 Presentation Model。
+最终 Decision 为 `markdown | generative-ui`，只有 generative-ui 分支包含 UI Plan Candidate。
+
+输入类型不等于展示模式。
+
+## Catalog / Theme
+
+Component Catalog 是 capability authority，决定允许使用什么组件 / Action 能力。
+
+Theme 只决定已授权能力如何呈现，可以影响 design tokens、typography、spacing、density、layout preferences 和 Catalog 已授权 variants。
+
+Theme 不得增加 / 删除 Catalog capability、授权新 Action、改变 Business Truth 或绕过 Compiler Policy。
+
+## Conversation 边界
+
+真实自然语言 Conversation 当前保留，因为它负责产生真实 AgentContent，并验证完整 Agent → Presentation 链路。
+
+当前 Deferred 的是：
+
+- long-term Runtime-owned Conversation History；
+- Rename / Archive / Delete；
+- 完整 Conversation Management；
+- Runtime Host restart recovery；
+- Thread / Turn / Operation 产品化。
 
 ## Deferred Runtime Platform
 
-以下能力保留设计与已有实现，但当前停止扩张：
+以下能力保留既有设计与实现，但当前停止扩张：
 
 - Runtime Thread / Turn / Operation；
 - Runtime Repository；
 - Surface Lifecycle；
 - Command Admission；
-- Runtime-owned Conversation History；
+- long-term Runtime-owned Conversation History；
 - Recovery / Reconcile；
 - Runtime Truth Diagnostics；
 - 完整 Agent Runtime Platform。
 
-ADR-0024 继续约束仍然存在的 Runtime 路径。
+ADR-0024 继续约束仍存在的 Runtime 路径。
 这些能力不再属于当前 Presentation-first MVP Release Gate。
 
-未来只有在明确需要平台拥有 Stateful Interaction 和 Action Execution Authority 时，才重新启动 Agent Runtime Integration 的产品化工作。
-
-## 框架边界
+## Framework 边界
 
 Generative UI Core 必须保持 Agent Framework 中立。
 
-CopilotKit 和 AG-UI 是当前参考 Integration，而不是 Generative UI Core 的强制依赖或长期产品边界。
-未来即使不使用 CopilotKit，Presentation Pipeline 和 UI Compiler Core 也必须能够独立成立。
+CopilotKit 和 AG-UI 是当前 Reference Integration，不是 Generative UI Core 的强制依赖。
+未来即使不使用 CopilotKit，Presentation Router、UI Compiler Core、Catalog 和 Theme 也必须独立成立。
 
-Presentation Integration 的稳定公共 API 形态仍需要后续独立决策。
+Presentation Integration 的稳定公共 API 仍需要独立决策。
 
 ## 当前功能准入标准
 
-当前阶段新增功能必须至少直接提升以下一项：
+新增功能必须至少直接提升：
 
-1. `AgentContent → Presentation` 的语义正确性；
-2. 生成 UI 的视觉质量或主题一致性；
-3. 模型输出到 trusted A2UI 的安全性和可靠性；
-4. Generative UI 的可调试、可比较、可评测能力；
-5. 为 Core 提供必要且最小的 Framework / Runtime Integration。
+1. `AgentContent → Presentation` 语义正确性；
+2. Theme / Presentation Context 一致性；
+3. 模型候选到 trusted A2UI 的安全性和可靠性；
+4. 真实 Agent 驱动 Generative UI 的可调试、可验证能力；
+5. Core 必需的最小 Integration。
 
-主要解决通用 Agent Runtime、Conversation Service、Workflow Recovery 或 Runtime Observability 的功能默认属于 Deferred。
+长期 Conversation Service、Workflow Recovery、Runtime Repository 或 Runtime Observability 默认 Deferred。
+
+当前不建设 Presentation Quality 自动评分体系。
 
 ## 迁移原则
 
 本次 Scope Reset 先修改架构和产品文档，不先大规模删除代码。
 
-现有 Runtime Platform 代码继续存在期间保持安全约束和测试。
-后续通过独立 Issue / PR 逐步判断哪些代码应该保留、隔离或删除。
+后续：
 
-旧 Compiler MVP 文档继续保留，并继续约束 Compiler 子系统。
+1. 保持真实 Conversation → Business Agent → AgentContent → Presentation 主链路；
+2. 停止新增 Deferred Runtime 功能；
+3. 将 Workbench 聚焦真实 Agent 驱动的 Generative UI Lab；
+4. 审查 Presentation Contract / Pipeline 中残留的 Runtime / Surface metadata；
+5. 通过独立 Issue / PR 决定旧 Runtime 代码保留、隔离或删除。
+
 Interaction Gateway 和多 Agent 路由仍不属于当前阶段。
