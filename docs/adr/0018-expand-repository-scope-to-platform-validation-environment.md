@@ -8,10 +8,28 @@
 ADR-0019 取代了本 ADR 中关于 UI Compiler Service 在当前阶段独立部署、Runtime Host 通过 UI Compiler Client 调用 Service，以及 Model Adapter 进程归属固定为独立 Service 的结论。
 
 ADR-0027 进一步取代了本 ADR 中“当前阶段以平台全链路 Runtime 验证环境为主要交付范围”的阶段性结论。
-当前阶段改为 Presentation-first，优先验证 `AgentContent → Presentation Model → UI Plan Candidate → UI Compiler Core → trusted A2UI`。
+
+当前阶段改为 Presentation-first，优先验证：
+
+```text
+Natural Language
+→ Business Agent
+→ Final AgentContent
+→ Presentation Router
+→ Presentation Decision
+   ├── markdown
+   └── generative-ui + UI Plan Candidate
+→ UI Compiler Core
+→ trusted Presentation
+```
+
+ADR-0015 的 Router 语义继续有效：Markdown 与 structured data 都可以进入 Router；只有需要展示语义分析时才调用 Model Adapter；content type 不等于 presentation mode。
+
+真实 Agent Conversation 继续作为当前 Supporting Reference Experience，用于产生真实 AgentContent。
+完整 Conversation Management / Runtime Persistence / Recovery 不再构成当前 Release Gate。
 
 本 ADR 关于 Generative UI Compiler 独立核心能力、Business Agent 不承担 UI 生成职责、模型输出不可信、受控 Renderer，以及 Interaction Gateway / 多 Agent 路由非目标等结论继续有效。
-本 ADR 中关于 Runtime Host、Conversation、Action 闭环和完整 Runtime 验证的允许范围继续作为已实现或未来 Agent Runtime Integration 的历史决策背景，但不再构成当前 Presentation-first MVP Release Gate。
+本 ADR 中关于 Runtime Host、Action 闭环和完整 Runtime 验证的允许范围继续作为已实现或未来 Agent Runtime Integration 的历史决策背景，但不再构成当前 Presentation-first MVP Release Gate。
 
 ## 背景
 
@@ -45,7 +63,7 @@ Web Workbench
 - 为跨子系统开发、联调、诊断和端到端测试建立明确的仓库级范围。
 - Business Agent 不应承担 UI Plan、组件选择或 A2UI 生成职责。
 - 模型输出仍必须保持不可信，并由 Compiler 契约和 Catalog 约束。
-- 前端必须通过统一后端入口访问平台能力。
+- 前端必须通过统一后端入口访问当时完整 Agent Runtime Integration 参考链路。
 - 当前阶段应验证单一 Reference Business Agent，而不是提前建设多 Agent 网关。
 - 原 Compiler MVP 文档和 ADR 必须继续可追溯、可引用。
 
@@ -55,15 +73,13 @@ Web Workbench
 
 Generative UI Platform 成为仓库级和长期平台边界。
 Generative UI Compiler 继续作为平台核心子系统，并保持可独立构建、测试和作为 Package 复用。
-其当前部署边界由 ADR-0019 规定。
+其当前 Reference Integration 部署边界由 ADR-0019 规定，并由 ADR-0027 重新解释为 Supporting Integration，而不是 Core 长期唯一宿主。
 
 本 ADR 接受时的阶段交付物是平台全链路开发验证环境，而不是新的独立业务产品。
 该环境用于平台研发、Business Agent 接入联调、Compiler 验证、A2UI Renderer 开发、Action 闭环验证、自动化回归和能力演示。
 当前阶段范围已由 ADR-0027 重新收敛。
 
-### 当前允许建设的组成部分
-
-本 ADR 接受时允许实现和验收：
+### 本 ADR 接受时允许建设的组成部分
 
 - Agent Runtime Host；
 - Business Agent Contract；
@@ -86,14 +102,14 @@ Reference Business Agent 可以采用 TypeScript LangGraph 实现，但 LangGrap
 Web 只连接 Agent Runtime Host 的结论适用于本 ADR 定义的完整 Agent Runtime Integration 参考链路。
 Presentation Integration 的长期公共 API 由后续决策定义。
 
-Agent Runtime Host 负责传输接入、Run 编排、Business Agent Adapter 调用、Presentation Pipeline 组装、Action 编排、关联标识和安全错误映射。
+Agent Runtime Host 在本 ADR 接受时负责传输接入、Run 编排、Business Agent Adapter 调用、Presentation Pipeline 组装、Action 编排、关联标识和安全错误映射。
 Runtime Host 不负责生成 UI Plan Candidate、UI IR 或 A2UI。
 
 Business Agent 负责业务意图、业务工具、业务状态和流程恢复。
 Business Agent 只输出 Markdown 或结构化业务数据，不输出 UI Plan Candidate、A2UI、HTML、Vue 组件或前端代码。
 
 Model Adapter 继续属于展示决策和 UI 编译子系统。
-它只接收已清理的 AgentContent、展示上下文和 Catalog 能力摘要，并返回不可信的展示决策或 UI Plan Candidate。
+它只接收已清理的 AgentContent、展示上下文和 Catalog 能力摘要，并返回不可信的 Presentation Decision Candidate。
 它不参与 Business Agent 的业务推理或工具调用。
 其具体运行宿主由 ADR-0019 规定。
 
@@ -138,7 +154,8 @@ ADR-0003 以下决策继续有效：
 - Presentation Router 与 Model Adapter；
 - 可靠性、安全和可观测性。
 
-ADR-0019 进一步确定当前参考实现将 Presentation Pipeline 嵌入 Agent Runtime Host，并取消独立 UI Compiler Service 作为目标部署应用。
+ADR-0019 进一步确定当前 Reference Integration 将 Presentation Pipeline 嵌入 Agent Runtime Host，并取消独立 UI Compiler Service 作为目标部署应用。
+ADR-0019 的长期 Runtime Host 产品定位已被 ADR-0027 部分取代。
 
 ADR-0027 将当前阶段重新聚焦到 Presentation-first Generative UI，并把完整 Agent Runtime Integration 降为 Deferred。
 
@@ -149,9 +166,9 @@ ADR-0027 将当前阶段重新聚焦到 Presentation-first Generative UI，并�
 ### 正面影响
 
 - 仓库级平台范围与 Compiler 子系统范围得到明确分层。
-- Business Agent、Runtime Host、Presentation Pipeline 和 Frontend Runtime 的职责得到明确隔离。
+- Business Agent、Reference Integration Host、Presentation Pipeline 和 Frontend Runtime 的职责得到明确隔离。
 - 原 Compiler 文档和 ADR 可以继续作为子系统基线使用。
-- 已完成的全链路研究仍然可作为未来 Agent Runtime Integration 的基础。
+- 已完成的全链路研究仍可作为未来 Agent Runtime Integration 基础。
 
 ### 代价和风险
 
@@ -165,10 +182,13 @@ ADR-0027 将当前阶段重新聚焦到 Presentation-first Generative UI，并�
 该决策与 ADR-0027 共同通过以下证据持续验证：
 
 - Compiler 子系统依赖边界检查继续通过；
+- Workbench 可以通过自然语言驱动 Reference / Real Business Agent；
 - Business Agent Contract 不包含 UI Plan Candidate 或 A2UI；
-- Model Adapter 仍只服务于展示决策和 UI 编译链路；
+- Final AgentContent 与 public process events 保持区分；
+- Presentation Router 继续遵守 ADR-0015；
+- Model Adapter 仍只服务于展示决策；
 - UI Compiler Core 仍是唯一可信 A2UI 生产者；
 - 至少一个真实 Presentation Model Provider 可以通过受控 Smoke Test；
-- Workbench 可以验证最终 Generative UI 结果；
+- Workbench 可以验证最终 Generative UI 结果并 Inspect Presentation Trace；
 - Interaction Gateway 和多 Agent 路由没有被隐式引入；
-- 新增当前阶段能力符合 ADR-0027 的功能准入标准。
+- 新增当前阶段能力符合 ADR-0027 功能准入标准。
