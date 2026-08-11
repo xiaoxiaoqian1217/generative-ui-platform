@@ -20,11 +20,35 @@ AgentContent 是 Inspect 中的可观察系统边界，不是当前 Workbench �
 ## 当前规范
 
 - [Workbench 软件需求规格](../WEB_WORKBENCH_SRS.md)
+- [Workbench 已接受原型基线](./PROTOTYPE_BASELINES.md)
 - [ADR-0027：Presentation-first Scope Reset](../adr/0027-refocus-current-phase-on-presentation-first-generative-ui.md)
 - [ADR-0015：Presentation Router / Model Adapter](../adr/0015-presentation-router-and-model-adapter.md)
 - [平台级需求](../platform/REQUIREMENTS.md)
 - [平台级架构](../platform/ARCHITECTURE.md)
 - [平台系统架构](../platform/SYSTEM_ARCHITECTURE.md)
+
+## 已接受原型基线
+
+Workbench 后续实现默认继承 Issue #174 与 Issue #179 的最终 Resolution。
+
+当前固定组合为：
+
+```text
+#174
+Conversation-first Shell
++ Inline Generated UI
++ on-demand Inspect
+
+        ↓
+
+#179
+Swimlane Timeline
++ Artifact JSON pass-through
++ Presentation / Compiler Detail
+```
+
+ADR-0027 只调整其中 Runtime Platform 能力的阶段优先级，不重新打开已经验证完成的 Workbench UI / IA 方案。
+除非出现新的业务证据、可用性问题或与当前有效 ADR 的明确冲突，否则不得重新进行同类原型选型。
 
 ## 当前主线
 
