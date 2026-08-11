@@ -1,6 +1,6 @@
 # Generative UI Workbench Specification
 
-**文档版本：** 0.6
+**文档版本：** 0.7
 
 **项目阶段：** Presentation-first MVP
 
@@ -10,146 +10,200 @@
 
 **中文名称：** 生成式 UI 开发与验证工作台
 
-> 本文定义 Workbench 当前产品行为和 MVP Release Gate。
-> 当前阶段范围以 ADR-0027 为准。
-> Runtime Truth 和 Agent Runtime Integration 继续由 ADR-0024 / ADR-0025 定义，但不再属于当前 Workbench MVP Release Gate。
+## 0. 文档规则
 
-## 0. 产品定位
+本文定义 Workbench 当前产品行为、用户任务和 MVP Release Gate。
+当前阶段范围以 ADR-0027 为准。
+
+约束词：
+
+- **MUST / 必须**：MVP 不可缺少；
+- **MUST NOT / 禁止**：不得形成的行为或依赖；
+- **SHOULD / 应该**：默认应满足，偏离需要明确理由；
+- **MAY / 可以**：可选或 Supporting 能力。
+
+Canonical Sources：
+
+| 主题 | 权威来源 |
+|---|---|
+| 当前阶段范围 | ADR-0027 |
+| 平台级 MUST / MUST NOT | `docs/platform/REQUIREMENTS.md` |
+| 平台跨子系统架构 | `docs/platform/ARCHITECTURE.md` |
+| Router / Model Adapter | ADR-0015 |
+| Compiler Trust Boundary | Compiler ADR、`docs/ARCHITECTURE.md`、`docs/Generative_UI_Compiler_Design.md` |
+| Presentation / Runtime 两种接入模式 | ADR-0025 |
+| Existing Runtime Interaction Safety | ADR-0024 |
+| 当前 Workbench ↔ Runtime Host Agent 协议 | ADR-0026 |
+
+本文不得重新定义 Runtime Truth、Compiler Schema 或 Business Agent 私有状态。
+
+## 1. 产品定位
 
 Generative UI Workbench 当前定位为：
 
-> **Generative UI Lab / 可视化开发调试工作台。**
+> **Generative UI Lab / 真实 Agent 驱动的可视化开发调试工作台。**
 
-Workbench 的首要任务不是管理 Agent Runtime。
-它的首要任务是让开发者能够回答：
+Workbench 的首要任务是通过真实自然语言 Conversation 驱动 Business Agent，然后观察平台如何把最终 AgentContent 自动转换成 Presentation。
 
-> 给定一份 AgentContent，平台为什么生成了这个 UI，这个 UI 是否正确、漂亮、稳定、主题一致且受控？
+它需要回答：
+
+> 用户问了什么？Business Agent 最终产生了什么业务内容？Presentation Pipeline 为什么选择这种展示？UI Plan 是否可信地通过 Compiler？最终 UI 是否正确、稳定且受控？
 
 Workbench 是开发者产品，不是最终业务生产前端。
 
-## 1. 为什么需要 Workbench
+## 2. 第一原则：主输入是自然语言，不是 AgentContent
 
-Generative UI 的主要风险不只在“能不能生成”。
-更重要的是：
+Workbench MVP 的核心用户流程 MUST 是：
 
-- 模型是否正确理解业务内容；
-- 是否选择了合理的信息层级；
-- 是否使用了存在且允许的组件；
-- Props 和 Binding 是否正确；
-- 是否生成了不应该存在的 Action；
-- UI Plan 是否可以通过 Compiler；
-- fallback 是否明确；
-- 同一输入多次生成是否稳定；
-- Theme 改变后业务语义是否保持一致；
-- 最终 Renderer 是否稳定。
+```text
+User enters natural language
+        ↓
+Real / Reference Business Agent runs
+        ↓
+Final AgentContent is produced
+        ↓
+Presentation Pipeline runs automatically
+        ↓
+Markdown or Generative UI is rendered
+```
 
-如果这些信息只能从日志、接口返回和浏览器页面分散查看，就很难持续改进 Generative UI 质量。
+Workbench MUST NOT 把以下流程定义成当前主产品体验：
 
-Workbench 因此必须把完整 Presentation 过程可视化。
+```text
+Developer pastes AgentContent JSON
+→ Generate UI
+```
 
-## 2. 当前核心用户
+AgentContent 是系统边界和可观察对象。
+开发者可以在 Inspect 中查看它，但不需要手工制造它。
 
-Workbench 当前主要服务：
+单元测试、Fixture、专用 Test Harness MAY 直接构造 AgentContent，以保证 Core 可以确定性测试。
+
+## 3. 当前核心用户
+
+Workbench 主要服务：
 
 - Presentation Pipeline 开发者；
 - UI Compiler Core 开发者；
 - Component Catalog / Renderer 开发者；
 - Theme / Design System 开发者；
 - Presentation Model / Prompt 调试人员；
-- 测试人员；
 - Business Agent 集成人员；
+- 测试人员；
 - 架构师和产品负责人。
 
-## 3. 当前核心用户任务
+## 4. 核心用户任务
 
-Workbench MVP 必须支持以下核心任务。
+### T1 进行真实 Agent Conversation
 
-### T1 输入 AgentContent
+用户 MUST 能够：
 
-用户可以：
+- 输入自然语言；
+- 发送消息到当前 Reference Agent Integration；
+- 看到 Business Agent 主动公开的消息、进度、状态或 Tool Activity 摘要；
+- 看到 Business Agent 最终业务结果自动进入 Presentation；
+- 不需要理解或输入 A2UI、UI Plan 或 AgentContent Contract。
 
-- 输入 Markdown；
-- 输入 structured business data；
-- 选择 Reference Scenario；
-- 查看规范化后的最终 AgentContent。
+Business Agent 公开过程信息与最终 AgentContent 必须被区分。
+过程事件不应被误当成最终 Presentation 输入。
 
-Workbench 必须明确区分：
+### T2 查看最终 Presentation
+
+Business Agent 产生 Final AgentContent 后，Workbench MUST 自动展示 Presentation Pipeline 的最终结果。
+
+可能结果：
+
+- safe Markdown；
+- trusted Generative UI；
+- explicit fallback / error。
+
+Workbench MUST NOT 自己重新调用一个模型生成第二份 UI Plan。
+
+### T3 Inspect Final AgentContent
+
+开发者 MUST 能从最终 Presentation 打开 Inspect，并查看 Presentation Pipeline 实际消费的 Final AgentContent。
+
+必须清楚区分：
 
 ```text
-Business Content
+Business Agent public process events
 ≠
-UI Plan
+Final AgentContent
 ≠
-A2UI
+Presentation Decision
+≠
+UI Plan Candidate
+≠
+trusted A2UI
 ```
 
-Business Agent 的最终输入不得包含 UI Plan Candidate、A2UI、HTML 或前端代码。
+AgentContent Viewer 应只读、有长度保护，并遵守平台敏感数据边界。
 
-### T2 触发 Presentation
+### T4 Inspect Presentation Decision
 
-用户可以触发当前 Presentation Pipeline。
+Workbench MUST 展示：
 
-Workbench 必须展示：
+- `markdown | generative-ui` Decision；
+- decision reason 或等价安全开发摘要；
+- 是否经过 deterministic Router path；
+- 是否调用 Presentation Model；
+- Theme / Catalog / Viewport 等受控 Presentation Context 标识。
 
-- Presentation mode；
-- Markdown / Generative UI 路由结果；
-- 成功、失败或 fallback；
-- 使用的 Presentation Context 摘要；
-- 使用的 Theme / Catalog 标识；
-- 生成耗时等必要开发信息。
+Workbench 不得假设：
 
-Workbench 不负责自己生成 UI Plan。
+```text
+Markdown input => Markdown output
+Structured input => Generative UI output
+```
 
-### T3 查看 UI Plan Candidate
+具体 Router 语义以 ADR-0015 为准。
 
-当选择 Generative UI 路径时，用户必须能够查看模型返回的 UI Plan Candidate。
+### T5 Inspect UI Plan Candidate
 
-Workbench 必须明确标记：
+仅当 Decision 为 `generative-ui` 时，Workbench MUST 能查看 UI Plan Candidate。
 
-> UI Plan Candidate is untrusted.
+UI 必须明确标记：
 
-用户应能够理解：
+> **UI Plan Candidate is untrusted.**
 
-- 模型选择了哪些组件能力；
-- 主要布局结构是什么；
-- 数据绑定目标是什么；
-- 是否包含 Action Descriptor；
-- 哪些字段来自 Presentation Context。
+至少应能够理解：
 
-### T4 查看 Compiler / Validation
+- 模型建议的语义区域；
+- 组件能力偏好；
+- 数据绑定意图；
+- 布局约束；
+- Action Descriptor 意图（如适用）。
 
-Workbench 必须能够查看：
+### T6 Inspect Compiler / Validation
+
+Workbench MUST 能查看：
 
 - Schema Validation；
 - Catalog Validation；
 - Props Validation；
 - Binding Validation；
 - Action / Policy Validation；
-- Compiler failure / fallback reason；
+- Compiler rejection / fallback reason；
 - 最终可信输出状态。
 
-模型候选被拒绝时，Workbench 必须显示明确原因。
+Compiler rejection 不得被隐藏成普通空白 UI。
 
-Workbench 不得把 Compiler rejection 隐藏成普通空白页面。
+### T7 Inspect trusted A2UI
 
-### T5 查看 trusted A2UI
-
-用户必须能够查看最终 trusted A2UI。
-
-A2UI Raw Viewer 应作为开发工具存在。
+Generative UI 成功时，Workbench MUST 能只读查看最终 trusted A2UI。
 
 Raw Viewer 必须：
 
 - 只读；
 - 有长度和性能保护；
-- 不执行其中的任意代码；
+- 不执行任意代码；
 - 清楚区分 trusted A2UI 与原始 UI Plan Candidate。
 
-### T6 查看最终 Rendered UI
+### T8 查看最终 Rendered UI
 
-Workbench 必须提供受控 Renderer 预览。
+Workbench MUST 使用受控 Renderer 展示 Presentation。
 
-Renderer 只能使用 Component Registry 中注册的组件。
+Renderer 只允许 Component Registry 中已注册实现。
 
 Renderer MUST NOT：
 
@@ -158,235 +212,259 @@ Renderer MUST NOT：
 - 动态加载模型指定的未知远程组件；
 - 绕过 Component Catalog / Registry。
 
-### T7 Theme / Presentation Context 调试
+### T9 Theme / Presentation Context 调试
 
-Workbench 必须把 Theme 作为当前主线开发能力。
+Workbench SHOULD 支持受控 Theme / Presentation Context 调试。
 
-用户应能够在不改变 AgentContent 的前提下切换受控 Theme / Presentation Context。
+Theme MAY 影响：
 
-至少需要能够验证：
-
-- light / dark 或项目定义的主题变体；
+- visual tokens；
+- typography；
+- spacing；
 - density；
-- component variants；
-- viewport / device context；
-- Catalog 版本或能力摘要。
+- layout preferences；
+- Catalog 已授权的 component variants。
 
-Theme 改变后：
+Theme MUST NOT：
 
-- Business Truth 必须保持一致；
-- Compiler 安全边界不得变化；
-- 不得因为 Theme 自动获得新的业务 Action 权限。
+- 改变 Business Truth；
+- 增加或删除 Catalog capability；
+- 授权新的业务 Action；
+- 绕过 Compiler Policy。
 
-### T8 Compare
+Catalog 与 Theme 必须分别表达。
 
-Workbench SHOULD 支持把同一 AgentContent 在不同条件下进行比较。
+### T10 基础 Reliability 验证
 
-比较维度可以包括：
+Workbench SHOULD 能复现至少以下场景：
 
-- 不同 Theme；
-- 不同 Presentation Model；
-- 不同 Prompt / Model Config；
-- 不同 Catalog；
-- 不同 Viewport；
-- 同一配置的重复生成。
-
-Compare 的目标是定位 Presentation 质量变化，而不是建设完整实验管理平台。
-
-### T9 Reliability
-
-Workbench MUST 能够验证至少以下可靠性场景：
-
-- 合法 UI Plan；
+- 合法 Presentation Decision；
 - 非法 Component；
 - 非法 Props；
 - 无效 Binding；
 - 不允许的 Action；
-- Model timeout / invalid output；
+- Model timeout / invalid candidate；
 - Compiler rejection；
 - Markdown fallback；
 - Renderer failure boundary；
-- 同一输入重复生成。
+- 同一输入的基础重复生成验证。
 
-具体评分体系可以后续扩展。
+当前不要求 Presentation Quality 自动评分或完整实验平台。
 
-## 4. MVP 信息架构
+## 5. 当前信息架构
 
-当前推荐的信息架构围绕 Presentation 调试，而不是 Conversation-first。
+推荐产品心智：
 
 ```text
 Workbench
-├── Input / Scenario
-├── Presentation
-│   ├── Rendered UI
-│   ├── Decision
-│   ├── UI Plan
-│   ├── Validation
-│   └── A2UI
+├── Conversation
+│   ├── User Message
+│   ├── Agent Public Activity
+│   ├── Final Markdown Result
+│   └── Generated UI
+│         └── Inspect Presentation
+│
+├── Presentation Inspect
+│   ├── AgentContent
+│   ├── Presentation Decision
+│   ├── UI Plan Candidate
+│   ├── Validation / Compiler Result
+│   ├── trusted A2UI
+│   └── Rendered UI
+│
 ├── Theme / Context
 ├── Catalog
-└── Compare / Reliability
+└── Reliability / Reference Scenarios
 ```
 
-具体布局可以调整。
-但用户必须能够从最终 UI 快速追溯到 AgentContent、Decision、UI Plan、Compiler 和 A2UI。
+真实 Conversation 是主体验。
+Presentation Inspect 是开发调试体验。
 
-## 5. 当前不再作为 MVP Release Gate 的能力
+## 6. Conversation 当前边界
 
-ADR-0027 之后，以下能力不再决定 Workbench MVP 是否完成：
+### 6.1 当前必须保留
 
-- Conversation-first；
-- Runtime-owned Conversation History；
-- Conversation Rename / Archive / Delete；
-- Runtime Thread / Turn / Operation 浏览；
-- Runtime Host 重启后的会话恢复；
-- Surface Lifecycle 产品化；
-- Command Admission 产品化；
-- Reconcile；
-- `indeterminate` Runtime UX；
-- 完整逐 Operation Runtime Diagnostics；
-- Diagnostic Bundle 产品化；
-- 完整 Case / Regression Management。
+真实 Agent Conversation 属于当前 Supporting Core Experience。
 
-这些能力的已有实现可以暂时保留。
-本次 Scope Reset 不要求立即删除。
-
-但是当前不得继续以“完善这些能力”为理由扩大 Workbench 产品范围。
-
-## 6. Supporting Agent Integration
-
-Workbench MAY 保留当前 CopilotKit / AG-UI 参考集成，用于从真实 Business Agent 链路获取 AgentContent。
-
-参考链路可以是：
+Workbench MUST 支持足以完成以下主链路的 Conversation：
 
 ```text
-Reference Business Agent
-        ↓
-Business Agent Adapter
-        ↓
-Agent Runtime Host
-        ↓
-AG-UI / current integration
-        ↓
-Workbench
+Natural Language
+→ Agent
+→ AgentContent
+→ Presentation
 ```
 
-这条链路是 Supporting Integration。
+这意味着至少包括：
 
-Workbench 核心产品价值不能依赖以下前提：
+- 用户输入；
+- Assistant / Agent 公开输出；
+- 公开过程 Activity；
+- 最终 Presentation；
+- 基本 running / failed / cancelled 等当前交互反馈。
 
-- Business Agent 必须支持 AG-UI；
-- 平台必须拥有完整 Runtime Thread；
-- 平台必须拥有 Conversation History；
-- 平台必须采用 CopilotKit。
+### 6.2 当前 Deferred
 
-未来替换 CopilotKit 时，Workbench 的 Presentation 调试心智不应变化。
+以下属于完整 Conversation / Runtime Platform，不是当前 MVP Release Gate：
 
-## 7. Workbench 与 Core 的职责边界
+- Runtime-owned long-term Conversation History；
+- Rename；
+- Archive；
+- Delete；
+- Clear all history；
+- Runtime Host restart recovery；
+- Thread / Turn / Operation 产品浏览；
+- Historical Surface Action Authority；
+- Recovery / Reconcile 产品化；
+- 完整 Conversation Service。
+
+已有实现 MAY 保留，但不得因为已存在就继续扩大产品范围。
+
+## 7. Supporting Agent Integration
+
+当前 Reference Path 可以继续使用：
+
+```text
+Workbench
+   │ AG-UI
+   │ HTTP POST + SSE
+   ▼
+Reference Integration Host
+   │ private Business Agent Adapter
+   ▼
+Business Agent
+```
+
+这条路径用于产生真实 AgentContent。
+
+Workbench MUST NOT：
+
+- 直接连接 Business Agent 私有地址；
+- 持有 Business Agent 私有凭据；
+- 持有 Presentation Model Provider 密钥；
+- 维护与当前 AG-UI reference path 并列的第二套 Agent 业务协议。
+
+CopilotKit / AG-UI 属于 Supporting Integration。
+未来替换 CopilotKit 时，Workbench 的 `Conversation → Presentation Inspect` 产品心智不应变化。
+
+## 8. Workbench 与 Core 的职责边界
 
 Workbench 可以：
 
-- 选择输入；
-- 选择 Theme / Context；
-- 触发 Presentation；
+- 表达用户自然语言意图；
+- 显示 Agent public activity；
+- 显示最终 Presentation；
+- 选择受控 Theme / Context；
 - 展示开发诊断信息；
-- 渲染 trusted Presentation；
-- 比较结果。
+- 渲染 trusted Presentation。
 
 Workbench MUST NOT：
 
 - 重新解释 Business Truth；
-- 自己调用模型产生另一份 UI Plan；
-- 绕过 Presentation Pipeline；
+- 自己生成第二份 UI Plan；
+- 绕过 Presentation Router / Pipeline；
 - 绕过 UI Compiler Core；
 - 把原始 UI Plan 当作 trusted A2UI；
 - 动态执行模型生成代码；
-- 持有 Presentation Model Provider 密钥。
+- 把浏览器状态变成 Runtime Truth。
 
-## 8. Supporting Developer Tools
+## 9. Supporting Developer Tools
 
-以下能力 MAY 建设，并且属于当前方向：
+当前方向允许：
 
 - Component Catalog Browser；
 - Component Playground；
-- Theme Editor；
-- Theme Preview；
+- Theme Preview / Editor；
 - Viewport Preview；
 - Reference Scenarios；
 - Prompt / Model Config 开发预览；
 - Generation timing；
 - Token / cost 摘要；
-- Snapshot compare；
-- Presentation Result export；
-- Compiler error explorer。
+- Compiler error explorer；
+- Presentation Result export。
 
-这些能力的共同准入条件是：
+准入标准：
 
-> 直接提高 Generative UI 的质量、可靠性或开发效率。
+> 直接提高真实 Agent → Generative UI 链路的调试、可靠性或开发效率。
 
-## 9. 非目标
+当前不要求完整 A/B Experiment / Regression Management 平台。
+
+## 10. 非目标
 
 Workbench 当前不是：
 
+- AgentContent JSON Playground；
 - Business Agent；
 - Agent Runtime Platform；
 - 多 Agent Gateway；
 - Business Agent 私有状态管理器；
 - Runtime Repository 管理台；
 - 完整 Observability Platform；
+- 完整 Conversation Management 产品；
 - 正式业务生产前端；
 - 任意前端代码生成器；
-- 完整实验平台；
-- 完整回归测试管理系统。
+- Presentation Quality 自动评分系统；
+- 完整实验管理系统。
 
-## 10. MVP Release Gate
+## 11. MVP Release Gate
 
-Workbench MVP 只看以下六类能力。
+### G1 Real Conversation
 
-### G1 Input
-
-- 可以输入或选择最终 AgentContent；
-- 可以清楚看到业务内容原始形态。
+- 用户可以输入自然语言；
+- Reference / Real Business Agent 可以执行；
+- public process activity 与 Final AgentContent 清楚区分；
+- 用户不需要输入 AgentContent / UI Plan / A2UI。
 
 ### G2 Presentation Trace
 
-- 可以查看 Presentation mode；
-- 可以查看 UI Plan Candidate；
-- 可以查看 Validation / Compiler Result；
-- 可以查看 trusted A2UI。
+从真实 Conversation 产生的 Presentation 可以追溯：
+
+- AgentContent；
+- Presentation Decision；
+- UI Plan Candidate（如适用）；
+- Validation / Compiler Result；
+- trusted A2UI（如适用）。
 
 ### G3 Render
 
-- 可以安全展示 Markdown；
-- 可以使用受控组件稳定渲染 trusted A2UI；
-- fallback / error 状态清楚。
+- Markdown 安全展示；
+- trusted A2UI 使用受控组件稳定渲染；
+- fallback / error 状态清楚；
+- 不执行任意模型生成代码。
 
-### G4 Theme
+### G4 Router Consistency
 
-- 可以切换受控 Theme / Presentation Context；
-- 可以验证同一 AgentContent 在不同主题下的 UI；
-- 主题不改变 Business Truth 或安全边界。
+- Workbench 不根据 content type 猜测 presentation mode；
+- Router / Model 调用情况可以观察；
+- Presentation Decision 与 ADR-0015 一致。
 
-### G5 Reliability
+### G5 Theme / Catalog Boundary
 
-- 可以复现至少一组合法、非法、fallback 和重复生成场景；
-- 可以定位问题发生在 Model、UI Plan、Compiler 还是 Renderer。
+- Theme 与 Catalog capability authority 分离；
+- Theme 不改变 Business Truth；
+- Theme 不授权新的 Component / Action 能力。
 
-### G6 Framework Independence
+### G6 Reliability
 
-- Workbench 的核心 Presentation 调试模型不依赖完整 Agent Runtime；
-- CopilotKit / AG-UI 只作为当前参考 Agent Integration。
+- 可以复现合法、非法、fallback 和基础重复生成场景；
+- 可以定位问题发生在 AgentContent、Router / Model、Compiler 或 Renderer。
 
-## 11. 迁移原则
+### G7 Framework Independence
 
-当前代码已经包含 Conversation、Inspect、Cases、Runtime 状态和兼容路径。
+- Workbench 当前可通过 CopilotKit / AG-UI reference path 获得真实 AgentContent；
+- Presentation Core 不因 CopilotKit 替换而改变语义。
 
-迁移顺序是：
+## 12. 迁移原则
 
-1. 先停止新增 Runtime-first Workbench 功能；
-2. 保持现有主链路可运行；
-3. 将默认开发注意力转向 Presentation Lab；
-4. 建立 Theme / Compare / Reliability 能力；
-5. 后续通过独立 Issue 判断旧 Runtime 页面保留、隐藏还是删除。
+当前代码已经包含 Conversation History、Inspect、Cases、Runtime 状态和 compatibility paths。
+
+迁移顺序：
+
+1. 保留真实 Agent Conversation；
+2. 停止新增长期 Conversation / Runtime Platform 功能；
+3. 保持 `Conversation → AgentContent → Presentation` 可运行；
+4. 将 Inspect 聚焦到 Presentation Trace；
+5. 建设 Theme / Catalog / Reliability 开发能力；
+6. 后续通过独立 Issue 判断旧 Runtime 页面保留、隐藏、隔离还是删除。
 
 本 SRS 不要求本次文档 PR 同时完成代码重构。
