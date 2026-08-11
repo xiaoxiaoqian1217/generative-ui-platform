@@ -41,7 +41,7 @@ Roadmap 不自动授权实现。
 如果用户明确要求“修改当前架构”，且任务中已经指出具体冲突，则该明确指令可以作为这些已指出冲突的本次确认。
 后续发现新的未讨论冲突时仍必须重新报告。
 
-## Branch and worktree
+<!-- ## Branch and worktree
 
 - 仅当用户明确声明当前工作是一个 Goal 时，必须使用从最新 `origin/main` 创建的独立任务分支和 worktree。
 - Issue、Pull Request、小型代码改动和文档改动默认可以在当前工作树完成；只有用户明确要求时才创建独立分支或 worktree。
@@ -50,7 +50,7 @@ Roadmap 不自动授权实现。
 - 任务依赖未合并到远端 `main` 时必须暂停。
 - 并行任务不得共享分支或 worktree。
 - 最终验证、发布和合并前必须重新集成并验证最新 `main`。
-- 默认不得直接 push 到 `main`。
+- 默认不得直接 push 到 `main`。 -->
 
 ```bash
 git fetch origin main
