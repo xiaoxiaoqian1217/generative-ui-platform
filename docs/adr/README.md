@@ -30,6 +30,10 @@ Runtime Thread、Turn、Operation、Command Admission、Surface Lifecycle 和可
 Business Agent 继续拥有业务 State、Checkpoint 和业务副作用语义。
 Diagnostic Event 和 Artifact 是诊断投影，不是 Runtime 当前状态恢复的唯一权威来源。
 
+Workbench 与 Runtime Host 之间以 AG-UI 作为唯一 Agent 应用协议。
+当前参考 Transport 为 CopilotKit Runtime 的 HTTP POST + SSE 路径。
+HTTP、SSE 和 WebSocket 只属于 Transport；Runtime Host 与 Business Agent 的 HTTP + SSE / WebSocket 则属于 Business Agent Adapter 私有接入边界。
+
 平台对外采用两种主要接入模式：
 
 - **Presentation Integration**：已有 Agent Runtime 的系统只使用 Markdown / Generative UI Presentation 能力；平台保证展示安全，Action Admission、幂等和恢复由调用方 Runtime 负责；
@@ -52,12 +56,13 @@ UI Compiler Core、Presentation Pipeline、PlatformRunService 和 Runtime Kernel
 | [ADR-0017](./0017-http-observability-and-sensitive-data.md) | 部分被 ADR-0019 取代 | 可观测性 | 独立 Compiler HTTP 终局被取消；安全字段和敏感数据策略继续有效 |
 | [ADR-0018](./0018-expand-repository-scope-to-platform-validation-environment.md) | 部分被 ADR-0019 取代 | 仓库级平台 | 仓库范围扩展为平台全链路验证环境；独立 Compiler 部署结论被调整 |
 | [ADR-0019](./0019-embed-presentation-pipeline-in-agent-runtime-host.md) | 已接受 | 平台后端与 Compiler | 取消独立 UI Compiler Service 应用，将 Presentation Pipeline 嵌入 Runtime Host |
-| [ADR-0020](./0020-workbench-runtime-read-contract-and-copilotkit-headless.md) | 已接受 | Workbench 与 Runtime Host | Workbench 通过 CopilotKit Headless 和只读 Runtime Contract 集成 |
+| [ADR-0020](./0020-workbench-runtime-read-contract-and-copilotkit-headless.md) | 部分被 ADR-0026 取代 | Workbench 与 Runtime Host | CopilotKit Headless 与只读 Runtime Contract 继续有效；并列 HTTP/WebSocket Run 入口语义由 ADR-0026 取代 |
 | [ADR-0021](./0021-retire-runnable-fixture-provider-mode.md) | 已接受 | 模型联调与测试 | 日常联调使用真实模型，测试使用进程内 Stub，退役可运行 Fixture Provider |
-| [ADR-0022](./0022-support-http-sse-and-websocket-business-agent-adapters.md) | 已接受 | Runtime Host 与 Business Agent | 当前支持 HTTP + SSE 与 WebSocket Adapter |
+| [ADR-0022](./0022-support-http-sse-and-websocket-business-agent-adapters.md) | 已接受 | Runtime Host 与 Business Agent | 当前支持 HTTP + SSE 与 WebSocket Business Agent Adapter；不定义 Workbench Agent 协议 |
 | [ADR-0023](./0023-adopt-controlled-copilotkit-conversation-ui-and-platform-thread-history.md) | 部分被 ADR-0024 取代 | Workbench、Runtime Host 与 Business Agent | 受控 CopilotKit 会话 UI 和历史所有权继续有效；Run-centric 交互事实语义由 ADR-0024 取代 |
 | [ADR-0024](./0024-adopt-runtime-truth-model-and-safe-command-admission.md) | 已接受 | Runtime Host、Workbench、Runtime Contract | Thread/Turn/Operation/Surface/Command 事实模型、安全 Command Admission、Runtime Repository 与 Diagnostics 解耦 |
 | [ADR-0025](./0025-adopt-two-external-integration-modes-and-layered-platform-capabilities.md) | 已接受 | 平台接入、Presentation、Runtime Host | 对外采用 Presentation Integration 与 Agent Runtime Integration；内部能力继续分层，并区分 Presentation Safety 与 Interaction Safety |
+| [ADR-0026](./0026-adopt-ag-ui-as-workbench-runtime-application-protocol.md) | 已接受 | Workbench、Runtime Host、协议边界 | AG-UI 是唯一 Workbench Agent 应用协议；HTTP/SSE/WebSocket 仅为 Transport，Business Agent 私有协议由 Adapter 隔离 |
 
 以上表格突出当前跨模块和平台范围决策。
 完整 ADR 集合以本目录中的全部编号文件为准。
@@ -68,7 +73,7 @@ UI Compiler Core、Presentation Pipeline、PlatformRunService 和 Runtime Kernel
 - ADR 编号在仓库中必须唯一，已经使用的编号不得复用。
 - 创建 ADR 前必须扫描本目录中的全部编号文件，使用当前最大编号加一。
 - 被拒绝、废弃或被取代的 ADR 仍然保留原文件和编号。
-- 当前最新编号为 `0025`。
+- 当前最新编号为 `0026`。
 
 ## 状态规则
 

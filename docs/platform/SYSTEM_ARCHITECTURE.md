@@ -2,12 +2,14 @@
 
 本文描述 Generative UI Platform 的当前跨子系统关系。
 Runtime 状态所有权与安全 Action 语义以 ADR-0024 为准。
+Workbench Agent 协议与 Transport 分层以 ADR-0026 为准。
 
 ## 主链路
 
 ```text
 Workbench
    │ AG-UI
+   │ current transport: HTTP POST + SSE
    ▼
 Agent Runtime Host
    ├── Embedded CopilotKit Runtime
@@ -21,11 +23,13 @@ Agent Runtime Host
    │   │   ├── Command Admission
    │   │   └── Surface Lifecycle / Presentation Snapshot
    │   ├── Business Agent Adapter
+   │   │     │ private HTTP+SSE / WebSocket / ...
    │   │     ▼
    │   │   Business Agent
    │   │   ├── Business State / Checkpoint
    │   │   ├── Backend Tools / Side Effects
-   │   │   └── AgentContent
+   │   │   ├── Public Process Events
+   │   │   └── Final AgentContent
    │   └── Embedded Presentation Pipeline
    │         ├── Markdown → PresentationResult
    │         └── Structured Data
@@ -37,6 +41,30 @@ Agent Runtime Host
          ├── AG-UI → Workbench
          └── Diagnostics → Diagnostic Store
 ```
+
+Business Agent 公开的消息、活动、进度、状态、Tool Call / Tool Result 和 Interrupt 等过程事件通过 Runtime Event Projection 进入 Workbench 和 Diagnostics。
+只有最终 AgentContent 进入 Presentation Pipeline。
+
+## 协议与 Transport
+
+```text
+Workbench ↔ Runtime Host
+Application protocol: AG-UI
+Current transport: HTTP POST + SSE
+Future option: AG-UI over WebSocket
+
+Runtime Host ↔ Business Agent
+Private Business Agent Adapter protocol
+Transport: HTTP + SSE / WebSocket / in-process / ...
+
+Non-Agent query
+REST
+```
+
+HTTP、SSE 和 WebSocket 不与 AG-UI 作为并列 Agent 业务协议。
+更换 Transport 不得复制 Runtime Kernel、Runtime Repository、Command Admission 或 Surface 状态机。
+
+迁移期仍存在的 `/api/runs`、`/api/actions`、`/ws/runs` 等端点只作为 compatibility / debug adapter，不是 Workbench 的规范 Agent 应用协议。
 
 ## 事实所有权
 
@@ -59,14 +87,17 @@ Business Agent 与 Runtime Host 通过 `threadId`、`operationId`、可选 `agen
 
 ## 职责边界
 
-- Workbench 只连接 Agent Runtime Host。
-- CopilotKit 是嵌入 Runtime Host 的 Adapter / Infrastructure，不拥有 Runtime Truth。
-- Runtime Kernel 是 Runtime Host 内逻辑层，不是独立服务。
-- Runtime Repository 是 Thread、Turn、Operation、Command 和 Surface 的权威状态源。
-- Business Agent 拥有业务状态、Checkpoint、后端工具和业务副作用语义。
-- Business Agent 最终只输出 Markdown 或结构化数据，不输出 UI Plan Candidate 或 A2UI。
-- Model Adapter 位于 Presentation Pipeline，输出不可信候选结果。
-- UI Compiler Core 是唯一可信 A2UI 生产者。
+- Workbench 只连接 Agent Runtime Host；
+- Workbench Agent 交互只使用 AG-UI；
+- CopilotKit 是嵌入 Runtime Host 的 Adapter / Infrastructure，不拥有 Runtime Truth；
+- Runtime Kernel 是 Runtime Host 内逻辑层，不是独立服务；
+- Runtime Repository 是 Thread、Turn、Operation、Command 和 Surface 的权威状态源；
+- Business Agent 拥有业务状态、Checkpoint、后端工具和业务副作用语义；
+- Business Agent 可以公开过程事件，并以 Markdown 或结构化业务数据作为最终 AgentContent；
+- Business Agent 不输出 UI Plan Candidate 或 A2UI；
+- Business Agent 不要求实现 AG-UI，私有接入协议由 Adapter 隔离；
+- Model Adapter 位于 Presentation Pipeline，输出不可信候选结果；
+- UI Compiler Core 是唯一可信 A2UI 生产者；
 - Diagnostic Store 是观察投影，可以不完整，不能覆盖 Runtime Repository 真相。
 
 ## Action / Command 回传
