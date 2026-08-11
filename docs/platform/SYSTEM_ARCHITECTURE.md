@@ -2,73 +2,120 @@
 
 本文描述 ADR-0027 下的当前系统主线。
 
-## 当前主链路
+## 当前端到端主链路
 
 ```text
-Business Agent / Existing Agent Runtime
-        │
-        │ Final AgentContent / Business Data
-        ▼
-┌──────────────────────────────────────────────┐
-│ Generative UI Presentation Core              │
-│                                              │
-│ Presentation Router                          │
-│   ├── Markdown                               │
-│   │     └── safe Markdown PresentationResult │
-│   │                                          │
-│   └── Structured Business Data               │
-│           ↓                                  │
-│    Presentation Model                        │
-│           ↓                                  │
-│    untrusted UI Plan Candidate               │
-│           ↓                                  │
-│    UI Compiler Core                          │
-│           ↓                                  │
-│    trusted A2UI PresentationResult           │
-└─────────────────────┬────────────────────────┘
-                      │
-                      ▼
-              Controlled Renderer
+User
+ │ natural language
+ ▼
+Generative UI Workbench
+ │
+ │ current Agent Integration
+ ▼
+Reference Integration Host
+ │
+ └── Business Agent Adapter
+          │ private protocol
+          ▼
+     Business Agent
+          │
+          ├── public process events ───────→ Workbench
+          │
+          └── Final AgentContent
+                    │
+                    ▼
+         ┌────────────────────────────────────┐
+         │ Generative UI Presentation Core    │
+         │                                    │
+         │ sanitize / validate                │
+         │          ↓                         │
+         │ Presentation Router                │
+         │   ├── deterministic decision       │
+         │   └── semantic analysis required  │
+         │             ↓                      │
+         │      Presentation Model            │
+         │             ↓                      │
+         │    Presentation Decision           │
+         │      ├── markdown                  │
+         │      └── generative-ui             │
+         │              ↓                     │
+         │       UI Plan Candidate            │
+         │              ↓                     │
+         │       UI Compiler Core             │
+         │              ↓                     │
+         │       trusted A2UI                 │
+         └────────────────┬───────────────────┘
+                          │
+                          ▼
+                  Controlled Renderer
+                          │
+                          ▼
+                      Workbench
 ```
+
+这条链路验证：
+
+> **Natural Language → Business Agent → Final AgentContent → Presentation → UI。**
+
+## Router 规则
+
+ADR-0015 继续有效。
+
+```text
+Markdown or Structured AgentContent
+        ↓
+Presentation Router
+        ├── deterministic decision
+        └── Presentation Model when needed
+        ↓
+Presentation Decision
+        ├── markdown
+        └── generative-ui + UI Plan Candidate
+```
+
+输入类型不等于展示模式。
 
 ## Workbench
 
 ```text
-AgentContent / Scenario
-        ↓
-┌────────────────────────────────────┐
-│ Generative UI Workbench            │
-│                                    │
-│ Input                              │
-│ Presentation Decision              │
-│ UI Plan Candidate                  │
-│ Validation / Compiler Result       │
-│ trusted A2UI                       │
-│ Rendered UI                        │
-│ Theme / Catalog / Viewport         │
-│ Compare / Reliability              │
-└────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│ Generative UI Workbench             │
+│                                     │
+│ Conversation                        │
+│   ├── User natural language         │
+│   ├── Agent public activity         │
+│   └── Generated Presentation        │
+│          └── Inspect Presentation   │
+│                                     │
+│ Inspect                             │
+│   ├── Final AgentContent            │
+│   ├── Presentation Decision         │
+│   ├── UI Plan Candidate             │
+│   ├── Validation / Compiler Result  │
+│   ├── trusted A2UI                  │
+│   └── Rendered UI                   │
+│                                     │
+│ Theme / Catalog / Viewport          │
+│ Reliability / Reference Scenarios   │
+└─────────────────────────────────────┘
 ```
 
-Workbench 当前是 Generative UI Lab。
-它用于验证 Presentation 质量和可靠性，而不是当前阶段的 Agent Runtime 管理产品。
+Workbench 当前是 **真实 Agent 驱动的 Generative UI Lab**。
 
-## 当前 Reference Integration
+AgentContent 是 Inspect 中的可观察边界，不是主输入。
 
-现有代码仍提供一条完整参考链路：
+## Current Reference Integration
 
 ```text
-Reference Business Agent
-        │ private HTTP+SSE / WebSocket / ...
-        ▼
-Business Agent Adapter
-        ▼
-Agent Runtime Host
-├── current CopilotKit / AG-UI integration
+Workbench
+   │ AG-UI
+   │ HTTP POST + SSE
+   ▼
+Reference Integration Host
+├── CopilotKit / AG-UI Integration
+├── Business Agent Adapter
 ├── server-side Presentation Model credentials
 └── Embedded Presentation Pipeline
-        ▼
-Workbench
 ```
 
 这条链路属于 Supporting Integration。
@@ -76,26 +123,24 @@ Workbench
 Business Agent 不需要实现 AG-UI。
 CopilotKit / AG-UI 不属于 Generative UI Core 的强制协议。
 
-如果未来替换 CopilotKit，只需要替换对应 Integration Adapter 和接入层。
-Presentation Pipeline、UI Compiler Core、Component Catalog 和 Theme Contract 不应因此改变。
-
 ## Core / Supporting / Deferred
 
 ```text
 Core
 ├── Presentation Contract
-├── Presentation Router
+├── Presentation Router / Decision
 ├── Presentation Model Adapter
 ├── UI Plan Candidate
 ├── UI Compiler Core
 ├── Component Catalog
 ├── Theme / Presentation Context
 ├── Controlled Renderer contracts
-└── Reliability Evaluation
+└── Reliability Validation
 
 Supporting
 ├── Generative UI Workbench
-├── Agent Runtime Host
+├── real Agent Conversation reference experience
+├── Reference Integration Host
 ├── CopilotKit / AG-UI
 ├── Business Agent Adapter
 ├── Reference Business Agent
@@ -106,10 +151,14 @@ Deferred Runtime Platform
 ├── Runtime Repository
 ├── Surface Lifecycle
 ├── Command Admission
-├── Runtime-owned Conversation History
+├── long-term Runtime-owned Conversation History
+├── Conversation Management
+├── Runtime restart recovery
 ├── Recovery / Reconcile
 └── Runtime Truth Diagnostics
 ```
+
+真实 Agent Conversation 不属于 Deferred。
 
 ## 信任边界
 
@@ -119,8 +168,8 @@ owns Business Truth
         ↓
 Final AgentContent
         ↓
-Presentation Model
-produces untrusted candidate
+Presentation Router / Model
+produces Presentation Decision / untrusted candidate
         ↓
 UI Compiler Core
 owns trusted A2UI compilation boundary
@@ -131,31 +180,34 @@ renders only registered capabilities
 
 Business Agent 不输出 UI Plan 或 A2UI。
 Presentation Model 不修改 Business Truth。
-Renderer 不执行模型生成的任意代码。
+Renderer 不执行模型生成任意代码。
 
-## Theme / Presentation Context
+## Catalog / Theme
 
 ```text
-AgentContent
-+ Component Catalog
-+ Theme / Presentation Context
-+ Viewport Context
-        ↓
-Presentation Model
-        ↓
-UI Plan Candidate
-        ↓
-UI Compiler Core
+Component Catalog
+→ capability authority
+→ What may be used?
+
+Theme
+→ visual expression
+→ How should allowed capabilities look?
 ```
 
-Theme 可以改变视觉表达。
-Theme 不得改变业务事实、获得额外 Action Authority 或绕过 Compiler Policy。
+Theme 可以影响 design tokens、typography、spacing、density、layout preferences 和 Catalog 已授权 variants。
+
+Theme 不得：
+
+- 增加 / 删除 Catalog capability；
+- 授权新的 Action；
+- 改变 Business Truth；
+- 绕过 Compiler Policy。
 
 ## Deferred Agent Runtime Integration
 
-已有 Runtime-first 设计继续由 ADR-0024、ADR-0025 和 ADR-0026 约束。
+已有 Runtime-first 设计继续由 ADR-0024 和 ADR-0025 约束。
 
-当平台未来真正拥有用户 Action 的执行权威时，可以重新激活：
+未来当平台真正拥有用户 Action 执行权威时，可以重新激活：
 
 ```text
 Thread
@@ -173,17 +225,16 @@ Diagnostics
 它们当前不属于 Presentation-first MVP Release Gate。
 
 本次 Scope Reset 不要求删除现有实现。
-已有 Runtime 路径继续存在期间，不得放宽其幂等、Surface、历史 Action Authority 和 Command Admission 安全规则。
+已有 Runtime 路径继续存在期间不得放宽幂等、Surface、Historical Action Authority 和 Command Admission 安全规则。
 
 ## 当前范围判断
 
 一个新功能只有在直接提升以下至少一项时才属于当前主线：
 
 - AgentContent → Presentation 语义正确性；
-- 生成 UI 视觉质量；
-- Theme 一致性；
+- Theme / Presentation Context 一致性；
 - UI Plan → trusted A2UI 安全与可靠性；
-- Workbench 调试、比较或评测效率；
+- 真实 Agent 驱动 Generative UI 的调试 / 验证效率；
 - Core 必需的最小 Integration。
 
-其他通用 Agent Runtime 能力默认 Deferred。
+长期 Conversation Service、Runtime Repository、Recovery 和 Runtime Observability 默认 Deferred。
