@@ -6,97 +6,124 @@
 
 **权威范围决策：** ADR-0027。
 
-本文定义平台级范围，不替代或删除现有 Compiler MVP 文档。
-`docs/REQUIREMENTS.md`、`docs/ARCHITECTURE.md` 和 `docs/Generative_UI_Compiler_Design.md` 继续作为 Generative UI Compiler 子系统基线。
+本文定义平台级 MUST / MUST NOT，不替代 Compiler 子系统基线。
+`docs/REQUIREMENTS.md`、`docs/ARCHITECTURE.md`、`docs/Generative_UI_Compiler_Design.md` 和对应 Compiler ADR 继续约束 Compiler 内部信任与编译边界。
 
-## 1. 建设背景
+## 1. 产品问题
 
-Generative UI Platform 最初要解决的问题是：
+当前平台只优先解决一个核心问题：
 
-> Business Agent 输出业务内容后，平台如何通过 Presentation Intelligence 自动生成美观、可靠、主题一致且受控的 UI。
+> 用户通过真实 Agent Conversation 获得业务结果后，平台如何把 Business Agent 的最终 AgentContent 自动转换为可靠、主题一致且受控的 Presentation。
 
-仓库后续加入了 Agent Runtime Host、CopilotKit、AG-UI、Conversation、Runtime Repository、Thread / Turn / Operation、Surface Lifecycle、Command Admission、Recovery 和 Diagnostics。
-这些能力可以解决完整 Agent Runtime Integration 问题。
-但它们不是证明 Generative UI Presentation 能力成立的必要前提。
-
-当前阶段因此回归最短价值链：
+当前主链路：
 
 ```text
+User
+  ↓ natural language
+Workbench / Business Frontend
+  ↓ Agent interaction
 Business Agent / Existing Agent Runtime
-        ↓
-Final AgentContent / Business Data
-        ↓
+  ↓ Final AgentContent
 Presentation Pipeline
-        ↓
-Presentation Model
-        ↓
-untrusted UI Plan Candidate
-        ↓
-UI Compiler Core
-        ↓
-trusted A2UI / PresentationResult
-        ↓
-Renderer
+  ↓ Presentation Decision
+  ├── markdown
+  └── generative-ui
+          ↓
+     UI Plan Candidate
+          ↓
+     UI Compiler Core
+          ↓
+     trusted A2UI
+          ↓
+     Controlled Renderer
 ```
 
-## 2. 平台定位
+Business Agent 不负责 UI Plan、A2UI、前端组件或布局实现。
 
-Generative UI Platform 当前定位为：
+## 2. 当前 North Star
 
-> **与 Agent Framework 解耦的 Generative UI Presentation Engine，以及用于验证其质量、可靠性和安全性的开发工具链。**
+> 将 Business Agent 或已有 Agent Runtime 产生的最终 AgentContent，转换为可靠、主题一致且受控的 Presentation，并通过真实 Agent Conversation 验证这条链路。
 
-平台负责把 Business Agent 或已有 Agent Runtime 产生的最终业务内容转换为可信 Presentation。
-平台不要求 Business Agent 理解 A2UI、Component Catalog、前端组件或 Generative UI。
-平台也不要求调用方采用 CopilotKit、AG-UI 或平台托管会话。
-
-当前平台优先承诺 **Presentation Safety**。
-完整 Interaction Safety 只属于未来或已有的 Agent Runtime Integration 路径。
-
-## 3. 当前 North Star
-
-当前 North Star 是：
-
-> 将 Markdown / structured AgentContent 转换为语义正确、视觉合理、主题一致、可验证且受控的 Presentation。
-
-当前阶段所有新增功能必须至少直接提升以下一项：
+当前新增功能必须至少直接提升以下一项：
 
 1. `AgentContent → Presentation` 的语义正确性；
-2. 生成 UI 的视觉质量；
-3. Theme / Presentation Context 下的一致性；
-4. 模型输出到 trusted A2UI 的安全性和可靠性；
-5. Generative UI 的可调试、可比较、可评测能力；
-6. 为 Core 提供必要且最小的 Framework / Runtime Integration。
+2. Theme / Presentation Context 一致性；
+3. 模型候选到 trusted A2UI 的安全性和可靠性；
+4. 真实 Agent 驱动 Generative UI 的可调试、可比较、可验证能力；
+5. Core 所必需的最小 Framework / Runtime Integration。
 
-主要解决通用 Agent Runtime、Conversation Service、Workflow Recovery 或 Runtime Observability 的能力默认属于 Deferred。
+主要解决长期 Conversation Service、Runtime Repository、Workflow Recovery 或 Runtime Observability Platform 的能力默认 Deferred。
 
-## 4. 当前 Active Core
+## 3. 当前产品分层
 
-当前 Core 必须支持：
+### 3.1 Active Core
+
+当前 Core 包括：
 
 - AgentContent / Presentation Contract；
-- Markdown 与 structured business data 两类最终输入；
 - Presentation Router；
+- Presentation Decision；
 - Presentation Model Adapter；
 - UI Plan Candidate；
 - UI Compiler Core；
 - Component Catalog；
 - Validation / Policy / Binding / Action Descriptor 约束；
 - trusted A2UI / PresentationResult；
-- 受控 Renderer；
+- Controlled Renderer contract；
 - Theme / Presentation Context；
-- Generative UI reliability evaluation。
+- Generative UI reliability validation。
 
-### 4.1 Business Agent 输出边界
+当前不要求 Presentation Quality 自动评分体系。
+
+### 3.2 Supporting
+
+以下能力用于接入、验证和演示 Core：
+
+- Generative UI Workbench；
+- 真实 Agent Conversation reference experience；
+- Agent Runtime Host；
+- CopilotKit Runtime；
+- AG-UI；
+- Business Agent Adapter；
+- Reference Business Agent；
+- HTTP / SSE / WebSocket Transport；
+- Reference Scenarios；
+- Development / E2E tooling。
+
+Supporting MUST NOT 反向定义 Core 产品边界。
+
+### 3.3 Deferred Runtime Platform
+
+以下能力保留既有设计和实现，但当前停止扩张：
+
+- Runtime Thread / Turn / Operation 产品语义；
+- Runtime Repository；
+- Surface Lifecycle 产品化；
+- Command Admission 产品化；
+- Runtime-owned long-term Conversation History；
+- Conversation Rename / Archive / Delete；
+- Runtime Host restart recovery；
+- Recovery / Reconcile；
+- Runtime Truth Diagnostics；
+- 完整 Agent Runtime Platform。
+
+ADR-0024 继续约束仍存在的 Runtime Integration 路径。
+Scope Reset 不允许降低既有 Action / Surface / Command 安全边界。
+
+## 4. Business Agent 边界
 
 Business Agent 负责：
 
+- 用户业务意图理解；
 - 业务推理；
 - 后端工具；
 - 业务 State / Checkpoint；
 - 业务副作用语义；
 - 最终业务结果。
 
-Business Agent 的最终 AgentContent 只能是：
+Business Agent 最终向 Presentation Pipeline 提供 AgentContent。
+
+AgentContent MAY 是：
 
 - Markdown；
 - structured business data。
@@ -110,209 +137,280 @@ Business Agent MUST NOT 输出：
 - Component Catalog 选择；
 - 前端布局实现。
 
-### 4.2 Presentation Pipeline
+Business Agent Adapter MUST NOT 总结、改写、重新解释或重新决定 Business Truth。
 
-Presentation Pipeline 负责最终业务结果到 Presentation 的转换。
+## 5. Presentation Pipeline
 
-Markdown AgentContent 默认直接形成安全 Markdown PresentationResult。
+Presentation Pipeline 负责最终 AgentContent → PresentationResult。
 
-Structured AgentContent 进入：
+### 5.1 输入处理
+
+进入 Router 前必须：
+
+- 对 Markdown 执行既有 Sanitizer 安全边界；
+- 对 structured data 执行 Contract Validation / safe serialization；
+- 加载并验证当前 Component Catalog；
+- 建立受控 Presentation Context。
+
+### 5.2 Router 语义
+
+ADR-0015 继续作为 Presentation Router / Model Adapter 的权威语义。
+
+Markdown 与 structured data 都是 `RoutableAgentContent`。
+
+Presentation Router MUST：
+
+- 对明确场景允许确定性决策；
+- 仅在需要展示语义分析时调用 Presentation Model Adapter；
+- 最终产生 `markdown | generative-ui` Presentation Decision；
+- 仅在 `generative-ui` 分支携带完整 UI Plan Candidate。
+
+平台 MUST NOT 把输入类型直接等同为展示模式。
+
+禁止写成：
 
 ```text
-Presentation Router
-→ Presentation Model
-→ untrusted UI Plan Candidate
-→ UI Compiler Core
-→ trusted A2UI PresentationResult
+Markdown => always markdown
+Structured data => always model => generative-ui
 ```
 
-Presentation Model 可以理解业务内容并选择展示结构。
-Presentation Model MUST NOT 重新决定业务事实。
-Presentation Model MUST NOT 执行业务工具或业务副作用。
-Presentation Model 输出始终是不可信候选。
+### 5.3 Presentation Model
 
-### 4.3 UI Compiler Core
+Presentation Model MAY：
+
+- 理解已经确定的业务内容；
+- 规划信息层级；
+- 建议 Catalog 允许范围内的组件能力；
+- 规划布局；
+- 根据 Theme / Viewport 调整展示方案。
+
+Presentation Model MUST NOT：
+
+- 修改 Business Truth；
+- 执行业务工具；
+- 产生受信任 A2UI；
+- 绕过 Component Catalog；
+- 输出任意可执行前端代码。
+
+Model Adapter 输出始终是不可信候选，并必须经过 Presentation Decision Schema 校验。
+
+## 6. UI Compiler Core
 
 UI Compiler Core 是唯一可信 A2UI 生产者。
 
-UI Compiler Core 必须保持：
+它必须保持：
 
 - Agent Framework 中立；
 - Transport 中立；
-- 模型供应商中立；
-- 前端框架中立；
-- 不执行模型生成代码；
-- 不负责业务推理；
-- 不负责 Presentation Mode 选择。
+- Provider 中立；
+- Frontend Framework 中立；
+- deterministic validation；
+- explicit failure / fallback；
+- no model-generated code execution。
 
-UI Compiler Core 必须基于运行时 Schema、Component Catalog、Props、Binding、Action Descriptor 和安全 Policy 验证候选。
+UI Compiler Core 必须验证：
+
+- Runtime Schema；
+- Component Catalog identity；
+- Component capability；
+- Props；
+- Binding；
+- Action Descriptor；
+- Policy；
+- 结构和 nesting constraints。
+
 非法候选必须失败或显式降级，不得直接进入 Renderer。
 
-### 4.4 Theme / Presentation Context
+## 7. Component Catalog 与 Theme
 
-Theme 属于当前产品主线，而不是装饰性附属能力。
+### 7.1 Component Catalog
 
-平台必须允许 Presentation 在不改变业务事实的前提下，根据受控 Theme / Presentation Context 产生不同视觉表达。
+Component Catalog 是 capability authority，回答：
 
-Theme / Presentation Context 可以影响：
+> 当前 Presentation 可以使用什么组件和 Action 能力？
 
-- 可用组件能力；
-- 视觉密度；
-- 布局偏好；
-- 组件变体；
-- Typography / spacing 等受控 design token；
-- Viewport / device context。
+Catalog 必须独立于 Theme 管理和版本化。
 
-Theme MUST NOT 改变业务数据语义或绕过 Compiler 安全约束。
+### 7.2 Theme
 
-Theme / Presentation Context 的稳定公共 Contract 需要独立设计和验收。
+Theme 回答：
 
-### 4.5 Reliability Evaluation
+> Catalog 已允许的能力应该以什么视觉风格表达？
 
-平台当前必须把“生成结果是否可靠”作为一等工程问题。
+Theme MAY 影响：
 
-至少需要能够验证：
+- design tokens；
+- typography；
+- spacing；
+- density；
+- layout preferences；
+- Catalog 已授权范围内的 component variants。
 
-- 同一输入是否稳定得到合法结果；
-- 是否出现不存在的组件；
-- Props 是否满足 Contract；
-- Binding 是否引用有效数据；
-- Action Descriptor 是否符合 Catalog / Policy；
-- 非法 UI Plan 是否被 Compiler 拒绝；
-- Presentation Model 失败时 fallback 是否明确；
-- 不同 Theme 下业务语义是否保持一致；
-- Renderer 是否可以稳定渲染 trusted A2UI。
+Theme MUST NOT：
 
-具体 reliability 指标体系可以分阶段建设。
+- 增加或删除 Catalog capability；
+- 授权新的 Action；
+- 绕过 Compiler Policy；
+- 改变 Business Truth。
 
-## 5. Generative UI Workbench
+如果需要同时配置 Catalog 与 Theme，应由 Presentation Context / Profile 分别携带 `catalogRef` 与 `themeRef`。
 
-Generative UI Workbench 当前定位为：
+## 8. Generative UI Workbench
 
-> **Generative UI Lab / 可视化开发调试工作台。**
+Workbench 当前定位为：
 
-Workbench 的核心用户任务是：
+> **Generative UI Lab / 真实 Agent 驱动的可视化开发调试工作台。**
 
-1. 输入或选择 AgentContent / Reference Scenario；
-2. 触发 Presentation；
-3. 查看 Presentation Decision；
-4. 查看 UI Plan Candidate；
-5. 查看 Validation / Compiler Result；
-6. 查看 A2UI；
-7. 查看最终 Renderer；
-8. 切换 Theme / Catalog / Viewport；
-9. 比较不同模型、配置或主题的输出；
-10. 验证 fallback、非法候选和稳定性场景。
+### 8.1 主输入
 
-Workbench 不得成为 Business Agent、UI Compiler 或业务工具执行器。
+Workbench 的主输入 MUST 是用户自然语言，而不是手工 AgentContent JSON。
 
-Workbench 当前 MVP 不要求：
+主流程：
 
-- Conversation-first 产品体验；
-- Runtime-owned Conversation History；
-- Runtime Host 重启恢复；
-- Thread / Turn / Operation 产品化；
-- Surface Lifecycle 产品化；
-- Command Admission 产品化；
-- 完整 Runtime Diagnostics；
-- Diagnostic Bundle 产品化。
+```text
+Natural language
+→ Business Agent
+→ Final AgentContent
+→ Presentation Pipeline
+→ Generated Presentation
+```
 
-现有相关页面和代码可以在迁移期保留。
-但它们不得继续成为当前 Workbench Release Gate。
+AgentContent 是可观察的中间边界。
+Workbench MAY 在 Inspect 中显示 AgentContent，但手工粘贴 AgentContent 不属于当前核心用户任务。
 
-## 6. Supporting Integration
+Fixture / unit test / dedicated test harness MAY 直接构造 AgentContent。
 
-以下能力保留为 Supporting：
+### 8.2 主体验
 
-- Agent Runtime Host；
-- CopilotKit Runtime；
-- AG-UI；
-- Business Agent Adapter；
-- Reference Business Agent；
-- HTTP / SSE / WebSocket Transport；
-- Reference Scenarios；
-- 开发环境和 E2E。
+Workbench 当前应支持：
 
-Supporting Integration 的目标是：
+- 用户自然语言输入；
+- 当前 Reference Agent Integration；
+- Business Agent 公开过程信息；
+- 最终 Markdown / Generative UI Presentation；
+- 从 Presentation 打开 Inspect；
+- Inspect AgentContent；
+- Inspect Presentation Decision；
+- Inspect UI Plan Candidate；
+- Inspect Validation / Compiler Result；
+- Inspect trusted A2UI；
+- 查看 Rendered UI；
+- Theme / Catalog / Viewport 开发调试；
+- fallback / invalid candidate / basic reliability 场景。
 
-- 提供真实 AgentContent 来源；
-- 提供服务端 Presentation Model 凭据边界；
-- 提供可运行的参考接入链路；
-- 验证 Framework Adapter 不污染 Core；
-- 验证 Core 在真实应用中的可嵌入性。
+### 8.3 Conversation 边界
 
-Supporting Integration MUST NOT 反向定义 Generative UI Core 的产品边界。
+真实 Conversation 是当前 Workbench Supporting Core Experience，不属于 Deferred。
 
-## 7. Agent Runtime Host 当前边界
+以下完整 Conversation Platform 能力当前 Deferred：
 
-`apps/agent-runtime-host` 当前保留为参考 Integration Host。
+- long-term Conversation History；
+- Rename / Archive / Delete；
+- Runtime-owned History；
+- Runtime Host restart recovery；
+- Thread / Turn / Operation 产品浏览；
+- 完整 Conversation Service。
 
-当前允许它继续：
+Workbench MUST NOT：
+
+- 成为 Business Agent；
+- 重新解释 Business Truth；
+- 自己调用模型生成第二份 UI Plan；
+- 绕过 Presentation Pipeline；
+- 绕过 UI Compiler Core；
+- 把 UI Plan Candidate 当作 trusted A2UI；
+- 执行模型生成任意 HTML / JavaScript；
+- 持有 Presentation Model Provider credentials。
+
+## 9. Agent Runtime Host 当前边界
+
+`apps/agent-runtime-host` 当前是 **Reference Integration Host**。
+
+它 MAY 继续：
 
 - 承载 CopilotKit Runtime / AG-UI 参考入口；
-- 通过 Business Agent Adapter 接入 Reference Business Agent；
-- 在服务端持有 Presentation Model Provider 凭据；
+- 为 Workbench 提供真实 Agent Conversation；
+- 通过 Business Agent Adapter 接入 Reference / Remote Business Agent；
+- 在服务端持有 Presentation Model credentials；
 - 组装 Presentation Pipeline；
-- 提供 Workbench 和 E2E 所需的参考服务；
-- 保留已有 Runtime Platform 路径的兼容和安全行为。
+- 把最终 AgentContent 送入 Presentation Pipeline；
+- 为 Workbench / E2E 提供可运行服务；
+- 保持既有 Runtime Integration 的安全行为。
 
-当前阶段禁止无新决策继续扩大：
+它当前 MUST NOT 因为已有代码存在而继续扩大 Deferred Runtime Platform。
 
-- Thread / Turn / Operation 产品模型；
-- Runtime Repository；
-- Surface Lifecycle；
-- Command Admission；
-- Reconcile；
-- Runtime Recovery；
-- 完整 Conversation Service；
-- 完整 Diagnostic Platform。
+## 10. Framework independence
 
-现有这些代码继续存在期间，仍必须遵守 ADR-0024 的安全不变量。
+Generative UI Core MUST NOT 依赖 CopilotKit、AG-UI 或特定 Business Agent 才能成立。
 
-## 8. Deferred Runtime Platform
+当前 Reference Integration 可以使用：
 
-ADR-0025 定义的 Agent Runtime Integration 保留为长期能力。
+```text
+Workbench ↔ Runtime Host
+Application protocol: AG-UI
+Transport: HTTP POST + SSE
+```
 
-以下能力当前 Deferred：
+ADR-0026 继续约束这条 Supporting Reference Path。
 
-- Runtime Thread；
-- Turn；
-- Operation；
-- Runtime Repository；
-- Surface Lifecycle；
-- Command Admission；
-- Runtime-owned Conversation History；
-- Recovery / Reconcile；
-- Runtime Truth Diagnostics；
-- exactly-one Command Admission 保证。
+未来可以通过 Package API、REST、AG-UI / CopilotKit、LangGraph 或自研 Runtime Adapter 接入 Presentation Core。
+稳定公共 API 形态需要独立 ADR。
 
-只有当未来明确需要平台拥有 Stateful Interaction 和 Action Execution Authority 时，才恢复这部分产品化工作。
+## 11. 当前 MVP Release Gate
 
-如果未来恢复，ADR-0024 继续作为 Runtime Truth 和 Interaction Safety 的基础。
+### G1 Real Agent Conversation
 
-## 9. Framework Independence
+- Workbench 可以输入自然语言；
+- 可以驱动 Reference / Real Business Agent；
+- Business Agent 公开过程与最终 AgentContent 能被区分；
+- 不要求 Business Agent 理解 Generative UI。
 
-Generative UI Core 不得依赖 CopilotKit 或 AG-UI 才能成立。
+### G2 Presentation Routing
 
-当前允许的集成形态包括但不限于：
+- Markdown 和 structured data 均可进入 Router；
+- Router 可以确定性决策；
+- 只有需要语义分析时才调用 Presentation Model；
+- Decision 正确区分 `markdown | generative-ui`。
 
-- Package embedding；
-- Reference Integration Host；
-- CopilotKit / AG-UI Adapter；
-- LangGraph Integration；
-- 自研 Runtime Adapter；
-- 未来 REST API。
+### G3 Trusted Compilation
 
-Presentation Integration 的稳定公共 API 形态必须通过独立决策确定。
-本文不自动重新引入独立 UI Compiler Service。
+- UI Plan Candidate 始终不可信；
+- Catalog、Props、Binding、Action / Policy 可验证；
+- 非法候选被拒绝；
+- UI Compiler Core 是唯一可信 A2UI 生产者。
 
-## 10. 当前非目标
+### G4 Rendering
+
+- Markdown 安全展示；
+- trusted A2UI 使用受控 Renderer 稳定展示；
+- fallback / error 状态明确；
+- 不执行模型生成代码。
+
+### G5 Theme / Catalog Boundary
+
+- Theme 与 Catalog capability authority 分离；
+- Theme 不改变 Business Truth；
+- Theme 不新增组件或 Action 权限。
+
+### G6 Workbench Inspect / Reliability
+
+- 从真实 Conversation 可以查看 AgentContent、Decision、UI Plan、Validation、A2UI 和最终 UI；
+- 可以验证合法、非法、fallback 和基础重复生成场景；
+- 可以定位问题发生在 AgentContent、Router / Model、Compiler 还是 Renderer。
+
+### G7 Framework Independence
+
+- Core Packages 不依赖 CopilotKit / AG-UI / 具体 Business Agent；
+- Reference Integration 可替换而不改变 Presentation Core 语义。
+
+## 12. 当前非目标
 
 当前阶段不主动建设：
 
+- 手工 AgentContent JSON Playground 作为 Workbench 核心体验；
+- Presentation Quality 自动评分体系；
 - 完整 Agent Runtime Platform；
-- 完整 Conversation Service；
-- Runtime Thread / Operation 产品化；
+- 完整长期 Conversation Service；
 - Runtime Repository 产品化；
 - Surface / Command Admission 新能力；
 - Reconcile 和复杂 Runtime Recovery；
@@ -321,60 +419,20 @@ Presentation Integration 的稳定公共 API 形态必须通过独立决策确�
 - 多 Business Agent 自动路由；
 - 多 Agent 自主协同；
 - 真实设备控制；
-- 生产级多租户、细粒度权限、审计和计费；
-- 保存 Business Agent 私有 State、Checkpoint 或完整内部推理轨迹；
-- 任意 HTML、JavaScript、Vue 或 React 代码生成；
-- 完整 A2UI 全规范迁移。
+- 生产级多租户、权限、审计和计费；
+- 任意 HTML、JavaScript、Vue 或 React 代码生成。
 
-## 11. 当前 MVP Release Gate
+## 13. 迁移与验证要求
 
-当前 MVP 必须证明：
+本次 Scope Reset 不要求立即删除 Runtime Platform 代码。
 
-### G1 AgentContent Contract
+后续按以下原则执行：
 
-- Markdown 与 structured business data 输入边界明确；
-- Business Agent 不需要理解 UI；
-- 非法输入有稳定错误结果。
-
-### G2 Presentation Intelligence
-
-- Markdown 路径明确；
-- structured content 可以进入 Presentation Model；
-- Presentation Model 不重写业务事实；
-- Presentation Decision 可以被观察和调试。
-
-### G3 Trusted Compilation
-
-- UI Plan Candidate 始终是不可信输入；
-- Component Catalog 和 Policy 可验证；
-- 非法 Props / Binding / Action 被拒绝；
-- UI Compiler Core 是唯一可信 A2UI 生产者。
-
-### G4 Rendering Quality
-
-- trusted A2UI 可以被受控 Renderer 稳定渲染；
-- Markdown 安全展示；
-- fallback 状态明确；
-- 不执行任意模型生成代码。
-
-### G5 Theme / Context
-
-- 至少能够验证不同 Theme / Presentation Context；
-- Theme 不改变业务事实；
-- Theme 不绕过 Catalog / Compiler 安全边界。
-
-### G6 Workbench / Reliability
-
-- Workbench 可以观察 AgentContent、Decision、UI Plan、Validation、A2UI 和最终 UI；
-- 可以验证合法、非法、fallback 和稳定性场景；
-- 可以用于定位 Generative UI 生成质量问题。
-
-### G7 Framework Independence
-
-- Core Packages 不依赖 CopilotKit、AG-UI 或具体 Business Agent；
-- 当前参考 Integration 可以替换而不改变 Presentation Core 语义。
-
-## 12. 验证要求
+1. 停止新增 Deferred Runtime 功能；
+2. 保持 `Natural Language → Business Agent → AgentContent → Presentation` 主链路可运行；
+3. 优先建设 Presentation / Compiler / Theme / Workbench Inspect / Reliability；
+4. 审查 Presentation Contract / Pipeline 中残留的 Thread / Run / Surface metadata；
+5. 通过独立 Issue 决定旧 Runtime 代码保留、隔离或删除。
 
 Documentation-only 修改必须通过 `pnpm docs:check`。
 
@@ -387,7 +445,4 @@ pnpm test
 pnpm build
 ```
 
-Workbench 修改需要执行对应单元测试和浏览器验证。
-
-Runtime Platform Deferred 区域只在维护现有兼容或安全行为时修改。
-新增 Runtime Platform 功能必须先有新的明确范围授权。
+Workbench 修改需要执行对应单元测试和浏览器 E2E。
