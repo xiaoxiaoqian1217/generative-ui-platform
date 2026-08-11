@@ -48,14 +48,14 @@ Roadmap 不自动授权实现。
 
 ## Branch and worktree
 
-- 仅当用户明确声明当前工作是一个 Goal 时，必须使用从最新 `origin/main` 创建的独立任务分支和 worktree。
+- 仅当用户明确声明当前工作是一个 Goal 时，必须使用从最新 `origin/dev_1.0` 创建的独立任务分支和 worktree。
 - Issue、Pull Request、小型代码改动和文档改动默认可以在当前工作树完成；只有用户明确要求时才创建独立分支或 worktree。
-- 任务分支使用 `--no-track`，不得跟踪 `origin/main`。
+- 任务分支使用 `--no-track`，不得跟踪 `origin/dev_1.0`。
 - 小型只读检查和文档维护可以不创建 worktree，但必须先检查分支和工作树状态。
-- 任务依赖未合并到远端 `main` 时必须暂停。
+- 任务依赖未合并到远端 `dev_1.0` 时必须暂停。
 - 并行任务不得共享分支或 worktree。
-- 最终验证、发布和合并前必须重新集成并验证最新 `main`。
-- 默认不得直接 push 到 `main`。
+- 最终验证、发布和合并前必须重新集成并验证最新 `dev_1.0`。
+- 默认不得直接 push 到 `dev_1.0`。
 
 ## Current product north star
 
