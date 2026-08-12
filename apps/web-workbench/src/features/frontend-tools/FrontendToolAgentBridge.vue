@@ -15,6 +15,7 @@ const emit = defineEmits<{
 const { agent } = useAgent({ agentId: "default" });
 const { copilotkit } = useCopilotKit();
 type AgentInstance = NonNullable<typeof agent.value>;
+let runGeneration = 0;
 
 useFrontendTool({
   name: "locateDevice",
@@ -23,7 +24,10 @@ useFrontendTool({
   parameters: z.object({
     deviceId: z.string().describe("Business device ID, for example 01"),
   }),
-  async handler({ deviceId }) {
+  async handler({ deviceId }, { signal }) {
+    if (signal?.aborted === true) {
+      throw new Error("AG_UI_MOCK_RUN_CANCELLED");
+    }
     emit("activityChange", { deviceId, status: "running" });
     const result = locateDevice({ deviceId });
     if (result.status === "not-found") {
@@ -58,13 +62,20 @@ function resolvedAgent(timeoutMs = 5_000): Promise<AgentInstance> {
 }
 
 async function run(message: string): Promise<string> {
+  const generation = ++runGeneration;
   const currentAgent = await resolvedAgent();
+  if (generation !== runGeneration) {
+    throw new Error("AG_UI_MOCK_RUN_CANCELLED");
+  }
   currentAgent.addMessage({
     content: message,
     id: globalThis.crypto.randomUUID(),
     role: "user",
   });
   await copilotkit.value.runAgent({ agent: currentAgent });
+  if (generation !== runGeneration) {
+    throw new Error("AG_UI_MOCK_RUN_CANCELLED");
+  }
   const response = [...currentAgent.messages]
     .reverse()
     .find(
@@ -76,7 +87,15 @@ async function run(message: string): Promise<string> {
     : "定位请求已完成";
 }
 
-defineExpose({ run });
+function stopRun(): void {
+  runGeneration += 1;
+  const currentAgent = agent.value;
+  if (currentAgent !== null) {
+    copilotkit.value.stopAgent({ agent: currentAgent });
+  }
+}
+
+defineExpose({ run, stop: stopRun });
 </script>
 
 <template><span hidden></span></template>

@@ -10,7 +10,10 @@ const port = Number(process.env.WEB_WORKBENCH_E2E_PORT ?? "4173");
 const agUiMockPort = Number(process.env.AG_UI_MOCK_E2E_PORT ?? "4174");
 const includeAgUiMock = process.env.WEB_WORKBENCH_E2E_MODE !== "platform";
 const agUiMock = includeAgUiMock
-  ? createAguiMockServer({ scenario: "locate-device" })
+  ? createAguiMockServer({
+      responseDelayMs: 1_000,
+      scenario: "locate-device",
+    })
   : undefined;
 const agUiMockAddress = await agUiMock?.listen({
   host: "127.0.0.1",

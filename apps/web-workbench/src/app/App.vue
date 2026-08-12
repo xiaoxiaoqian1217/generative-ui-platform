@@ -419,7 +419,10 @@ function isLocateDeviceRequest(message: string): boolean {
   return /定位.*(?:无人机|设备).*(?:01|1)|locate.*(?:01|1)/iu.test(message);
 }
 
-async function runAgUiMock(message: string): Promise<string> {
+async function runAgUiMock(
+  message: string,
+  signal: AbortSignal,
+): Promise<string> {
   if (agUiMockBridge.value === undefined) {
     throw new WorkbenchRuntimeError(
       "WORKBENCH_RUNTIME_UNAVAILABLE",
@@ -427,7 +430,40 @@ async function runAgUiMock(message: string): Promise<string> {
       { retryable: true },
     );
   }
-  return agUiMockBridge.value.run(message);
+  const bridge = agUiMockBridge.value;
+  if (signal.aborted) {
+    throw new WorkbenchRuntimeError(
+      "WORKBENCH_REQUEST_CANCELLED",
+      "请求已取消。",
+      { retryable: false },
+    );
+  }
+  return new Promise<string>((resolve, reject) => {
+    let settled = false;
+    const settle = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener("abort", onAbort);
+      callback();
+    };
+    const onAbort = () => {
+      bridge.stop();
+      settle(() =>
+        reject(
+          new WorkbenchRuntimeError(
+            "WORKBENCH_REQUEST_CANCELLED",
+            "请求已取消。",
+            { retryable: false },
+          ),
+        ),
+      );
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+    void bridge.run(message).then(
+      (response) => settle(() => resolve(response)),
+      (error: unknown) => settle(() => reject(error)),
+    );
+  });
 }
 
 function locateTestDevice(): void {
@@ -466,7 +502,10 @@ async function sendMessage(message = input.value): Promise<void> {
 
   try {
     if (shouldUseAgUiMock) {
-      const assistantText = await runAgUiMock(normalizedMessage);
+      const assistantText = await runAgUiMock(
+        normalizedMessage,
+        controller.signal,
+      );
       conversation.value = resolveLocalFrontendTool(
         conversation.value,
         turnId,

@@ -18,6 +18,7 @@ const scenarios: Record<AgUiMockScenarioName, AgUiMockScenario> = {
 };
 
 export interface CreateAguiMockServerOptions {
+  readonly responseDelayMs?: number;
   readonly scenario?: AgUiMockScenarioName;
 }
 
@@ -77,7 +78,7 @@ function sendEvents(
   response.end();
 }
 
-function requestHandler(scenario: AgUiMockScenario) {
+function requestHandler(scenario: AgUiMockScenario, responseDelayMs: number) {
   return async (request: IncomingMessage, response: ServerResponse) => {
     const url = new URL(request.url ?? "/", "http://ag-ui-mock.local");
     if (request.method === "OPTIONS") {
@@ -109,6 +110,11 @@ function requestHandler(scenario: AgUiMockScenario) {
           });
           return;
         }
+        if (responseDelayMs > 0) {
+          await new Promise((resolve) =>
+            globalThis.setTimeout(resolve, responseDelayMs),
+          );
+        }
         sendEvents(response, scenario.events(parsed.data));
       } catch {
         json(response, 400, { code: "AG_UI_MOCK_JSON_INVALID" });
@@ -130,7 +136,8 @@ export function createAguiMockServer(
   options: CreateAguiMockServerOptions = {},
 ): AgUiMockServer {
   const scenario = scenarios[options.scenario ?? "echo"];
-  const server = createServer(requestHandler(scenario));
+  const responseDelayMs = Math.max(0, options.responseDelayMs ?? 0);
+  const server = createServer(requestHandler(scenario, responseDelayMs));
   return {
     close: () => close(server),
     listen(listenOptions = {}) {

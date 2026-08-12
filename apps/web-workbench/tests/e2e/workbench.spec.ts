@@ -61,6 +61,35 @@ test("AGUIMock frontend tool locates Drone 01 on the MapLibre business surface",
   await expect(page.getByTestId("local-frontend-tool-result")).toHaveCount(2);
 });
 
+test("stop cancels a delayed AGUIMock run without accepting its late result", async ({
+  page,
+}) => {
+  test.skip(
+    process.env.WEB_WORKBENCH_E2E_MODE === "platform",
+    "The platform suite validates the production Runtime Host topology.",
+  );
+  await page.request.post("/__control__/runtime-down");
+  await page.goto("/");
+
+  await chatInput(page).fill("定位无人机 01");
+  await sendMessage(page).click();
+  const stop = page.getByRole("button", { name: "停止生成" });
+  await expect(stop).toBeVisible();
+  await stop.click();
+
+  await expect(page.getByTestId("run-status")).toContainText("已取消");
+  await expect(page.getByTestId("turn-failure")).toContainText(
+    "WORKBENCH_REQUEST_CANCELLED",
+  );
+  await page.waitForTimeout(1_250);
+  await expect(page.getByTestId("run-status")).toContainText("已取消");
+  await expect(page.getByTestId("local-frontend-tool-result")).toHaveCount(0);
+  await expect(page.getByTestId("device-marker-01")).toHaveAttribute(
+    "data-highlighted",
+    "false",
+  );
+});
+
 test("CopilotKit Headless renders safe Markdown, PresentationResult and diagnostics", async ({
   page,
 }) => {

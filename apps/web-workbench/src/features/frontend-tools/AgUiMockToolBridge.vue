@@ -21,7 +21,11 @@ async function run(message: string): Promise<string> {
   return bridge.value.run(message);
 }
 
-defineExpose({ run });
+function stop(): void {
+  bridge.value?.stop();
+}
+
+defineExpose({ run, stop });
 </script>
 
 <template>
