@@ -1,4 +1,7 @@
-import type { CopilotKitCore } from "@copilotkit/core";
+import {
+  CopilotKitCoreRuntimeConnectionStatus,
+  type CopilotKitCore,
+} from "@copilotkit/core";
 import {
   type PresentationResult,
   validatePresentationResult,
@@ -40,6 +43,20 @@ export function bindCopilotKitProviderCore(core: CopilotKitCore): () => void {
   return () => {
     if (providerCore === core) providerCore = undefined;
   };
+}
+
+function connectProviderCore(core: CopilotKitCore): void {
+  if (
+    core.runtimeConnectionStatus ===
+    CopilotKitCoreRuntimeConnectionStatus.Error
+  ) {
+    const runtimeUrl = core.runtimeUrl;
+    if (runtimeUrl === undefined) return;
+    core.setRuntimeUrl(undefined);
+    core.setRuntimeUrl(runtimeUrl);
+    return;
+  }
+  core.connect();
 }
 
 function createId(prefix: string): string {
@@ -155,7 +172,7 @@ async function resolveAgent(
         resolve(agent);
       },
     });
-    core.connect();
+    connectProviderCore(core);
   });
 }
 
@@ -178,7 +195,11 @@ export function createCopilotKitHeadlessClient(
   let boundCore: CopilotKitCore | undefined;
   let activeAbort: (() => void) | undefined;
 
-  function agentForThread(core: CopilotKitCore, baseAgent: CopilotKitAgent, threadId: string) {
+  function agentForThread(
+    core: CopilotKitCore,
+    baseAgent: CopilotKitAgent,
+    threadId: string,
+  ) {
     if (boundCore !== core) {
       threadAgents.clear();
       boundCore = core;
@@ -199,7 +220,7 @@ export function createCopilotKitHeadlessClient(
       actionClient.close();
     },
     connect() {
-      providerCore?.connect();
+      if (providerCore !== undefined) connectProviderCore(providerCore);
     },
     action(
       request: RuntimeActionRequest,
