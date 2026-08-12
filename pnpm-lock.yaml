@@ -161,8 +161,8 @@ importers:
         specifier: 1.64.1
         version: 1.64.1(@ag-ui/core@0.0.57)(zod@3.25.76)
       '@copilotkit/vue':
-        specifier: 1.64.1
-        version: 1.64.1(lit@3.3.3)(typescript@5.8.3)(vue@3.5.40(typescript@5.8.3))
+        specifier: 1.66.4
+        version: 1.66.4(lit@3.3.3)(typescript@5.8.3)(vue@3.5.40(typescript@5.8.3))
       '@generative-ui/compiler-contract':
         specifier: workspace:*
         version: link:../../packages/compiler-contract
@@ -462,8 +462,8 @@ importers:
 
 packages:
 
-  '@a2ui/web_core@0.9.0':
-    resolution: {integrity: sha512-TsMWuEeuVDsScGIGPy/fWIZu+EOBRfhx6KwjKh3VwY1AwysRenQM8zDr8VrSk14Wck/aBgVxk2zWVrMCK2/s6A==}
+  '@a2ui/web_core@0.10.4':
+    resolution: {integrity: sha512-sahOUSKZIGv9ZtnHjfzWR8o/F1XfSTp4sQAX5/auSenQYBYDRaY0+vrZIkddc/IEzpXJob6cFJT2r5/mLzAvqg==}
 
   '@ag-ui/a2ui-middleware@0.0.10':
     resolution: {integrity: sha512-2BQFUQ9vJzUAQSR0dNW/ijhyH8KpiRWISSLTP6mIe6ENyQ2cM1/XLG38/Dcb69olcs36gtZADZzAQWcno5H6fA==}
@@ -830,6 +830,10 @@ packages:
     resolution: {integrity: sha512-C6YGtMY0K867wOpQbdi6sw1ajjes75EezmV8lc2aZJzxHE6RzGCvwzTnE4T8Zd93oJZ++OKr45gys4+KGrhh/w==}
     engines: {node: '>=18'}
 
+  '@copilotkit/core@1.66.4':
+    resolution: {integrity: sha512-xC0TfEaaWEZMHMSg3sTE5xZYEJO9m+hu6qwSQkpHooTABl9fA26wKuAXsjDDwE78i0jqDRg/O8xtVDPShK/Vrg==}
+    engines: {node: '>=18'}
+
   '@copilotkit/license-verifier@0.5.0':
     resolution: {integrity: sha512-vrwKtIpYwF0FT9ZoYASH8owa2cGV0dhDvJGaCRaRMStwDxpc6DRdydKkhx8cWZXyBRxEYcq/Vygv4JvevhQQdQ==}
 
@@ -876,20 +880,25 @@ packages:
     peerDependencies:
       '@ag-ui/core': '>=0.0.48'
 
-  '@copilotkit/vue@1.64.1':
-    resolution: {integrity: sha512-s8Khd8WOKpmqfuAcpQdnOAPYTCeTWLHUBJxXKS06y0K4hZFFoIEIWPE7ImLQwenJoX0nCbp8DWIwkPk/asMTvg==}
+  '@copilotkit/shared@1.66.4':
+    resolution: {integrity: sha512-Hy7a8Zgzrt8hfYj31bHOjba0DCJTFm+yBp2izvaYRnVkTVH8zleYgwo6/wCpGQjLswLsSOlgu8nUhenHxvI4vg==}
+    peerDependencies:
+      '@ag-ui/core': '>=0.0.48'
+
+  '@copilotkit/vue@1.66.4':
+    resolution: {integrity: sha512-NMWHrKqGEtbBNBVWUC22LQi43bSAJTdGM0Soxrr8PrXyqKhk/8MSNxpfYUNm7TJ3PJIXQxAS35ix1zXK0FBq6A==}
     engines: {node: '>=18'}
     peerDependencies:
       vue: '>=3.3.0'
 
-  '@copilotkit/web-components@1.64.1':
-    resolution: {integrity: sha512-c3BEBxRK1bORHH+5T087hTB2HcNh6hUgRC/DhCFTf4CidQdElpByskP1pvRWrgpPIIC/1Heri6ONFrs3yiDHBQ==}
+  '@copilotkit/web-components@1.66.4':
+    resolution: {integrity: sha512-Tm1N8QnQoYWM7uLWzixulvEkWayPek4J+oEi6FMkOt9GCEh1qwZ0bgDxbO9VZK+Y0UD8JDu61yxKGKFrI+H4+g==}
     engines: {node: '>=18'}
     peerDependencies:
       lit: ^3.3.2
 
-  '@copilotkit/web-inspector@1.64.1':
-    resolution: {integrity: sha512-Ty3awDfdnvyYO5ZKS8ZiIqMb000Le2yN/oFRO3uJbtnCbJ13BnnUT0YULgCsWuoyB/Bl32QxH8MGYzu6BgMNyg==}
+  '@copilotkit/web-inspector@1.66.4':
+    resolution: {integrity: sha512-LC8XQzzKBjeGNm9LG4ThARp83yd32i7tGOKdAt0UBDsgsvBIgj8/PvA8PSSkx5hPaPn0IRk4yX18kWp4zLMLPw==}
     engines: {node: '>=18'}
 
   '@cspell/cspell-bundled-dicts@9.1.1':
@@ -3882,8 +3891,8 @@ packages:
     resolution: {integrity: sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==}
     engines: {node: '>= 8'}
 
-  mermaid@11.16.0:
-    resolution: {integrity: sha512-Zvm3kbstgdpvIJPPItlL7fppIZ3kibvc1oZIGxdvk9t6UFz6flv+Jw7FtRGKwfcI8OckmH04LqG6LlS6X4B1pA==}
+  mermaid@11.16.1:
+    resolution: {integrity: sha512-TQsq6u22fAn3rek5VOubrhKPo1g5hwC3FXUN9hiyupTckcYiGuuKGkNQrKYwGJkXUxZdojwRG46gsSCFZMDp4g==}
 
   methods@1.1.2:
     resolution: {integrity: sha512-iclAHeNqNm68zFtnZ0e+1L2yUIdvzNoauKU4WBA3VvH/vPFieF7qfRlwUZU+DA9P9bPXIS90ulxoUoCH23sV2w==}
@@ -4746,6 +4755,10 @@ packages:
     resolution: {integrity: sha512-SHf/r48b7vOrjve9PxJo3MN5v5yuyjHvdUcrQffT3WXMUfnGmHDVbC4k3sHJaJTgZCwpUplIaAo5ANtMyp3YHg==}
     engines: {node: '>=18'}
 
+  tinyexec@1.3.0:
+    resolution: {integrity: sha512-QKAl9m8gWWGHV8jZcPeym6j+XULi6tOf1mT83WYJ4Lk2ytW/uwAWkrP0uFsdoYMdueVJ0qs26wZ+23xeB4ibNQ==}
+    engines: {node: '>=18'}
+
   tinyglobby@0.2.17:
     resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
     engines: {node: '>=12.0.0'}
@@ -4974,6 +4987,10 @@ packages:
 
   uuid@11.1.1:
     resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
+    hasBin: true
+
+  uuid@14.0.1:
+    resolution: {integrity: sha512-6ZxzVpzDXDa3bJWaHilVayA+BH/1zmxCJoVgvmqJnid/gPoKHxUrS/aC/T6LGQtNHT+XHG9fXPJB4d+IrU30Ew==}
     hasBin: true
 
   validator@13.15.35:
@@ -5207,7 +5224,7 @@ packages:
 
 snapshots:
 
-  '@a2ui/web_core@0.9.0':
+  '@a2ui/web_core@0.10.4':
     dependencies:
       '@preact/signals-core': 1.14.4
       date-fns: 4.4.0
@@ -5409,7 +5426,7 @@ snapshots:
   '@antfu/install-pkg@1.1.0':
     dependencies:
       package-manager-detector: 1.8.0
-      tinyexec: 1.2.4
+      tinyexec: 1.3.0
 
   '@asamuzakjp/css-color@3.2.0':
     dependencies:
@@ -5764,7 +5781,7 @@ snapshots:
 
   '@copilotkit/channels-ui@0.2.1(@ag-ui/core@0.0.57)':
     dependencies:
-      '@copilotkit/shared': 1.64.1(@ag-ui/core@0.0.57)
+      '@copilotkit/shared': 1.66.4(@ag-ui/core@0.0.57)
     transitivePeerDependencies:
       - '@ag-ui/core'
       - encoding
@@ -5773,6 +5790,19 @@ snapshots:
     dependencies:
       '@ag-ui/client': 0.0.57
       '@copilotkit/shared': 1.64.1(@ag-ui/core@0.0.57)
+      '@tanstack/pacer': 0.20.1
+      phoenix: 1.8.9
+      rxjs: 7.8.1
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+    transitivePeerDependencies:
+      - '@ag-ui/core'
+      - encoding
+      - zod
+
+  '@copilotkit/core@1.66.4(@ag-ui/core@0.0.57)(zod@3.25.76)':
+    dependencies:
+      '@ag-ui/client': 0.0.57
+      '@copilotkit/shared': 1.66.4(@ag-ui/core@0.0.57)
       '@tanstack/pacer': 0.20.1
       phoenix: 1.8.9
       rxjs: 7.8.1
@@ -5880,15 +5910,31 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  '@copilotkit/vue@1.64.1(lit@3.3.3)(typescript@5.8.3)(vue@3.5.40(typescript@5.8.3))':
+  '@copilotkit/shared@1.66.4(@ag-ui/core@0.0.57)':
     dependencies:
-      '@a2ui/web_core': 0.9.0
       '@ag-ui/client': 0.0.57
       '@ag-ui/core': 0.0.57
-      '@copilotkit/core': 1.64.1(@ag-ui/core@0.0.57)(zod@3.25.76)
-      '@copilotkit/shared': 1.64.1(@ag-ui/core@0.0.57)
-      '@copilotkit/web-components': 1.64.1(lit@3.3.3)
-      '@copilotkit/web-inspector': 1.64.1(@ag-ui/core@0.0.57)(zod@3.25.76)
+      '@copilotkit/license-verifier': 0.5.0
+      '@segment/analytics-node': 2.3.0
+      '@standard-schema/spec': 1.1.0
+      chalk: 4.1.2
+      graphql: 16.14.2
+      partial-json: 0.1.7
+      uuid: 11.1.1
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+    transitivePeerDependencies:
+      - encoding
+
+  '@copilotkit/vue@1.66.4(lit@3.3.3)(typescript@5.8.3)(vue@3.5.40(typescript@5.8.3))':
+    dependencies:
+      '@a2ui/web_core': 0.10.4
+      '@ag-ui/client': 0.0.57
+      '@ag-ui/core': 0.0.57
+      '@copilotkit/core': 1.66.4(@ag-ui/core@0.0.57)(zod@3.25.76)
+      '@copilotkit/shared': 1.66.4(@ag-ui/core@0.0.57)
+      '@copilotkit/web-components': 1.66.4(lit@3.3.3)
+      '@copilotkit/web-inspector': 1.66.4(@ag-ui/core@0.0.57)(zod@3.25.76)
       '@jetbrains/websandbox': 1.3.1
       katex: 0.16.47
       lucide-vue-next: 0.525.0(vue@3.5.40(typescript@5.8.3))
@@ -5902,14 +5948,14 @@ snapshots:
       - supports-color
       - typescript
 
-  '@copilotkit/web-components@1.64.1(lit@3.3.3)':
+  '@copilotkit/web-components@1.66.4(lit@3.3.3)':
     dependencies:
       lit: 3.3.3
 
-  '@copilotkit/web-inspector@1.64.1(@ag-ui/core@0.0.57)(zod@3.25.76)':
+  '@copilotkit/web-inspector@1.66.4(@ag-ui/core@0.0.57)(zod@3.25.76)':
     dependencies:
       '@ag-ui/client': 0.0.57
-      '@copilotkit/core': 1.64.1(@ag-ui/core@0.0.57)(zod@3.25.76)
+      '@copilotkit/core': 1.66.4(@ag-ui/core@0.0.57)(zod@3.25.76)
       lit: 3.3.3
       lucide: 0.525.0
       marked: 12.0.2
@@ -9125,7 +9171,7 @@ snapshots:
 
   merge2@1.4.1: {}
 
-  mermaid@11.16.0:
+  mermaid@11.16.1:
     dependencies:
       '@braintree/sanitize-url': 7.1.2
       '@iconify/utils': 3.1.4
@@ -9147,7 +9193,7 @@ snapshots:
       roughjs: 4.6.6
       stylis: 4.4.0
       ts-dedent: 2.3.0
-      uuid: 11.1.1
+      uuid: 14.0.1
 
   methods@1.1.2: {}
 
@@ -10070,7 +10116,7 @@ snapshots:
       katex: 0.16.47
       lucide-vue-next: 0.542.0(vue@3.5.40(typescript@5.8.3))
       marked: 16.4.2
-      mermaid: 11.16.0
+      mermaid: 11.16.1
       rehype-katex: 7.0.1
       remark-gfm: 4.0.1
       remark-math: 6.0.0
@@ -10165,6 +10211,8 @@ snapshots:
   tinyexec@0.3.2: {}
 
   tinyexec@1.2.4: {}
+
+  tinyexec@1.3.0: {}
 
   tinyglobby@0.2.17:
     dependencies:
@@ -10379,6 +10427,8 @@ snapshots:
   uuid@10.0.0: {}
 
   uuid@11.1.1: {}
+
+  uuid@14.0.1: {}
 
   validator@13.15.35: {}
 
