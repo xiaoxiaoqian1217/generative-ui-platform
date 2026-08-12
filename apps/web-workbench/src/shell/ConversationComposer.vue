@@ -14,14 +14,14 @@ const emit = defineEmits<{
   submit: [value: string];
 }>();
 
-const textarea = ref<HTMLTextAreaElement>();
+const inputEl = ref<HTMLInputElement>();
 
 function onInput(event: Event): void {
-  emit("inputChange", (event.target as HTMLTextAreaElement).value);
+  emit("inputChange", (event.target as HTMLInputElement).value);
 }
 
 function onKeydown(event: KeyboardEvent): void {
-  if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+  if (event.key !== "Enter" || event.isComposing) return;
   event.preventDefault();
   submit();
 }
@@ -37,31 +37,29 @@ watch(
   async (disabled) => {
     if (!disabled) {
       await nextTick();
-      textarea.value?.focus();
+      inputEl.value?.focus();
     }
   },
 );
 </script>
 
 <template>
-  <div class="composer" data-testid="composer">
-    <textarea
-      ref="textarea"
-      aria-label="输入消息"
-      class="composer-textarea"
-      data-testid="composer-input"
-      :disabled="isInputDisabled"
-      placeholder="输入消息， Enter 发送， Shift+Enter 换行"
-      rows="3"
-      :value="inputValue"
-      @input="onInput"
-      @keydown="onKeydown"
-    />
-    <div class="composer-actions">
+  <footer class="shell-composer" data-testid="composer">
+    <div class="shell-composer-inner">
+      <input
+        ref="inputEl"
+        aria-label="输入消息"
+        data-testid="composer-input"
+        :disabled="isInputDisabled"
+        placeholder="继续提问…"
+        :value="inputValue"
+        @input="onInput"
+        @keydown="onKeydown"
+      />
       <button
         v-if="isRunning"
         aria-label="停止生成"
-        class="secondary-button"
+        class="shell-composer-stop"
         data-testid="composer-stop"
         type="button"
         @click="emit('stop')"
@@ -70,7 +68,7 @@ watch(
       </button>
       <button
         aria-label="发送消息"
-        class="primary-button"
+        class="shell-composer-send"
         data-testid="composer-send"
         :disabled="!canSend"
         type="button"
@@ -79,5 +77,5 @@ watch(
         发送
       </button>
     </div>
-  </div>
+  </footer>
 </template>

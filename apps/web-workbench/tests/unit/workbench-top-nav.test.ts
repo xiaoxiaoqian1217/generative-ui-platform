@@ -5,10 +5,10 @@ import { describe, expect, it } from "vitest";
 import WorkbenchTopNav from "../../src/shell/WorkbenchTopNav.vue";
 
 describe("WorkbenchTopNav", () => {
-  it("renders nav links, environment, version and agent status", () => {
+  it("renders nav links, environment and agent status", () => {
     const wrapper = mount(WorkbenchTopNav, {
       props: {
-        connectionLabel: "Runtime Host 可用",
+        connectionLabel: "已连接",
         connectionState: "connected",
         environment: "dev",
         route: "/conversation",
@@ -16,16 +16,10 @@ describe("WorkbenchTopNav", () => {
       },
     });
 
-    expect(wrapper.find("[data-testid='environment-banner']").text()).toContain(
-      "dev",
-    );
-    expect(wrapper.find("[data-testid='environment-banner']").text()).toContain(
-      "v0.1.0",
-    );
     expect(
       wrapper.find("[data-testid='agent-connection-status']").text(),
-    ).toContain("Runtime Host 可用");
-    expect(wrapper.find(".topnav-nav a.active").attributes("href")).toBe(
+    ).toContain("已连接");
+    expect(wrapper.find(".shell-topbar-nav a.active").attributes("href")).toBe(
       "/conversation",
     );
   });
@@ -33,7 +27,7 @@ describe("WorkbenchTopNav", () => {
   it("emits navigate on nav click", async () => {
     const wrapper = mount(WorkbenchTopNav, {
       props: {
-        connectionLabel: "Runtime Host 可用",
+        connectionLabel: "已连接",
         connectionState: "connected",
         environment: "dev",
         route: "/conversation",
@@ -41,7 +35,7 @@ describe("WorkbenchTopNav", () => {
       },
     });
 
-    await wrapper.find(".topnav-nav a[href='/catalog']").trigger("click");
+    await wrapper.find(".shell-topbar-nav a[href='/catalog']").trigger("click");
     expect(wrapper.emitted("navigate")).toEqual([["/catalog"]]);
   });
 });

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watchEffect } from "vue";
 import { useCopilotKit, useFrontendTool } from "@copilotkit/vue/v2";
-import { bindCopilotKitProviderCore } from "../runtime/copilotkit-headless-client.js";
+import { bindCopilotKitProviderCore } from "../agent/business-agent-client.js";
 
 const { copilotkit } = useCopilotKit();
 

@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import type { Message } from "@ag-ui/core";
 import type { ConversationTurn } from "./conversation-store.js";
 import { computed } from "vue";
 import A2UIRenderer from "../renderer/A2UIRenderer.vue";
-import A2UIRawViewer from "../renderer/A2UIRawViewer.vue";
 import type { RenderedRuntimeAction } from "../renderer/a2ui.js";
 import MarkdownRenderer from "../renderer/MarkdownRenderer.vue";
 
 const props = defineProps<{
   actionsDisabled?: boolean;
-  messages: readonly Message[];
   turn: ConversationTurn;
 }>();
 const emit = defineEmits<{
@@ -54,11 +51,6 @@ const failureSummary = computed(() => {
       重试
     </button>
   </section>
-
-  <A2UIRawViewer
-    v-if="turn.historicalSnapshotRaw !== undefined"
-    :value="turn.historicalSnapshotRaw"
-  />
 
   <div
     v-if="markdown !== undefined"

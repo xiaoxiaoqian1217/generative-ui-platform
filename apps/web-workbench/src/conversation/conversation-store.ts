@@ -1,10 +1,5 @@
-import type { UserMessage } from "@ag-ui/core";
 import type { PresentationResult } from "@generative-ui/presentation-contract";
-import type {
-  RuntimeActionResult,
-  RuntimeRunResult,
-  RuntimeThreadDetail,
-} from "@generative-ui/runtime-contract";
+import type { RuntimeRunResult } from "@generative-ui/runtime-contract";
 
 export type ConversationOperationKind = "action" | "run";
 
@@ -35,8 +30,6 @@ export interface BusinessSurface {
 export interface ConversationTurn {
   readonly businessSurfaces: readonly BusinessSurface[];
   readonly failure?: TurnFailure;
-  /** An incompatible persisted snapshot may only be inspected as bounded raw data. */
-  readonly historicalSnapshotRaw?: unknown;
   readonly presentation?: PresentationResult;
   readonly presentationRequestId?: string;
   readonly requestId: string;
@@ -75,77 +68,11 @@ export function createConversationState(inputValue = ""): ConversationState {
   return { inputValue, turns: [] };
 }
 
-/** Historical snapshots are read-only: no restored business surface is active. */
-export function restoreConversationHistory(
-  detail: RuntimeThreadDetail,
-): ConversationState {
-  return {
-    inputValue: "",
-    turns: detail.turns.map((turn) => {
-      const compatible =
-        turn.snapshot?.contractVersion === "1.0" &&
-        turn.snapshot.catalogId === "fixture" &&
-        turn.snapshot.catalogVersion === "1.0.0" &&
-        turn.snapshot.compilerVersion === "1.0.0";
-      const presentation = compatible ? turn.snapshot?.presentation : undefined;
-      return {
-        businessSurfaces:
-          presentation !== undefined &&
-          presentation.status !== "failed" &&
-          presentation.mode === "generative-ui"
-            ? [
-                {
-                  presentation,
-                  status: "historical" as const,
-                  surfaceId: presentation.surfaceId,
-                },
-              ]
-            : [],
-        requestId: turn.requestId,
-        runId: turn.runId,
-        status: turn.status === "history-write-failed" ? "failed" : turn.status,
-        threadId: turn.threadId,
-        turnId: turn.turnId,
-        userMessage: { content: turn.userMessage, id: `${turn.turnId}:user` },
-        ...(presentation === undefined ? {} : { presentation }),
-        ...(!compatible && turn.snapshot !== undefined
-          ? {
-              failure: {
-                code: "HISTORY_SNAPSHOT_INCOMPATIBLE",
-                message:
-                  "The stored snapshot is incompatible with this Workbench.",
-                retryable: false,
-                stage: "history",
-              },
-              historicalSnapshotRaw: turn.snapshot,
-            }
-          : {}),
-      };
-    }),
-  };
-}
-
 export function setConversationInput(
   state: ConversationState,
   inputValue: string,
 ): ConversationState {
   return { ...state, inputValue };
-}
-
-/**
- * Projects the caller-owned conversation into the minimal AG-UI messages that
- * the controlled chat view needs. Presentation content deliberately stays out
- * of this projection: Markdown and A2UI are rendered by their dedicated,
- * validated Workbench paths.
- */
-export function conversationMessages(
-  state: ConversationState,
-): readonly UserMessage[] {
-  return state.turns.map((turn) => ({
-    content: turn.userMessage.content,
-    id: turn.userMessage.id,
-    role: "user",
-  }));
 }
 
 export function startRun(
@@ -295,20 +222,13 @@ export function startAction(
 export function resolveAction(
   state: ConversationState,
   turnId: string,
-  result: RuntimeActionResult,
+  result: RuntimeRunResult,
 ): ConversationState {
   if (
     state.activeOperation?.kind !== "action" ||
     state.activeOperation.turnId !== turnId ||
     state.activeOperation.requestId !== result.requestId ||
     result.status === "failed"
-  )
-    return state;
-
-  const targetTurn = state.turns.find((turn) => turn.turnId === turnId);
-  if (
-    targetTurn === undefined ||
-    targetTurn.presentationRequestId !== result.sourcePresentationRequestId
   )
     return state;
 

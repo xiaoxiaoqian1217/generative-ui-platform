@@ -14,14 +14,14 @@ function storage() {
 }
 
 describe("Workbench local settings", () => {
-  it("stores only runtime endpoint, timeout, and debug preference", () => {
+  it("stores only agent endpoint, timeout, and debug preference", () => {
     const value = saveWorkbenchLocalSettings(storage(), {
-      runtimeHostUrl: "https://runtime.example.test/path",
+      agentUrl: "https://agent.example.test/path",
       requestTimeoutMs: 45_000,
       showDebugDetails: true,
     });
     expect(value).toEqual({
-      runtimeHostUrl: "https://runtime.example.test",
+      agentUrl: "https://agent.example.test",
       requestTimeoutMs: 45_000,
       showDebugDetails: true,
     });
@@ -37,7 +37,7 @@ describe("Workbench local settings", () => {
     value.setItem(
       WORKBENCH_LOCAL_SETTINGS_KEY,
       JSON.stringify({
-        runtimeHostUrl: "javascript:alert(1)",
+        agentUrl: "javascript:alert(1)",
         requestTimeoutMs: 1,
       }),
     );
