@@ -80,8 +80,13 @@ import {
   resolveWorkbenchRoute,
   workbenchRouteLabel,
   WORKBENCH_ROUTES,
+  type WorkbenchRoute,
 } from "./routes.js";
+import WorkbenchTopNav from "../shell/WorkbenchTopNav.vue";
 
+const ConversationPage = defineAsyncComponent(
+  () => import("./ConversationPage.vue"),
+);
 const ControlledCopilotChatView = defineAsyncComponent(
   () => import("../conversation/ControlledCopilotChatView.vue"),
 );
@@ -181,7 +186,7 @@ const configurationFailure = ref<DisplayError>();
 const error = computed<DisplayError | undefined>(() => configurationFailure.value);
 const refreshNotice = ref("");
 const activeController = ref<AbortController>();
-const route = ref(resolveWorkbenchRoute(window.location.pathname));
+const route = ref<WorkbenchRoute>(resolveWorkbenchRoute(window.location.pathname));
 const settingsRuntimeHostUrl = ref(config.runtimeHostUrl);
 const settingsTimeoutMs = ref(String(initialLocalSettings.requestTimeoutMs));
 const settingsShowDebugDetails = ref(initialLocalSettings.showDebugDetails);
@@ -647,6 +652,17 @@ function replayCase(item: WorkbenchCase): void {
   window.location.assign("/playground");
 }
 
+function navigate(nextRoute: WorkbenchRoute): void {
+  route.value = nextRoute;
+  window.history.pushState({}, "", nextRoute);
+  void loadReadOnlyData();
+}
+
+function onConversationConnectionStateChange(next: ConnectionState): void {
+  connectionState.value = next;
+  connectionNotice.value = connectionLabels[next];
+}
+
 onMounted(() => {
   window.addEventListener("popstate", () => {
     route.value = resolveWorkbenchRoute(window.location.pathname);
@@ -658,10 +674,14 @@ onMounted(() => {
     refreshNotice.value =
       "页面已刷新，本地运行记录已重置，Runtime Host 配置已重新加载。";
   }
-  configureHeadlessRuntime();
-  void refreshThreads();
+  if (route.value !== "/conversation") {
+    configureHeadlessRuntime();
+    void refreshThreads();
+  }
   void loadReadOnlyData();
-  if (pendingCase !== undefined) window.setTimeout(() => void sendMessage(pendingCase.input), 0);
+  if (pendingCase !== undefined && route.value === "/playground") {
+    window.setTimeout(() => void sendMessage(pendingCase.input), 0);
+  }
 });
 
 onBeforeUnmount(() => {
@@ -676,35 +696,25 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="workbench-shell">
-    <header class="topbar">
-      <div class="brand-lockup">
-        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
-        <div>
-          <p class="eyebrow">GENERATIVE UI PLATFORM</p>
-          <h1>Workbench</h1>
-        </div>
-      </div>
-      <div class="banner" data-testid="environment-banner">
-        <span class="banner-label">ENV</span>
-        <strong>{{ config.environment }}</strong>
-        <span class="banner-divider"></span>
-        <span class="banner-label">VERSION</span>
-        <strong>v{{ workbenchVersion }}</strong>
-      </div>
-    </header>
+    <WorkbenchTopNav
+      :connection-label="connectionLabels[connectionState]"
+      :connection-state="connectionState"
+      :environment="config.environment"
+      :route="route"
+      :version="workbenchVersion"
+      @navigate="navigate"
+    />
 
-    <nav class="workbench-nav" aria-label="Workbench">
-      <a
-        v-for="item in WORKBENCH_ROUTES"
-        :key="item"
-        :class="{ active: route === item }"
-        :href="item"
-      >
-        {{ workbenchRouteLabel(item) }}
-      </a>
-    </nav>
+    <main v-if="route === '/conversation'" class="conversation-route">
+      <ConversationPage
+        :config="config"
+        :endpoints="endpoints"
+        :request-timeout-ms="initialLocalSettings.requestTimeoutMs"
+        @connection-state-change="onConversationConnectionStateChange"
+      />
+    </main>
 
-    <main v-if="route === '/playground'" class="workspace">
+    <main v-else-if="route === '/playground'" class="workspace">
       <aside class="control-rail">
         <section class="rail-section" data-testid="thread-list">
           <div class="section-heading"><div><p class="eyebrow">DEBUG HISTORY</p><h2>调试会话</h2></div><button class="secondary-button" type="button" @click="newThread">新建</button></div>

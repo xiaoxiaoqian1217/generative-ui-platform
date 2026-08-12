@@ -5,8 +5,9 @@ import {
 } from "../../src/app/routes.js";
 
 describe("Workbench routes", () => {
-  it("recognizes the six stable product routes", () => {
+  it("recognizes the seven stable product routes", () => {
     expect(WORKBENCH_ROUTES).toEqual([
+      "/conversation",
       "/playground",
       "/inspect",
       "/cases",
@@ -19,8 +20,8 @@ describe("Workbench routes", () => {
     }
   });
 
-  it("uses Playground as the safe fallback route", () => {
-    expect(resolveWorkbenchRoute("/")).toBe("/playground");
-    expect(resolveWorkbenchRoute("/unknown")).toBe("/playground");
+  it("uses Conversation as the safe fallback route", () => {
+    expect(resolveWorkbenchRoute("/")).toBe("/conversation");
+    expect(resolveWorkbenchRoute("/unknown")).toBe("/conversation");
   });
 });

@@ -1,4 +1,5 @@
 export const WORKBENCH_ROUTES = [
+  "/conversation",
   "/playground",
   "/inspect",
   "/cases",
@@ -12,11 +13,12 @@ export type WorkbenchRoute = (typeof WORKBENCH_ROUTES)[number];
 export function resolveWorkbenchRoute(pathname: string): WorkbenchRoute {
   return (WORKBENCH_ROUTES as readonly string[]).includes(pathname)
     ? (pathname as WorkbenchRoute)
-    : "/playground";
+    : "/conversation";
 }
 
 export function workbenchRouteLabel(route: WorkbenchRoute): string {
   return {
+    "/conversation": "Conversation",
     "/playground": "Playground",
     "/inspect": "Inspect",
     "/cases": "Cases",
