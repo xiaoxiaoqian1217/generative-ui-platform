@@ -1,15 +1,10 @@
-import type {
-  RuntimeActionResult,
-  RuntimeRunResult,
-} from "@generative-ui/runtime-contract";
+import type { RuntimeRunResult } from "@generative-ui/runtime-contract";
 import { describe, expect, it } from "vitest";
 import {
-  conversationMessages,
   createConversationState,
   failOperation,
   resolveAction,
   resolveRun,
-  restoreConversationHistory,
   retryTurn,
   startAction,
   startRun,
@@ -36,10 +31,8 @@ function a2uiResult(surfaceId: string): RuntimeRunResult {
 function actionResult(
   surfaceId: string,
   requestId = "action-1",
-  sourcePresentationRequestId = "presentation-request",
-): RuntimeActionResult {
+): RuntimeRunResult {
   return {
-    actionId: "confirm",
     presentation: {
       mode: "generative-ui",
       operations: [],
@@ -51,29 +44,12 @@ function actionResult(
     protocolVersion: "1.0",
     requestId,
     runId: "run-1",
-    sourcePresentationRequestId,
     status: "completed",
     threadId: "thread-1",
   };
 }
 
 describe("Conversation Store", () => {
-  it("projects only caller-owned user messages for the controlled chat", () => {
-    const state = resolveRun(
-      startRun(createConversationState(), {
-        message: "展示 A2UI",
-        requestId: "request-1",
-        turnId: "turn-1",
-      }),
-      "turn-1",
-      a2uiResult("surface-1"),
-    );
-
-    expect(conversationMessages(state)).toEqual([
-      { content: "展示 A2UI", id: "turn-1:user", role: "user" },
-    ]);
-  });
-
   it("permits only one active operation", () => {
     const running = startRun(createConversationState(), {
       message: "第一条消息",
@@ -88,52 +64,6 @@ describe("Conversation Store", () => {
         turnId: "turn-2",
       }),
     ).toBe(running);
-  });
-
-  it("keeps an incompatible persisted snapshot out of rendering and exposes it only for raw inspection", () => {
-    const restored = restoreConversationHistory({
-      thread: {
-        contractVersion: "1.0",
-        createdAt: "2026-01-01T00:00:00.000Z",
-        status: "active",
-        threadId: "thread-1",
-        title: "history",
-        updatedAt: "2026-01-01T00:00:00.000Z",
-      },
-      turns: [
-        {
-          contractVersion: "1.0",
-          createdAt: "2026-01-01T00:00:00.000Z",
-          requestId: "request-1",
-          runId: "run-1",
-          snapshot: {
-            catalogId: "retired-catalog",
-            catalogVersion: "0.9.0",
-            compilerVersion: "0.9.0",
-            contractVersion: "1.0",
-            presentation: {
-              mode: "generative-ui",
-              operations: [],
-              requestId: "presentation-history",
-              status: "completed",
-              surfaceId: "surface-history",
-            },
-          },
-          status: "completed",
-          threadId: "thread-1",
-          turnId: "turn-1",
-          updatedAt: "2026-01-01T00:00:00.000Z",
-          userMessage: "history",
-        },
-      ],
-    });
-
-    expect(restored.turns[0]).toMatchObject({
-      businessSurfaces: [],
-      failure: { code: "HISTORY_SNAPSHOT_INCOMPATIBLE" },
-      historicalSnapshotRaw: { catalogId: "retired-catalog" },
-    });
-    expect(restored.turns[0]?.presentation).toBeUndefined();
   });
 
   it("keeps an A2UI-only turn free of assistant text and makes the prior surface historical", () => {
@@ -154,7 +84,7 @@ describe("Conversation Store", () => {
     const resolved = resolveAction(
       runningAction,
       "turn-1",
-      actionResult("surface-2"),
+      actionResult("surface-2", "action-1"),
     );
 
     expect(resolved.turns[0]).not.toHaveProperty("assistantMessage");
@@ -218,35 +148,5 @@ describe("Conversation Store", () => {
     expect(resolveRun(cancelled, "turn-1", a2uiResult("surface-late"))).toBe(
       cancelled,
     );
-  });
-
-  it("keeps an Action result from a different request or source presentation out of the turn", () => {
-    const started = startAction(
-      resolveRun(
-        startRun(createConversationState(), {
-          message: "展示表单",
-          requestId: "request-1",
-          turnId: "turn-1",
-        }),
-        "turn-1",
-        a2uiResult("surface-1"),
-      ),
-      { requestId: "action-1", surfaceId: "surface-1", turnId: "turn-1" },
-    );
-
-    expect(
-      resolveAction(
-        started,
-        "turn-1",
-        actionResult("surface-2", "action-late"),
-      ),
-    ).toBe(started);
-    expect(
-      resolveAction(
-        started,
-        "turn-1",
-        actionResult("surface-2", "action-1", "presentation-late"),
-      ),
-    ).toBe(started);
   });
 });

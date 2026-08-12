@@ -1,24 +1,54 @@
 import {
-  CopilotKitCoreRuntimeConnectionStatus,
   type CopilotKitCore,
+  CopilotKitCoreRuntimeConnectionStatus,
 } from "@copilotkit/core";
 import {
   type PresentationResult,
   validatePresentationResult,
 } from "@generative-ui/presentation-contract";
-import type {
-  RuntimeActionRequest,
-  RuntimeActionResult,
-  RuntimeRunRequest,
-  RuntimeRunResult,
-} from "@generative-ui/runtime-contract";
-import { validateRuntimeRunResult } from "@generative-ui/runtime-contract";
-import { createHttpRuntimeClient } from "./http-runtime-client.js";
 import {
-  type ConnectionState,
-  type RuntimeTransportClient,
-  WorkbenchRuntimeError,
-} from "./types.js";
+  type RuntimeRunRequest,
+  type RuntimeRunResult,
+  validateRuntimeRunResult,
+} from "@generative-ui/runtime-contract";
+
+export type ConnectionState =
+  | "connecting"
+  | "connected"
+  | "disconnected"
+  | "reconnecting"
+  | "unavailable";
+
+export type WorkbenchAgentErrorCode =
+  | "WORKBENCH_AGENT_UNAVAILABLE"
+  | "WORKBENCH_REQUEST_CANCELLED"
+  | "WORKBENCH_REQUEST_TIMEOUT"
+  | "WORKBENCH_RESPONSE_INVALID";
+
+export class WorkbenchAgentError extends Error {
+  readonly code: WorkbenchAgentErrorCode;
+  readonly retryable: boolean;
+
+  constructor(
+    code: WorkbenchAgentErrorCode,
+    message: string,
+    options: { retryable: boolean },
+  ) {
+    super(message);
+    this.name = "WorkbenchAgentError";
+    this.code = code;
+    this.retryable = options.retryable;
+  }
+}
+
+export interface AgentTransportClient {
+  close(): void;
+  connect(): void;
+  run(
+    request: RuntimeRunRequest,
+    signal?: AbortSignal,
+  ): Promise<RuntimeRunResult>;
+}
 
 interface CopilotKitCustomEvent {
   readonly type: "CUSTOM";
@@ -28,8 +58,7 @@ interface CopilotKitCustomEvent {
 
 type CopilotKitAgent = NonNullable<ReturnType<CopilotKitCore["getAgent"]>>;
 
-export interface CopilotKitHeadlessClientOptions {
-  readonly actionEndpoint: string;
+export interface BusinessAgentClientOptions {
   readonly agentId?: string;
   readonly onConnectionStateChange?: (state: ConnectionState) => void;
   readonly runtimeUrl: string;
@@ -47,8 +76,7 @@ export function bindCopilotKitProviderCore(core: CopilotKitCore): () => void {
 
 function connectProviderCore(core: CopilotKitCore): void {
   if (
-    core.runtimeConnectionStatus ===
-    CopilotKitCoreRuntimeConnectionStatus.Error
+    core.runtimeConnectionStatus === CopilotKitCoreRuntimeConnectionStatus.Error
   ) {
     const runtimeUrl = core.runtimeUrl;
     if (runtimeUrl === undefined) return;
@@ -118,9 +146,9 @@ function runResultFromPresentation(
   presentation: PresentationResult,
 ): RuntimeRunResult {
   if (presentation.status === "failed") {
-    throw new WorkbenchRuntimeError(
+    throw new WorkbenchAgentError(
       "WORKBENCH_RESPONSE_INVALID",
-      "CopilotKit 返回了不可消费的展示结果。",
+      "Agent 返回了不可消费的展示结果。",
       { retryable: false },
     );
   }
@@ -137,8 +165,8 @@ function runResultFromPresentation(
 
 function requireProviderCore(): CopilotKitCore {
   if (providerCore !== undefined) return providerCore;
-  throw new WorkbenchRuntimeError(
-    "WORKBENCH_RUNTIME_UNAVAILABLE",
+  throw new WorkbenchAgentError(
+    "WORKBENCH_AGENT_UNAVAILABLE",
     "CopilotKit Provider 尚未就绪。",
     { retryable: true },
   );
@@ -156,9 +184,9 @@ async function resolveAgent(
     const timeout = globalThis.setTimeout(() => {
       subscription.unsubscribe();
       reject(
-        new WorkbenchRuntimeError(
-          "WORKBENCH_RUNTIME_UNAVAILABLE",
-          "CopilotKit Provider 未发现 Runtime Host Agent。",
+        new WorkbenchAgentError(
+          "WORKBENCH_AGENT_UNAVAILABLE",
+          "CopilotKit Provider 未发现 Business Agent。",
           { retryable: true },
         ),
       );
@@ -176,19 +204,9 @@ async function resolveAgent(
   });
 }
 
-export function createCopilotKitHeadlessClient(
-  options: CopilotKitHeadlessClientOptions,
-): RuntimeTransportClient {
-  const actionClient = createHttpRuntimeClient({
-    actionEndpoint: options.actionEndpoint,
-    endpoint: options.actionEndpoint.replace(/\/actions$/u, "/runs"),
-    ...(options.onConnectionStateChange === undefined
-      ? {}
-      : { onConnectionStateChange: options.onConnectionStateChange }),
-    ...(options.timeoutMs === undefined
-      ? {}
-      : { timeoutMs: options.timeoutMs }),
-  });
+export function createBusinessAgentClient(
+  options: BusinessAgentClientOptions,
+): AgentTransportClient {
   const agentId = options.agentId ?? "default";
   const timeoutMs = options.timeoutMs ?? 30_000;
   const threadAgents = new Map<string, CopilotKitAgent>();
@@ -217,25 +235,18 @@ export function createCopilotKitHeadlessClient(
       activeAbort?.();
       activeAbort = undefined;
       threadAgents.clear();
-      actionClient.close();
     },
     connect() {
       if (providerCore !== undefined) connectProviderCore(providerCore);
-    },
-    action(
-      request: RuntimeActionRequest,
-      signal?: AbortSignal,
-    ): Promise<RuntimeActionResult> {
-      return actionClient.action(request, signal);
     },
     async run(
       request: RuntimeRunRequest,
       callerSignal?: AbortSignal,
     ): Promise<RuntimeRunResult> {
       if (callerSignal?.aborted === true) {
-        throw new WorkbenchRuntimeError(
+        throw new WorkbenchAgentError(
           "WORKBENCH_REQUEST_CANCELLED",
-          "CopilotKit 请求已取消。",
+          "请求已取消。",
           { retryable: false },
         );
       }
@@ -258,7 +269,8 @@ export function createCopilotKitHeadlessClient(
               presentationResultFromCopilotKitEvent(event);
             if (nextPresentation !== undefined) presentation = nextPresentation;
             const nextRuntimeResult = runtimeResultFromCopilotKitEvent(event);
-            if (nextRuntimeResult !== undefined) runtimeResult = nextRuntimeResult;
+            if (nextRuntimeResult !== undefined)
+              runtimeResult = nextRuntimeResult;
           },
           onRunFailed: () => {
             runFailed = true;
@@ -278,9 +290,9 @@ export function createCopilotKitHeadlessClient(
           core.stopAgent({ agent });
           finish(() =>
             reject(
-              new WorkbenchRuntimeError(
+              new WorkbenchAgentError(
                 "WORKBENCH_REQUEST_CANCELLED",
-                "CopilotKit 请求已取消。",
+                "请求已取消。",
                 { retryable: false },
               ),
             ),
@@ -290,9 +302,9 @@ export function createCopilotKitHeadlessClient(
           core.stopAgent({ agent });
           finish(() =>
             reject(
-              new WorkbenchRuntimeError(
+              new WorkbenchAgentError(
                 "WORKBENCH_REQUEST_TIMEOUT",
-                "CopilotKit 请求超时。",
+                "请求超时。",
                 { retryable: true },
               ),
             ),
@@ -331,18 +343,18 @@ export function createCopilotKitHeadlessClient(
               if (runFailed) {
                 options.onConnectionStateChange?.("unavailable");
                 reject(
-                  new WorkbenchRuntimeError(
-                    "WORKBENCH_RUNTIME_UNAVAILABLE",
-                    "CopilotKit Agent 运行失败。",
+                  new WorkbenchAgentError(
+                    "WORKBENCH_AGENT_UNAVAILABLE",
+                    "Business Agent 运行失败。",
                     { retryable: true },
                   ),
                 );
                 return;
               }
               reject(
-                new WorkbenchRuntimeError(
+                new WorkbenchAgentError(
                   "WORKBENCH_RESPONSE_INVALID",
-                  "CopilotKit 未返回 PresentationResult。",
+                  "Business Agent 未返回 PresentationResult。",
                   { retryable: false },
                 ),
               );
@@ -352,9 +364,9 @@ export function createCopilotKitHeadlessClient(
             options.onConnectionStateChange?.("unavailable");
             finish(() =>
               reject(
-                new WorkbenchRuntimeError(
-                  "WORKBENCH_RUNTIME_UNAVAILABLE",
-                  "CopilotKit 无法连接 Runtime Host。",
+                new WorkbenchAgentError(
+                  "WORKBENCH_AGENT_UNAVAILABLE",
+                  "无法连接 Business Agent。",
                   { retryable: true },
                 ),
               ),

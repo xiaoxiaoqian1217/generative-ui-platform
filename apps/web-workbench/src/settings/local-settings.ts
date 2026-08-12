@@ -1,5 +1,5 @@
 export interface WorkbenchLocalSettings {
-  readonly runtimeHostUrl?: string;
+  readonly agentUrl?: string;
   readonly requestTimeoutMs: number;
   readonly showDebugDetails: boolean;
 }
@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS: WorkbenchLocalSettings = Object.freeze({
   showDebugDetails: false,
 });
 
-function validRuntimeHostUrl(value: string | undefined): string | undefined {
+function validAgentUrl(value: string | undefined): string | undefined {
   if (value === undefined || value.trim() === "") return undefined;
   try {
     const url = new URL(value);
@@ -32,12 +32,12 @@ function parse(value: unknown): WorkbenchLocalSettings {
     return DEFAULT_SETTINGS;
   const record = value as Record<string, unknown>;
   const timeout = record.requestTimeoutMs;
-  const runtimeHostUrl =
-    typeof record.runtimeHostUrl === "string"
-      ? validRuntimeHostUrl(record.runtimeHostUrl)
+  const agentUrl =
+    typeof record.agentUrl === "string"
+      ? validAgentUrl(record.agentUrl)
       : undefined;
   return {
-    ...(runtimeHostUrl === undefined ? {} : { runtimeHostUrl }),
+    ...(agentUrl === undefined ? {} : { agentUrl }),
     requestTimeoutMs:
       typeof timeout === "number" &&
       Number.isSafeInteger(timeout) &&

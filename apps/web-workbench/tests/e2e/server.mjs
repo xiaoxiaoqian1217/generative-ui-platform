@@ -6,35 +6,15 @@ import { fileURLToPath } from "node:url";
 const appRoot = fileURLToPath(new URL("../..", import.meta.url));
 const distRoot = join(appRoot, "dist");
 const port = Number(process.env.WEB_WORKBENCH_E2E_PORT ?? "4173");
-let runtimeAvailable = true;
+let agentAvailable = true;
 let retryableTimeoutRequests = 0;
-let threadSequence = 0;
 let frontendToolProbe = {
   advertised: false,
   continuations: 0,
   result: null,
 };
-const threads = new Map();
 const wait = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
-
-function timestamp() {
-  return new Date().toISOString();
-}
-
-function createThread(title = "New debug conversation") {
-  const createdAt = timestamp();
-  const thread = {
-    contractVersion: "1.0",
-    createdAt,
-    status: "active",
-    threadId: `thread-history-${++threadSequence}`,
-    title,
-    updatedAt: createdAt,
-  };
-  threads.set(thread.threadId, { thread, turns: [] });
-  return thread;
-}
 
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
@@ -135,7 +115,6 @@ function runtimeResult(request) {
         },
     diagnostics: {
       stages: [
-        { name: "runtime", status: "completed", durationMs: 3 },
         { name: "business-agent", status: "completed", durationMs: 12 },
         { name: "presentation-pipeline", status: "completed", durationMs: 8 },
       ],
@@ -238,12 +217,6 @@ const server = createServer(async (request, response) => {
     response.writeHead(204).end();
     return;
   }
-  if (request.method === "GET" && url.pathname === "/health/dependencies") {
-    json(response, runtimeAvailable ? 200 : 503, {
-      status: runtimeAvailable ? "ok" : "unavailable",
-    });
-    return;
-  }
   if (
     request.method === "GET" &&
     url.pathname === "/__control__/frontend-tool-probe"
@@ -251,39 +224,13 @@ const server = createServer(async (request, response) => {
     json(response, 200, frontendToolProbe);
     return;
   }
-  if (request.method === "GET" && url.pathname === "/api/threads") {
-    json(response, 200, {
-      items: [...threads.values()].map((item) => item.thread),
-    });
-    return;
-  }
-  if (request.method === "POST" && url.pathname === "/api/threads") {
-    const body = await readJson(request);
-    json(
-      response,
-      201,
-      createThread(typeof body.title === "string" ? body.title : undefined),
-    );
-    return;
-  }
-  const threadMatch = url.pathname.match(/^\/api\/threads\/([^/]+)$/);
-  if (threadMatch && request.method === "GET") {
-    const detail = threads.get(decodeURIComponent(threadMatch[1]));
-    json(response, detail ? 200 : 404, detail ?? { code: "THREAD_NOT_FOUND" });
-    return;
-  }
-  if (threadMatch && request.method === "DELETE") {
-    threads.delete(decodeURIComponent(threadMatch[1]));
-    json(response, 200, { status: "completed" });
-    return;
-  }
   if (request.method === "GET" && url.pathname === "/api/copilotkit/info") {
-    if (!runtimeAvailable) {
+    if (!agentAvailable) {
       json(response, 503, { status: "unavailable" });
       return;
     }
     json(response, 200, {
-      agents: { default: { description: "Workbench E2E agent" } },
+      agents: { default: { description: "Business Agent E2E" } },
       mode: "sse",
       version: "test",
     });
@@ -293,7 +240,7 @@ const server = createServer(async (request, response) => {
     request.method === "POST" &&
     url.pathname === "/api/copilotkit/agent/default/run"
   ) {
-    if (!runtimeAvailable) {
+    if (!agentAvailable) {
       json(response, 503, { status: "unavailable" });
       return;
     }
@@ -377,98 +324,24 @@ const server = createServer(async (request, response) => {
     response.end();
     return;
   }
-  if (request.method === "POST" && url.pathname === "/api/actions") {
-    const body = await readJson(request);
-    const presentationRequestId = `presentation-action-${body.requestId}`;
-    json(response, 200, {
-      protocolVersion: "1.0",
-      requestId: body.requestId,
-      threadId: body.threadId,
-      runId: body.runId,
-      sourcePresentationRequestId: `presentation-${body.runId.replace(/^run-/u, "")}`,
-      presentationRequestId,
-      actionId: body.action.actionId,
-      status: "completed",
-      presentation: {
-        requestId: presentationRequestId,
-        status: "completed",
-        mode: "generative-ui",
-        surfaceId: "surface-e2e-resumed",
-        operations: [
-          {
-            version: "v0.9",
-            createSurface: {
-              surfaceId: "surface-e2e-resumed",
-              catalogId: "fixture",
-            },
-          },
-          {
-            version: "v0.9",
-            updateComponents: {
-              surfaceId: "surface-e2e-resumed",
-              components: [
-                {
-                  id: "root",
-                  component: "Card",
-                  title: "Resumed",
-                  children: ["summary"],
-                },
-                {
-                  id: "summary",
-                  component: "Text",
-                  text: "Action 已原位恢复",
-                },
-              ],
-            },
-          },
-        ],
-      },
-    });
-    return;
-  }
-  if (request.method === "POST" && url.pathname === "/api/runs") {
-    if (!runtimeAvailable) {
-      json(response, 503, { status: "unavailable" });
-      return;
-    }
-    const body = await readJson(request);
-    json(response, 200, runtimeResult(body));
-    return;
-  }
-  if (
-    request.method === "POST" &&
-    url.pathname === "/__control__/disconnect"
-  ) {
-    runtimeAvailable = false;
-    response.writeHead(204).end();
-    return;
-  }
   if (request.method === "POST" && url.pathname === "/__control__/restore") {
-    runtimeAvailable = true;
+    agentAvailable = true;
     retryableTimeoutRequests = 0;
     frontendToolProbe = {
       advertised: false,
       continuations: 0,
       result: null,
     };
-    threads.clear();
-    threadSequence = 0;
     response.writeHead(204).end();
     return;
   }
-  if (
-    request.method === "POST" &&
-    url.pathname === "/__control__/runtime-down"
-  ) {
-    runtimeAvailable = false;
+  if (request.method === "POST" && url.pathname === "/__control__/agent-down") {
+    agentAvailable = false;
     response.writeHead(204).end();
     return;
   }
-  if (
-    request.method === "POST" &&
-    url.pathname === "/__control__/runtime-up"
-  ) {
-    runtimeAvailable = true;
+  if (request.method === "POST" && url.pathname === "/__control__/agent-up") {
+    agentAvailable = true;
     response.writeHead(204).end();
     return;
   }

@@ -15,11 +15,11 @@ describe("ConversationComposer", () => {
       },
     });
 
-    await wrapper.find("textarea").setValue("hello");
+    await wrapper.find("input").setValue("hello");
     expect(wrapper.emitted("inputChange")).toEqual([["hello"]]);
   });
 
-  it("emits submit on Enter without Shift", async () => {
+  it("emits submit on Enter", async () => {
     const wrapper = mount(ConversationComposer, {
       props: {
         canSend: true,
@@ -29,11 +29,11 @@ describe("ConversationComposer", () => {
       },
     });
 
-    await wrapper.find("textarea").trigger("keydown", { key: "Enter" });
+    await wrapper.find("input").trigger("keydown", { key: "Enter" });
     expect(wrapper.emitted("submit")).toEqual([["展示状态"]]);
   });
 
-  it("does not submit on Shift+Enter", async () => {
+  it("does not submit while composing", async () => {
     const wrapper = mount(ConversationComposer, {
       props: {
         canSend: true,
@@ -44,12 +44,12 @@ describe("ConversationComposer", () => {
     });
 
     await wrapper
-      .find("textarea")
-      .trigger("keydown", { key: "Enter", shiftKey: true });
+      .find("input")
+      .trigger("keydown", { key: "Enter", isComposing: true });
     expect(wrapper.emitted("submit")).toBeUndefined();
   });
 
-  it("disables send when canSend is false", () => {
+  it("disables send and input when canSend is false", () => {
     const wrapper = mount(ConversationComposer, {
       props: {
         canSend: false,
@@ -62,7 +62,7 @@ describe("ConversationComposer", () => {
     expect(
       wrapper.find("[data-testid='composer-send']").attributes("disabled"),
     ).toBeDefined();
-    expect(wrapper.find("textarea").attributes("disabled")).toBeDefined();
+    expect(wrapper.find("input").attributes("disabled")).toBeDefined();
   });
 
   it("shows a stop button while running", () => {
