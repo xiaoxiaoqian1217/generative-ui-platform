@@ -22,7 +22,7 @@
     "@generative-ui/runtime-contract": "workspace:*",
     "express": "5.1.0",
     "openai": "6.48.0",
-    "rxjs": "7.8.1"
+    "rxjs": "7.8.2"
   },
   "devDependencies": {
     "@types/express": "5.0.3",
