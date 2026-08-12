@@ -38,20 +38,20 @@
     "format:check": "biome format ."
   },
   "devDependencies": {
-    "@biomejs/biome": "2.1.2",
-    "@changesets/cli": "2.29.5",
-    "@commitlint/cli": "19.8.1",
-    "@commitlint/config-conventional": "19.8.1",
-    "@types/node": "24.0.15",
+    "@biomejs/biome": "2.5.7",
+    "@changesets/cli": "2.31.1",
+    "@commitlint/cli": "21.2.1",
+    "@commitlint/config-conventional": "21.2.0",
+    "@types/node": "26.2.0",
     "@types/ws": "8.18.1",
-    "cspell": "9.1.1",
-    "lefthook": "1.11.14",
-    "markdownlint-cli2": "0.18.1",
-    "tsup": "8.5.0",
-    "tsx": "4.20.3",
-    "turbo": "2.5.5",
+    "cspell": "10.0.1",
+    "lefthook": "2.1.10",
+    "markdownlint-cli2": "0.23.2",
+    "tsup": "8.5.1",
+    "tsx": "4.23.11",
+    "turbo": "2.10.9",
     "typescript": "5.8.3",
-    "vitest": "3.2.6",
+    "vitest": "4.1.10",
     "ws": "8.21.1"
   }
 }
