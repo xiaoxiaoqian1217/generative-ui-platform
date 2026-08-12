@@ -9,6 +9,11 @@ const port = Number(process.env.WEB_WORKBENCH_E2E_PORT ?? "4173");
 let runtimeAvailable = true;
 let retryableTimeoutRequests = 0;
 let threadSequence = 0;
+let frontendToolProbe = {
+  advertised: false,
+  continuations: 0,
+  result: null,
+};
 const threads = new Map();
 const wait = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -155,6 +160,47 @@ function copilotRunRequest(body) {
   };
 }
 
+function frontendToolResult(body, toolCallId) {
+  return (body.messages ?? []).find(
+    (item) =>
+      item.role === "tool" &&
+      (item.toolCallId === toolCallId || item.tool_call_id === toolCallId),
+  );
+}
+
+function hasFrontendTool(body, toolName) {
+  return (body.tools ?? []).some((tool) => tool.name === toolName);
+}
+
+function streamFrontendToolCall(response, body) {
+  const toolCallId = "e2e-show-workbench-status";
+  sse(response, {
+    type: "RUN_STARTED",
+    threadId: body.threadId,
+    runId: body.runId,
+  });
+  sse(response, {
+    type: "TOOL_CALL_START",
+    toolCallId,
+    toolCallName: "show_workbench_status",
+  });
+  sse(response, {
+    type: "TOOL_CALL_ARGS",
+    toolCallId,
+    delta: "{}",
+  });
+  sse(response, {
+    type: "TOOL_CALL_END",
+    toolCallId,
+  });
+  sse(response, {
+    type: "RUN_FINISHED",
+    threadId: body.threadId,
+    runId: body.runId,
+  });
+  response.end();
+}
+
 async function serveStatic(request, response) {
   const requestUrl = new URL(request.url ?? "/", `http://127.0.0.1:${port}`);
   const relativePath =
@@ -196,6 +242,13 @@ const server = createServer(async (request, response) => {
     json(response, runtimeAvailable ? 200 : 503, {
       status: runtimeAvailable ? "ok" : "unavailable",
     });
+    return;
+  }
+  if (
+    request.method === "GET" &&
+    url.pathname === "/__control__/frontend-tool-probe"
+  ) {
+    json(response, 200, frontendToolProbe);
     return;
   }
   if (request.method === "GET" && url.pathname === "/api/threads") {
@@ -252,6 +305,50 @@ const server = createServer(async (request, response) => {
       retryableTimeoutRequests++ === 0
     )
       await wait(2_000);
+
+    if (runRequest.message.content.includes("调用前端状态工具")) {
+      const toolCallId = "e2e-show-workbench-status";
+      const toolResult = frontendToolResult(body, toolCallId);
+      frontendToolProbe = {
+        ...frontendToolProbe,
+        advertised: hasFrontendTool(body, "show_workbench_status"),
+      };
+
+      response.writeHead(200, {
+        "cache-control": "no-store",
+        connection: "keep-alive",
+        "content-type": "text/event-stream",
+      });
+
+      if (!toolResult) {
+        if (!frontendToolProbe.advertised) {
+          sse(response, {
+            type: "RUN_STARTED",
+            threadId: body.threadId,
+            runId: body.runId,
+          });
+          sse(response, {
+            type: "RUN_ERROR",
+            message: "show_workbench_status was not advertised by the client",
+            code: "FRONTEND_TOOL_NOT_ADVERTISED",
+          });
+          response.end();
+          return;
+        }
+        streamFrontendToolCall(response, body);
+        return;
+      }
+
+      frontendToolProbe = {
+        advertised: frontendToolProbe.advertised,
+        continuations: frontendToolProbe.continuations + 1,
+        result:
+          typeof toolResult.content === "string"
+            ? toolResult.content
+            : JSON.stringify(toolResult.content),
+      };
+    }
+
     const result = runtimeResult(runRequest);
     response.writeHead(200, {
       "cache-control": "no-store",
@@ -339,7 +436,10 @@ const server = createServer(async (request, response) => {
     json(response, 200, runtimeResult(body));
     return;
   }
-  if (request.method === "POST" && url.pathname === "/__control__/disconnect") {
+  if (
+    request.method === "POST" &&
+    url.pathname === "/__control__/disconnect"
+  ) {
     runtimeAvailable = false;
     response.writeHead(204).end();
     return;
@@ -347,6 +447,11 @@ const server = createServer(async (request, response) => {
   if (request.method === "POST" && url.pathname === "/__control__/restore") {
     runtimeAvailable = true;
     retryableTimeoutRequests = 0;
+    frontendToolProbe = {
+      advertised: false,
+      continuations: 0,
+      result: null,
+    };
     threads.clear();
     threadSequence = 0;
     response.writeHead(204).end();
@@ -360,7 +465,10 @@ const server = createServer(async (request, response) => {
     response.writeHead(204).end();
     return;
   }
-  if (request.method === "POST" && url.pathname === "/__control__/runtime-up") {
+  if (
+    request.method === "POST" &&
+    url.pathname === "/__control__/runtime-up"
+  ) {
     runtimeAvailable = true;
     response.writeHead(204).end();
     return;
