@@ -23,12 +23,23 @@ interface CopilotKitCustomEvent {
   readonly value: unknown;
 }
 
+type CopilotKitAgent = NonNullable<ReturnType<CopilotKitCore["getAgent"]>>;
+
 export interface CopilotKitHeadlessClientOptions {
   readonly actionEndpoint: string;
   readonly agentId?: string;
   readonly onConnectionStateChange?: (state: ConnectionState) => void;
   readonly runtimeUrl: string;
   readonly timeoutMs?: number;
+}
+
+let providerCore: CopilotKitCore | undefined;
+
+export function bindCopilotKitProviderCore(core: CopilotKitCore): () => void {
+  providerCore = core;
+  return () => {
+    if (providerCore === core) providerCore = undefined;
+  };
 }
 
 function createId(prefix: string): string {
@@ -92,7 +103,7 @@ function runResultFromPresentation(
   if (presentation.status === "failed") {
     throw new WorkbenchRuntimeError(
       "WORKBENCH_RESPONSE_INVALID",
-      "CopilotKit Headless 返回了不可消费的展示结果。",
+      "CopilotKit 返回了不可消费的展示结果。",
       { retryable: false },
     );
   }
@@ -107,47 +118,50 @@ function runResultFromPresentation(
   };
 }
 
+function requireProviderCore(): CopilotKitCore {
+  if (providerCore !== undefined) return providerCore;
+  throw new WorkbenchRuntimeError(
+    "WORKBENCH_RUNTIME_UNAVAILABLE",
+    "CopilotKit Provider 尚未就绪。",
+    { retryable: true },
+  );
+}
+
 async function resolveAgent(
   core: CopilotKitCore,
   agentId: string,
   timeoutMs: number,
-): Promise<NonNullable<ReturnType<CopilotKitCore["getAgent"]>>> {
+): Promise<CopilotKitAgent> {
   const initial = core.getAgent(agentId);
   if (initial !== undefined) return initial;
 
-  return new Promise<NonNullable<ReturnType<CopilotKitCore["getAgent"]>>>(
-    (resolve, reject) => {
-      const timeout = globalThis.setTimeout(() => {
+  return new Promise<CopilotKitAgent>((resolve, reject) => {
+    const timeout = globalThis.setTimeout(() => {
+      subscription.unsubscribe();
+      reject(
+        new WorkbenchRuntimeError(
+          "WORKBENCH_RUNTIME_UNAVAILABLE",
+          "CopilotKit Provider 未发现 Runtime Host Agent。",
+          { retryable: true },
+        ),
+      );
+    }, timeoutMs);
+    const subscription = core.subscribe({
+      onAgentsChanged: ({ agents }) => {
+        const agent = agents[agentId];
+        if (agent === undefined) return;
+        globalThis.clearTimeout(timeout);
         subscription.unsubscribe();
-        reject(
-          new WorkbenchRuntimeError(
-            "WORKBENCH_RUNTIME_UNAVAILABLE",
-            "CopilotKit Headless 未发现 Runtime Host Agent。",
-            { retryable: true },
-          ),
-        );
-      }, timeoutMs);
-      const subscription = core.subscribe({
-        onAgentsChanged: ({ agents }) => {
-          const agent = agents[agentId];
-          if (agent === undefined) return;
-          globalThis.clearTimeout(timeout);
-          subscription.unsubscribe();
-          resolve(agent);
-        },
-      });
-      core.connect();
-    },
-  );
+        resolve(agent);
+      },
+    });
+    core.connect();
+  });
 }
 
 export function createCopilotKitHeadlessClient(
   options: CopilotKitHeadlessClientOptions,
 ): RuntimeTransportClient {
-  const core = new CopilotKitCore({
-    deferInitialConnection: true,
-    runtimeUrl: options.runtimeUrl,
-  });
   const actionClient = createHttpRuntimeClient({
     actionEndpoint: options.actionEndpoint,
     endpoint: options.actionEndpoint.replace(/\/actions$/u, "/runs"),
@@ -160,16 +174,32 @@ export function createCopilotKitHeadlessClient(
   });
   const agentId = options.agentId ?? "default";
   const timeoutMs = options.timeoutMs ?? 30_000;
+  const threadAgents = new Map<string, CopilotKitAgent>();
+  let boundCore: CopilotKitCore | undefined;
   let activeAbort: (() => void) | undefined;
+
+  function agentForThread(core: CopilotKitCore, baseAgent: CopilotKitAgent, threadId: string) {
+    if (boundCore !== core) {
+      threadAgents.clear();
+      boundCore = core;
+    }
+    const existing = threadAgents.get(threadId);
+    if (existing !== undefined) return existing;
+    const agent = baseAgent.clone() as CopilotKitAgent;
+    agent.threadId = threadId;
+    threadAgents.set(threadId, agent);
+    return agent;
+  }
 
   return {
     close() {
       activeAbort?.();
       activeAbort = undefined;
+      threadAgents.clear();
       actionClient.close();
     },
     connect() {
-      core.connect();
+      providerCore?.connect();
     },
     action(
       request: RuntimeActionRequest,
@@ -181,78 +211,91 @@ export function createCopilotKitHeadlessClient(
       request: RuntimeRunRequest,
       callerSignal?: AbortSignal,
     ): Promise<RuntimeRunResult> {
+      if (callerSignal?.aborted === true) {
+        throw new WorkbenchRuntimeError(
+          "WORKBENCH_REQUEST_CANCELLED",
+          "CopilotKit 请求已取消。",
+          { retryable: false },
+        );
+      }
+
+      const core = requireProviderCore();
       const threadId = request.threadId ?? createId("thread");
       const runId = request.runId ?? createId("run");
-      const agent = await resolveAgent(core, agentId, timeoutMs);
+      const baseAgent = await resolveAgent(core, agentId, timeoutMs);
+      const agent = agentForThread(core, baseAgent, threadId);
+
       return new Promise<RuntimeRunResult>((resolve, reject) => {
         let presentation: PresentationResult | undefined;
         let runtimeResult: RuntimeRunResult | undefined;
+        let runFailed = false;
         let settled = false;
+
+        const subscription = agent.subscribe({
+          onCustomEvent: ({ event }) => {
+            const nextPresentation =
+              presentationResultFromCopilotKitEvent(event);
+            if (nextPresentation !== undefined) presentation = nextPresentation;
+            const nextRuntimeResult = runtimeResultFromCopilotKitEvent(event);
+            if (nextRuntimeResult !== undefined) runtimeResult = nextRuntimeResult;
+          },
+          onRunFailed: () => {
+            runFailed = true;
+          },
+        });
+
         const finish = (callback: () => void) => {
           if (settled) return;
           settled = true;
+          globalThis.clearTimeout(timeout);
           callerSignal?.removeEventListener("abort", cancel);
+          subscription.unsubscribe();
           activeAbort = undefined;
           callback();
         };
         const cancel = () => {
-          subscription.unsubscribe();
+          core.stopAgent({ agent });
           finish(() =>
             reject(
               new WorkbenchRuntimeError(
                 "WORKBENCH_REQUEST_CANCELLED",
-                "CopilotKit Headless 请求已取消。",
+                "CopilotKit 请求已取消。",
                 { retryable: false },
               ),
             ),
           );
         };
         const timeout = globalThis.setTimeout(() => {
-          subscription.unsubscribe();
+          core.stopAgent({ agent });
           finish(() =>
             reject(
               new WorkbenchRuntimeError(
                 "WORKBENCH_REQUEST_TIMEOUT",
-                "CopilotKit Headless 请求超时。",
+                "CopilotKit 请求超时。",
                 { retryable: true },
               ),
             ),
           );
         }, timeoutMs);
-        const subscription = agent
-          .run({
-            context: [],
-            messages: [
-              {
-                id: createId("message"),
-                role: "user",
-                content: request.message.content,
-              },
-            ],
-            runId,
-            state: {},
-            threadId,
-            tools: [],
-          })
-          .subscribe({
-            complete: () => {
-              globalThis.clearTimeout(timeout);
-              finish(() => {
-                if (runtimeResult !== undefined) {
-                  options.onConnectionStateChange?.("connected");
-                  resolve(runtimeResult);
-                  return;
-                }
-                if (presentation === undefined) {
-                  reject(
-                    new WorkbenchRuntimeError(
-                      "WORKBENCH_RESPONSE_INVALID",
-                      "CopilotKit Headless 未返回 PresentationResult。",
-                      { retryable: false },
-                    ),
-                  );
-                  return;
-                }
+
+        callerSignal?.addEventListener("abort", cancel, { once: true });
+        activeAbort = cancel;
+        agent.addMessage({
+          id: createId("message"),
+          role: "user",
+          content: request.message.content,
+        });
+
+        void core
+          .runAgent({ agent })
+          .then(() => {
+            finish(() => {
+              if (runtimeResult !== undefined) {
+                options.onConnectionStateChange?.("connected");
+                resolve(runtimeResult);
+                return;
+              }
+              if (presentation !== undefined) {
                 options.onConnectionStateChange?.("connected");
                 resolve(
                   runResultFromPresentation(
@@ -262,32 +305,40 @@ export function createCopilotKitHeadlessClient(
                     presentation,
                   ),
                 );
-              });
-            },
-            error: () => {
-              globalThis.clearTimeout(timeout);
-              finish(() =>
+                return;
+              }
+              if (runFailed) {
+                options.onConnectionStateChange?.("unavailable");
                 reject(
                   new WorkbenchRuntimeError(
                     "WORKBENCH_RUNTIME_UNAVAILABLE",
-                    "CopilotKit Headless 无法连接 Runtime Host。",
+                    "CopilotKit Agent 运行失败。",
                     { retryable: true },
                   ),
+                );
+                return;
+              }
+              reject(
+                new WorkbenchRuntimeError(
+                  "WORKBENCH_RESPONSE_INVALID",
+                  "CopilotKit 未返回 PresentationResult。",
+                  { retryable: false },
                 ),
               );
-            },
-            next: (event) => {
-              const nextPresentation =
-                presentationResultFromCopilotKitEvent(event);
-              if (nextPresentation !== undefined)
-                presentation = nextPresentation;
-              const nextRuntimeResult = runtimeResultFromCopilotKitEvent(event);
-              if (nextRuntimeResult !== undefined)
-                runtimeResult = nextRuntimeResult;
-            },
+            });
+          })
+          .catch(() => {
+            options.onConnectionStateChange?.("unavailable");
+            finish(() =>
+              reject(
+                new WorkbenchRuntimeError(
+                  "WORKBENCH_RUNTIME_UNAVAILABLE",
+                  "CopilotKit 无法连接 Runtime Host。",
+                  { retryable: true },
+                ),
+              ),
+            );
           });
-        callerSignal?.addEventListener("abort", cancel, { once: true });
-        activeAbort = cancel;
       });
     },
   };
