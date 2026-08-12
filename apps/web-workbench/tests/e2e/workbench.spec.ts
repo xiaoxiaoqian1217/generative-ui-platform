@@ -122,6 +122,55 @@ test("Frontend Tool is advertised, executed in the browser, and continued throug
   expect(probe.result).toContain('"status":"connected"');
 });
 
+test("AGUIMock locateDevice drives the independent GIS business surface", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "generative-ui.workbench.settings.v1",
+      JSON.stringify({
+        agentUrl: "http://127.0.0.1:4180",
+        requestTimeoutMs: 30_000,
+        showDebugDetails: false,
+      }),
+    );
+  });
+  await page.goto("/");
+  await expect(page.getByTestId("conversation-sidebar")).toBeVisible();
+  await expect(page.getByTestId("conversation-main")).toBeVisible();
+  await expect(page.getByTestId("map-workspace")).toBeVisible();
+  await expect(page.getByTestId("device-marker-01")).toBeVisible();
+  await expect(page.getByTestId("device-card")).toHaveCount(0);
+
+  await conversationInput(page).fill("定位无人机 01");
+  await conversationSend(page).click();
+
+  await expect(page.getByTestId("device-marker-01")).toHaveAttribute(
+    "data-selected",
+    "true",
+  );
+  await expect(page.getByTestId("device-card")).toContainText("无人机 01");
+  await expect(page.getByTestId("device-card")).toContainText("82%");
+  await expect(page.getByTestId("markdown-result")).toContainText(
+    "已定位无人机 01",
+  );
+});
+
+test("the GIS workspace can locate its test device manually", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("device-card")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "定位测试设备" }).click();
+
+  await expect(page.getByTestId("device-marker-01")).toHaveAttribute(
+    "data-selected",
+    "true",
+  );
+  await expect(page.getByTestId("device-card")).toContainText("无人机 01");
+});
+
 test("stop cancels a turn", async ({ page }) => {
   await page.goto("/");
   await conversationInput(page).fill("缓慢响应");

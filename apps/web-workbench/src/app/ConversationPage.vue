@@ -1,7 +1,25 @@
 <script setup lang="ts">
-import type { RuntimeRunRequest, RuntimeRunResult } from "@generative-ui/runtime-contract";
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from "vue";
+import type {
+  RuntimeRunRequest,
+  RuntimeRunResult,
+} from "@generative-ui/runtime-contract";
 import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+} from "vue";
+import {
+  type AgentTransportClient,
+  type ConnectionState,
+  createBusinessAgentClient,
+  WorkbenchAgentError,
+} from "../agent/business-agent-client.js";
+import CopilotKitConversationProvider from "../conversation/CopilotKitConversationProvider.vue";
+import {
+  type ConversationState,
   createConversationState,
   failOperation,
   resolveAction,
@@ -9,23 +27,21 @@ import {
   setConversationInput,
   startAction,
   startRun,
-  type ConversationState,
   type TurnFailure,
 } from "../conversation/conversation-store.js";
-import CopilotKitConversationProvider from "../conversation/CopilotKitConversationProvider.vue";
+import { locateDevice } from "../features/frontend-tools/locate-device.js";
+import type { Device } from "../features/map/devices.js";
+import MapWorkspace from "../features/map/MapWorkspace.vue";
+import { saveInspectionSnapshot } from "../inspect/inspection-snapshot.js";
 import type { RenderedRuntimeAction } from "../renderer/a2ui.js";
-import {
-  createBusinessAgentClient,
-  type AgentTransportClient,
-  type ConnectionState,
-  WorkbenchAgentError,
-} from "../agent/business-agent-client.js";
-import type { AgentEndpoints, WorkbenchConfig } from "../settings/agent-config.js";
+import type {
+  AgentEndpoints,
+  WorkbenchConfig,
+} from "../settings/agent-config.js";
 import ConversationComposer from "../shell/ConversationComposer.vue";
 import ConversationMainArea from "../shell/ConversationMainArea.vue";
 import ConversationSidebar from "../shell/ConversationSidebar.vue";
 import InspectPanel from "../shell/InspectPanel.vue";
-import { saveInspectionSnapshot } from "../inspect/inspection-snapshot.js";
 
 type RunState =
   | "idle"
@@ -74,6 +90,7 @@ const selectedConversationId = ref<string>();
 const sidebarNotice = ref("");
 const inspectedTurnId = ref<string>();
 const activeController = ref<AbortController>();
+const selectedDevice = ref<Device>();
 
 const currentConversation = computed<LocalConversation | undefined>(() => {
   const list: LocalConversation[] = conversations.value;
@@ -109,7 +126,9 @@ const conversationThreadId = computed(() => {
   return undefined;
 });
 const inspectedTurn = computed(() =>
-  conversation.value.turns.find((turn) => turn.turnId === inspectedTurnId.value),
+  conversation.value.turns.find(
+    (turn) => turn.turnId === inspectedTurnId.value,
+  ),
 );
 
 const isRunning = computed(
@@ -179,7 +198,10 @@ function configureRuntime(): void {
 
   // Connection state is driven by CopilotKit core; no separate health endpoint.
   window.setTimeout(() => {
-    if (generation === clientGeneration && connectionState.value === "connecting") {
+    if (
+      generation === clientGeneration &&
+      connectionState.value === "connecting"
+    ) {
       applyConnectionState("connected");
     }
   }, 1_000);
@@ -212,7 +234,9 @@ function createRequest(message: string): RuntimeRunRequest {
   };
 }
 
-function platformErrorFromResult(value: RuntimeRunResult): DisplayError | undefined {
+function platformErrorFromResult(
+  value: RuntimeRunResult,
+): DisplayError | undefined {
   if (value.status !== "failed") return undefined;
   return {
     code: value.error.code,
@@ -271,7 +295,11 @@ async function sendMessage(message = input.value): Promise<void> {
     if (runtimeResult.status === "failed") {
       const failure = platformErrorFromResult(runtimeResult);
       if (failure !== undefined)
-        conversation.value = failOperation(conversation.value, turnId, turnFailure(failure));
+        conversation.value = failOperation(
+          conversation.value,
+          turnId,
+          turnFailure(failure),
+        );
       runState.value = "failed";
       return;
     }
@@ -286,12 +314,17 @@ async function sendMessage(message = input.value): Promise<void> {
       conversation.value,
       turnId,
       turnFailure(displayError),
-      displayError.code === "WORKBENCH_REQUEST_CANCELLED" ? "cancelled" : "failed",
+      displayError.code === "WORKBENCH_REQUEST_CANCELLED"
+        ? "cancelled"
+        : "failed",
     );
     runState.value =
-      displayError.code === "WORKBENCH_REQUEST_CANCELLED" ? "cancelled" : "failed";
+      displayError.code === "WORKBENCH_REQUEST_CANCELLED"
+        ? "cancelled"
+        : "failed";
   } finally {
-    if (activeController.value === controller) activeController.value = undefined;
+    if (activeController.value === controller)
+      activeController.value = undefined;
   }
 }
 
@@ -306,7 +339,9 @@ function retryTurn(turnId: string): void {
   void sendMessage(turn.userMessage.content);
 }
 
-async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> {
+async function handleA2UIAction(
+  rendered: RenderedRuntimeAction,
+): Promise<void> {
   if (
     !client ||
     !result.value ||
@@ -326,7 +361,8 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
   const turn = conversation.value.turns.find((item) =>
     item.businessSurfaces.some(
       (surface) =>
-        surface.surfaceId === rendered.action.surfaceId && surface.status === "active",
+        surface.surfaceId === rendered.action.surfaceId &&
+        surface.status === "active",
     ),
   );
   if (turn === undefined || turn.runtimeResult === undefined) return;
@@ -375,7 +411,11 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
       runState.value = "failed";
       return;
     }
-    conversation.value = resolveAction(conversation.value, turn.turnId, actionResult);
+    conversation.value = resolveAction(
+      conversation.value,
+      turn.turnId,
+      actionResult,
+    );
     runState.value = "rendering";
     await nextTick();
     runState.value = actionResult.status;
@@ -385,12 +425,17 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
       conversation.value,
       turn.turnId,
       turnFailure(displayError),
-      displayError.code === "WORKBENCH_REQUEST_CANCELLED" ? "cancelled" : "failed",
+      displayError.code === "WORKBENCH_REQUEST_CANCELLED"
+        ? "cancelled"
+        : "failed",
     );
     runState.value =
-      displayError.code === "WORKBENCH_REQUEST_CANCELLED" ? "cancelled" : "failed";
+      displayError.code === "WORKBENCH_REQUEST_CANCELLED"
+        ? "cancelled"
+        : "failed";
   } finally {
-    if (activeController.value === controller) activeController.value = undefined;
+    if (activeController.value === controller)
+      activeController.value = undefined;
   }
 }
 
@@ -423,6 +468,14 @@ function closeInspect(): void {
   inspectedTurnId.value = undefined;
 }
 
+function handleLocateDevice(deviceId: string): string {
+  return JSON.stringify(
+    locateDevice({ deviceId }, (device) => {
+      selectedDevice.value = device;
+    }),
+  );
+}
+
 onMounted(() => {
   configureRuntime();
   if (conversations.value.length === 0) {
@@ -439,7 +492,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <CopilotKitConversationProvider :runtime-url="endpoints.agUi">
+  <CopilotKitConversationProvider
+    :locate-device="handleLocateDevice"
+    :runtime-url="endpoints.agUi"
+  >
     <div class="shell" data-testid="conversation-shell">
       <ConversationSidebar
         :conversations="conversations"
@@ -470,6 +526,11 @@ onBeforeUnmount(() => {
           @submit="sendMessage($event)"
         />
       </main>
+
+      <MapWorkspace
+        :selected-device="selectedDevice"
+        @locate-device="handleLocateDevice"
+      />
 
       <InspectPanel
         v-if="inspectedTurn !== undefined"

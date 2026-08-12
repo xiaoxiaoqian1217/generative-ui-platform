@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { watchEffect } from "vue";
 import { useCopilotKit, useFrontendTool } from "@copilotkit/vue/v2";
+import { watchEffect } from "vue";
+import { z } from "zod";
 import { bindCopilotKitProviderCore } from "../agent/business-agent-client.js";
+
+const props = defineProps<{
+  locateDevice: ((deviceId: string) => string) | undefined;
+}>();
 
 const { copilotkit } = useCopilotKit();
 
@@ -23,6 +28,24 @@ useFrontendTool({
       status: "connected",
       surface: "web-workbench",
     });
+  },
+});
+
+useFrontendTool({
+  name: "locateDevice",
+  description:
+    "Locate a business device on the GIS workspace by its device ID. The browser owns the map implementation.",
+  parameters: z.object({ deviceId: z.string().min(1) }).strict(),
+  agentId: "default",
+  handler: async ({ deviceId }, { signal }) => {
+    signal?.throwIfAborted();
+    return (
+      props.locateDevice?.(deviceId) ??
+      JSON.stringify({
+        code: "LOCATE_DEVICE_UNAVAILABLE",
+        status: "unavailable",
+      })
+    );
   },
 });
 </script>

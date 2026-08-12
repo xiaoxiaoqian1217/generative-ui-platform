@@ -9,7 +9,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "pnpm build && playwright test",
+    "test:e2e": "pnpm --filter @generative-ui/ag-ui-mock build && pnpm build && playwright test",
     "test:e2e:platform": "playwright test --config playwright.platform.config.ts"
   },
   "dependencies": {
@@ -20,13 +20,16 @@
     "@generative-ui/presentation-contract": "workspace:*",
     "@generative-ui/runtime-contract": "workspace:*",
     "@generative-ui/shared-types": "workspace:*",
+    "maplibre-gl": "6.3.0",
     "markdown-it": "14.1.0",
-    "vue": "3.5.40"
+    "vue": "3.5.40",
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
     "@types/markdown-it": "14.1.2",
     "@types/ws": "8.18.1",
+    "@generative-ui/ag-ui-mock": "workspace:*",
     "@vitejs/plugin-vue": "6.0.8",
     "@vue/test-utils": "2.4.6",
     "jsdom": "26.1.0",

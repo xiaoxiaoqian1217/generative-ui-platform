@@ -215,6 +215,23 @@ window.__GEN_UI_WORKBENCH_CONFIG__ = {
 
 Runtime Host 地址只接受不包含凭据的 `http` 或 `https` URL。
 
+### 使用 AG-UI Mock 验证 GIS Frontend Tool
+
+独立终端启动可复用 mock：
+
+```bash
+pnpm --filter @generative-ui/ag-ui-mock build
+pnpm --filter @generative-ui/ag-ui-mock exec ag-ui-mock --scenario locate-device --port 4800
+```
+
+在 Workbench Settings 中将 Runtime Host 配置为 `http://127.0.0.1:4800`。
+
+在 Conversation 中输入“定位无人机 01”后，AG-UI mock 会请求 `locateDevice` Frontend Tool。
+
+工具只改变独立 GIS Workspace 的设备选择状态，并由地图飞行、高亮 Marker 和最小 `DeviceCard` 呈现结果。
+
+GIS Workspace 是受控业务 Surface，不是 A2UI Renderer，也不改变 Presentation Pipeline 的权威边界。
+
 ## 构建与验证
 
 ```bash

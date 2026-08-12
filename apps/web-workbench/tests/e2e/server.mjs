@@ -2,10 +2,17 @@ import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createAguiMockServer } from "@generative-ui/ag-ui-mock";
 
 const appRoot = fileURLToPath(new URL("../..", import.meta.url));
 const distRoot = join(appRoot, "dist");
 const port = Number(process.env.WEB_WORKBENCH_E2E_PORT ?? "4173");
+const aguiMockPort = Number(process.env.AG_UI_MOCK_E2E_PORT ?? "4180");
+const locateDeviceMock = createAguiMockServer({
+  port: aguiMockPort,
+  scenario: "locate-device",
+});
+await locateDeviceMock.start();
 let agentAvailable = true;
 let retryableTimeoutRequests = 0;
 let frontendToolProbe = {
@@ -353,7 +360,9 @@ server.listen(port, "127.0.0.1", () => {
 });
 
 function shutdown() {
-  server.close(() => process.exit(0));
+  server.close(() => {
+    void locateDeviceMock.stop().finally(() => process.exit(0));
+  });
 }
 
 process.on("SIGINT", shutdown);

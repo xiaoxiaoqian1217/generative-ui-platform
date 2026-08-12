@@ -3,7 +3,8 @@
 :root {
   color: #1f2328;
   background: #f6f7f9;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --ink: #1f2328;
@@ -120,6 +121,7 @@ textarea:focus-visible {
 
 .shell-sidebar {
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   width: 260px;
   background: #fff;
@@ -192,10 +194,10 @@ textarea:focus-visible {
 /* Main stage */
 
 .shell-stage {
-  flex: 1;
+  flex: 1 1 520px;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  min-width: 400px;
 }
 
 .shell-chat-scroll {
@@ -371,6 +373,7 @@ textarea:focus-visible {
 
 .shell-composer-inner input {
   flex: 1;
+  min-width: 0;
   border: 0;
   outline: none;
   padding: 6px 10px;
@@ -687,9 +690,184 @@ textarea:focus-visible {
   font-size: 0.8rem;
 }
 
+/* GIS business surface */
+
+.map-workspace {
+  position: relative;
+  display: flex;
+  flex: 1 1 620px;
+  min-width: 360px;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid var(--line);
+  background: #e9eef1;
+}
+
+.map-workspace-header {
+  z-index: 2;
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 14px;
+  border-bottom: 1px solid rgb(31 35 40 / 10%);
+  background: rgb(255 255 255 / 94%);
+}
+
+.map-workspace-header p,
+.map-workspace-header span {
+  margin: 0;
+}
+
+.map-workspace-header p {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.map-workspace-header span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.map-workspace-header button {
+  min-height: 32px;
+  padding: 0 11px;
+  border: 1px solid #cbd4d9;
+  border-radius: 7px;
+  color: #29434d;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.map-workspace-canvas,
+.map-view {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.map-workspace-canvas {
+  overflow: hidden;
+}
+
+.map-view {
+  position: absolute;
+  inset: 0;
+}
+
+.device-marker {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  color: #fff;
+  background: #28678b;
+  box-shadow: 0 4px 14px rgb(18 38 51 / 34%);
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.device-marker[data-selected="true"] {
+  z-index: 3;
+  background: #e25b2f;
+  box-shadow:
+    0 0 0 8px rgb(226 91 47 / 20%),
+    0 5px 18px rgb(18 38 51 / 42%);
+  transform: scale(1.2);
+}
+
+.device-card {
+  position: absolute;
+  z-index: 4;
+  right: 18px;
+  bottom: 18px;
+  width: min(320px, calc(100% - 36px));
+  padding: 17px;
+  border: 1px solid rgb(28 52 60 / 12%);
+  border-radius: 14px;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 15px 40px rgb(18 38 51 / 22%);
+  backdrop-filter: blur(12px);
+}
+
+.device-card header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.device-card-kicker,
+.device-card h3 {
+  margin: 0;
+}
+
+.device-card-kicker {
+  color: #6b7d85;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.device-card h3 {
+  margin-top: 3px;
+  color: #18343e;
+  font-size: 18px;
+}
+
+.device-card-status {
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #1a6b43;
+  background: #e6f4ea;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.device-card-status[data-status="offline"] {
+  color: #7a4e00;
+  background: #fff2cd;
+}
+
+.device-card dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0 0;
+}
+
+.device-card dl div {
+  min-width: 0;
+}
+
+.device-card dt {
+  color: #7a898f;
+  font-size: 10px;
+}
+
+.device-card dd {
+  overflow: hidden;
+  margin: 2px 0 0;
+  color: #29434d;
+  font-size: 12px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Responsive */
 
-@media (max-width: 980px) {
+@media (max-width: 1100px) {
   .shell {
     flex-direction: column;
   }
@@ -699,6 +877,17 @@ textarea:focus-visible {
     max-height: 220px;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+  }
+
+  .shell-stage {
+    min-width: 0;
+  }
+
+  .map-workspace {
+    min-width: 0;
+    min-height: 420px;
+    border-top: 1px solid var(--line);
+    border-left: 0;
   }
 
   .shell-topbar-nav {
