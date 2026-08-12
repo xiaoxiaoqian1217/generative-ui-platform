@@ -16,7 +16,7 @@ useFrontendTool({
     "Return the current Web Workbench frontend status from the browser. Use this only when the user asks to verify frontend connectivity or Workbench status.",
   agentId: "default",
   handler: async (_args, { signal }) => {
-    signal.throwIfAborted();
+    signal?.throwIfAborted();
     return JSON.stringify({
       capability: "frontend-tool",
       path: window.location.pathname,

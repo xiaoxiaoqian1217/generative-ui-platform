@@ -1,4 +1,4 @@
-import { CopilotKitCore } from "@copilotkit/core";
+import type { CopilotKitCore } from "@copilotkit/core";
 import {
   type PresentationResult,
   validatePresentationResult,
