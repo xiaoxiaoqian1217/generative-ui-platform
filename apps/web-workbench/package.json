@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@ag-ui/core": "0.0.57",
-    "@copilotkit/core": "1.64.1",
+    "@copilotkit/core": "1.66.4",
     "@copilotkit/vue": "1.64.1",
     "@generative-ui/compiler-contract": "workspace:*",
     "@generative-ui/presentation-contract": "workspace:*",
