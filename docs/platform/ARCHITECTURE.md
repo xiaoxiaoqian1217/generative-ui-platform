@@ -57,6 +57,19 @@ Agent Runtime Host
     └── Diagnostic Bundle
 ```
 
+开发验证可以启用一个不进入正式拓扑的协议测试分支:
+
+```text
+Generative UI Workbench
+        |
+        | AG-UI over HTTP POST + SSE
+        v
+AGUIMock
+```
+
+该分支只验证确定性的 Frontend Tool 协议和浏览器本地 UI 效果。
+AGUIMock 不拥有 Runtime Truth，不执行 Command 或业务副作用，也不替代 Runtime Host。
+
 Runtime Kernel 是 Runtime Host 内部逻辑层，不是独立服务。
 当前不自动新增 `packages/runtime-kernel`、端口或部署单元。
 
@@ -221,7 +234,8 @@ at-least-once transport
 
 ### 5.1 Generative UI Workbench
 
-- 是 Frontend Runtime 参考实现，只连接 Agent Runtime Host；
+- 是 Frontend Runtime 参考实现，正式模式只连接 Agent Runtime Host；
+- 在显式开发配置下可以直接连接 AGUIMock，验证无业务副作用的浏览器本地 Frontend Tool；
 - 使用 AG-UI 参与 Agent 交互；
 - 渲染 Markdown 或受控 A2UI；
 - 提交 Command，而不是指定内部 Run；

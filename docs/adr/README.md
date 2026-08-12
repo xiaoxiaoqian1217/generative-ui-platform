@@ -33,6 +33,8 @@ Diagnostic Event 和 Artifact 是诊断投影，不是 Runtime 当前状态恢�
 Workbench 与 Runtime Host 之间以 AG-UI 作为唯一 Agent 应用协议。
 当前参考 Transport 为 CopilotKit Runtime 的 HTTP POST + SSE 路径。
 HTTP、SSE 和 WebSocket 只属于 Transport；Runtime Host 与 Business Agent 的 HTTP + SSE / WebSocket 则属于 Business Agent Adapter 私有接入边界。
+开发、自动化测试和演示环境可以按 ADR-0027 通过显式配置让 Workbench 直接连接 AGUIMock。
+该例外仍使用 AG-UI，只允许无业务副作用的浏览器本地 Frontend Tool，不改变生产 Runtime Host 的事实所有权。
 
 平台对外采用两种主要接入模式：
 
@@ -63,6 +65,7 @@ UI Compiler Core、Presentation Pipeline、PlatformRunService 和 Runtime Kernel
 | [ADR-0024](./0024-adopt-runtime-truth-model-and-safe-command-admission.md) | 已接受 | Runtime Host、Workbench、Runtime Contract | Thread/Turn/Operation/Surface/Command 事实模型、安全 Command Admission、Runtime Repository 与 Diagnostics 解耦 |
 | [ADR-0025](./0025-adopt-two-external-integration-modes-and-layered-platform-capabilities.md) | 已接受 | 平台接入、Presentation、Runtime Host | 对外采用 Presentation Integration 与 Agent Runtime Integration；内部能力继续分层，并区分 Presentation Safety 与 Interaction Safety |
 | [ADR-0026](./0026-adopt-ag-ui-as-workbench-runtime-application-protocol.md) | 已接受 | Workbench、Runtime Host、协议边界 | AG-UI 是唯一 Workbench Agent 应用协议；HTTP/SSE/WebSocket 仅为 Transport，Business Agent 私有协议由 Adapter 隔离 |
+| [ADR-0027](./0027-allow-direct-ag-ui-mock-for-workbench-development.md) | 已接受 | Workbench、AGUIMock、开发测试边界 | 显式开发配置可让 Workbench 直接连接 AGUIMock，且只允许无业务副作用的浏览器本地 Frontend Tool |
 
 以上表格突出当前跨模块和平台范围决策。
 完整 ADR 集合以本目录中的全部编号文件为准。
@@ -73,7 +76,7 @@ UI Compiler Core、Presentation Pipeline、PlatformRunService 和 Runtime Kernel
 - ADR 编号在仓库中必须唯一，已经使用的编号不得复用。
 - 创建 ADR 前必须扫描本目录中的全部编号文件，使用当前最大编号加一。
 - 被拒绝、废弃或被取代的 ADR 仍然保留原文件和编号。
-- 当前最新编号为 `0026`。
+- 当前最新编号为 `0027`。
 
 ## 状态规则
 

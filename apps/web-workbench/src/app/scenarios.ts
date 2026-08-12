@@ -13,6 +13,12 @@ export const quickScenarios: QuickScenario[] = [
     message: "请用 Markdown 总结当前平台状态。",
   },
   {
+    id: "locate-device",
+    label: "定位无人机",
+    description: "验证 AG-UI Frontend Tool 闭环",
+    message: "定位无人机 01",
+  },
+  {
     id: "devices",
     label: "设备状态",
     description: "查看结构化设备结果",

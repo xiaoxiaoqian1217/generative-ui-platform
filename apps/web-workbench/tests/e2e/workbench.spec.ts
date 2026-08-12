@@ -11,6 +11,42 @@ test.beforeEach(async ({ request }) => {
   await request.post("/__control__/runtime-up");
 });
 
+test("AGUIMock frontend tool locates Drone 01 on the MapLibre business surface", async ({
+  page,
+}) => {
+  await page.request.post("/__control__/runtime-down");
+  await page.goto("/");
+
+  await expect(page.getByTestId("connection-status")).toHaveText(
+    "Runtime Host 不可用",
+  );
+  await expect(page.getByTestId("map-workspace")).toBeVisible();
+  await expect(page.getByTestId("map-canvas").locator("canvas")).toBeVisible();
+  await expect(page.getByTestId("device-marker-01")).toHaveAttribute(
+    "data-highlighted",
+    "false",
+  );
+
+  await chatInput(page).fill("定位无人机 01");
+  await sendMessage(page).click();
+
+  await expect(page.getByTestId("frontend-tool-activity")).toContainText(
+    "locateDevice",
+  );
+  await expect(page.getByTestId("frontend-tool-activity")).toContainText(
+    "已完成",
+  );
+  await expect(page.getByTestId("device-marker-01")).toHaveAttribute(
+    "data-highlighted",
+    "true",
+  );
+  await expect(page.getByTestId("device-card")).toContainText("Drone 01");
+  await expect(page.getByTestId("device-card")).toContainText("78%");
+  await expect(page.getByTestId("controlled-copilot-chat")).toContainText(
+    "已定位无人机 01",
+  );
+});
+
 test("CopilotKit Headless renders safe Markdown, PresentationResult and diagnostics", async ({
   page,
 }) => {

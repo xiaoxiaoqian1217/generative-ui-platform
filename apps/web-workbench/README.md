@@ -8,12 +8,14 @@
 成功后访问 `http://127.0.0.1:5173`。
 停止前台进程使用 Ctrl+C。
 
-Workbench 只能配置 `VITE_RUNTIME_HOST_URL` 与 `VITE_WORKBENCH_ENVIRONMENT`。
+Workbench 正式模式只配置 `VITE_RUNTIME_HOST_URL` 与 `VITE_WORKBENCH_ENVIRONMENT`。
+本地开发、自动化测试和演示可以额外配置 `VITE_AG_UI_MOCK_URL`，直接验证无业务副作用的浏览器本地 Frontend Tool。
 不得将 Provider、API Key 或 Business Agent 地址写入 `VITE_*`。
 Runtime Host 不可用时检查 `http://127.0.0.1:8200/health` 和 `VITE_RUNTIME_HOST_URL`。
 
 `apps/web-workbench` 是 Generative UI Platform 的 Vue 3 Frontend Runtime 参考实现和长期开发验证工作台。
-它只连接 Agent Runtime Host，并用于开发、联调、诊断和基础验收。
+正式模式下它只连接 Agent Runtime Host，并用于开发、联调、诊断和基础验收。
+显式开发配置可以让它直接连接 AGUIMock，但该路径不是生产拓扑。
 它不是正式业务产品，也不承担 Business Agent 适配、Runtime Truth 管理、Presentation 决策或 UI 编译。
 
 ## 当前产品规范
@@ -58,6 +60,13 @@ Workbench MUST NOT：
 - 直接调用 Presentation Pipeline 或 UI Compiler Core；
 - 维护与 AG-UI 并列的自定义 Agent 业务协议；
 - 根据浏览器旧 `runId`、历史 A2UI 或本地缓存推导新的 Runtime Truth。
+
+开发验证例外:
+
+- `VITE_AG_UI_MOCK_URL` 可以把 Frontend Tool 场景路由到确定性的 AGUIMock；
+- 该连接仍使用 AG-UI over HTTP POST + SSE；
+- 只允许修改浏览器本地、可逆且无业务副作用的 UI 状态；
+- 真实设备控制、业务写入、Command、Action Resume 和 Runtime 恢复仍必须经过 Runtime Host。
 
 ## Runtime Truth 与前端状态
 
@@ -121,6 +130,7 @@ CopilotKit 的样式由 `src/styles/copilotkit.css` 单独引入。
 Workbench 只读取以下浏览器配置：
 
 - Runtime Host 地址；
+- 可选的开发 AGUIMock 地址；
 - 环境名称。
 
 Workbench 不存在 UI Compiler URL、Business Agent 私有地址、Model Provider 地址或密钥配置。
@@ -162,12 +172,22 @@ $env:VITE_RUNTIME_HOST_URL = "https://runtime.test.example"
 pnpm dev:web-workbench
 ```
 
+只验证“定位无人机 01”Frontend Tool 闭环时:
+
+```powershell
+pnpm --filter @generative-ui/ag-ui-mock build
+pnpm --filter @generative-ui/ag-ui-mock start -- --port 4800 --scenario locate-device
+$env:VITE_AG_UI_MOCK_URL = "http://127.0.0.1:4800"
+pnpm dev:web-workbench
+```
+
 ## 外部运行时配置
 
 发布后可以在加载应用前覆盖 `runtime-config.js`：
 
 ```js
 window.__GEN_UI_WORKBENCH_CONFIG__ = {
+  agUiMockUrl: "http://127.0.0.1:4800",
   runtimeHostUrl: "https://runtime.test.example",
   environment: "test",
 };
@@ -213,3 +233,4 @@ docker build \
 - [平台开发验证环境](../../docs/platform/DEVELOPMENT_ENVIRONMENT.md)
 - [ADR-0024：Runtime Truth Model 与安全 Command Admission](../../docs/adr/0024-adopt-runtime-truth-model-and-safe-command-admission.md)
 - [ADR-0026：AG-UI Agent 应用协议边界](../../docs/adr/0026-adopt-ag-ui-as-workbench-runtime-application-protocol.md)
+- [ADR-0027：Workbench 直接连接 AGUIMock 的开发边界](../../docs/adr/0027-allow-direct-ag-ui-mock-for-workbench-development.md)

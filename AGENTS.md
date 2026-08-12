@@ -68,6 +68,9 @@ git push -u origin codex/issue-N:refs/heads/codex/issue-N
 - HTTP, SSE, and WebSocket MUST be treated as Transport mechanisms, not as Agent business protocols parallel to AG-UI.
 - The current Workbench reference Transport is AG-UI over HTTP POST + SSE through the embedded CopilotKit Runtime.
 - New Workbench Agent features MUST NOT introduce a separate custom HTTP Run protocol or WebSocket Run protocol alongside AG-UI.
+- Production Workbench flows MUST connect to Runtime Host.
+- Local development, automated tests, and demos MAY explicitly connect Workbench to AGUIMock over AG-UI for browser-local Frontend Tools that have no business side effects.
+- AGUIMock MUST NOT own Runtime Truth, execute Commands, call real devices, or be configured as a production target.
 - Existing `/api/runs`, `/api/actions`, or `/ws/runs` paths MAY remain during migration only as compatibility / debug adapters and MUST converge on the same Runtime Domain semantics.
 - Business Agent private HTTP + SSE / WebSocket protocols belong behind Business Agent Adapter and MUST NOT be exposed to Workbench.
 - Business Agent MUST own business reasoning, business state, checkpoints, backend tools, and business side-effect semantics.

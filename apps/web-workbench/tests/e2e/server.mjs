@@ -2,10 +2,17 @@ import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createAguiMockServer } from "@generative-ui/ag-ui-mock";
 
 const appRoot = fileURLToPath(new URL("../..", import.meta.url));
 const distRoot = join(appRoot, "dist");
 const port = Number(process.env.WEB_WORKBENCH_E2E_PORT ?? "4173");
+const agUiMockPort = Number(process.env.AG_UI_MOCK_E2E_PORT ?? "4174");
+const agUiMock = createAguiMockServer({ scenario: "locate-device" });
+const agUiMockAddress = await agUiMock.listen({
+  host: "127.0.0.1",
+  port: agUiMockPort,
+});
 let runtimeAvailable = true;
 let retryableTimeoutRequests = 0;
 let threadSequence = 0;
@@ -192,6 +199,19 @@ const server = createServer(async (request, response) => {
     response.writeHead(204).end();
     return;
   }
+  if (request.method === "GET" && url.pathname === "/runtime-config.js") {
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-type": "text/javascript; charset=utf-8",
+    });
+    response.end(
+      `window.__GEN_UI_WORKBENCH_CONFIG__ = ${JSON.stringify({
+        agUiMockUrl: agUiMockAddress.url,
+        environment: "e2e",
+      })};`,
+    );
+    return;
+  }
   if (request.method === "GET" && url.pathname === "/health/dependencies") {
     json(response, runtimeAvailable ? 200 : 503, {
       status: runtimeAvailable ? "ok" : "unavailable",
@@ -373,7 +393,9 @@ server.listen(port, "127.0.0.1", () => {
 });
 
 function shutdown() {
-  server.close(() => process.exit(0));
+  server.close(() => {
+    void agUiMock.close().finally(() => process.exit(0));
+  });
 }
 
 process.on("SIGINT", shutdown);

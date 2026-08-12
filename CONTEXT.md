@@ -21,8 +21,14 @@ _Avoid_: 企业业务系统、完整回归测试平台
 
 **Generative UI Workbench**:
 Frontend Runtime 参考实现和开发诊断工作台。
-它只连接 Agent Runtime Host，通过 AG-UI 参与 Agent 交互，渲染 Markdown 和 A2UI，并查看 Runtime Snapshot、Debug Conversation 与逐 Turn/Operation 诊断。
+正式模式只连接 Agent Runtime Host，通过 AG-UI 参与 Agent 交互，渲染 Markdown 和 A2UI，并查看 Runtime Snapshot、Debug Conversation 与逐 Turn/Operation 诊断。
+显式开发配置可以直接连接 AGUIMock，以验证无业务副作用的浏览器本地 Frontend Tool。
 _Avoid_: Business Agent、Presentation Pipeline、Runtime Truth 所有者
+
+**AGUIMock**:
+可复用的确定性 AG-UI 协议测试替身。
+它为本地开发、自动化测试和演示产生标准 AG-UI 事件，但不拥有 Runtime Truth，也不执行真实业务副作用。
+_Avoid_: Runtime Host 替代品、Business Agent 私有协议、生产连接目标
 
 **AG-UI Agent 交互协议**:
 Workbench 与 Agent Runtime Host 之间唯一的 Agent 交互应用协议。

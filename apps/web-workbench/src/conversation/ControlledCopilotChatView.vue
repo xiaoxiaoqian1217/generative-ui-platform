@@ -14,6 +14,7 @@ const props = defineProps<{
   isActionDisabled: boolean;
   isInputDisabled: boolean;
   isRunning: boolean;
+  isSubmitDisabled: boolean;
   messages: Message[];
   turns: readonly ConversationTurn[];
 }>();
@@ -77,7 +78,44 @@ function turnForUserMessage(messageId: string): ConversationTurn | undefined {
           @stop="onStop?.()"
           @submit-message="onSubmitMessage"
           @update:model-value="onUpdateModelValue"
-        />
+        >
+          <template #send-button="{ disabled, isProcessing, onClick }">
+            <div class="cpk:mr-[10px]">
+              <button
+                type="button"
+                data-testid="copilot-chat-input-send"
+                aria-label="Send message"
+                :disabled="disabled || (isSubmitDisabled && !isProcessing)"
+                class="cpk:inline-flex cpk:h-9 cpk:w-9 cpk:shrink-0 cpk:items-center cpk:justify-center cpk:rounded-full cpk:bg-black cpk:text-white cpk:transition-colors cpk:hover:opacity-70 cpk:disabled:cursor-not-allowed cpk:disabled:opacity-50 cpk:disabled:bg-[#00000014] cpk:disabled:text-[rgb(13,13,13)] cpk:disabled:hover:opacity-100 cpk:dark:bg-white cpk:dark:text-black cpk:dark:disabled:bg-[#454545] cpk:dark:disabled:text-white"
+                @click="onClick"
+              >
+                <svg
+                  v-if="isProcessing"
+                  aria-hidden="true"
+                  class="cpk:size-[18px]"
+                  viewBox="0 0 24 24"
+                >
+                  <rect x="6" y="6" width="12" height="12" fill="currentColor" />
+                </svg>
+                <svg
+                  v-else
+                  aria-hidden="true"
+                  class="cpk:size-[18px]"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="m6 11 6-6 6 6M12 5v14"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  />
+                </svg>
+              </button>
+            </div>
+          </template>
+        </CopilotChatInput>
       </template>
     </CopilotChatView>
     <button

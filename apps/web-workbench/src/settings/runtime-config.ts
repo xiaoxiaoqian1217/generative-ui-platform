@@ -1,14 +1,17 @@
 export interface ExternalWorkbenchConfig {
+  agUiMockUrl?: string;
   environment?: string;
   runtimeHostUrl?: string;
 }
 
 export interface WorkbenchBuildEnvironment {
+  VITE_AG_UI_MOCK_URL?: string;
   VITE_RUNTIME_HOST_URL?: string;
   VITE_WORKBENCH_ENVIRONMENT?: string;
 }
 
 export interface WorkbenchConfig {
+  agUiMockUrl?: string;
   environment: string;
   runtimeHostUrl: string;
 }
@@ -33,7 +36,7 @@ function validateExternalConfig(value: unknown): ExternalWorkbenchConfig {
   }
 
   const entries = Object.entries(value);
-  const allowedKeys = new Set(["environment", "runtimeHostUrl"]);
+  const allowedKeys = new Set(["agUiMockUrl", "environment", "runtimeHostUrl"]);
   if (
     entries.some(
       ([key, entry]) =>
@@ -107,7 +110,15 @@ export function resolveWorkbenchConfig(
     throw new Error(INVALID_RUNTIME_HOST_URL);
   }
 
+  const agUiMockUrl = firstNonEmpty(
+    external.agUiMockUrl,
+    build.VITE_AG_UI_MOCK_URL,
+  );
+
   return {
+    ...(agUiMockUrl === undefined
+      ? {}
+      : { agUiMockUrl: normalizeRuntimeHostUrl(agUiMockUrl).origin }),
     environment:
       firstNonEmpty(external.environment, build.VITE_WORKBENCH_ENVIRONMENT) ??
       "same-origin",

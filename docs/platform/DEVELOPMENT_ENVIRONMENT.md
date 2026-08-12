@@ -13,6 +13,8 @@ ADR-0019 已将其中“独立 UI Compiler Service”的目标部署结论替换
 Workbench 与 Runtime Host 之间以 AG-UI 作为唯一 Agent 应用协议。
 当前参考 Transport 为 CopilotKit Runtime 的 HTTP POST + SSE 路径。
 Runtime Host 与 Business Agent 之间的 HTTP + SSE / WebSocket 则属于 Business Agent Adapter 私有 Transport，两者不能混为一层。
+Frontend Tool 的本地开发、自动化测试和演示可以通过显式配置让 Workbench 直接连接 AGUIMock。
+该开发分支仍使用 AG-UI over HTTP POST + SSE，并且只允许无业务副作用的浏览器本地工具。
 
 ```text
 Generative UI Workbench :5173
@@ -34,7 +36,8 @@ Agent Runtime Host :8200
                 └── UI Compiler Core ──► PresentationResult
 ```
 
-Workbench 只能连接 Agent Runtime Host。
+正式模式下 Workbench 只能连接 Agent Runtime Host。
+显式开发配置可以连接 AGUIMock，但 AGUIMock 不拥有 Runtime Truth、不执行 Command 或真实业务副作用，也不是 Runtime Host 的替代品。
 浏览器不配置或访问 Business Agent 私有地址、Presentation Pipeline、UI Compiler Core、Model Provider 或 API Key。
 Presentation Pipeline 是 `packages/presentation-pipeline`，运行在 Runtime Host 进程内，不启动独立端口。
 不存在当前目标内的 UI Compiler HTTP Service、UI Compiler Client、`UI_COMPILER_URL` 或 Embedded / Remote 双模式。
@@ -78,6 +81,17 @@ pnpm dev:platform
 按 Ctrl+C 会停止并清理启动器创建的子进程。
 如果启动终端意外关闭，请运行 `pnpm stop:platform`。
 不要在 Windows 与 WSL 中同时为同一工作树启动平台，因为它们会争用 5173、8200 和 8300 端口。
+
+只验证 Frontend Tool 时，可以省略真实 Business Agent 并单独启动 AGUIMock:
+
+```powershell
+pnpm --filter @generative-ui/ag-ui-mock build
+pnpm --filter @generative-ui/ag-ui-mock start -- --port 4800 --scenario locate-device
+$env:VITE_AG_UI_MOCK_URL = "http://127.0.0.1:4800"
+pnpm dev:web-workbench
+```
+
+`VITE_AG_UI_MOCK_URL` 只允许出现在本地开发、自动化测试或演示配置中。
 
 运行中的环境可用下列命令复查。
 
@@ -148,6 +162,18 @@ AG-UI 是应用协议；HTTP、SSE 和未来可能的 WebSocket 只是 Transport
 
 如果未来实现 `AG-UI over WebSocket`，只能替换 Transport Adapter，不得形成第二套 Runtime Kernel 或 Agent 业务状态机。
 
+### Workbench -> AGUIMock
+
+显式开发配置可以使用:
+
+```text
+http://127.0.0.1:4800/api/copilotkit
+```
+
+该 Endpoint 只提供确定性的 AG-UI 场景。
+`locate-device` 场景调用浏览器注册的 `locateDevice({ deviceId })`，并根据 Tool Result 返回最终消息。
+这条路径不得用于生产、真实设备控制、业务写入、Command Admission 或 Runtime 恢复。
+
 ### Runtime Host ↔ Business Agent
 
 Business Agent Adapter 当前可以使用：
@@ -195,6 +221,7 @@ pnpm docs:check
 | 启动失败或端口被占用 | `pnpm check:platform-environment` 的端口错误。 | 执行 `pnpm stop:platform`，确认 5173、8200、8300 已释放后重试。 |
 | Workbench 显示 Runtime Host 不可用 | `http://127.0.0.1:8200/health`。 | 确认 `pnpm dev:platform` 仍在运行，并检查 Runtime Host 启动输出。 |
 | AG-UI 会话无法运行 | `/api/copilotkit` 与浏览器连接状态。 | 确认 Workbench 只配置 Runtime Host 地址，并检查 Runtime Host 的 CopilotKit / AG-UI Adapter。 |
+| AGUIMock Frontend Tool 未执行 | `http://127.0.0.1:4800/health` 与 `VITE_AG_UI_MOCK_URL`。 | 确认使用 `locate-device` 场景，并检查浏览器中 `locateDevice` 的活动状态。 |
 | Business Agent 依赖健康检查失败 | `http://127.0.0.1:8200/health/dependencies`。 | `BUSINESS_AGENT_UNREACHABLE` 表示 8300 不可达，`BUSINESS_AGENT_UNHEALTHY` 表示 Agent 响应异常。 |
 | 真实 Provider 无法启动 | Runtime Host 服务端环境变量。 | 核对 Provider、模型名、API Key、可选 Base URL 与 Endpoint ID，且不要把密钥写入前端变量。 |
 | 展示降级为 Markdown | Workbench Presentation 与 Inspect。 | Provider、候选校验或编译失败会保留有效业务结果并安全降级；Presentation fallback 不改变 Operation Outcome。 |
@@ -208,6 +235,7 @@ pnpm docs:check
 - [平台一键开发环境实现说明](./PLATFORM_DEVELOPMENT.md)
 - [ADR-0019](../adr/0019-embed-presentation-pipeline-in-agent-runtime-host.md)
 - [ADR-0024](../adr/0024-adopt-runtime-truth-model-and-safe-command-admission.md)
+- [ADR-0027](../adr/0027-allow-direct-ag-ui-mock-for-workbench-development.md)
 - [ADR-0026](../adr/0026-adopt-ag-ui-as-workbench-runtime-application-protocol.md)
 - [Presentation Pipeline Package](../../packages/presentation-pipeline/README.md)
 - [Runtime Host](../../apps/agent-runtime-host/README.md)

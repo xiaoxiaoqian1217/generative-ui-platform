@@ -81,12 +81,19 @@ import {
   workbenchRouteLabel,
   WORKBENCH_ROUTES,
 } from "./routes.js";
+// biome-ignore lint/style/useImportType: Vue renders this component from the template.
+import AgUiMockToolBridge from "../features/frontend-tools/AgUiMockToolBridge.vue";
+import { locateDevice } from "../features/frontend-tools/locate-device.js";
+import type { Device } from "../features/map/devices.js";
 
 const ControlledCopilotChatView = defineAsyncComponent(
   () => import("../conversation/ControlledCopilotChatView.vue"),
 );
 const CopilotKitConversationProvider = defineAsyncComponent(
   () => import("../conversation/CopilotKitConversationProvider.vue"),
+);
+const MapWorkspace = defineAsyncComponent(
+  () => import("../features/map/MapWorkspace.vue"),
 );
 
 type RunState =
@@ -117,6 +124,7 @@ const configResolution:
       config: resolveWorkbenchConfig(
         window.__GEN_UI_WORKBENCH_CONFIG__ ?? {},
         {
+          VITE_AG_UI_MOCK_URL: import.meta.env.VITE_AG_UI_MOCK_URL,
           VITE_RUNTIME_HOST_URL: import.meta.env.VITE_RUNTIME_HOST_URL,
           VITE_WORKBENCH_ENVIRONMENT: import.meta.env
             .VITE_WORKBENCH_ENVIRONMENT,
@@ -143,6 +151,7 @@ const config =
     ? configured
     : resolveWorkbenchConfig(
         {
+          agUiMockUrl: configured.agUiMockUrl,
           environment: configured.environment,
           runtimeHostUrl: initialLocalSettings.runtimeHostUrl,
         },
@@ -201,6 +210,16 @@ const threads = ref<readonly RuntimeThread[]>([]);
 const nextThreadCursor = ref<string>();
 const selectedThreadId = ref<string>();
 const threadNotice = ref("");
+const selectedDevice = ref<Device>();
+const frontendToolActivity = ref<{
+  deviceId: string;
+  status: "running" | "completed" | "failed";
+}>();
+const agUiMockBridge = ref<InstanceType<typeof AgUiMockToolBridge>>();
+const agUiMockRuntimeUrl =
+  config.agUiMockUrl === undefined
+    ? undefined
+    : new URL("/api/copilotkit", config.agUiMockUrl).toString();
 
 let client: RuntimeTransportClient | undefined;
 let clientGeneration = 0;
@@ -235,12 +254,14 @@ const canSend = computed(
     input.value.trim().length > 0 &&
     runState.value !== "running" &&
     runState.value !== "rendering" &&
-    connectionState.value === "connected" &&
+    (connectionState.value === "connected" ||
+      (agUiMockRuntimeUrl !== undefined &&
+        isLocateDeviceRequest(input.value.trim()))) &&
     configurationError === undefined,
 );
 const isInputDisabled = computed(
   () =>
-    connectionState.value !== "connected" ||
+    (connectionState.value !== "connected" && agUiMockRuntimeUrl === undefined) ||
     configurationError !== undefined ||
     conversation.value.activeOperation !== undefined,
 );
@@ -383,9 +404,52 @@ function turnFailure(error: DisplayError): TurnFailure {
   };
 }
 
+function isLocateDeviceRequest(message: string): boolean {
+  return /定位.*(?:无人机|设备).*(?:01|1)|locate.*(?:01|1)/iu.test(message);
+}
+
+async function runAgUiMock(
+  request: RuntimeRunRequest,
+): Promise<RuntimeRunResult> {
+  if (agUiMockBridge.value === undefined) {
+    throw new WorkbenchRuntimeError(
+      "WORKBENCH_RUNTIME_UNAVAILABLE",
+      "AGUIMock 前端工具桥尚未就绪。",
+      { retryable: true },
+    );
+  }
+  const assistantText = await agUiMockBridge.value.run(request.message.content);
+  const presentationRequestId = `presentation-${request.requestId}`;
+  return {
+    presentation: {
+      markdown: assistantText,
+      mode: "markdown",
+      requestId: presentationRequestId,
+      status: "completed",
+    },
+    presentationRequestId,
+    protocolVersion: request.protocolVersion,
+    requestId: request.requestId,
+    runId: request.runId ?? createId("run"),
+    status: "completed",
+    threadId: request.threadId ?? createId("thread-ag-ui-mock"),
+  };
+}
+
+function locateTestDevice(): void {
+  const result = locateDevice({ deviceId: "01" });
+  if (result.status === "located") selectedDevice.value = result.device;
+}
+
 async function sendMessage(message = input.value): Promise<void> {
   const normalizedMessage = message.trim();
-  if (!client || normalizedMessage === "" || !canSend.value) {
+  const shouldUseAgUiMock =
+    agUiMockRuntimeUrl !== undefined && isLocateDeviceRequest(normalizedMessage);
+  if (
+    (!client && !shouldUseAgUiMock) ||
+    normalizedMessage === "" ||
+    !canSend.value
+  ) {
     return;
   }
 
@@ -403,10 +467,13 @@ async function sendMessage(message = input.value): Promise<void> {
   runState.value = "running";
 
   try {
-    const runtimeResult = await client.run(
-      request,
-      controller.signal,
-    );
+    let runtimeResult: RuntimeRunResult;
+    if (shouldUseAgUiMock) {
+      runtimeResult = await runAgUiMock(request);
+    } else {
+      if (client === undefined) return;
+      runtimeResult = await client.run(request, controller.signal);
+    }
     if (activeCase.value !== undefined) {
       caseEvaluation.value = evaluateCase(
         activeCase.value.expectation,
@@ -704,7 +771,7 @@ onBeforeUnmount(() => {
       </a>
     </nav>
 
-    <main v-if="route === '/playground'" class="workspace">
+    <main v-if="route === '/playground'" class="workspace playground-workspace">
       <aside class="control-rail">
         <section class="rail-section" data-testid="thread-list">
           <div class="section-heading"><div><p class="eyebrow">DEBUG HISTORY</p><h2>调试会话</h2></div><button class="secondary-button" type="button" @click="newThread">新建</button></div>
@@ -760,7 +827,8 @@ onBeforeUnmount(() => {
 
         <section class="rail-section boundary-note">
           <p class="eyebrow">ARCHITECTURE BOUNDARY</p>
-          <p>浏览器仅连接 Agent Runtime Host。</p>
+          <p>正式模式仅连接 Agent Runtime Host。</p>
+          <p v-if="agUiMockRuntimeUrl">开发验证中的 Frontend Tool 直接连接 AGUIMock。</p>
           <p>无 Compiler URL、Agent 私有地址或模型密钥。</p>
         </section>
       </aside>
@@ -789,6 +857,7 @@ onBeforeUnmount(() => {
               :is-action-disabled="conversation.activeOperation !== undefined"
               :is-input-disabled="isInputDisabled"
               :is-running="runState === 'running' || runState === 'rendering'"
+              :is-submit-disabled="!canSend"
               :messages="[...messages]"
               :turns="conversation.turns"
               data-testid="controlled-copilot-chat"
@@ -799,6 +868,24 @@ onBeforeUnmount(() => {
               @submit-message="sendMessage($event)"
             />
           </CopilotKitConversationProvider>
+          <AgUiMockToolBridge
+            v-if="agUiMockRuntimeUrl"
+            ref="agUiMockBridge"
+            :runtime-url="agUiMockRuntimeUrl"
+            @activity-change="frontendToolActivity = $event"
+            @device-located="selectedDevice = $event"
+          />
+          <div
+            v-if="frontendToolActivity"
+            class="frontend-tool-activity"
+            :data-status="frontendToolActivity.status"
+            data-testid="frontend-tool-activity"
+          >
+            <span aria-hidden="true">{{ frontendToolActivity.status === 'completed' ? '✓' : '↗' }}</span>
+            <code>locateDevice</code>
+            <span>deviceId {{ frontendToolActivity.deviceId }}</span>
+            <strong>{{ frontendToolActivity.status === 'completed' ? '已完成' : frontendToolActivity.status === 'running' ? '执行中' : '失败' }}</strong>
+          </div>
         </section>
 
         <section v-if="error" class="error-card" data-testid="error-state">
@@ -846,6 +933,10 @@ onBeforeUnmount(() => {
           <p>选择快捷场景或输入消息，Workbench 将通过当前 Transport 连接 Runtime Host。</p>
         </section>
       </section>
+      <MapWorkspace
+        :selected-device="selectedDevice"
+        @locate-test-device="locateTestDevice"
+      />
     </main>
     <main v-else class="workspace static-workbench-page" :data-testid="`route-${route.slice(1)}`">
       <section class="main-stage">

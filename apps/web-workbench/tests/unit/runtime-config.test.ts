@@ -24,6 +24,7 @@ describe("Workbench Runtime Host configuration", () => {
     expect(
       resolveWorkbenchConfig(
         {
+          agUiMockUrl: "https://ag-ui-mock.test.example/base",
           runtimeHostUrl: "https://runtime.test.example/",
           environment: "test",
         },
@@ -34,6 +35,7 @@ describe("Workbench Runtime Host configuration", () => {
         "https://workbench.example",
       ),
     ).toEqual({
+      agUiMockUrl: "https://ag-ui-mock.test.example",
       environment: "test",
       runtimeHostUrl: "https://runtime.test.example",
     });
@@ -67,5 +69,12 @@ describe("Workbench Runtime Host configuration", () => {
         "https://workbench.example",
       ),
     ).toThrow("WORKBENCH_RUNTIME_CONFIG_INVALID");
+    expect(() =>
+      resolveWorkbenchConfig(
+        { agUiMockUrl: "file:///tmp/ag-ui-mock" },
+        {},
+        "https://workbench.example",
+      ),
+    ).toThrow("WORKBENCH_RUNTIME_HOST_URL_INVALID");
   });
 });

@@ -37,7 +37,8 @@ Generative UI Platform 是面向 Agent 应用的生成式 UI 编译与受控交�
 
 当前平台开发验证阶段必须支持：
 
-- Web 只连接 Agent Runtime Host；
+- 正式模式下 Web 只连接 Agent Runtime Host；
+- 开发、自动化测试和演示环境可以通过显式配置让 Workbench 直接连接 AGUIMock，以验证无业务副作用的浏览器本地 Frontend Tool；
 - Workbench 与 Runtime Host 之间以 AG-UI 作为唯一 Agent 交互应用协议；
 - 当前参考实现使用 CopilotKit Runtime 的 HTTP POST + SSE 路径；
 - CopilotKit Runtime 嵌入 Runtime Host，不作为并列 Runtime 独立部署；
@@ -112,10 +113,12 @@ Generative UI Platform 是面向 Agent 应用的生成式 UI 编译与受控交�
 
 ### 6.1 Web
 
-只允许 `Web → Agent Runtime Host`。
+正式模式只允许 `Web -> Agent Runtime Host`。
 Web 不得直接调用 Business Agent、Presentation Pipeline、UI Compiler Core 或模型供应商。
 
 Workbench 的 Agent 交互必须使用 AG-UI。
+显式开发配置可以增加 `Web -> AGUIMock`，但 AGUIMock 只允许产生确定性的 AG-UI 事件并调用无业务副作用的浏览器本地 Frontend Tool。
+该路径不得拥有 Runtime Truth、执行 Command 或真实业务副作用，也不得配置到生产环境。
 普通 REST 只用于 Catalog、Scenarios、Settings、Health、Runtime Snapshot、Debug Conversation、Turn Details、Artifact 查询和 Diagnostic Bundle 等非 Agent 交互能力。
 业务设备实时 WebSocket 可以独立存在，但不得与 Agent 交互协议混合。
 
