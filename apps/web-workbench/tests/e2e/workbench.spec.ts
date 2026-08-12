@@ -41,6 +41,34 @@ test("CopilotKit Headless renders safe Markdown, PresentationResult and diagnost
   );
 });
 
+test("CopilotKit Frontend Tool is advertised, executed in the browser, and continued through AG-UI", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("connection-status")).toHaveText(
+    "Runtime Host 可用",
+  );
+
+  await chatInput(page).fill("调用前端状态工具");
+  await sendMessage(page).click();
+
+  await expect
+    .poll(async () => {
+      const response = await request.get("/__control__/frontend-tool-probe");
+      const probe = await response.json();
+      return probe.continuations;
+    })
+    .toBe(1);
+
+  const response = await request.get("/__control__/frontend-tool-probe");
+  const probe = await response.json();
+  expect(probe.advertised).toBe(true);
+  expect(probe.result).toContain('"source":"frontend-tool"');
+  expect(probe.result).toContain('"status":"connected"');
+  await expect(page.getByTestId("run-status")).toContainText("已完成");
+});
+
 test("CopilotKit Headless keeps A2UI raw data controlled", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("connection-status")).toHaveText(
