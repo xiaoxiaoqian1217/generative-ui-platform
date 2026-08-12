@@ -177,9 +177,13 @@ pnpm dev:web-workbench
 ```powershell
 pnpm --filter @generative-ui/ag-ui-mock build
 pnpm --filter @generative-ui/ag-ui-mock start -- --port 4800 --scenario locate-device
+$env:VITE_ALLOW_AG_UI_MOCK = "true"
 $env:VITE_AG_UI_MOCK_URL = "http://127.0.0.1:4800"
 pnpm dev:web-workbench
 ```
+
+`VITE_ALLOW_AG_UI_MOCK=true` 是构建期保险丝。
+发布构建默认关闭该能力，即使运行时配置注入 `agUiMockUrl` 也会拒绝启动。
 
 ## 外部运行时配置
 
@@ -192,6 +196,9 @@ window.__GEN_UI_WORKBENCH_CONFIG__ = {
   environment: "test",
 };
 ```
+
+只有构建时显式设置 `VITE_ALLOW_AG_UI_MOCK=true`，运行时 `agUiMockUrl` 才会生效。
+该开关只适用于本地开发、自动化测试和受控演示构建，不得用于生产构建。
 
 外部配置优先于 Vite 构建环境变量。
 这允许同一静态构建在不同测试环境中复用。

@@ -8,8 +8,11 @@ const appRoot = fileURLToPath(new URL("../..", import.meta.url));
 const distRoot = join(appRoot, "dist");
 const port = Number(process.env.WEB_WORKBENCH_E2E_PORT ?? "4173");
 const agUiMockPort = Number(process.env.AG_UI_MOCK_E2E_PORT ?? "4174");
-const agUiMock = createAguiMockServer({ scenario: "locate-device" });
-const agUiMockAddress = await agUiMock.listen({
+const includeAgUiMock = process.env.WEB_WORKBENCH_E2E_MODE !== "platform";
+const agUiMock = includeAgUiMock
+  ? createAguiMockServer({ scenario: "locate-device" })
+  : undefined;
+const agUiMockAddress = await agUiMock?.listen({
   host: "127.0.0.1",
   port: agUiMockPort,
 });
@@ -206,7 +209,9 @@ const server = createServer(async (request, response) => {
     });
     response.end(
       `window.__GEN_UI_WORKBENCH_CONFIG__ = ${JSON.stringify({
-        agUiMockUrl: agUiMockAddress.url,
+        ...(agUiMockAddress === undefined
+          ? {}
+          : { agUiMockUrl: agUiMockAddress.url }),
         environment: "e2e",
       })};`,
     );
@@ -394,6 +399,10 @@ server.listen(port, "127.0.0.1", () => {
 
 function shutdown() {
   server.close(() => {
+    if (agUiMock === undefined) {
+      process.exit(0);
+      return;
+    }
     void agUiMock.close().finally(() => process.exit(0));
   });
 }

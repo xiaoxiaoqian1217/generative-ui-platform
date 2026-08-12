@@ -985,6 +985,15 @@ pre {
   font-weight: 700;
 }
 
+.local-fixture-label {
+  margin: 0 0 var(--space-xs);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .map-workspace {
   position: sticky;
   top: 126px;

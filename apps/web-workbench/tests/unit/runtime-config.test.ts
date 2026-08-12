@@ -29,6 +29,7 @@ describe("Workbench Runtime Host configuration", () => {
           environment: "test",
         },
         {
+          VITE_ALLOW_AG_UI_MOCK: "true",
           VITE_RUNTIME_HOST_URL: "https://build.example/",
           VITE_WORKBENCH_ENVIRONMENT: "build",
         },
@@ -76,5 +77,23 @@ describe("Workbench Runtime Host configuration", () => {
         "https://workbench.example",
       ),
     ).toThrow("WORKBENCH_RUNTIME_HOST_URL_INVALID");
+  });
+
+  it("rejects AGUIMock unless the build explicitly enables the development fixture", () => {
+    expect(() =>
+      resolveWorkbenchConfig(
+        { agUiMockUrl: "https://ag-ui-mock.test.example" },
+        {},
+        "https://workbench.example",
+      ),
+    ).toThrow("WORKBENCH_AG_UI_MOCK_NOT_ALLOWED");
+
+    expect(() =>
+      resolveWorkbenchConfig(
+        { agUiMockUrl: "https://ag-ui-mock.test.example" },
+        { VITE_ALLOW_AG_UI_MOCK: "false" },
+        "https://workbench.example",
+      ),
+    ).toThrow("WORKBENCH_AG_UI_MOCK_NOT_ALLOWED");
   });
 });

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { AssistantMessage, Message } from "@ag-ui/core";
-import type { ConversationTurn } from "./conversation-store.js";
-import { computed } from "vue";
 import { CopilotChatAssistantMessage } from "@copilotkit/vue/v2";
-import A2UIRenderer from "../renderer/A2UIRenderer.vue";
+import { computed } from "vue";
 import A2UIRawViewer from "../renderer/A2UIRawViewer.vue";
+import A2UIRenderer from "../renderer/A2UIRenderer.vue";
 import type { RenderedRuntimeAction } from "../renderer/a2ui.js";
 import MarkdownRenderer from "../renderer/MarkdownRenderer.vue";
+import type { ConversationTurn } from "./conversation-store.js";
 
 const props = defineProps<{
   actionsDisabled?: boolean;
@@ -19,6 +19,13 @@ const emit = defineEmits<{
 }>();
 
 const markdownMessage = computed<AssistantMessage | undefined>(() => {
+  if (props.turn.localAssistantText !== undefined) {
+    return {
+      content: props.turn.localAssistantText,
+      id: `${props.turn.turnId}:local-assistant`,
+      role: "assistant",
+    };
+  }
   const presentation = props.turn.presentation;
   if (
     presentation === undefined ||
@@ -79,6 +86,13 @@ function surfaceMessage(surfaceId: string): AssistantMessage {
     :messages="[...messages, markdownMessage]"
   >
     <template #message-renderer>
+      <p
+        v-if="turn.localAssistantText !== undefined"
+        class="local-fixture-label"
+        data-testid="local-frontend-tool-result"
+      >
+        Local AGUIMock fixture - not Runtime Truth
+      </p>
       <MarkdownRenderer v-if="markdown" :markdown="markdown" />
     </template>
   </CopilotChatAssistantMessage>

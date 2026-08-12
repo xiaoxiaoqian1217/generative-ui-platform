@@ -8,6 +8,7 @@ import {
   createConversationState,
   failOperation,
   resolveAction,
+  resolveLocalFrontendTool,
   resolveRun,
   restoreConversationHistory,
   retryTurn,
@@ -58,6 +59,29 @@ function actionResult(
 }
 
 describe("Conversation Store", () => {
+  it("records local Frontend Tool output without creating Runtime Truth", () => {
+    const state = resolveLocalFrontendTool(
+      startRun(createConversationState(), {
+        message: "定位无人机 01",
+        requestId: "local-request-1",
+        turnId: "turn-1",
+      }),
+      "turn-1",
+      "已定位无人机 01",
+    );
+
+    expect(state.activeOperation).toBeUndefined();
+    expect(state.turns[0]).toMatchObject({
+      localAssistantText: "已定位无人机 01",
+      requestId: "local-request-1",
+      status: "completed",
+    });
+    expect(state.turns[0]?.presentation).toBeUndefined();
+    expect(state.turns[0]?.runtimeResult).toBeUndefined();
+    expect(state.turns[0]?.runId).toBeUndefined();
+    expect(state.turns[0]?.threadId).toBeUndefined();
+  });
+
   it("projects only caller-owned user messages for the controlled chat", () => {
     const state = resolveRun(
       startRun(createConversationState(), {

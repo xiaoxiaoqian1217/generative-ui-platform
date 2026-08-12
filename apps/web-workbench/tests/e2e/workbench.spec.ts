@@ -14,6 +14,10 @@ test.beforeEach(async ({ request }) => {
 test("AGUIMock frontend tool locates Drone 01 on the MapLibre business surface", async ({
   page,
 }) => {
+  test.skip(
+    process.env.WEB_WORKBENCH_E2E_MODE === "platform",
+    "The platform suite validates the production Runtime Host topology.",
+  );
   await page.request.post("/__control__/runtime-down");
   await page.goto("/");
 
@@ -45,6 +49,16 @@ test("AGUIMock frontend tool locates Drone 01 on the MapLibre business surface",
   await expect(page.getByTestId("controlled-copilot-chat")).toContainText(
     "已定位无人机 01",
   );
+  await expect(page.getByTestId("local-frontend-tool-result")).toContainText(
+    "not Runtime Truth",
+  );
+  await expect(page.getByTestId("thread-list").locator("strong")).toHaveCount(
+    0,
+  );
+
+  await chatInput(page).fill("再次定位无人机 01");
+  await sendMessage(page).click();
+  await expect(page.getByTestId("local-frontend-tool-result")).toHaveCount(2);
 });
 
 test("CopilotKit Headless renders safe Markdown, PresentationResult and diagnostics", async ({

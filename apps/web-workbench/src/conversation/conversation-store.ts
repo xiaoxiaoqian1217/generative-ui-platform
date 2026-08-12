@@ -37,6 +37,8 @@ export interface ConversationTurn {
   readonly failure?: TurnFailure;
   /** An incompatible persisted snapshot may only be inspected as bounded raw data. */
   readonly historicalSnapshotRaw?: unknown;
+  /** Browser-local fixture output. It is never a Runtime presentation. */
+  readonly localAssistantText?: string;
   readonly presentation?: PresentationResult;
   readonly presentationRequestId?: string;
   readonly requestId: string;
@@ -256,6 +258,25 @@ export function resolveRun(
       threadId: result.threadId,
     }),
   );
+}
+
+export function resolveLocalFrontendTool(
+  state: ConversationState,
+  turnId: string,
+  assistantText: string,
+): ConversationState {
+  if (
+    state.activeOperation?.kind !== "run" ||
+    state.activeOperation.turnId !== turnId
+  ) {
+    return state;
+  }
+
+  return updateTurn(withoutActiveOperation(state), turnId, (turn) => ({
+    ...turn,
+    localAssistantText: assistantText,
+    status: "completed",
+  }));
 }
 
 export function failOperation(

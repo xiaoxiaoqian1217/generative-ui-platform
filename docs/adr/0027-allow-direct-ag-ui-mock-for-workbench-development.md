@@ -37,6 +37,7 @@ Workbench 不得直接连接真实 Business Agent，也不得持有 Business Age
 ### 2. 增加受控开发例外
 
 在本地开发、自动化测试和演示环境中，Workbench 可以通过显式 `agUiMockUrl` 或 `VITE_AG_UI_MOCK_URL` 直接连接 `AGUIMock`。
+这条路径还必须在构建时通过 `VITE_ALLOW_AG_UI_MOCK=true` 显式启用，运行时配置不能自行打开该能力。
 这条连接必须继续使用 AG-UI 语义和受支持的 Transport，当前为 HTTP POST + SSE。
 它不是第二套 Agent 应用协议。
 
@@ -48,7 +49,7 @@ AGUIMock
 ```
 
 未提供显式配置时，这条路径必须保持关闭。
-生产配置不得设置 `agUiMockUrl`。
+生产构建不得启用 `VITE_ALLOW_AG_UI_MOCK`，生产配置也不得设置 `agUiMockUrl`。
 
 ### 3. AGUIMock 只做协议替身
 

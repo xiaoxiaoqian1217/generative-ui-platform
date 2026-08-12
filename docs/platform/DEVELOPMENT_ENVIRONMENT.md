@@ -170,6 +170,9 @@ AG-UI 是应用协议；HTTP、SSE 和未来可能的 WebSocket 只是 Transport
 http://127.0.0.1:4800/api/copilotkit
 ```
 
+Workbench 构建还必须显式设置 `VITE_ALLOW_AG_UI_MOCK=true`。
+该构建期保险丝默认关闭，生产构建会拒绝运行时注入的 `agUiMockUrl`。
+
 该 Endpoint 只提供确定性的 AG-UI 场景。
 `locate-device` 场景调用浏览器注册的 `locateDevice({ deviceId })`，并根据 Tool Result 返回最终消息。
 这条路径不得用于生产、真实设备控制、业务写入、Command Admission 或 Runtime 恢复。
@@ -221,7 +224,7 @@ pnpm docs:check
 | 启动失败或端口被占用 | `pnpm check:platform-environment` 的端口错误。 | 执行 `pnpm stop:platform`，确认 5173、8200、8300 已释放后重试。 |
 | Workbench 显示 Runtime Host 不可用 | `http://127.0.0.1:8200/health`。 | 确认 `pnpm dev:platform` 仍在运行，并检查 Runtime Host 启动输出。 |
 | AG-UI 会话无法运行 | `/api/copilotkit` 与浏览器连接状态。 | 确认 Workbench 只配置 Runtime Host 地址，并检查 Runtime Host 的 CopilotKit / AG-UI Adapter。 |
-| AGUIMock Frontend Tool 未执行 | `http://127.0.0.1:4800/health` 与 `VITE_AG_UI_MOCK_URL`。 | 确认使用 `locate-device` 场景，并检查浏览器中 `locateDevice` 的活动状态。 |
+| AGUIMock Frontend Tool 未执行 | `http://127.0.0.1:4800/health`、`VITE_ALLOW_AG_UI_MOCK` 与 `VITE_AG_UI_MOCK_URL`。 | 确认构建期保险丝已启用、使用 `locate-device` 场景，并检查浏览器中 `locateDevice` 的活动状态。 |
 | Business Agent 依赖健康检查失败 | `http://127.0.0.1:8200/health/dependencies`。 | `BUSINESS_AGENT_UNREACHABLE` 表示 8300 不可达，`BUSINESS_AGENT_UNHEALTHY` 表示 Agent 响应异常。 |
 | 真实 Provider 无法启动 | Runtime Host 服务端环境变量。 | 核对 Provider、模型名、API Key、可选 Base URL 与 Endpoint ID，且不要把密钥写入前端变量。 |
 | 展示降级为 Markdown | Workbench Presentation 与 Inspect。 | Provider、候选校验或编译失败会保留有效业务结果并安全降级；Presentation fallback 不改变 Operation Outcome。 |

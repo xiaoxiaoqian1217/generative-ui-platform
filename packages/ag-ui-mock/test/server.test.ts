@@ -10,12 +10,15 @@ async function startServer(scenario: "echo" | "locate-device") {
   return server.listen({ host: "127.0.0.1", port: 0 });
 }
 
-function runInput(messages: RunAgentInput["messages"]): RunAgentInput {
+function runInput(
+  messages: RunAgentInput["messages"],
+  runId = "run-test",
+): RunAgentInput {
   return {
     context: [],
     forwardedProps: {},
     messages,
-    runId: "run-test",
+    runId,
     state: {},
     threadId: "thread-test",
     tools: [
@@ -97,12 +100,12 @@ describe("createAguiMockServer", () => {
       EventType.RUN_FINISHED,
     ]);
     expect(firstEvents[1]).toMatchObject({
-      toolCallId: "locate-device-01",
+      toolCallId: "locate-device-message-user",
       toolCallName: "locateDevice",
     });
     expect(firstEvents[2]).toMatchObject({
       delta: JSON.stringify({ deviceId: "01" }),
-      toolCallId: "locate-device-01",
+      toolCallId: "locate-device-message-user",
     });
 
     const secondEvents = await runScenario(
@@ -114,7 +117,7 @@ describe("createAguiMockServer", () => {
           role: "assistant",
           toolCalls: [
             {
-              id: "locate-device-01",
+              id: "locate-device-message-user",
               type: "function",
               function: {
                 arguments: JSON.stringify({ deviceId: "01" }),
@@ -126,7 +129,7 @@ describe("createAguiMockServer", () => {
         {
           id: "message-tool",
           role: "tool",
-          toolCallId: "locate-device-01",
+          toolCallId: "locate-device-message-user",
           content: "Drone 01 located",
         },
       ]),
@@ -141,5 +144,39 @@ describe("createAguiMockServer", () => {
       EventType.RUN_FINISHED,
     ]);
     expect(secondEvents[2]).toMatchObject({ delta: "已定位无人机 01" });
+
+    const repeatedEvents = await runScenario(
+      url,
+      runInput(
+        [
+          { id: "message-user", role: "user", content: "定位无人机 01" },
+          {
+            id: "message-tool",
+            role: "tool",
+            toolCallId: "locate-device-message-user",
+            content: "Drone 01 located",
+          },
+          {
+            id: "message-user-repeat",
+            role: "user",
+            content: "定位无人机 01",
+          },
+        ],
+        "run-repeat",
+      ),
+    );
+    expect(
+      repeatedEvents.map((event) => (event as { type: string }).type),
+    ).toEqual([
+      EventType.RUN_STARTED,
+      EventType.TOOL_CALL_START,
+      EventType.TOOL_CALL_ARGS,
+      EventType.TOOL_CALL_END,
+      EventType.RUN_FINISHED,
+    ]);
+    expect(repeatedEvents[1]).toMatchObject({
+      toolCallId: "locate-device-message-user-repeat",
+      toolCallName: "locateDevice",
+    });
   });
 });

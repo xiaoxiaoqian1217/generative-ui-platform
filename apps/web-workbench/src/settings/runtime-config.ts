@@ -5,6 +5,7 @@ export interface ExternalWorkbenchConfig {
 }
 
 export interface WorkbenchBuildEnvironment {
+  VITE_ALLOW_AG_UI_MOCK?: string;
   VITE_AG_UI_MOCK_URL?: string;
   VITE_RUNTIME_HOST_URL?: string;
   VITE_WORKBENCH_ENVIRONMENT?: string;
@@ -29,6 +30,7 @@ export interface RuntimeEndpoints {
 
 const INVALID_RUNTIME_HOST_URL = "WORKBENCH_RUNTIME_HOST_URL_INVALID";
 const INVALID_RUNTIME_CONFIG = "WORKBENCH_RUNTIME_CONFIG_INVALID";
+const AG_UI_MOCK_NOT_ALLOWED = "WORKBENCH_AG_UI_MOCK_NOT_ALLOWED";
 
 function validateExternalConfig(value: unknown): ExternalWorkbenchConfig {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -114,11 +116,18 @@ export function resolveWorkbenchConfig(
     external.agUiMockUrl,
     build.VITE_AG_UI_MOCK_URL,
   );
+  const normalizedAgUiMockUrl =
+    agUiMockUrl === undefined
+      ? undefined
+      : normalizeRuntimeHostUrl(agUiMockUrl).origin;
+  if (agUiMockUrl !== undefined && build.VITE_ALLOW_AG_UI_MOCK !== "true") {
+    throw new Error(AG_UI_MOCK_NOT_ALLOWED);
+  }
 
   return {
-    ...(agUiMockUrl === undefined
+    ...(normalizedAgUiMockUrl === undefined
       ? {}
-      : { agUiMockUrl: normalizeRuntimeHostUrl(agUiMockUrl).origin }),
+      : { agUiMockUrl: normalizedAgUiMockUrl }),
     environment:
       firstNonEmpty(external.environment, build.VITE_WORKBENCH_ENVIRONMENT) ??
       "same-origin",

@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { Message } from "@ag-ui/core";
 import type {
   RuntimeRunRequest,
   RuntimeRunResult,
+  RuntimeThread,
 } from "@generative-ui/runtime-contract";
-import type { Message } from "@ag-ui/core";
 import {
   computed,
   defineAsyncComponent,
@@ -14,25 +15,48 @@ import {
   shallowRef,
 } from "vue";
 import {
-  createConversationState,
+  BUILTIN_CASES,
+  type CaseEvaluation,
+  consumePendingCase,
+  evaluateCase,
+  exportCustomCases,
+  importCustomCases,
+  loadCaseFailureDiagnosis,
+  loadCustomCases,
+  saveCaseFailureDiagnosis,
+  saveCustomCases,
+  savePendingCase,
+  type WorkbenchCase,
+} from "../cases/case-library.js";
+import CatalogComponentPreview from "../catalog/CatalogComponentPreview.vue";
+import {
+  type ConversationState,
   conversationMessages,
+  createConversationState,
   failOperation,
   resolveAction,
+  resolveLocalFrontendTool,
   resolveRun,
+  restoreConversationHistory,
   setConversationInput,
   startAction,
   startRun,
-  restoreConversationHistory,
-  type ConversationState,
   type TurnFailure,
 } from "../conversation/conversation-store.js";
-import { archiveRuntimeThread, createRuntimeThread, deleteRuntimeThread, getRuntimeThread, listRuntimeThreads, renameRuntimeThread } from "../runtime/thread-client.js";
-import type { RuntimeThread } from "@generative-ui/runtime-contract";
 import DiagnosticsPanel from "../diagnostics/DiagnosticsPanel.vue";
-import CatalogComponentPreview from "../catalog/CatalogComponentPreview.vue";
+// biome-ignore lint/style/useImportType: Vue renders this component from the template.
+import AgUiMockToolBridge from "../features/frontend-tools/AgUiMockToolBridge.vue";
+import { locateDevice } from "../features/frontend-tools/locate-device.js";
+import type { Device } from "../features/map/devices.js";
+import {
+  type InspectionSnapshot,
+  loadInspectionSnapshot,
+  saveInspectionSnapshot,
+} from "../inspect/inspection-snapshot.js";
 import A2UIRawViewer from "../renderer/A2UIRawViewer.vue";
 import type { RenderedRuntimeAction } from "../renderer/a2ui.js";
 import PresentationResultViewer from "../renderer/PresentationResultViewer.vue";
+import { createCopilotKitHeadlessClient } from "../runtime/copilotkit-headless-client.js";
 import { probeRuntimeHealth } from "../runtime/health.js";
 import {
   fetchReadOnlyRuntimeData,
@@ -41,50 +65,34 @@ import {
   type RuntimeCatalogSummary,
   type RuntimeScenarioSummary,
 } from "../runtime/read-only-client.js";
-import { createCopilotKitHeadlessClient } from "../runtime/copilotkit-headless-client.js";
+import {
+  archiveRuntimeThread,
+  createRuntimeThread,
+  deleteRuntimeThread,
+  getRuntimeThread,
+  listRuntimeThreads,
+  renameRuntimeThread,
+} from "../runtime/thread-client.js";
 import {
   type ConnectionState,
   type RuntimeTransportClient,
   WorkbenchRuntimeError,
 } from "../runtime/types.js";
 import {
+  loadWorkbenchLocalSettings,
+  saveWorkbenchLocalSettings,
+} from "../settings/local-settings.js";
+import {
   createRuntimeEndpoints,
   resolveWorkbenchConfig,
   type WorkbenchConfig,
 } from "../settings/runtime-config.js";
 import {
-  loadWorkbenchLocalSettings,
-  saveWorkbenchLocalSettings,
-} from "../settings/local-settings.js";
-import { quickScenarios } from "./scenarios.js";
-import {
-  BUILTIN_CASES,
-  exportCustomCases,
-  importCustomCases,
-  loadCustomCases,
-  loadCaseFailureDiagnosis,
-  consumePendingCase,
-  saveCustomCases,
-  saveCaseFailureDiagnosis,
-  savePendingCase,
-  evaluateCase,
-  type CaseEvaluation,
-  type WorkbenchCase,
-} from "../cases/case-library.js";
-import {
-  loadInspectionSnapshot,
-  saveInspectionSnapshot,
-  type InspectionSnapshot,
-} from "../inspect/inspection-snapshot.js";
-import {
   resolveWorkbenchRoute,
-  workbenchRouteLabel,
   WORKBENCH_ROUTES,
+  workbenchRouteLabel,
 } from "./routes.js";
-// biome-ignore lint/style/useImportType: Vue renders this component from the template.
-import AgUiMockToolBridge from "../features/frontend-tools/AgUiMockToolBridge.vue";
-import { locateDevice } from "../features/frontend-tools/locate-device.js";
-import type { Device } from "../features/map/devices.js";
+import { quickScenarios } from "./scenarios.js";
 
 const ControlledCopilotChatView = defineAsyncComponent(
   () => import("../conversation/ControlledCopilotChatView.vue"),
@@ -124,6 +132,7 @@ const configResolution:
       config: resolveWorkbenchConfig(
         window.__GEN_UI_WORKBENCH_CONFIG__ ?? {},
         {
+          VITE_ALLOW_AG_UI_MOCK: import.meta.env.VITE_ALLOW_AG_UI_MOCK,
           VITE_AG_UI_MOCK_URL: import.meta.env.VITE_AG_UI_MOCK_URL,
           VITE_RUNTIME_HOST_URL: import.meta.env.VITE_RUNTIME_HOST_URL,
           VITE_WORKBENCH_ENVIRONMENT: import.meta.env
@@ -167,7 +176,9 @@ const connectionState = ref<ConnectionState>("connecting");
 const connectionNotice = ref("正在探测 Runtime Host");
 const runState = ref<RunState>("idle");
 const conversation = shallowRef<ConversationState>(
-  createConversationState(pendingCase?.input ?? quickScenarios[0]?.message ?? ""),
+  createConversationState(
+    pendingCase?.input ?? quickScenarios[0]?.message ?? "",
+  ),
 );
 const input = computed({
   get: () => conversation.value.inputValue,
@@ -187,7 +198,9 @@ const conversationThreadId = computed(() => {
   return undefined;
 });
 const configurationFailure = ref<DisplayError>();
-const error = computed<DisplayError | undefined>(() => configurationFailure.value);
+const error = computed<DisplayError | undefined>(
+  () => configurationFailure.value,
+);
 const refreshNotice = ref("");
 const activeController = ref<AbortController>();
 const route = ref(resolveWorkbenchRoute(window.location.pathname));
@@ -198,14 +211,18 @@ const settingsNotice = ref("");
 const catalog = ref<RuntimeCatalogSummary>();
 const scenarios = ref<readonly RuntimeScenarioSummary[]>();
 const readOnlyNotice = ref("");
-const customCases = ref<readonly WorkbenchCase[]>(loadCustomCases(window.localStorage));
+const customCases = ref<readonly WorkbenchCase[]>(
+  loadCustomCases(window.localStorage),
+);
 const caseImport = ref("");
 const caseNotice = ref("");
 const activeCase = ref<WorkbenchCase | undefined>(pendingCase);
 const caseEvaluation = ref<CaseEvaluation>();
 const latestCaseFailure = ref(loadCaseFailureDiagnosis(window.localStorage));
 const allCases = computed(() => [...BUILTIN_CASES, ...customCases.value]);
-const inspection = ref<InspectionSnapshot | undefined>(loadInspectionSnapshot(window.sessionStorage));
+const inspection = ref<InspectionSnapshot | undefined>(
+  loadInspectionSnapshot(window.sessionStorage),
+);
 const threads = ref<readonly RuntimeThread[]>([]);
 const nextThreadCursor = ref<string>();
 const selectedThreadId = ref<string>();
@@ -261,7 +278,8 @@ const canSend = computed(
 );
 const isInputDisabled = computed(
   () =>
-    (connectionState.value !== "connected" && agUiMockRuntimeUrl === undefined) ||
+    (connectionState.value !== "connected" &&
+      agUiMockRuntimeUrl === undefined) ||
     configurationError !== undefined ||
     conversation.value.activeOperation !== undefined,
 );
@@ -408,9 +426,7 @@ function isLocateDeviceRequest(message: string): boolean {
   return /定位.*(?:无人机|设备).*(?:01|1)|locate.*(?:01|1)/iu.test(message);
 }
 
-async function runAgUiMock(
-  request: RuntimeRunRequest,
-): Promise<RuntimeRunResult> {
+async function runAgUiMock(message: string): Promise<string> {
   if (agUiMockBridge.value === undefined) {
     throw new WorkbenchRuntimeError(
       "WORKBENCH_RUNTIME_UNAVAILABLE",
@@ -418,22 +434,7 @@ async function runAgUiMock(
       { retryable: true },
     );
   }
-  const assistantText = await agUiMockBridge.value.run(request.message.content);
-  const presentationRequestId = `presentation-${request.requestId}`;
-  return {
-    presentation: {
-      markdown: assistantText,
-      mode: "markdown",
-      requestId: presentationRequestId,
-      status: "completed",
-    },
-    presentationRequestId,
-    protocolVersion: request.protocolVersion,
-    requestId: request.requestId,
-    runId: request.runId ?? createId("run"),
-    status: "completed",
-    threadId: request.threadId ?? createId("thread-ag-ui-mock"),
-  };
+  return agUiMockBridge.value.run(message);
 }
 
 function locateTestDevice(): void {
@@ -444,7 +445,8 @@ function locateTestDevice(): void {
 async function sendMessage(message = input.value): Promise<void> {
   const normalizedMessage = message.trim();
   const shouldUseAgUiMock =
-    agUiMockRuntimeUrl !== undefined && isLocateDeviceRequest(normalizedMessage);
+    agUiMockRuntimeUrl !== undefined &&
+    isLocateDeviceRequest(normalizedMessage);
   if (
     (!client && !shouldUseAgUiMock) ||
     normalizedMessage === "" ||
@@ -453,11 +455,14 @@ async function sendMessage(message = input.value): Promise<void> {
     return;
   }
 
-  const request = createRequest(normalizedMessage);
-  const turnId = `turn-${request.requestId}`;
+  const request = shouldUseAgUiMock
+    ? undefined
+    : createRequest(normalizedMessage);
+  const requestId = request?.requestId ?? createId("local-request");
+  const turnId = `turn-${requestId}`;
   const nextConversation = startRun(conversation.value, {
     message: normalizedMessage,
-    requestId: request.requestId,
+    requestId,
     turnId,
   });
   if (nextConversation === conversation.value) return;
@@ -467,13 +472,20 @@ async function sendMessage(message = input.value): Promise<void> {
   runState.value = "running";
 
   try {
-    let runtimeResult: RuntimeRunResult;
     if (shouldUseAgUiMock) {
-      runtimeResult = await runAgUiMock(request);
-    } else {
-      if (client === undefined) return;
-      runtimeResult = await client.run(request, controller.signal);
+      const assistantText = await runAgUiMock(normalizedMessage);
+      conversation.value = resolveLocalFrontendTool(
+        conversation.value,
+        turnId,
+        assistantText,
+      );
+      runState.value = "rendering";
+      await nextTick();
+      runState.value = "completed";
+      return;
     }
+    if (client === undefined || request === undefined) return;
+    const runtimeResult = await client.run(request, controller.signal);
     if (activeCase.value !== undefined) {
       caseEvaluation.value = evaluateCase(
         activeCase.value.expectation,
@@ -483,7 +495,10 @@ async function sendMessage(message = input.value): Promise<void> {
         ? `用例“${activeCase.value.title}”通过语义断言。`
         : `用例“${activeCase.value.title}”失败：${caseEvaluation.value.failures.join(" ")}`;
     }
-    if (activeCase.value !== undefined && caseEvaluation.value?.passed === false) {
+    if (
+      activeCase.value !== undefined &&
+      caseEvaluation.value?.passed === false
+    ) {
       saveCaseFailureDiagnosis(
         window.localStorage,
         activeCase.value.id,
@@ -496,7 +511,11 @@ async function sendMessage(message = input.value): Promise<void> {
     if (runtimeResult.status === "failed") {
       const failure = platformErrorFromResult(runtimeResult);
       if (failure !== undefined)
-        conversation.value = failOperation(conversation.value, turnId, turnFailure(failure));
+        conversation.value = failOperation(
+          conversation.value,
+          turnId,
+          turnFailure(failure),
+        );
       runState.value = "failed";
       return;
     }
@@ -514,7 +533,9 @@ async function sendMessage(message = input.value): Promise<void> {
       conversation.value,
       turnId,
       turnFailure(displayError),
-      displayError.code === "WORKBENCH_REQUEST_CANCELLED" ? "cancelled" : "failed",
+      displayError.code === "WORKBENCH_REQUEST_CANCELLED"
+        ? "cancelled"
+        : "failed",
     );
     runState.value =
       displayError.code === "WORKBENCH_REQUEST_CANCELLED"
@@ -542,7 +563,9 @@ function selectScenario(message: string): void {
   input.value = message;
 }
 
-async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> {
+async function handleA2UIAction(
+  rendered: RenderedRuntimeAction,
+): Promise<void> {
   if (
     !client ||
     !result.value ||
@@ -562,7 +585,8 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
   const turn = conversation.value.turns.find((item) =>
     item.businessSurfaces.some(
       (surface) =>
-        surface.surfaceId === rendered.action.surfaceId && surface.status === "active",
+        surface.surfaceId === rendered.action.surfaceId &&
+        surface.status === "active",
     ),
   );
   if (turn === undefined || turn.runtimeResult === undefined) return;
@@ -578,16 +602,19 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
   activeController.value = controller;
   runState.value = "running";
   try {
-    const actionResult = await client.action({
-      protocolVersion: "1.0",
-      requestId,
-      threadId: turn.runtimeResult.threadId,
-      runId: turn.runtimeResult.runId,
-      action: {
-        ...rendered.action,
-        ...(rendered.requiresConfirmation ? { approved: true } : {}),
+    const actionResult = await client.action(
+      {
+        protocolVersion: "1.0",
+        requestId,
+        threadId: turn.runtimeResult.threadId,
+        runId: turn.runtimeResult.runId,
+        action: {
+          ...rendered.action,
+          ...(rendered.requiresConfirmation ? { approved: true } : {}),
+        },
       },
-    }, controller.signal);
+      controller.signal,
+    );
     saveInspectionSnapshot(window.sessionStorage, actionResult);
     inspection.value = loadInspectionSnapshot(window.sessionStorage);
     if (actionResult.status === "failed") {
@@ -601,7 +628,11 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
       runState.value = "failed";
       return;
     }
-    conversation.value = resolveAction(conversation.value, turn.turnId, actionResult);
+    conversation.value = resolveAction(
+      conversation.value,
+      turn.turnId,
+      actionResult,
+    );
     runState.value = "rendering";
     await nextTick();
     runState.value = actionResult.status;
@@ -611,14 +642,17 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
       conversation.value,
       turn.turnId,
       turnFailure(displayError),
-      displayError.code === "WORKBENCH_REQUEST_CANCELLED" ? "cancelled" : "failed",
+      displayError.code === "WORKBENCH_REQUEST_CANCELLED"
+        ? "cancelled"
+        : "failed",
     );
     runState.value =
       displayError.code === "WORKBENCH_REQUEST_CANCELLED"
         ? "cancelled"
         : "failed";
   } finally {
-    if (activeController.value === controller) activeController.value = undefined;
+    if (activeController.value === controller)
+      activeController.value = undefined;
   }
 }
 
@@ -627,25 +661,84 @@ function reconnect(): void {
 }
 
 async function refreshThreads(): Promise<void> {
-  try { const page = await listRuntimeThreads(endpoints.threads); threads.value = page.items; nextThreadCursor.value = page.nextCursor; threadNotice.value = ""; } catch { threadNotice.value = "无法加载调试会话。"; }
+  try {
+    const page = await listRuntimeThreads(endpoints.threads);
+    threads.value = page.items;
+    nextThreadCursor.value = page.nextCursor;
+    threadNotice.value = "";
+  } catch {
+    threadNotice.value = "无法加载调试会话。";
+  }
 }
 
-async function loadMoreThreads(): Promise<void> { if (nextThreadCursor.value === undefined) return; try { const page = await listRuntimeThreads(endpoints.threads, nextThreadCursor.value); threads.value = [...threads.value, ...page.items]; nextThreadCursor.value = page.nextCursor; } catch { threadNotice.value = "无法加载更多会话。"; } }
+async function loadMoreThreads(): Promise<void> {
+  if (nextThreadCursor.value === undefined) return;
+  try {
+    const page = await listRuntimeThreads(
+      endpoints.threads,
+      nextThreadCursor.value,
+    );
+    threads.value = [...threads.value, ...page.items];
+    nextThreadCursor.value = page.nextCursor;
+  } catch {
+    threadNotice.value = "无法加载更多会话。";
+  }
+}
 
 async function selectThread(threadId: string): Promise<void> {
-  try { const detail = await getRuntimeThread(endpoints.threads, threadId); selectedThreadId.value = detail.thread.threadId; conversation.value = restoreConversationHistory(detail); runState.value = "idle"; } catch { threadNotice.value = "无法加载会话历史。"; }
+  try {
+    const detail = await getRuntimeThread(endpoints.threads, threadId);
+    selectedThreadId.value = detail.thread.threadId;
+    conversation.value = restoreConversationHistory(detail);
+    runState.value = "idle";
+  } catch {
+    threadNotice.value = "无法加载会话历史。";
+  }
 }
 
 async function newThread(): Promise<void> {
-  try { const thread = await createRuntimeThread(endpoints.threads); await refreshThreads(); await selectThread(thread.threadId); } catch { threadNotice.value = "无法创建调试会话。"; }
+  try {
+    const thread = await createRuntimeThread(endpoints.threads);
+    await refreshThreads();
+    await selectThread(thread.threadId);
+  } catch {
+    threadNotice.value = "无法创建调试会话。";
+  }
 }
 
 async function removeThread(threadId: string): Promise<void> {
-  try { const status = await deleteRuntimeThread(endpoints.threads, threadId); threadNotice.value = status === "completed" ? "会话已删除。" : `删除结果：${status}`; if (selectedThreadId.value === threadId) { selectedThreadId.value = undefined; conversation.value = createConversationState(); } await refreshThreads(); } catch { threadNotice.value = "删除会话失败。"; }
+  try {
+    const status = await deleteRuntimeThread(endpoints.threads, threadId);
+    threadNotice.value =
+      status === "completed" ? "会话已删除。" : `删除结果：${status}`;
+    if (selectedThreadId.value === threadId) {
+      selectedThreadId.value = undefined;
+      conversation.value = createConversationState();
+    }
+    await refreshThreads();
+  } catch {
+    threadNotice.value = "删除会话失败。";
+  }
 }
 
-async function renameThread(thread: RuntimeThread): Promise<void> { const title = window.prompt("会话名称", thread.title); if (!title?.trim()) return; try { await renameRuntimeThread(endpoints.threads, thread.threadId, title); await refreshThreads(); } catch { threadNotice.value = "重命名会话失败。"; } }
-async function archiveThread(threadId: string): Promise<void> { try { await archiveRuntimeThread(endpoints.threads, threadId); await refreshThreads(); } catch { threadNotice.value = "归档会话失败。"; } }
+async function renameThread(thread: RuntimeThread): Promise<void> {
+  const title = window.prompt("会话名称", thread.title);
+  if (!title?.trim()) return;
+  try {
+    await renameRuntimeThread(endpoints.threads, thread.threadId, title);
+    await refreshThreads();
+  } catch {
+    threadNotice.value = "重命名会话失败。";
+  }
+}
+async function archiveThread(threadId: string): Promise<void> {
+  try {
+    await archiveRuntimeThread(endpoints.threads, threadId);
+    await refreshThreads();
+  } catch {
+    threadNotice.value = "归档会话失败。";
+  }
+}
 
 async function loadReadOnlyData(): Promise<void> {
   if (route.value !== "/catalog" && route.value !== "/scenarios") return;
@@ -664,7 +757,8 @@ async function loadReadOnlyData(): Promise<void> {
     }
     readOnlyNotice.value = "";
   } catch {
-    readOnlyNotice.value = "Runtime Host 元数据当前不可用或未通过只读契约校验。";
+    readOnlyNotice.value =
+      "Runtime Host 元数据当前不可用或未通过只读契约校验。";
   }
 }
 
@@ -690,7 +784,8 @@ function saveSettings(): void {
     window.setTimeout(() => window.location.reload(), 100);
     void saved;
   } catch {
-    settingsNotice.value = "设置无效。Runtime Host 必须是 HTTP(S) 地址，超时必须在 1,000 到 300,000 毫秒之间。";
+    settingsNotice.value =
+      "设置无效。Runtime Host 必须是 HTTP(S) 地址，超时必须在 1,000 到 300,000 毫秒之间。";
   }
 }
 
@@ -728,7 +823,8 @@ onMounted(() => {
   configureHeadlessRuntime();
   void refreshThreads();
   void loadReadOnlyData();
-  if (pendingCase !== undefined) window.setTimeout(() => void sendMessage(pendingCase.input), 0);
+  if (pendingCase !== undefined)
+    window.setTimeout(() => void sendMessage(pendingCase.input), 0);
 });
 
 onBeforeUnmount(() => {
