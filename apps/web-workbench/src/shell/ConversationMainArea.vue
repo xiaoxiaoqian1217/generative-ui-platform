@@ -38,65 +38,89 @@ watch(
     if (host) host.scrollTop = host.scrollHeight;
   },
 );
+
+function turnDuration(turn: ConversationTurn): string {
+  const result = turn.runtimeResult;
+  if (result?.diagnostics?.stages === undefined) return "…";
+  const total = result.diagnostics.stages.reduce(
+    (sum, stage) => sum + (stage.durationMs ?? 0),
+    0,
+  );
+  return total > 0 ? `${(total / 1000).toFixed(1)}s` : "…";
+}
 </script>
 
 <template>
-  <div ref="scrollHost" class="conversation-scroll" data-testid="conversation-main">
-    <div v-if="isEmpty" class="conversation-empty">
-      <p class="eyebrow">READY</p>
-      <h2>开始一段真实 Agent Conversation</h2>
-      <p>
+  <div ref="scrollHost" class="shell-chat-scroll" data-testid="conversation-main">
+    <div v-if="isEmpty" class="shell-chat-empty">
+      <p>开始一段真实 Agent Conversation</p>
+      <p class="shell-chat-empty-sub">
         用自然语言描述你的意图。Assistant 的最终 Markdown 与 Generated UI
-        会直接内联在这里，调试信息按需通过 Inspect 查看。
+        会直接内联在这里。
       </p>
     </div>
 
-    <ol v-else class="conversation-turns" data-testid="conversation-turns">
-      <li
+    <div v-else class="shell-chat-column" data-testid="conversation-turns">
+      <section
         v-for="turn in turns"
         :key="turn.turnId"
-        class="conversation-turn"
+        class="shell-turn"
         :data-status="turn.status"
         :data-testid="`conversation-turn-${turn.turnId}`"
       >
-        <div class="turn-row turn-row-user">
-          <div class="message-bubble user-bubble" data-testid="user-message">
-            {{ turn.userMessage.content }}
-          </div>
+        <div class="shell-bubble shell-bubble-user" data-testid="user-message">
+          {{ turn.userMessage.content }}
         </div>
 
-        <div class="turn-row turn-row-assistant">
-          <div class="assistant-stack">
-            <div
-              v-if="turn.status === 'pending'"
-              class="turn-progress"
-              role="status"
+        <div class="shell-assistant">
+          <div
+            v-if="turn.status === 'pending'"
+            class="shell-turn-hint shell-turn-hint-running"
+            role="status"
+          >
+            <span class="shell-spinner"></span>正在运行…
+          </div>
+          <div
+            v-else-if="turn.status === 'degraded'"
+            class="shell-turn-hint shell-turn-hint-degraded"
+            role="status"
+          >
+            ⚠ 已降级
+          </div>
+          <div
+            v-else-if="turn.status === 'failed'"
+            class="shell-turn-hint shell-turn-hint-failed"
+            role="alert"
+          >
+            ✕ 运行失败
+          </div>
+          <div
+            v-else-if="turn.status === 'cancelled'"
+            class="shell-turn-hint shell-turn-hint-failed"
+            role="status"
+          >
+            已取消
+          </div>
+
+          <ConversationTurnPresentation
+            :actions-disabled="actionsDisabled"
+            :turn="turn"
+            @action="emit('action', $event)"
+            @retry="emit('retry', $event)"
+          />
+
+          <div class="shell-debug-tools">
+            <button
+              class="shell-debug-btn"
+              :data-testid="`inspect-turn-${turn.turnId}`"
+              type="button"
+              @click="emit('inspect', turn.turnId)"
             >
-              <span class="turn-progress-dot"></span>
-              Agent 正在运行…
-            </div>
-
-            <ConversationTurnPresentation
-              :actions-disabled="actionsDisabled"
-              :messages="[]"
-              :turn="turn"
-              @action="emit('action', $event)"
-              @retry="emit('retry', $event)"
-            />
-
-            <div class="turn-meta">
-              <button
-                class="inspect-link"
-                :data-testid="`inspect-turn-${turn.turnId}`"
-                type="button"
-                @click="emit('inspect', turn.turnId)"
-              >
-                Inspect
-              </button>
-            </div>
+              ⏱ {{ turnDuration(turn) }} · Inspect
+            </button>
           </div>
         </div>
-      </li>
-    </ol>
+      </section>
+    </div>
   </div>
 </template>

@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import type { RuntimeRunRequest, RuntimeRunResult } from "@generative-ui/runtime-contract";
-import type { RuntimeThread } from "@generative-ui/runtime-contract";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from "vue";
 import {
   createConversationState,
   failOperation,
   resolveAction,
   resolveRun,
-  restoreConversationHistory,
   setConversationInput,
   startAction,
   startRun,
@@ -16,26 +14,18 @@ import {
 } from "../conversation/conversation-store.js";
 import CopilotKitConversationProvider from "../conversation/CopilotKitConversationProvider.vue";
 import type { RenderedRuntimeAction } from "../renderer/a2ui.js";
-import { createCopilotKitHeadlessClient } from "../runtime/copilotkit-headless-client.js";
-import { probeRuntimeHealth } from "../runtime/health.js";
 import {
-  createRuntimeThread,
-  getRuntimeThread,
-  listRuntimeThreads,
-} from "../runtime/thread-client.js";
-import {
+  createBusinessAgentClient,
+  type AgentTransportClient,
   type ConnectionState,
-  type RuntimeTransportClient,
-  WorkbenchRuntimeError,
-} from "../runtime/types.js";
-import type { RuntimeEndpoints, WorkbenchConfig } from "../settings/runtime-config.js";
+  WorkbenchAgentError,
+} from "../agent/business-agent-client.js";
+import type { AgentEndpoints, WorkbenchConfig } from "../settings/agent-config.js";
 import ConversationComposer from "../shell/ConversationComposer.vue";
 import ConversationMainArea from "../shell/ConversationMainArea.vue";
 import ConversationSidebar from "../shell/ConversationSidebar.vue";
 import InspectPanel from "../shell/InspectPanel.vue";
-import {
-  saveInspectionSnapshot,
-} from "../inspect/inspection-snapshot.js";
+import { saveInspectionSnapshot } from "../inspect/inspection-snapshot.js";
 
 type RunState =
   | "idle"
@@ -49,16 +39,27 @@ type RunState =
 interface DisplayError {
   code: string;
   message: string;
-  path?: string;
   retryable: boolean;
   stage?: string;
 }
 
+interface LocalConversation {
+  readonly conversationId: string;
+  readonly title: string;
+  readonly updatedAt: string;
+  readonly state: ConversationState;
+}
+
+interface LocalConversationInput {
+  readonly conversationId: string;
+  readonly title: string;
+  readonly updatedAt: string;
+  readonly state: ConversationState;
+}
+
 const props = defineProps<{
   config: WorkbenchConfig;
-  endpoints: RuntimeEndpoints;
-  initialInput?: string;
-  pendingMessage?: string;
+  endpoints: AgentEndpoints;
   requestTimeoutMs: number;
 }>();
 
@@ -68,14 +69,29 @@ const emit = defineEmits<{
 
 const connectionState = ref<ConnectionState>("connecting");
 const runState = ref<RunState>("idle");
-const conversation = shallowRef<ConversationState>(
-  createConversationState(props.initialInput ?? ""),
-);
-const threads = ref<readonly RuntimeThread[]>([]);
-const selectedThreadId = ref<string>();
+const conversations = shallowRef<LocalConversation[]>([]);
+const selectedConversationId = ref<string>();
 const sidebarNotice = ref("");
 const inspectedTurnId = ref<string>();
 const activeController = ref<AbortController>();
+
+const currentConversation = computed<LocalConversation | undefined>(() => {
+  const list: LocalConversation[] = conversations.value;
+  const id: string | undefined = selectedConversationId.value;
+  return list.find((item) => item.conversationId === id);
+});
+const conversation = computed({
+  get: () => currentConversation.value?.state ?? createConversationState(),
+  set: (next: ConversationState) => {
+    const current = currentConversation.value;
+    if (current === undefined) return;
+    conversations.value = conversations.value.map((item) =>
+      item.conversationId === current.conversationId
+        ? { ...item, state: next, updatedAt: new Date().toISOString() }
+        : item,
+    );
+  },
+});
 
 const input = computed({
   get: () => conversation.value.inputValue,
@@ -111,16 +127,16 @@ const isInputDisabled = computed(
     conversation.value.activeOperation !== undefined,
 );
 
-let client: RuntimeTransportClient | undefined;
+let client: AgentTransportClient | undefined;
 let clientGeneration = 0;
 let healthTimer: ReturnType<typeof globalThis.setInterval> | undefined;
 
 const connectionLabels: Record<ConnectionState, string> = {
-  connected: "Runtime Host 可用",
+  connected: "已连接",
   connecting: "正在连接",
   disconnected: "连接已关闭",
   reconnecting: "连接中断，正在重连",
-  unavailable: "Runtime Host 不可用",
+  unavailable: "不可用",
 };
 
 const runLabels: Record<RunState, string> = {
@@ -136,11 +152,6 @@ const runLabels: Record<RunState, string> = {
 function applyConnectionState(next: ConnectionState): void {
   connectionState.value = next;
   emit("connectionStateChange", next);
-}
-
-async function probeHealth(generation: number): Promise<void> {
-  const state = await probeRuntimeHealth(props.endpoints.health);
-  if (generation === clientGeneration) applyConnectionState(state);
 }
 
 function configureRuntime(): void {
@@ -159,17 +170,19 @@ function configureRuntime(): void {
   };
 
   applyConnectionState("connecting");
-  client = createCopilotKitHeadlessClient({
-    actionEndpoint: props.endpoints.actions,
-    runtimeUrl: props.endpoints.copilotKit,
+  client = createBusinessAgentClient({
+    runtimeUrl: props.endpoints.agUi,
     timeoutMs: props.requestTimeoutMs,
     onConnectionStateChange,
   });
   client.connect();
-  void probeHealth(generation);
-  healthTimer = globalThis.setInterval(() => {
-    void probeHealth(generation);
-  }, 3_000);
+
+  // Connection state is driven by CopilotKit core; no separate health endpoint.
+  window.setTimeout(() => {
+    if (generation === clientGeneration && connectionState.value === "connecting") {
+      applyConnectionState("connected");
+    }
+  }, 1_000);
 }
 
 function createId(prefix: string): string {
@@ -204,18 +217,16 @@ function platformErrorFromResult(value: RuntimeRunResult): DisplayError | undefi
   return {
     code: value.error.code,
     message: value.error.message,
-    ...(value.error.path === undefined ? {} : { path: value.error.path }),
     retryable: value.error.retryable,
-    stage: "runtime",
+    stage: "agent",
   };
 }
 
 function displayErrorFromUnknown(value: unknown): DisplayError {
-  if (value instanceof WorkbenchRuntimeError) {
+  if (value instanceof WorkbenchAgentError) {
     return {
       code: value.code,
       message: value.message,
-      ...(value.path === undefined ? {} : { path: value.path }),
       retryable: value.retryable,
       stage: "transport",
     };
@@ -266,9 +277,6 @@ async function sendMessage(message = input.value): Promise<void> {
     }
 
     conversation.value = resolveRun(conversation.value, turnId, runtimeResult);
-    selectedThreadId.value = runtimeResult.threadId;
-    void refreshThreads();
-
     runState.value = "rendering";
     await nextTick();
     runState.value = runtimeResult.status;
@@ -334,15 +342,23 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
   activeController.value = controller;
   runState.value = "running";
   try {
-    const actionResult = await client.action(
+    // Business Agent action is sent as a follow-up run in the same thread.
+    const actionResult = await client.run(
       {
         protocolVersion: "1.0",
         requestId,
+        runId: createId("run"),
         threadId: turn.runtimeResult.threadId,
-        runId: turn.runtimeResult.runId,
-        action: {
-          ...rendered.action,
-          ...(rendered.requiresConfirmation ? { approved: true } : {}),
+        message: {
+          role: "user",
+          content: `Action: ${rendered.action.actionId}`,
+        },
+        presentation: {
+          context: {
+            locale: navigator.language,
+            theme: "workbench",
+            viewport: { height: window.innerHeight, width: window.innerWidth },
+          },
         },
       },
       controller.signal,
@@ -378,36 +394,25 @@ async function handleA2UIAction(rendered: RenderedRuntimeAction): Promise<void> 
   }
 }
 
-async function refreshThreads(): Promise<void> {
-  try {
-    const page = await listRuntimeThreads(props.endpoints.threads);
-    threads.value = page.items;
-    sidebarNotice.value = "";
-  } catch {
-    sidebarNotice.value = "无法加载会话列表。";
-  }
+function newConversation(): void {
+  const id = createId("conversation");
+  const now = new Date().toISOString();
+  const next: LocalConversationInput = {
+    conversationId: id,
+    title: "新会话",
+    updatedAt: now,
+    state: createConversationState(),
+  };
+  conversations.value = [...conversations.value, next as LocalConversation];
+  selectedConversationId.value = id;
+  inspectedTurnId.value = undefined;
+  runState.value = "idle";
 }
 
-async function selectConversation(threadId: string): Promise<void> {
-  try {
-    const detail = await getRuntimeThread(props.endpoints.threads, threadId);
-    selectedThreadId.value = detail.thread.threadId;
-    conversation.value = restoreConversationHistory(detail);
-    inspectedTurnId.value = undefined;
-    runState.value = "idle";
-  } catch {
-    sidebarNotice.value = "无法加载会话历史。";
-  }
-}
-
-async function newConversation(): Promise<void> {
-  try {
-    const thread = await createRuntimeThread(props.endpoints.threads);
-    await refreshThreads();
-    await selectConversation(thread.threadId);
-  } catch {
-    sidebarNotice.value = "无法创建会话。";
-  }
+function selectConversation(conversationId: string): void {
+  selectedConversationId.value = conversationId;
+  inspectedTurnId.value = undefined;
+  runState.value = "idle";
 }
 
 function inspectTurn(turnId: string): void {
@@ -420,9 +425,8 @@ function closeInspect(): void {
 
 onMounted(() => {
   configureRuntime();
-  void refreshThreads();
-  if (props.pendingMessage !== undefined) {
-    window.setTimeout(() => void sendMessage(props.pendingMessage), 0);
+  if (conversations.value.length === 0) {
+    newConversation();
   }
 });
 
@@ -435,25 +439,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <CopilotKitConversationProvider :runtime-url="endpoints.copilotKit">
-    <div class="conversation-shell" data-testid="conversation-shell">
+  <CopilotKitConversationProvider :runtime-url="endpoints.agUi">
+    <div class="shell" data-testid="conversation-shell">
       <ConversationSidebar
+        :conversations="conversations"
         :notice="sidebarNotice"
-        :selected-thread-id="selectedThreadId"
-        :threads="threads"
+        :selected-conversation-id="selectedConversationId"
         @new-conversation="newConversation"
         @select-conversation="selectConversation"
       />
 
-      <section class="conversation-main" data-testid="conversation-main-area">
-        <div
-          v-if="runState !== 'idle' && runState !== 'completed'"
-          class="run-state-bar"
-          :data-state="runState"
-          data-testid="run-status"
-        >
-          <span></span>{{ runLabels[runState] }}
-        </div>
+      <main class="shell-stage">
         <ConversationMainArea
           :actions-disabled="conversation.activeOperation !== undefined"
           :is-running="isRunning"
@@ -473,7 +469,7 @@ onBeforeUnmount(() => {
           @stop="cancelRequest"
           @submit="sendMessage($event)"
         />
-      </section>
+      </main>
 
       <InspectPanel
         v-if="inspectedTurn !== undefined"

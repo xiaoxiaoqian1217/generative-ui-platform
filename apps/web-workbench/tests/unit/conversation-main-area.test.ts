@@ -50,13 +50,13 @@ describe("ConversationMainArea", () => {
     expect(wrapper.find("[data-testid='user-message']").text()).toBe(
       "展示状态",
     );
-    expect(wrapper.find(".turn-row-user").exists()).toBe(true);
+    expect(wrapper.find(".shell-bubble-user").exists()).toBe(true);
     expect(wrapper.find("[data-testid='inspect-turn-turn-1']").exists()).toBe(
       true,
     );
   });
 
-  it("shows an in-progress indicator for a pending turn", () => {
+  it("shows an in-progress spinner for a pending turn", () => {
     const turn = makeTurn({ status: "pending" });
     const wrapper = mount(ConversationMainArea, {
       props: {
@@ -67,7 +67,28 @@ describe("ConversationMainArea", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("Agent 正在运行");
+    expect(wrapper.find(".shell-turn-hint-running").exists()).toBe(true);
+    expect(wrapper.text()).toContain("正在运行");
+  });
+
+  it("shows degraded and failed hints inline", () => {
+    const degraded = makeTurn({ status: "degraded" });
+    const failed = makeTurn({
+      status: "failed",
+      turnId: "turn-2",
+      requestId: "req-2",
+    });
+    const wrapper = mount(ConversationMainArea, {
+      props: {
+        actionsDisabled: false,
+        isRunning: false,
+        runState: "completed",
+        turns: [degraded, failed],
+      },
+    });
+
+    expect(wrapper.text()).toContain("已降级");
+    expect(wrapper.text()).toContain("运行失败");
   });
 
   it("emits inspect when the per-turn Inspect entry is clicked", async () => {
