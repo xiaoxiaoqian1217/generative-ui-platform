@@ -134,3 +134,13 @@ export function resolveWorkbenchConfig(
     runtimeHostUrl: normalizeRuntimeHostUrl(runtimeHostUrl).origin,
   };
 }
+
+export function overrideRuntimeHost(
+  config: WorkbenchConfig,
+  runtimeHostUrl: string,
+): WorkbenchConfig {
+  return {
+    ...config,
+    runtimeHostUrl: normalizeRuntimeHostUrl(runtimeHostUrl).origin,
+  };
+}

@@ -84,6 +84,7 @@ import {
 } from "../settings/local-settings.js";
 import {
   createRuntimeEndpoints,
+  overrideRuntimeHost,
   resolveWorkbenchConfig,
   type WorkbenchConfig,
 } from "../settings/runtime-config.js";
@@ -158,15 +159,7 @@ const configured = configResolution.config ?? fallbackConfig;
 const config =
   initialLocalSettings.runtimeHostUrl === undefined
     ? configured
-    : resolveWorkbenchConfig(
-        {
-          agUiMockUrl: configured.agUiMockUrl,
-          environment: configured.environment,
-          runtimeHostUrl: initialLocalSettings.runtimeHostUrl,
-        },
-        {},
-        window.location.origin,
-      );
+    : overrideRuntimeHost(configured, initialLocalSettings.runtimeHostUrl);
 const endpoints = createRuntimeEndpoints(config.runtimeHostUrl);
 const pendingCase = consumePendingCase(window.sessionStorage);
 const configurationError = configResolution.error;

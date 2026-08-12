@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createRuntimeEndpoints,
+  overrideRuntimeHost,
   resolveWorkbenchConfig,
 } from "../../src/settings/runtime-config.js";
 
@@ -95,5 +96,22 @@ describe("Workbench Runtime Host configuration", () => {
         "https://workbench.example",
       ),
     ).toThrow("WORKBENCH_AG_UI_MOCK_NOT_ALLOWED");
+  });
+
+  it("preserves an already validated AGUIMock config when local settings override only the Runtime Host", () => {
+    expect(
+      overrideRuntimeHost(
+        {
+          agUiMockUrl: "https://ag-ui-mock.test.example",
+          environment: "test",
+          runtimeHostUrl: "https://runtime.test.example",
+        },
+        "https://local-runtime.test.example/path",
+      ),
+    ).toEqual({
+      agUiMockUrl: "https://ag-ui-mock.test.example",
+      environment: "test",
+      runtimeHostUrl: "https://local-runtime.test.example",
+    });
   });
 });
