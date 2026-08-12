@@ -6,15 +6,98 @@ const chatInput = (page: Page) =>
 const sendMessage = (page: Page) =>
   page.getByRole("button", { name: "Send message" });
 
+const conversationInput = (page: Page) =>
+  page.getByTestId("composer").getByRole("textbox", { name: "输入消息" });
+
+const conversationSend = (page: Page) => page.getByTestId("composer-send");
+
 test.beforeEach(async ({ request }) => {
   await request.post("/__control__/restore");
   await request.post("/__control__/runtime-up");
 });
 
-test("CopilotKit Headless renders safe Markdown, PresentationResult and diagnostics", async ({
+test("Conversation-first Shell is the default product interface", async ({
   page,
 }) => {
   await page.goto("/");
+  await expect(page.getByTestId("conversation-shell")).toBeVisible();
+  await expect(page.getByTestId("conversation-sidebar")).toBeVisible();
+  await expect(page.getByTestId("composer")).toBeVisible();
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "Runtime Host 可用",
+  );
+});
+
+test("Conversation-first Shell sends a real message and renders safe Markdown inline", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "Runtime Host 可用",
+  );
+
+  await conversationInput(page).fill("展示 Markdown");
+  await conversationSend(page).click();
+
+  const turn = page.getByTestId("conversation-turns").locator("li").first();
+  await expect(turn.getByTestId("user-message")).toHaveText("展示 Markdown");
+  await expect(
+    turn.getByTestId("markdown-result").getByRole("heading", { level: 2 }),
+  ).toHaveText("Runtime 在线");
+  await expect(
+    turn.getByTestId("markdown-result").locator("script"),
+  ).toHaveCount(0);
+});
+
+test("Conversation-first Shell opens a per-turn Inspect panel", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "Runtime Host 可用",
+  );
+
+  await conversationInput(page).fill("展示 Markdown");
+  await conversationSend(page).click();
+  const turn = page.getByTestId("conversation-turns").locator("li").first();
+  await expect(
+    turn.getByTestId("markdown-result").getByRole("heading", { level: 2 }),
+  ).toHaveText("Runtime 在线");
+
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  await expect(page.getByTestId("inspect-panel")).toBeVisible();
+  await expect(page.getByTestId("inspect-panel")).toContainText("turn-");
+  await expect(page.getByTestId("presentation-result-viewer")).toContainText(
+    "markdown",
+  );
+  await expect(page.getByTestId("diagnostics-panel")).toContainText(
+    "presentation-pipeline",
+  );
+  await page.getByTestId("inspect-close").click();
+  await expect(page.getByTestId("inspect-panel")).toHaveCount(0);
+});
+
+test("Conversation-first Shell keeps A2UI raw data controlled and exposes a per-turn Inspect entry", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "Runtime Host 可用",
+  );
+
+  await conversationInput(page).fill("返回 A2UI");
+  await conversationSend(page).click();
+
+  const turn = page.getByTestId("conversation-turns").locator("li").first();
+  await expect(turn.getByTestId("a2ui-renderer")).toContainText("Ready");
+  await expect(turn.getByTestId("a2ui-raw-content")).toHaveCount(0);
+  await expect(turn.locator("[data-testid^='inspect-turn-']")).toBeVisible();
+});
+
+test("CopilotKit Headless renders safe Markdown, PresentationResult and diagnostics", async ({
+  page,
+}) => {
+  await page.goto("/playground");
 
   await expect(page.getByTestId("environment-banner")).toContainText("v0.1.0");
   await expect(page.getByTestId("connection-status")).toHaveText(
@@ -45,7 +128,7 @@ test("CopilotKit Frontend Tool is advertised, executed in the browser, and conti
   page,
   request,
 }) => {
-  await page.goto("/");
+  await page.goto("/playground");
   await expect(page.getByTestId("connection-status")).toHaveText(
     "Runtime Host 可用",
   );
@@ -71,7 +154,7 @@ test("CopilotKit Frontend Tool is advertised, executed in the browser, and conti
 });
 
 test("CopilotKit Headless keeps A2UI raw data controlled", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/playground");
   await expect(page.getByTestId("connection-status")).toHaveText(
     "Runtime Host 可用",
   );
@@ -92,7 +175,7 @@ test("CopilotKit Headless keeps A2UI raw data controlled", async ({ page }) => {
 test("stop cancels a turn and Action Resume retires its previous Surface", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/playground");
   await chatInput(page).fill("缓慢响应");
   await sendMessage(page).click();
   const stop = page.getByRole("button", { name: "停止生成" });
@@ -126,7 +209,7 @@ test("a retryable timeout can be explicitly retried in its turn", async ({
       JSON.stringify({ requestTimeoutMs: 1_000, showDebugDetails: false }),
     );
   });
-  await page.goto("/");
+  await page.goto("/playground");
   await chatInput(page).fill("超时后重试");
   await sendMessage(page).click();
   await expect(page.getByTestId("turn-failure")).toContainText(
@@ -138,7 +221,7 @@ test("a retryable timeout can be explicitly retried in its turn", async ({
 });
 
 test("refresh explicitly reports reset state", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/playground");
   await page.reload();
   await expect(page.getByTestId("refresh-notice")).toContainText("页面已刷新");
   await expect(page.getByTestId("run-status")).toContainText("等待发送");
@@ -147,7 +230,7 @@ test("refresh explicitly reports reset state", async ({ page }) => {
 test("debug conversation can be created, selected and deleted through Runtime thread APIs", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/playground");
   const threadList = page.getByTestId("thread-list");
   await expect(threadList).toBeVisible();
 
@@ -163,7 +246,7 @@ test("debug conversation can be created, selected and deleted through Runtime th
 
 test("Headless reports an initial outage and recovers", async ({ page }) => {
   await page.request.post("/__control__/runtime-down");
-  await page.goto("/");
+  await page.goto("/playground");
 
   await expect(page.getByTestId("connection-status")).toHaveText(
     "Runtime Host 不可用",
