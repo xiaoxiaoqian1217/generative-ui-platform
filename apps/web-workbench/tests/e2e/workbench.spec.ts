@@ -64,7 +64,8 @@ test("CopilotKit Frontend Tool is advertised, executed in the browser, and conti
   const response = await request.get("/__control__/frontend-tool-probe");
   const probe = await response.json();
   expect(probe.advertised).toBe(true);
-  expect(probe.result).toContain('"source":"frontend-tool"');
+  expect(probe.result).toContain('"capability":"frontend-tool"');
+  expect(probe.result).toContain('"surface":"web-workbench"');
   expect(probe.result).toContain('"status":"connected"');
   await expect(page.getByTestId("run-status")).toContainText("已完成");
 });
