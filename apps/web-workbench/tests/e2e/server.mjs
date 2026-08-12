@@ -314,13 +314,12 @@ const server = createServer(async (request, response) => {
         advertised: hasFrontendTool(body, "show_workbench_status"),
       };
 
-      response.writeHead(200, {
-        "cache-control": "no-store",
-        connection: "keep-alive",
-        "content-type": "text/event-stream",
-      });
-
       if (!toolResult) {
+        response.writeHead(200, {
+          "cache-control": "no-store",
+          connection: "keep-alive",
+          "content-type": "text/event-stream",
+        });
         if (!frontendToolProbe.advertised) {
           sse(response, {
             type: "RUN_STARTED",
