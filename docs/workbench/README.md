@@ -1,43 +1,149 @@
-# Workbench 文档状态
+# Web Workbench Documentation
 
-## Current
+## Current Role
 
-当前 Workbench 的运行与接入方式以以下文档为准：
+`web-workbench` 是 Generative UI Platform 当前产品主体，用于验证和调试 Agent 与前端之间的真实交互与生成式 UI 能力。
 
-- [Web Workbench 手册](../../apps/web-workbench/README.md)；
-- [ADR-0028](../adr/0028-use-native-ag-ui-and-retire-compatibility-contracts.md)；
-- [根 README](../../README.md)；
-- [AGENTS.md](../../AGENTS.md)。
+当前关注点：
 
-当前 Release Gate 是 `locateDevice` 纵向链路：
+- Conversation；
+- AG-UI；
+- CopilotKit Frontend；
+- Controlled UI / Frontend Tool；
+- MapLibre GIS；
+- Real Agent interoperability；
+- A2UI Renderer（下一阶段）；
+- Catalog / Theme（后续）。
+
+Workbench 不是 Runtime Platform，也不承担 Business Agent orchestration。
+
+## Implemented Baseline
+
+当前已经验证：
 
 ```text
-AGUIMock or Business Agent
--> AG-UI
--> CopilotKit
--> Workbench
--> Frontend Tool
--> MapLibre
+AGUIMock
+  ↓ AG-UI
+CopilotKit Frontend
+  ↓
+Frontend Tool: locateDevice
+  ↓
+MapLibre + DeviceCard
 ```
 
-## Frozen
+该纵向场景用于证明 Agent 可以通过 AG-UI 驱动真实浏览器能力。
 
-[Workbench 原型基线](./PROTOTYPE_BASELINES.md)继续保留。
+## Current Integration Target
 
-以下能力属于 Frozen：
+ADR-0029 已接受薄 CopilotKit Runtime 作为下一步 Agent Integration Boundary：
 
-- Conversation-first shell 与按需 Inspect 交互；
-- Playground / Inspect / Cases / Catalog / Scenarios / Settings 路由；
-- 本地 A2UI reducer、受控 renderer、raw viewer 与 component registry；
-- case library 与 inspection 支持。
+```text
+Web Workbench
+      ↓
+CopilotKit Runtime
+      ↓
+┌───────────────┬──────────────────────┐
+│               │                      │
+AGUIMock        single-agent-chat-server
+```
 
-Frozen 表示保留但不扩建平台能力。
-它们不是可直接删除的迁移债务，也不是当前 Release Gate。
+在 #207 完成前，这仍是目标架构，不是已经完成的实现事实。
 
-## Historical
+### AGUIMock
 
-[Workbench SRS](../WEB_WORKBENCH_SRS.md)描述上一阶段的 Presentation-first Generative UI Lab。
-其中的 Presentation Pipeline、UI Compiler、Runtime Host、Catalog 与 Theme 平台目标不再描述当前代码。
+用于稳定验证 Workbench capability：
 
-SRS 只作为历史产品与设计输入保留。
-不得根据该文档恢复已移除模块或旧 contracts。
+- Frontend Tool；
+- Tool Call fixture；
+- regression；
+- failure / edge case。
+
+### single-agent-chat-server
+
+用于真实 Business Agent interoperability：
+
+- streaming text；
+- State；
+- Activity；
+- Artifact；
+- Interrupt / Resume；
+- bounded error；
+- durable Run semantics。
+
+当前 SACS 不支持 client-provided Frontend Tools；该差异作为 compatibility status 保留。
+
+## A2UI Next Phase
+
+完成薄 Runtime 与 Real Agent 联调后，Workbench 主线进入：
+
+```text
+Fixed A2UI Fixture
+  ↓
+A2UI Renderer MVP
+  ↓
+Basic Catalog
+  ↓
+Small Custom Catalog
+  ↓
+Theme Tokens
+  ↓
+Dynamic A2UI
+```
+
+第一阶段只证明 A2UI Renderer 能稳定工作，不先引入 Secondary LLM。
+
+Controlled UI 与 A2UI 应尽量复用同一套真实 UI primitives、domain UI 和 Theme。
+
+## Product Boundaries
+
+Workbench 当前不建设：
+
+- Runtime Thread / Turn / Operation Platform；
+- Runtime Repository / Runtime Truth；
+- Command Admission；
+- Surface Lifecycle；
+- Recovery / Reconcile；
+- 自研 Presentation Pipeline；
+- 自研 UI Compiler；
+- 多 Agent orchestration platform。
+
+CopilotKit Runtime 只作为 Supporting Integration Layer，不改变上述边界。
+
+## Prototype Baselines
+
+[PROTOTYPE_BASELINES.md](./PROTOTYPE_BASELINES.md) 继续保留。
+
+它记录已经确认过的 Workbench UI / IA 设计输入，例如 Conversation shell、Inspect 等原型方向。
+
+这些原型：
+
+- 可以作为后续实现参考；
+- 不自动代表当前 Release Gate；
+- 不授权恢复已经移除的 Runtime / Compiler 架构。
+
+## Current Roadmap
+
+```text
+Completed
+#202 Controlled UI Vertical Slice
+
+Current
+#207 Thin CopilotKit Runtime
+  ↓
+#200 Real SACS Interoperability
+
+Next
+A2UI Renderer
+  ↓
+Catalog + Theme
+  ↓
+SACS AgentContent → Dynamic A2UI
+```
+
+## Related Documents
+
+- [Current Architecture](../ARCHITECTURE.md)
+- [ADR-0029](../adr/0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md)
+- [Prototype Baselines](./PROTOTYPE_BASELINES.md)
+- [Repository Context](../../CONTEXT.md)
+- [Coding Agent Rules](../../AGENTS.md)
