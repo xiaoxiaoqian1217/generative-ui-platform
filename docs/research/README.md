@@ -1,8 +1,8 @@
-# Research Documentation
+# 研究资料
 
-`docs/research/` 用于保存对 Generative UI、Agent interaction、HITL、Approval、Runtime safety 等方向仍有思想参考价值的研究资料。
+`docs/research/` 用于保存对 Generative UI、Agent 交互、HITL、Approval、Runtime safety 等方向仍有思想参考价值的研究资料。
 
-Research 文档属于**非规范性输入**。
+这些研究文档属于**非规范性输入**。
 
 它们：
 
@@ -18,7 +18,7 @@ Research 文档属于**非规范性输入**。
 
 ## 使用原则
 
-当 Research 中的某个方向准备进入产品主线时：
+当研究资料中的某个方向准备进入产品主线时：
 
 1. 先基于真实场景重新验证假设；
 2. 明确它解决的当前问题；
