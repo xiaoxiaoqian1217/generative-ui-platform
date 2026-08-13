@@ -4,13 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node ../../scripts/dev-application.mjs workbench",
+    "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "pnpm --filter @generative-ui/ag-ui-mock build && pnpm build && playwright test",
-    "test:e2e:platform": "playwright test --config playwright.platform.config.ts"
+    "test:e2e": "pnpm --filter @generative-ui/ag-ui-mock build && pnpm build && playwright test"
   },
   "dependencies": {
     "@ag-ui/core": "0.0.57",
