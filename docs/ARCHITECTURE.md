@@ -1,29 +1,29 @@
-# Generative UI Platform Architecture
+# Generative UI Platform 架构
 
-> **Status: Current**
+> **状态：当前**
 >
-> 本文描述 `dev_1.0` 当前产品路线与已接受的近期目标。
-> 目标架构与已完成实现必须明确区分。
+> 本文描述 `dev_1.0` 当前产品路线与已经接受的近期目标。
+> 文档必须明确区分“当前已经实现的事实”和“已经接受但尚未实现的目标架构”。
 
-## 1. Product Boundary
+## 1. 产品边界
 
 Generative UI Platform 当前聚焦于验证并沉淀：
 
-> **真实 Business Agent 如何通过 AG-UI 与 Web Workbench 交互，并逐步支持 Controlled UI、A2UI、Catalog 与 Theme。**
+> **真实业务 Agent 如何通过 AG-UI 与 Web Workbench 交互，并逐步支持受控 UI、A2UI、组件目录与主题能力。**
 
 平台当前不是：
 
 - 通用 Agent Runtime Platform；
-- 多 Agent orchestration platform；
+- 多 Agent 编排平台；
 - 自研 UI Compiler Platform；
 - Runtime Truth / Recovery Platform。
 
-## 2. Current Implemented Baseline
+## 2. 当前已实现基线
 
 当前已经验证的纵向链路是：
 
 ```text
-User
+用户
   ↓
 Web Workbench
   ↓
@@ -36,16 +36,16 @@ Frontend Tool: locateDevice
 MapLibre + DeviceCard
 ```
 
-该场景证明：
+该场景已经证明：
 
 - Workbench 可以消费 AG-UI；
 - CopilotKit Frontend Tool 可以驱动真实浏览器能力；
 - GIS 能力可以保持在前端实现；
 - AGUIMock 可以作为稳定的协议测试服务。
 
-## 3. Accepted Integration Target
+## 3. 已接受的 Agent 接入目标
 
-ADR-0029 接受下一阶段目标：引入**薄 CopilotKit Runtime Integration Layer**。
+ADR-0029 已接受下一阶段目标：引入**薄 CopilotKit Runtime 集成层**。
 
 ```text
 ┌──────────────────────────────────────────┐
@@ -53,30 +53,30 @@ ADR-0029 接受下一阶段目标：引入**薄 CopilotKit Runtime Integration L
 │                                          │
 │ Conversation                             │
 │ Controlled UI / Frontend Tools           │
-│ A2UI Renderer（next phase）              │
-│ Catalog / Theme（next phase）            │
+│ A2UI Renderer（下一阶段）                │
+│ Catalog / Theme（下一阶段）              │
 └────────────────────┬─────────────────────┘
                      │
                      ▼
             ┌────────────────────┐
             │ CopilotKit Runtime │
-            │ thin integration   │
+            │ 薄集成层           │
             └─────────┬──────────┘
                       │
            ┌──────────┴───────────┐
            ▼                      ▼
        AGUIMock        single-agent-chat-server
-       Test Agent          Real Business Agent
+       测试 Agent          真实业务 Agent
 ```
 
 在 #207 完成前，上图中的 CopilotKit Runtime 仍是目标状态，不应被误写成已完成实现。
 
-## 4. CopilotKit Runtime Boundary
+## 4. CopilotKit Runtime 边界
 
-CopilotKit Runtime 在当前阶段只承担 Supporting Infrastructure 职责：
+CopilotKit Runtime 在当前阶段只承担**支撑性基础设施**职责：
 
-- Agent registration / routing；
-- server-side Agent endpoint 配置；
+- Agent 注册与路由；
+- 服务端 Agent endpoint 配置；
 - 服务端 credential / header 注入；
 - Workbench 到不同 Agent 的统一接入边界；
 - 为后续 A2UI middleware 保留自然接入点。
@@ -89,24 +89,24 @@ CopilotKit Runtime 在当前阶段只承担 Supporting Infrastructure 职责：
 - Command Admission；
 - Surface Lifecycle；
 - Recovery / Reconcile；
-- 多 Agent orchestration。
+- 多 Agent 编排平台。
 
 因此：
 
 ```text
 CopilotKit Runtime
-= thin Agent Integration Layer
+= 薄 Agent Integration Layer
 
 ≠
 
 旧 Runtime Platform
 ```
 
-## 5. Agent Sources
+## 5. Agent 来源
 
 ### 5.1 AGUIMock
 
-AGUIMock 是 Test Agent / Capability Test Double。
+AGUIMock 是测试 Agent / 能力测试替身。
 
 主要用途：
 
@@ -120,7 +120,7 @@ AGUIMock 不承载生产 Runtime 职责。
 
 ### 5.2 single-agent-chat-server
 
-`single-agent-chat-server`（SACS）是当前真实 Business Agent interoperability 目标。
+`single-agent-chat-server`（SACS）是当前真实业务 Agent 互操作目标。
 
 当前已知能力包括：
 
@@ -140,13 +140,13 @@ AGUIMock 不承载生产 Runtime 职责。
 - WebSocket；
 - multi-agent behavior。
 
-这些是当前 Real Agent 的 interoperability gap，不应限制 Workbench 自身能力模型，也不能由 Runtime 伪造。
+这些属于当前真实 Agent 的互操作缺口，不应限制 Workbench 自身能力模型，也不能由 Runtime 伪造。
 
-## 6. UI Capability Model
+## 6. UI 能力模型
 
 Workbench 后续保留两条互补 UI 路线。
 
-### 6.1 Controlled UI
+### 6.1 受控 UI
 
 适用于确定性、带副作用或必须由前端能力显式控制的交互：
 
@@ -155,7 +155,7 @@ Agent
   ↓
 Frontend Tool
   ↓
-Browser Capability
+浏览器能力
   ↓
 Controlled UI
 ```
@@ -168,9 +168,9 @@ Controlled UI
 - 设备控制；
 - 前端本地状态操作。
 
-### 6.2 A2UI / Generative Presentation
+### 6.2 A2UI / 生成式展示
 
-适用于业务结果结构不确定、但展示空间需要受约束的场景：
+适用于业务结果结构不确定，但展示空间需要受约束的场景：
 
 ```text
 AgentContent
@@ -185,13 +185,13 @@ Catalog + Theme
 推荐演进顺序：
 
 ```text
-Fixed A2UI Fixture
+固定 A2UI Fixture
   ↓
 A2UI Renderer MVP
   ↓
 Basic Catalog
   ↓
-Small Custom Catalog
+小规模 Custom Catalog
   ↓
 Theme Tokens
   ↓
@@ -200,9 +200,9 @@ Dynamic A2UI
 
 第一阶段先验证 Renderer，不要求 Secondary LLM。
 
-## 7. Shared UI Principle
+## 7. 共享 UI 原则
 
-Controlled UI 和 A2UI 应尽量共用同一套真实 UI Implementation。
+Controlled UI 和 A2UI 应尽量共用同一套真实 UI 实现。
 
 ```text
 UI Primitives / Domain UI / Theme
@@ -215,7 +215,7 @@ Controlled UI   A2UI Renderer
 
 A2UI Catalog 描述 AI 可以声明哪些 UI；它不是第二套真实组件库。
 
-## 8. Post-Agent Presentation Direction
+## 8. Post-Agent Presentation 方向
 
 当 A2UI Renderer、Catalog 与 Theme 稳定后，再验证真实业务结果到 Dynamic A2UI：
 
@@ -234,9 +234,9 @@ Workbench Renderer
 ```
 
 SACS 不需要为了该方向理解 A2UI。
-Business Agent 负责业务结果，Presentation 层负责展示决策。
+业务 Agent 负责业务结果，Presentation 层负责展示决策。
 
-## 9. Deferred Capabilities
+## 9. 明确延期的能力
 
 以下方向当前明确延期：
 
@@ -253,18 +253,18 @@ Business Agent 负责业务结果，Presentation 层负责展示决策。
 
 旧 Compiler 中关于 Validation / Policy / Controlled Generation 的思想可以作为未来 Reliability 研究输入，但不是当前 A2UI Renderer 的前置条件。
 
-## 10. Current Roadmap
+## 10. 当前路线图
 
 ```text
-Completed
-#202 Controlled UI Vertical Slice
+已完成
+#202 Controlled UI 纵向场景
 
-Current
+当前
 #207 Thin CopilotKit Runtime
   ↓
 #200 Real SACS Interoperability
 
-Next
+下一阶段
 A2UI Renderer MVP
   ↓
 Basic / Custom Catalog
@@ -273,11 +273,11 @@ Theme
   ↓
 SACS AgentContent → Dynamic A2UI
 
-Later
+以后按真实需求再考虑
 Runtime Platform / Controlled-generation Compiler
 ```
 
-## 11. Architecture Principles
+## 11. 架构原则
 
 1. **先纵向跑通场景，再横向抽象公共能力。**
 2. Workbench 不自研框架已经提供的 Agent Gateway / Runtime 能力。
