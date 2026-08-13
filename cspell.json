@@ -28,6 +28,7 @@
     "Gateway",
     "GitHub",
     "healthcheck",
+    "HITL",
     "Kimi",
     "LangGraph",
     "MAINT",
@@ -47,6 +48,8 @@
     "Wayfinding",
     "workflows",
     "worktree",
-    "xiaoxiaoqian"
+    "xiaoxiaoqian",
+    "zhouwen",
+    "giser"
   ]
 }
