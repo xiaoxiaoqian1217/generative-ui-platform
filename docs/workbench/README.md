@@ -109,6 +109,16 @@ Workbench 当前不建设：
 
 CopilotKit Runtime 只作为支撑性的集成层，不改变上述边界。
 
+## 保留能力
+
+以下 Workbench 能力继续保留，但不借机扩建为平台能力：
+
+- Playground / Inspect / Cases / Catalog / Scenarios / Settings 路由；
+- 本地 A2UI reducer、受控 renderer、raw viewer 与 component registry；
+- case library 与 inspection 支持。
+
+与 A2UI Renderer / Catalog / Theme 直接相关的能力可以按当前阶段目标继续实现；其他方向不得借此恢复旧 Runtime Platform。
+
 ## 已接受原型基线
 
 [PROTOTYPE_BASELINES.md](./PROTOTYPE_BASELINES.md) 继续保留。

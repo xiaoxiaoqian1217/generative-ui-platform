@@ -44,6 +44,7 @@ SACS AgentContent → Dynamic A2UI
 - [AGENTS.md](../AGENTS.md)：编码 Agent 必须遵守的工程规则；
 - [当前架构](./ARCHITECTURE.md)：当前实现、目标拓扑和职责边界；
 - [ADR-0029](./adr/0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md)：当前阶段架构决策；
+- [ADR-0028](./adr/0028-use-native-ag-ui-and-retire-compatibility-contracts.md)：上一阶段 Scope Reset，继续约束 native AG-UI 与 Removed / Historical 边界；
 - [Web Workbench 文档](./workbench/README.md)：Workbench 产品定位与演进；
 - [Workbench 原型基线](./workbench/PROTOTYPE_BASELINES.md)：已确认的 UI / IA 参考；
 - [Research](./research/README.md)：非规范性研究与未来能力参考；
