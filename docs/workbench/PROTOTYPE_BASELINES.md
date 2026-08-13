@@ -1,105 +1,108 @@
 # Workbench 已接受原型基线
 
-本文冻结当前 Workbench 已经完成评审的交互原型成果，避免在进入实现阶段后重复讨论已经验证过的 UI / IA 方向。
+本文保留已经完成评审、仍有产品价值的 Workbench UI / IA 结论。
 
-当前实现默认继承以下两个原型 Resolution。
-除非出现新的业务证据、可用性问题或与当前有效 ADR 的明确冲突，否则不得重新开启同类方案选型。
+这里冻结的是**交互设计方向**，不是某一版 Runtime / Presentation / Compiler 架构。
+后续实现应把这些交互原则映射到当时真实存在的系统边界和协议事实。
 
 ## Issue #174：Conversation-first Workbench Shell
 
 来源：<https://github.com/xiaoxiaoqian1217/generative-ui-platform/issues/174>
 
-当前直接采用：
+继续保留的产品结论：
 
 - Conversation-first 外壳；
 - 顶部工具导航；
 - 左侧 Conversation 列表区域；
-- 主区保持纯自然语言对话流；
-- Generative UI / Business Surface 内联于 Assistant 消息；
+- 主区保持自然语言对话流；
+- Business Surface / Generative UI 可以内联于 Assistant 消息；
 - completed 状态不制造额外视觉噪音，异常状态按需显示；
-- Presentation / A2UI / 调试信息通过按需 Inspect 入口查看；
+- 调试信息通过按需 Inspect 入口查看；
 - Inspect 使用独立页面 / 深链接，而不是把完整诊断长期堆在主对话区。
 
-ADR-0024 对 Historical Surface 的后续澄清继续有效：
-
-> Historical Presentation 可以继续查看；Historical Action Authority 不可直接重放。
-
-以下 #174 能力当前不作为实现 Release Gate：
+以下能力不因为原型存在就自动进入当前 Release Gate：
 
 - long-term Runtime-owned Conversation History；
 - Rename / Archive / Delete / Clear-all；
 - Runtime Host restart recovery；
-- 为长期会话管理而建设完整 Runtime Repository 产品能力。
+- 完整 Runtime Repository 产品能力。
 
-这些能力属于 Deferred Runtime Platform，不否定 #174 已接受的 Conversation-first UI / IA。
+这些属于 Deferred Runtime Platform。
 
-## Issue #179：Presentation / Execution Inspect
+## Issue #179：Inspect 信息架构
 
 来源：<https://github.com/xiaoxiaoqian1217/generative-ui-platform/issues/179>
 
-当前直接采用最终 Resolution：
+继续保留的交互与信息表达结论：
 
-- 变体 B：泳道时间线；
-- 定位层展示稳定职责边界、sequence、status、duration、errorCode 等开发诊断元数据；
-- Detail 层对契约边界 Artifact 使用 JSON 直通、按需展开，不在 Workbench 重新解释业务 payload；
-- Inspect 采用 Artifact 粒度，而不是一个节点只有一份聚合 JSON；
+- 使用泳道时间线表达真实发生的职责边界和事件顺序；
+- 展示 sequence、status、duration、errorCode 等诊断元数据；
+- 对真实契约 Artifact 使用 JSON 直通、按需展开；
+- Inspect 采用 Artifact / Event 粒度，不把所有信息压成单个聚合 JSON；
 - 只有真实存在请求 / 返回语义的 Artifact 才显示配对关系；
-- 纯过程事件必须明确区分为“没有契约 Artifact”，不能伪造成缺失 JSON；
-- AgentContent、Presentation Decision、UI Plan Candidate、Validation Result、UI IR、A2UI 等 Presentation 链路对象可逐项查看。
+- 纯过程事件必须明确表示“没有契约 Artifact”，不能伪造缺失 JSON；
+- Detail 只展示系统真实可观察事实，不虚构未暴露的服务端步骤。
 
-当前实现优先接入与 Presentation-first 主线直接相关的 Inspect 数据：
+### 当前阶段如何解释泳道
+
+旧原型曾围绕 Runtime Host、Presentation Pipeline、UI Compiler 等固定节点组织泳道。
+这些节点不再是当前产品模型。
+
+当前实现必须遵循：
+
+> **真实发生了什么，就 Inspect 什么。**
+
+例如当前或近期可能观察到：
 
 ```text
-Business Agent public activity
-→ Final AgentContent
-→ Presentation Request / Decision
-→ UI Plan Candidate
-→ Validation Result
-→ UI IR
-→ A2UI
-→ Rendered Presentation
+Workbench
+  ↓
+CopilotKit Frontend
+  ↓
+CopilotKit Runtime（#207 完成后）
+  ↓
+AGUIMock / single-agent-chat-server
+  ↓
+AG-UI Events
+  ↓
+Workbench UI
 ```
 
-以下 #179 能力当前不作为实现 Release Gate：
-
-- Runtime persisted / observed sequence recovery；
-- Runtime Repository 重建；
-- Action Resume 的完整 Runtime Diagnostics；
-- Command Admission / Surface Lifecycle 产品化诊断；
-- 为完整 Runtime Platform 建设的历史 Operation 重建。
-
-原型中的这些场景和代码资产可以保留，后续重新激活 Agent Runtime Integration 时继续复用。
-
-## 实现规则
-
-后续 Workbench 实现默认按以下组合推进：
+Frontend Tool 场景可以出现：
 
 ```text
-#174
+AG-UI Tool Call
+  ↓
+Frontend Tool
+  ↓
+Browser Capability
+  ↓
+Tool Result / continuation
+```
+
+A2UI 进入实现后，可以自然增加 A2UI event / artifact / renderer 相关事实，但不得为了匹配旧原型恢复 Presentation Pipeline 或 UI Compiler。
+
+## 使用规则
+
+后续 Workbench 实现默认继承：
+
+```text
 Conversation-first Shell
-+ Inline Generated UI
++ Inline Business / Generated UI
 + on-demand Inspect
-
-        ↓
-
-#179
-Swimlane Timeline
-+ Artifact JSON pass-through
-+ Presentation / Compiler Detail
++ Swimlane Timeline
++ JSON pass-through for real artifacts
 ```
 
-不得因为 ADR-0027 的 Scope Reset 重新设计 Conversation Shell、Inline Business Surface、Inspect 信息架构或 Execution Map 方案。
+但以下内容必须由当前架构决定，而不是由原型决定：
 
-当前需要解决的是“把已接受原型接到真实链路”，而不是再次进行原型选型：
+- 泳道有哪些参与者；
+- 哪些事件存在；
+- 哪些 Artifact 可以观察；
+- 是否存在 Tool Call；
+- 是否存在 A2UI；
+- 是否存在 Runtime 中间层。
 
-```text
-Natural Language
-→ Business Agent
-→ Final AgentContent
-→ Presentation Router
-→ Presentation Decision
-→ UI Plan Candidate
-→ UI Compiler Core
-→ trusted A2UI
-→ Workbench Renderer / Inspect
-```
+因此，本文件是**产品交互基线**，不是架构恢复点。
+
+当前架构以 [docs/ARCHITECTURE.md](../ARCHITECTURE.md) 和 [ADR-0029](../adr/0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md) 为准。
