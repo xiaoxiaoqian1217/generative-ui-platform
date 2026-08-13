@@ -248,3 +248,9 @@ Runtime Platform / controlled-generation Compiler
 - 大范围架构变更需要用户明确授权。
 - 当前阶段决策以 ADR-0029 为主；ADR-0028 继续约束 native AG-UI、Removed/Historical 边界与已删除 contracts。
 - Historical 文档不是当前实现规范。
+
+## Markdown 文档规范
+
+- GitHub Issue / PR 引用不得以裸 `#123` 开头一行（会被 Markdown 解析为 ATX 标题并触发 MD018）。
+- 使用 `Issue #123`、`PR #123`，或在句子中间引用 `#123`。
+- 修改任何 Markdown 文档后、提交前必须执行 `pnpm docs:lint`，不等 CI 才发现问题。

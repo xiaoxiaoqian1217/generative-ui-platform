@@ -20,4 +20,4 @@ $visibilityFlag = if ($Visibility -eq "private") { "--private" } else { "--publi
 & gh workflow run seed-issues.yml --repo $fullName
 
 Write-Host "Repository created: https://github.com/$fullName"
-Write-Host "Next: review docs/operations/REPOSITORY_SETUP.md and configure optional AI secrets."
+Write-Host "Next: configure optional AI secrets."

@@ -157,4 +157,4 @@ The browser E2E suite covers native AG-UI Markdown, inspection, Frontend Tool co
 - [ADR-0029](../../docs/adr/0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md) is the current Agent integration decision.
 - [ADR-0028](../../docs/adr/0028-use-native-ag-ui-and-retire-compatibility-contracts.md) continues to constrain native AG-UI and removed compatibility contracts.
 - [Workbench prototype baselines](../../docs/workbench/PROTOTYPE_BASELINES.md) are frozen design inputs.
-- [The old Workbench SRS](../../docs/WEB_WORKBENCH_SRS.md) is historical and is not the current release gate.
+- The old Workbench SRS is historical and is not the current release gate; it was removed from the main docs tree and can be consulted via Git history or `archive/pre-scope-reset-2026-08-13`.
