@@ -1,43 +1,115 @@
 # Generative UI Platform
 
-Generative UI Platform 当前只聚焦一条主线：
+Generative UI Platform 当前聚焦两类互补能力：
 
-> **验证真实 Business Agent 如何通过 AG-UI 与前端交互，并在 Web Workbench 中可靠驱动受控 UI 与 Frontend Tool。**
+> **确定性交互使用 Frontend Tool / Controlled UI；不确定业务结果展示逐步进入 A2UI / Generative UI。**
 
-## 当前主链路
+当前阶段先统一真实 Agent 的服务端接入边界，再进入 A2UI Renderer、Catalog 与 Theme 实践。
 
-```text
-Business Agent / AGUIMock
-        │
-        │ AG-UI
-        ▼
-CopilotKit
-        │
-        ▼
-Web Workbench
-  ├─ Conversation
-  ├─ Controlled UI
-  ├─ useFrontendTool
-  └─ MapLibre
-```
+## 已验证能力
 
-当前阶段遵循：
-
-> **先纵向跑通一个真实场景，再横向抽象公共能力。**
-
-第一条验证场景是：
+第一条纵向场景已经跑通：
 
 ```text
 用户：定位无人机 01
         ↓
-Business Agent / AGUIMock
+AGUIMock
         ↓ AG-UI TOOL_CALL
 CopilotKit useFrontendTool("locateDevice")
         ↓
 MapLibre 定位设备
         ↓
-Frontend Tool Result 返回 Agent
+DeviceCard / Frontend Tool Result
 ```
+
+这条场景证明：
+
+```text
+AG-UI
+  ↓
+CopilotKit Frontend Tool
+  ↓
+真实浏览器能力
+```
+
+可以成立。
+
+当前仍坚持：
+
+> **先纵向跑通场景，再基于真实复用证据横向抽象公共能力。**
+
+## 当前架构方向
+
+### 当前可执行基线
+
+在 #207 实现前，仓库当前仍可通过 AGUIMock 验证已跑通的 Controlled UI 场景：
+
+```text
+AGUIMock
+   ↓ AG-UI
+CopilotKit Frontend
+   ↓
+Web Workbench
+   ↓
+Frontend Tool / MapLibre / DeviceCard
+```
+
+### 已接受的目标接入边界
+
+根据 ADR-0029，下一步引入一个 **薄 CopilotKit Runtime Integration Layer**：
+
+```text
+┌──────────────────────────────────────┐
+│ Web Workbench                        │
+│ CopilotKit Frontend / A2UI Renderer  │
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+          ┌───────────────────┐
+          │ CopilotKit Runtime│
+          │ thin integration  │
+          └─────────┬─────────┘
+                    │
+          ┌─────────┴───────────────┐
+          ▼                         ▼
+      AGUIMock          single-agent-chat-server
+      Test Agent             Real Agent
+```
+
+CopilotKit Runtime 在当前阶段只负责：
+
+- Agent registration / routing；
+- server-side endpoint 与 credential；
+- Workbench 到不同 Agent 的统一服务端接入；
+- CopilotKit / AG-UI / 后续 A2UI 所需的最小 middleware 集成。
+
+它不是之前的自研 Runtime Platform。
+
+## Agent Source 边界
+
+### AGUIMock
+
+用于稳定验证 Workbench capability：
+
+- Frontend Tool / `TOOL_CALL_*`；
+- fixture / regression；
+- failure / edge case 场景。
+
+### single-agent-chat-server
+
+作为真实 Business Agent 互操作目标，当前已具备：
+
+- AG-UI HTTP/SSE；
+- streaming text / Run lifecycle；
+- State Snapshot / Delta；
+- Activity Snapshot / Delta；
+- structured output / Artifact；
+- bounded `RUN_ERROR`；
+- Interrupt / Resume；
+- durable Run 语义。
+
+当前 SACS profile **不支持 client-provided Frontend Tools**。
+这是 Real Agent interoperability gap，不是 Workbench capability 的删除理由。
 
 ## 当前模块
 
@@ -53,10 +125,12 @@ packages/
 └─ shared-types/
 ```
 
-- `web-workbench`：交互验证与调试入口。
+- `web-workbench`：当前产品主体与交互 / Generative UI 实验场。
 - `ag-ui-mock`：可复用 AG-UI 测试服务。
-- `ag-ui-adapter`：AG-UI 边界辅助能力；后续只保留协议相关职责。
+- `ag-ui-adapter`：仅承载 AG-UI 协议边界辅助能力。
 - `shared-types`：真正跨模块使用的最小共享类型。
+
+#207 可以在 Monorepo 中增加最小 CopilotKit Runtime Host，但必须保持 Supporting Infrastructure 边界，不得引入新的业务状态模型。
 
 ### Removed compatibility contracts
 
@@ -69,24 +143,59 @@ packages/
 └─ runtime-contract/
 ```
 
-Workbench 直接使用 CopilotKit / AG-UI。
-AG-UI Adapter 只使用 `@ag-ui/core` 原生契约。
+Workbench 继续使用 CopilotKit / 原生 AG-UI 契约。
+不得为了 Runtime 或 A2UI 重新创建这些兼容合同。
 
-### Frozen Workbench capabilities
+## A2UI 下一阶段
 
-以下能力为后续真实场景保留，但不属于当前 Release Gate：
+#207 完成并建立统一 Agent 接入边界后，主线进入：
 
-- Playground / Inspect / Cases / Catalog / Scenarios / Settings 路由；
-- 本地 A2UI reducer、受控 renderer、raw viewer 与 component registry；
-- 已接受的 Workbench shell 与 inspection 原型基线；
-- case library 与 inspection 支持。
+```text
+A2UI Renderer MVP
+        ↓
+Fixed A2UI Fixture
+        ↓
+Basic Catalog
+        ↓
+Small Custom Catalog
+        ↓
+Theme Tokens
+        ↓
+SACS AgentContent → Dynamic A2UI
+```
 
-冻结表示保留但不扩建平台能力。
-这些能力不是迁移债务，不能因为不在当前 `locateDevice` 链路中就直接删除。
+第一步只证明 Renderer 和 Catalog 能稳定工作，不先引入 Secondary LLM。
+
+Controlled UI 与 A2UI 应尽量复用同一套真实 UI Implementation / Theme：
+
+```text
+Frontend Tool ──────┐
+                    ▼
+                 Real UI
+                    ▲
+A2UI Renderer ──────┘
+```
+
+二者区别在于“谁决定怎么展示”，而不是维护两套 Button / Card / Theme。
+
+## Deferred Runtime Platform
+
+以下仍明确延期：
+
+- Thread / Turn / Operation 平台模型；
+- Runtime Repository；
+- Runtime Truth；
+- Surface Lifecycle；
+- Command Admission；
+- Recovery / Reconcile；
+- runtime-owned durable history；
+- 自研多 Agent orchestration platform。
+
+CopilotKit Runtime 不得演化成上述平台。
 
 ## 已移除的旧方向
 
-当前开发不再维护：
+当前不恢复：
 
 - Agent Runtime Host；
 - Reference Business Agent；
@@ -96,8 +205,6 @@ AG-UI Adapter 只使用 `@ag-ui/core` 原生契约。
 - Component Catalog Schema；
 - Runtime Platform 配套启动、环境和 E2E 脚本。
 
-这些能力属于之前的 Runtime Platform / Presentation Compiler 方向，不再参与当前开发主线。
-
 删除前的完整代码保存在：
 
 ```text
@@ -106,32 +213,41 @@ archive/pre-scope-reset-2026-08-13
 
 基线提交：`c33504db91614420c2ccdf26a8c707f61d659065`。
 
-## 当前不做
+历史 Compiler 研究仍可作为以后 Reliability / Controlled Generation 的输入，但不是当前 A2UI Renderer 的前置条件。
 
-除非新的真实场景证明必要，否则当前不建设：
+## 当前 Roadmap
 
-- Thread / Turn / Operation 平台模型；
-- Runtime Repository；
-- Surface Lifecycle；
-- Command Admission；
-- Recovery / Reconcile；
-- 完整 Runtime Diagnostics；
-- 自研 Presentation Pipeline；
-- 自研 UI Compiler；
-- A2UI 平台化能力；
-- Theme 平台化能力；
-- 通用 GIS Agent SDK。
+```text
+Completed
+#202 Controlled UI Vertical Slice
+AGUIMock + Frontend Tool + MapLibre + DeviceCard
 
-后续需要时，从真实场景重新引入，而不是提前建设。
+Current
+#207 Thin CopilotKit Runtime Integration
+  ↓
+#200 Real SACS Interoperability
+
+Next
+A2UI Renderer MVP
+  ↓
+Catalog + Theme
+  ↓
+SACS AgentContent → Dynamic A2UI
+
+Later, only when evidence requires it
+Runtime Platform / controlled-generation Compiler
+```
 
 ## 开发原则
 
-新增模块前先回答两个问题：
+新增能力前优先回答：
 
-1. 它是否直接服务当前真实的 Agent → AG-UI → Workbench → Frontend Tool 链路？
-2. 如果删掉它，当前纵向场景是否无法成立？
+1. 它是否直接服务当前 Agent integration 或下一阶段 A2UI 验证？
+2. 它是否来自已经跑通或正在验证的真实场景？
+3. 能否先在 Workbench 内最小实现，再根据第二个真实消费者抽象？
+4. 框架已经提供的 Runtime / Renderer / Catalog 能力是否可以直接复用？
 
-如果答案都是否，当前阶段不新增。
+没有真实复用证据时，不提前建设自研 Runtime Platform、Compiler 或通用业务 SDK。
 
 ## 快速开始
 
@@ -140,18 +256,10 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-`pnpm dev` 会同时启动 Web Workbench 和包含全部场景的 AG-UI Mock。
-开发服务器会将同源 `/api/copilotkit` 请求代理到 `http://127.0.0.1:4800`。
+在 #207 尚未实现前，`pnpm dev` 继续启动当前 Web Workbench 与 AG-UI Mock 基线。
+输入 `连接测试` 或 `定位无人机 01` 可以验证当前 Mock 场景。
 
-也可以在独立终端手动启动 AG-UI Mock：
-
-```bash
-pnpm dev:ag-ui-mock
-pnpm dev:web-workbench
-```
-
-使用统一开发命令时不需要修改 Workbench Settings。
-输入 `连接测试` 或 `定位无人机 01` 即可验证 Mock 场景。
+#207 实现后再更新这里的 Runtime 启动方式，不提前把目标架构写成已经可运行的命令。
 
 ## 验证
 
@@ -165,6 +273,7 @@ pnpm docs:check
 ## 文档
 
 - [当前文档导航](./docs/README.md)；
-- [当前阶段决策 ADR-0028](./docs/adr/0028-use-native-ag-ui-and-retire-compatibility-contracts.md)；
+- [当前阶段决策 ADR-0029](./docs/adr/0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md)；
+- [上一阶段 Scope Reset ADR-0028](./docs/adr/0028-use-native-ag-ui-and-retire-compatibility-contracts.md)；
 - [Web Workbench 手册](./apps/web-workbench/README.md)；
 - [AG-UI Mock 手册](./packages/ag-ui-mock/README.md)。
