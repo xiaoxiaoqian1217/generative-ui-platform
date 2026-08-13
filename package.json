@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "turbo run dev --parallel",
+    "dev:ag-ui-mock": "pnpm --filter @generative-ui/ag-ui-mock dev",
     "dev:web-workbench": "pnpm --filter @generative-ui/web-workbench dev",
     "build": "turbo run build",
     "build:web-workbench": "pnpm --filter @generative-ui/web-workbench build",

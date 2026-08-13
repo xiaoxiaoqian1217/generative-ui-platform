@@ -137,17 +137,21 @@ archive/pre-scope-reset-2026-08-13
 
 ```bash
 pnpm install --frozen-lockfile
+pnpm dev
+```
+
+`pnpm dev` 会同时启动 Web Workbench 和包含全部场景的 AG-UI Mock。
+开发服务器会将同源 `/api/copilotkit` 请求代理到 `http://127.0.0.1:4800`。
+
+也可以在独立终端手动启动 AG-UI Mock：
+
+```bash
+pnpm dev:ag-ui-mock
 pnpm dev:web-workbench
 ```
 
-启动可复用 AG-UI Mock：
-
-```bash
-pnpm --filter @generative-ui/ag-ui-mock build
-pnpm --filter @generative-ui/ag-ui-mock exec ag-ui-mock --port 4800
-```
-
-在 Workbench Settings 中将 Agent 地址设置为 `http://127.0.0.1:4800`，然后输入 `定位无人机 01`。
+使用统一开发命令时不需要修改 Workbench Settings。
+输入 `连接测试` 或 `定位无人机 01` 即可验证 Mock 场景。
 
 ## 验证
 

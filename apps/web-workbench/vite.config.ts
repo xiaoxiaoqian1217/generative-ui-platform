@@ -7,6 +7,14 @@ export default defineConfig({
   define: {
     __WORKBENCH_VERSION__: JSON.stringify(packageJson.version),
   },
+  server: {
+    proxy: {
+      "/api/copilotkit": {
+        changeOrigin: true,
+        target: "http://127.0.0.1:4800",
+      },
+    },
+  },
   build: {
     sourcemap: true,
   },

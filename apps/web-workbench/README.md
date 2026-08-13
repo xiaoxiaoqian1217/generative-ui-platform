@@ -90,8 +90,12 @@ From the repository root:
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm dev:web-workbench
+pnpm dev
 ```
+
+This starts Web Workbench and the unified AG-UI Mock together.
+The Vite development server proxies same-origin `/api/copilotkit` requests to `http://127.0.0.1:4800`.
+No Settings override is required for the default Mock flow.
 
 To supply an Agent origin at build time:
 
@@ -106,16 +110,16 @@ $env:VITE_AGENT_URL = "http://127.0.0.1:4800"
 pnpm dev:web-workbench
 ```
 
-## Run the reusable AG-UI mock
+## Run the reusable AG-UI mock separately
 
-Build and start the AG-UI Mock with all scenarios in a separate terminal:
+To run the two development processes in separate terminals:
 
 ```bash
-pnpm --filter @generative-ui/ag-ui-mock build
-pnpm --filter @generative-ui/ag-ui-mock exec ag-ui-mock --port 4800
+pnpm dev:ag-ui-mock
+pnpm dev:web-workbench
 ```
 
-Set the Workbench Agent URL to `http://127.0.0.1:4800`.
+The default same-origin configuration uses the Vite proxy.
 Enter `定位无人机 01` in Conversation.
 
 The mock requests `locateDevice({ deviceId: "01" })`.

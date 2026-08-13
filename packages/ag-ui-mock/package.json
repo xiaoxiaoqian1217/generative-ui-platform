@@ -18,6 +18,7 @@
   },
   "scripts": {
     "build": "tsup src/index.ts src/cli.ts --format esm --dts --clean --out-dir dist",
+    "dev": "tsx watch src/cli.ts --port 4800",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "tsup": "8.5.0",
+    "tsx": "4.20.3",
     "typescript": "5.8.3",
     "vitest": "3.2.6"
   }

@@ -19,9 +19,11 @@
 从仓库根目录执行：
 
 ```bash
-pnpm --filter @generative-ui/ag-ui-mock build
-pnpm --filter @generative-ui/ag-ui-mock exec ag-ui-mock --port 4800
+pnpm dev:ag-ui-mock
 ```
+
+执行 `pnpm dev` 会同时启动 AG-UI Mock 与 Web Workbench。
+Workbench 的 Vite 开发服务器会将同源 `/api/copilotkit` 请求代理到该 Mock。
 
 服务同时接受标准根路径 `POST /` 和 Workbench 使用的 `POST /api/copilotkit/agent/default/run`。
 
