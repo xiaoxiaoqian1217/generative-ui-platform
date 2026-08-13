@@ -1,5 +1,8 @@
 # Web Demo 到 Workbench 的迁移决策
 
+> **Status: Historical.**
+> This migration record is retained for context and does not define the current Workbench contract.
+
 ## 状态
 
 已完成。

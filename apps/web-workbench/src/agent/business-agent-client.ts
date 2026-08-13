@@ -1,16 +1,9 @@
+import type { UserMessage } from "@ag-ui/core";
 import {
   type CopilotKitCore,
   CopilotKitCoreRuntimeConnectionStatus,
 } from "@copilotkit/core";
-import {
-  type PresentationResult,
-  validatePresentationResult,
-} from "@generative-ui/presentation-contract";
-import {
-  type RuntimeRunRequest,
-  type RuntimeRunResult,
-  validateRuntimeRunResult,
-} from "@generative-ui/runtime-contract";
+import type { RunAgentResult } from "@copilotkit/vue/v2";
 
 export type ConnectionState =
   | "connecting"
@@ -41,19 +34,16 @@ export class WorkbenchAgentError extends Error {
   }
 }
 
+export interface AgentRunInput {
+  readonly message: UserMessage & { readonly content: string };
+  readonly runId: string;
+  readonly threadId: string;
+}
+
 export interface AgentTransportClient {
   close(): void;
   connect(): void;
-  run(
-    request: RuntimeRunRequest,
-    signal?: AbortSignal,
-  ): Promise<RuntimeRunResult>;
-}
-
-interface CopilotKitCustomEvent {
-  readonly type: "CUSTOM";
-  readonly name: string;
-  readonly value: unknown;
+  run(input: AgentRunInput, signal?: AbortSignal): Promise<RunAgentResult>;
 }
 
 type CopilotKitAgent = NonNullable<ReturnType<CopilotKitCore["getAgent"]>>;
@@ -61,7 +51,6 @@ type CopilotKitAgent = NonNullable<ReturnType<CopilotKitCore["getAgent"]>>;
 export interface BusinessAgentClientOptions {
   readonly agentId?: string;
   readonly onConnectionStateChange?: (state: ConnectionState) => void;
-  readonly runtimeUrl: string;
   readonly timeoutMs?: number;
 }
 
@@ -87,87 +76,11 @@ function connectProviderCore(core: CopilotKitCore): void {
   core.connect();
 }
 
-function createId(prefix: string): string {
-  return (
-    globalThis.crypto.randomUUID?.() ??
-    `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`
-  );
-}
-
-function isPresentationResultEvent(
-  event: unknown,
-): event is CopilotKitCustomEvent {
-  return (
-    typeof event === "object" &&
-    event !== null &&
-    (event as { type?: unknown }).type === "CUSTOM" &&
-    (event as { name?: unknown }).name === "generative-ui.presentation-result"
-  );
-}
-
-export function presentationResultFromCopilotKitEvent(
-  event: unknown,
-): PresentationResult | undefined {
-  if (!isPresentationResultEvent(event)) return undefined;
-  const value = event.value;
-  if (typeof value !== "object" || value === null) return undefined;
-  const result = (value as { result?: unknown }).result;
-  const validated = validatePresentationResult(result);
-  return validated.success && validated.value.status !== "failed"
-    ? validated.value
-    : undefined;
-}
-
-export function runtimeResultFromCopilotKitEvent(
-  event: unknown,
-): RuntimeRunResult | undefined {
-  if (
-    !isPresentationResultEvent(event) &&
-    !(
-      typeof event === "object" &&
-      event !== null &&
-      (event as { type?: unknown }).type === "CUSTOM" &&
-      (event as { name?: unknown }).name === "generative-ui.runtime-run-result"
-    )
-  )
-    return undefined;
-  const value = (event as CopilotKitCustomEvent).value;
-  if (typeof value !== "object" || value === null) return undefined;
-  const validated = validateRuntimeRunResult(
-    (value as { result?: unknown }).result,
-  );
-  return validated.success ? validated.value : undefined;
-}
-
-function runResultFromPresentation(
-  request: RuntimeRunRequest,
-  threadId: string,
-  runId: string,
-  presentation: PresentationResult,
-): RuntimeRunResult {
-  if (presentation.status === "failed") {
-    throw new WorkbenchAgentError(
-      "WORKBENCH_RESPONSE_INVALID",
-      "Agent 返回了不可消费的展示结果。",
-      { retryable: false },
-    );
-  }
-  return {
-    protocolVersion: request.protocolVersion,
-    requestId: request.requestId,
-    threadId,
-    runId,
-    presentationRequestId: presentation.requestId,
-    status: presentation.status === "degraded" ? "degraded" : "completed",
-    presentation,
-  };
-}
-
 function requireProviderCore(): CopilotKitCore {
   if (providerCore !== undefined) return providerCore;
   throw new WorkbenchAgentError(
     "WORKBENCH_AGENT_UNAVAILABLE",
-    "CopilotKit Provider 尚未就绪。",
+    "CopilotKit Provider is not ready.",
     { retryable: true },
   );
 }
@@ -186,7 +99,7 @@ async function resolveAgent(
       reject(
         new WorkbenchAgentError(
           "WORKBENCH_AGENT_UNAVAILABLE",
-          "CopilotKit Provider 未发现 Business Agent。",
+          "CopilotKit Provider did not discover the Business Agent.",
           { retryable: true },
         ),
       );
@@ -239,50 +152,27 @@ export function createBusinessAgentClient(
     connect() {
       if (providerCore !== undefined) connectProviderCore(providerCore);
     },
-    async run(
-      request: RuntimeRunRequest,
-      callerSignal?: AbortSignal,
-    ): Promise<RuntimeRunResult> {
+    async run(input, callerSignal) {
       if (callerSignal?.aborted === true) {
         throw new WorkbenchAgentError(
           "WORKBENCH_REQUEST_CANCELLED",
-          "请求已取消。",
+          "The request was cancelled.",
           { retryable: false },
         );
       }
 
       const core = requireProviderCore();
-      const threadId = request.threadId ?? createId("thread");
-      const runId = request.runId ?? createId("run");
       const baseAgent = await resolveAgent(core, agentId, timeoutMs);
-      const agent = agentForThread(core, baseAgent, threadId);
+      const agent = agentForThread(core, baseAgent, input.threadId);
+      agent.addMessage(input.message);
 
-      return new Promise<RuntimeRunResult>((resolve, reject) => {
-        let presentation: PresentationResult | undefined;
-        let runtimeResult: RuntimeRunResult | undefined;
-        let runFailed = false;
+      return new Promise<RunAgentResult>((resolve, reject) => {
         let settled = false;
-
-        const subscription = agent.subscribe({
-          onCustomEvent: ({ event }) => {
-            const nextPresentation =
-              presentationResultFromCopilotKitEvent(event);
-            if (nextPresentation !== undefined) presentation = nextPresentation;
-            const nextRuntimeResult = runtimeResultFromCopilotKitEvent(event);
-            if (nextRuntimeResult !== undefined)
-              runtimeResult = nextRuntimeResult;
-          },
-          onRunFailed: () => {
-            runFailed = true;
-          },
-        });
-
         const finish = (callback: () => void) => {
           if (settled) return;
           settled = true;
           globalThis.clearTimeout(timeout);
           callerSignal?.removeEventListener("abort", cancel);
-          subscription.unsubscribe();
           activeAbort = undefined;
           callback();
         };
@@ -292,7 +182,7 @@ export function createBusinessAgentClient(
             reject(
               new WorkbenchAgentError(
                 "WORKBENCH_REQUEST_CANCELLED",
-                "请求已取消。",
+                "The request was cancelled.",
                 { retryable: false },
               ),
             ),
@@ -304,7 +194,7 @@ export function createBusinessAgentClient(
             reject(
               new WorkbenchAgentError(
                 "WORKBENCH_REQUEST_TIMEOUT",
-                "请求超时。",
+                "The request timed out.",
                 { retryable: true },
               ),
             ),
@@ -313,51 +203,28 @@ export function createBusinessAgentClient(
 
         callerSignal?.addEventListener("abort", cancel, { once: true });
         activeAbort = cancel;
-        agent.addMessage({
-          id: createId("message"),
-          role: "user",
-          content: request.message.content,
-        });
-
         void core
-          .runAgent({ agent })
-          .then(() => {
+          .runAgent({ agent, runId: input.runId })
+          .then((result) => {
             finish(() => {
-              if (runtimeResult !== undefined) {
-                options.onConnectionStateChange?.("connected");
-                resolve(runtimeResult);
-                return;
-              }
-              if (presentation !== undefined) {
-                options.onConnectionStateChange?.("connected");
-                resolve(
-                  runResultFromPresentation(
-                    request,
-                    threadId,
-                    runId,
-                    presentation,
-                  ),
-                );
-                return;
-              }
-              if (runFailed) {
-                options.onConnectionStateChange?.("unavailable");
+              const hasAssistantResponse = result.newMessages.some(
+                (message) =>
+                  message.role === "assistant" &&
+                  typeof message.content === "string" &&
+                  message.content.length > 0,
+              );
+              if (!hasAssistantResponse) {
                 reject(
                   new WorkbenchAgentError(
-                    "WORKBENCH_AGENT_UNAVAILABLE",
-                    "Business Agent 运行失败。",
-                    { retryable: true },
+                    "WORKBENCH_RESPONSE_INVALID",
+                    "The Business Agent returned no assistant message.",
+                    { retryable: false },
                   ),
                 );
                 return;
               }
-              reject(
-                new WorkbenchAgentError(
-                  "WORKBENCH_RESPONSE_INVALID",
-                  "Business Agent 未返回 PresentationResult。",
-                  { retryable: false },
-                ),
-              );
+              options.onConnectionStateChange?.("connected");
+              resolve(result);
             });
           })
           .catch(() => {
@@ -366,7 +233,7 @@ export function createBusinessAgentClient(
               reject(
                 new WorkbenchAgentError(
                   "WORKBENCH_AGENT_UNAVAILABLE",
-                  "无法连接 Business Agent。",
+                  "Unable to connect to the Business Agent.",
                   { retryable: true },
                 ),
               ),

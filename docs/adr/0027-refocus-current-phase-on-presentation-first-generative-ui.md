@@ -1,6 +1,7 @@
 # ADR-0027：当前阶段回归 Presentation-first Generative UI 主线
 
-- **状态：** 已接受
+- **状态：** 已被 ADR-0028 取代
+- **当前适用性：** Frozen / Historical design input
 - **日期：** 2026-08-10
 - **来源决策：** 用户确认执行 Scope Reset，并从第一性原理重新收敛当前产品边界
 

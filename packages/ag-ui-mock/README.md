@@ -4,12 +4,15 @@
 
 `@generative-ui/ag-ui-mock` 是基于 [`@copilotkit/aimock`](https://aimock.copilotkit.dev/agui-mock/) 的可复用 AG-UI HTTP POST + SSE 测试服务。
 
-它只模拟 Supporting Agent Integration，不定义 Presentation、Compiler 或 Runtime Core 语义。
+它只模拟 Business Agent 的 AG-UI 协议行为，不定义 Presentation、Compiler 或 Runtime Core 语义。
 
 ## 场景
 
-- `echo` 用于验证基础 AG-UI 连接与文本响应。
-- `locate-device` 先请求浏览器执行 `locateDevice({ deviceId: "01" })`，再消费工具结果并返回最终 Markdown Presentation。
+- `echo` 提供 `hello`、`echo` 和 `连接测试` 三个基础 AG-UI 连接探针。
+- `locate-device` 先请求浏览器执行 `locateDevice({ deviceId: "01" })`，再消费工具结果并返回最终 AG-UI 文本消息。
+
+服务器启动时会注册全部场景，不需要也不支持逐个启用场景。
+新增场景后，应将其注册到同一个服务器实例。
 
 ## CLI
 
@@ -17,12 +20,15 @@
 
 ```bash
 pnpm --filter @generative-ui/ag-ui-mock build
-pnpm --filter @generative-ui/ag-ui-mock exec ag-ui-mock --scenario locate-device --port 4800
+pnpm --filter @generative-ui/ag-ui-mock exec ag-ui-mock --port 4800
 ```
 
 服务同时接受标准根路径 `POST /` 和 Workbench 使用的 `POST /api/copilotkit/agent/default/run`。
 
-Workbench 的 Runtime Host 地址可以配置为 `http://127.0.0.1:4800`。
+Workbench 的 Agent 地址可以配置为 `http://127.0.0.1:4800`。
+Workbench 会由这个地址生成 CopilotKit Runtime 基础地址 `/api/copilotkit`。
+CopilotKit 会自动请求 `/api/copilotkit/info` 发现 `default` Agent，再把消息发送到 `/api/copilotkit/agent/default/run`。
+输入 `连接测试` 应返回 `AG-UI mock is connected.`。
 
 ## Node API
 
@@ -31,7 +37,6 @@ import { createAguiMockServer } from "@generative-ui/ag-ui-mock";
 
 const server = createAguiMockServer({
   port: 4800,
-  scenario: "locate-device",
 });
 
 await server.start();

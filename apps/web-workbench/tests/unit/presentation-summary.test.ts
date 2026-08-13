@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { summarizePresentationResult } from "../../src/renderer/presentation-summary.js";
+import { summarizeInspectableOutput } from "../../src/renderer/presentation-summary.js";
 
-describe("PresentationResult summary", () => {
+describe("Inspectable output summary", () => {
   it("does not expose Markdown or A2UI payloads in the default viewer", () => {
-    const generativeSummary = summarizePresentationResult({
+    const generativeSummary = summarizeInspectableOutput({
       requestId: "presentation-1",
       status: "completed",
       mode: "generative-ui",
       surfaceId: "surface-1",
       operations: [{ component: { type: "SensitiveCard" } }],
     });
-    const markdownSummary = summarizePresentationResult({
+    const markdownSummary = summarizeInspectableOutput({
       requestId: "presentation-2",
       status: "completed",
       mode: "markdown",

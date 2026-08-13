@@ -1,7 +1,8 @@
 # Architecture
 
-> 本文是必须保留的历史 Compiler MVP 架构基线。
-> 其中独立 UI Compiler Service 和 HTTP 拓扑已被 ADR-0019 取代；当前目标拓扑使用嵌入 Agent Runtime Host 的 `packages/presentation-pipeline`。
+> **Status: Historical.**
+> 本文保留 Compiler MVP 的历史架构基线。
+> 其中描述的 Compiler、Presentation Pipeline、Runtime Host 和 contracts 均不属于当前仓库拓扑。
 
 ## 1. Product Architecture
 

@@ -1,5 +1,8 @@
 # 阶段二人工验收记录
 
+> **Status: Historical.**
+> This validation record covers a previous repository phase.
+
 - 验收日期: 2026-07-29。
 - 验收范围: Issue #20 的 Core 负向验证、UI Plan Candidate 资源限制、确定性降级和请求隔离。
 - 验收结果: 通过。

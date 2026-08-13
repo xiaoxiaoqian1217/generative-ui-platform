@@ -1,5 +1,8 @@
 # 阶段一人工验收记录
 
+> **Status: Historical.**
+> This validation record covers removed Compiler packages.
+
 - 验收日期: 2026-07-28。
 - 验收范围: G01 至 G05 的 Schema 决策和六个共享包交付物。
 - 验收结果: 通过。

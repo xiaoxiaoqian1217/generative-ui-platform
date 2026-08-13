@@ -1,6 +1,7 @@
 # ADR-0026：采用 AG-UI 作为 Workbench 与 Runtime Host 的唯一 Agent 应用协议
 
-- **状态：** 已接受
+- **状态：** 部分被 ADR-0028 取代
+- **当前适用性：** AG-UI 协议选择保留；Runtime Host 拓扑属于 Historical
 - **日期：** 2026-08-10
 - **来源决策：** #182
 

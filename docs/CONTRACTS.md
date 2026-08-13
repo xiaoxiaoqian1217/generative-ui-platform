@@ -1,5 +1,9 @@
 # Contracts
 
+> **Status: Historical.**
+> The contract packages described here have been removed.
+> Current Workbench and Adapter code uses native CopilotKit and AG-UI contracts as defined by ADR-0028.
+
 ## Contract Boundaries
 
 The platform uses separate contracts for cross-process Runtime traffic, Business Agent adapter traffic, in-process presentation routing, and UI compilation.

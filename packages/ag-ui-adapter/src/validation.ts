@@ -1,294 +1,108 @@
+import type { AGUIEvent, RunAgentInput } from "@ag-ui/core";
+import type { z } from "zod";
 import {
-  compileContextSchema,
-  uiCompileRequestSchema,
-} from "@generative-ui/compiler-contract";
-import {
-  catalogReferenceSchema,
-  presentationErrorSchema,
-  presentationResultSchema,
-  uiPlanSchema,
-} from "@generative-ui/presentation-contract";
-import {
-  jsonValueSchema,
-  type ValidationResult,
-} from "@generative-ui/shared-types";
-import type { TSchema } from "@sinclair/typebox";
-import { Ajv, type ErrorObject, type ValidateFunction } from "ajv";
-import {
-  type AGUICompileRequest,
-  type AGUIEvent,
-  type AGUIEventSequence,
-  type AGUIRequestContext,
-  agUICompileRequestBodySchema,
-  agUICompileRequestSchema,
   agUIEventSchema,
   agUIEventSequenceSchema,
-  consumablePresentationResultSchema,
-  presentationErrorCustomEventSchema,
-  presentationErrorPayloadSchema,
-  presentationResultCustomEventSchema,
-  presentationResultPayloadSchema,
-  runErrorEventSchema,
-  runFinishedEventSchema,
-  runStartedEventSchema,
-  stepFinishedEventSchema,
-  stepStartedEventSchema,
+  agUIRunInputSchema,
 } from "./schemas.js";
 
-type AGUIValidationCode =
-  | "AG_UI_REQUEST_INVALID"
-  | "AG_UI_EVENT_INVALID"
-  | "AG_UI_EVENT_SEQUENCE_INVALID";
+export type AGUIValidationResult<T> =
+  | { readonly success: true; readonly value: T }
+  | {
+      readonly success: false;
+      readonly error: {
+        readonly code:
+          | "AG_UI_EVENT_INVALID"
+          | "AG_UI_EVENT_SEQUENCE_INVALID"
+          | "AG_UI_RUN_INPUT_INVALID";
+        readonly message: string;
+        readonly path: string;
+      };
+    };
 
-const ajvOptions = {
-  strict: true,
-  allErrors: false,
-  coerceTypes: false,
-  removeAdditional: false,
-  useDefaults: false,
-  validateSchema: true,
-  $data: false,
-} as const;
-
-const eventSchemas = [
-  runStartedEventSchema,
-  runFinishedEventSchema,
-  runErrorEventSchema,
-  stepStartedEventSchema,
-  stepFinishedEventSchema,
-  consumablePresentationResultSchema,
-  presentationResultPayloadSchema,
-  presentationErrorPayloadSchema,
-  presentationResultCustomEventSchema,
-  presentationErrorCustomEventSchema,
-  agUIEventSchema,
-];
-
-const compileRequestSchemas = [
-  catalogReferenceSchema,
-  uiPlanSchema,
-  compileContextSchema,
-  uiCompileRequestSchema,
-  agUICompileRequestBodySchema,
-];
-
-function failure<TCode extends AGUIValidationCode>(
-  code: TCode,
-  path: string,
-  constraint: string,
-  contractName: string,
-): ValidationResult<never, TCode> {
+function validationFailure(
+  code: Extract<
+    AGUIValidationResult<never>,
+    { success: false }
+  >["error"]["code"],
+  error: z.ZodError,
+): AGUIValidationResult<never> {
+  const issue = error.issues[0];
   return {
     success: false,
     error: {
       code,
-      path,
-      constraint,
-      message: `${contractName} does not match its contract.`,
+      message: issue?.message ?? "Value does not match the AG-UI contract.",
+      path: issue === undefined ? "" : `/${issue.path.join("/")}`,
     },
   };
 }
 
-function normalizeConstraint(error: ErrorObject | undefined): string {
-  switch (error?.keyword) {
-    case "additionalProperties":
-      return "additional-properties";
-    case "const":
-      return "literal";
-    case "required":
-      return "required";
-    case "type":
-      return "type";
-    case "anyOf":
-      return "union";
-    case "minLength":
-      return "minimum-length";
-    case "minItems":
-      return "minimum-items";
-    default:
-      return "contract";
-  }
+export function validateAGUIRunInput(
+  input: unknown,
+): AGUIValidationResult<RunAgentInput> {
+  const parsed = agUIRunInputSchema.safeParse(input);
+  return parsed.success
+    ? { success: true, value: parsed.data }
+    : validationFailure("AG_UI_RUN_INPUT_INVALID", parsed.error);
 }
 
-function createValidator<T, TCode extends AGUIValidationCode>(
-  schema: TSchema,
-  code: TCode,
-  contractName: string,
-  referencedSchemas: TSchema[],
-): (input: unknown) => ValidationResult<T, TCode> {
-  const ajv = new Ajv(ajvOptions);
-  ajv.addSchema(jsonValueSchema);
-  ajv.addSchema(presentationErrorSchema);
-  ajv.addSchema(presentationResultSchema);
-  for (const referencedSchema of referencedSchemas) {
-    ajv.addSchema(referencedSchema);
-  }
-  const validate: ValidateFunction = ajv.compile(schema);
+export function validateAGUIEvent(
+  input: unknown,
+): AGUIValidationResult<AGUIEvent> {
+  const parsed = agUIEventSchema.safeParse(input);
+  return parsed.success
+    ? { success: true, value: parsed.data }
+    : validationFailure("AG_UI_EVENT_INVALID", parsed.error);
+}
 
-  return (input) => {
-    if (validate(input)) {
-      return {
-        success: true,
-        value: input as T,
-      };
-    }
-
-    const firstError = validate.errors?.[0];
-    return failure(
-      code,
-      firstError?.instancePath ?? "",
-      normalizeConstraint(firstError),
-      contractName,
-    );
+function sequenceFailure(message: string, path: string) {
+  return {
+    success: false as const,
+    error: {
+      code: "AG_UI_EVENT_SEQUENCE_INVALID" as const,
+      message,
+      path,
+    },
   };
-}
-
-export const validateAGUIEvent = createValidator<
-  AGUIEvent,
-  "AG_UI_EVENT_INVALID"
->(
-  agUIEventSchema,
-  "AG_UI_EVENT_INVALID",
-  "AG-UI Event",
-  eventSchemas.filter((schema) => schema !== agUIEventSchema),
-);
-
-export const validateAGUICompileRequest = createValidator<
-  AGUICompileRequest,
-  "AG_UI_REQUEST_INVALID"
->(
-  agUICompileRequestSchema,
-  "AG_UI_REQUEST_INVALID",
-  "AG-UI Compile Request",
-  compileRequestSchemas,
-);
-
-const validateAGUIEventSequenceSchema = createValidator<
-  AGUIEventSequence,
-  "AG_UI_EVENT_SEQUENCE_INVALID"
->(
-  agUIEventSequenceSchema,
-  "AG_UI_EVENT_SEQUENCE_INVALID",
-  "AG-UI Event Sequence",
-  eventSchemas,
-);
-
-function sequenceFailure(
-  path: string,
-  constraint: string,
-): ValidationResult<never, "AG_UI_EVENT_SEQUENCE_INVALID"> {
-  return failure(
-    "AG_UI_EVENT_SEQUENCE_INVALID",
-    path,
-    constraint,
-    "AG-UI Event Sequence",
-  );
 }
 
 export function validateAGUIEventSequence(
   input: unknown,
-  expectedContext?: AGUIRequestContext,
-): ValidationResult<AGUIEventSequence, "AG_UI_EVENT_SEQUENCE_INVALID"> {
-  const schemaResult = validateAGUIEventSequenceSchema(input);
-  if (!schemaResult.success) {
-    return schemaResult;
-  }
+): AGUIValidationResult<readonly AGUIEvent[]> {
+  const parsed = agUIEventSequenceSchema.safeParse(input);
+  if (!parsed.success)
+    return validationFailure("AG_UI_EVENT_SEQUENCE_INVALID", parsed.error);
 
-  const events = schemaResult.value;
-  const firstEvent = events[0];
-  const lastEvent = events.at(-1);
-  if (firstEvent?.type !== "RUN_STARTED") {
-    return sequenceFailure("/0", "run-started-first");
-  }
-  if (lastEvent?.type !== "RUN_FINISHED" && lastEvent?.type !== "RUN_ERROR") {
-    return sequenceFailure(`/${events.length - 1}`, "terminal-event-last");
-  }
-  if (
-    expectedContext !== undefined &&
-    (firstEvent.threadId !== expectedContext.threadId ||
-      firstEvent.runId !== expectedContext.runId)
-  ) {
-    return sequenceFailure("/0", "run-context-consistency");
-  }
-
-  const openSteps: string[] = [];
-  let resultEventCount = 0;
-  let errorEventCount = 0;
+  const events = parsed.data;
+  const first = events[0];
+  const last = events.at(-1);
+  if (first?.type !== "RUN_STARTED")
+    return sequenceFailure("RUN_STARTED must be the first event.", "/0");
+  if (last?.type !== "RUN_FINISHED" && last?.type !== "RUN_ERROR")
+    return sequenceFailure(
+      "RUN_FINISHED or RUN_ERROR must be the last event.",
+      `/${events.length - 1}`,
+    );
 
   for (const [index, event] of events.entries()) {
-    if (index > 0 && event.type === "RUN_STARTED") {
-      return sequenceFailure(`/${index}`, "single-run-started");
-    }
+    if (index > 0 && event.type === "RUN_STARTED")
+      return sequenceFailure("A run can start only once.", `/${index}`);
     if (
       index < events.length - 1 &&
       (event.type === "RUN_FINISHED" || event.type === "RUN_ERROR")
-    ) {
-      return sequenceFailure(`/${index}`, "terminal-event-last");
-    }
-
-    if (event.type === "STEP_STARTED") {
-      openSteps.push(event.stepName);
-    } else if (event.type === "STEP_FINISHED") {
-      const activeStep = openSteps.pop();
-      if (activeStep !== event.stepName) {
-        return sequenceFailure(`/${index}/stepName`, "step-pair-order");
-      }
-    } else if (
-      event.type === "CUSTOM" &&
-      event.name === "generative-ui.presentation-result"
-    ) {
-      if (
-        expectedContext !== undefined &&
-        event.value.result.requestId !== expectedContext.requestId
-      ) {
-        return sequenceFailure(
-          `/${index}/value/result/requestId`,
-          "request-correlation-consistency",
-        );
-      }
-      resultEventCount += 1;
-    } else if (
-      event.type === "CUSTOM" &&
-      event.name === "generative-ui.presentation-error"
-    ) {
-      errorEventCount += 1;
-    }
+    )
+      return sequenceFailure("A terminal event must be last.", `/${index}`);
   }
 
-  if (openSteps.length > 0) {
-    return sequenceFailure(`/${events.length - 1}`, "step-finished-required");
-  }
+  if (
+    last.type === "RUN_FINISHED" &&
+    (last.threadId !== first.threadId || last.runId !== first.runId)
+  )
+    return sequenceFailure(
+      "Run correlation must remain stable.",
+      `/${events.length - 1}`,
+    );
 
-  const penultimateEvent = events.at(-2);
-  if (lastEvent.type === "RUN_FINISHED") {
-    if (
-      lastEvent.threadId !== firstEvent.threadId ||
-      lastEvent.runId !== firstEvent.runId
-    ) {
-      return sequenceFailure(
-        `/${events.length - 1}`,
-        "run-correlation-consistency",
-      );
-    }
-    if (
-      resultEventCount !== 1 ||
-      errorEventCount !== 0 ||
-      penultimateEvent?.type !== "CUSTOM" ||
-      penultimateEvent.name !== "generative-ui.presentation-result"
-    ) {
-      return sequenceFailure(
-        `/${events.length - 2}`,
-        "result-before-run-finished",
-      );
-    }
-  } else if (
-    errorEventCount !== 1 ||
-    resultEventCount !== 0 ||
-    penultimateEvent?.type !== "CUSTOM" ||
-    penultimateEvent.name !== "generative-ui.presentation-error"
-  ) {
-    return sequenceFailure(`/${events.length - 2}`, "error-before-run-error");
-  }
-
-  return schemaResult;
+  return { success: true, value: events };
 }

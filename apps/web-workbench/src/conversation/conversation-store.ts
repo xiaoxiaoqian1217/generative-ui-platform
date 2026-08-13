@@ -1,10 +1,8 @@
-import type { PresentationResult } from "@generative-ui/presentation-contract";
-import type { RuntimeRunResult } from "@generative-ui/runtime-contract";
+import type { Message, UserMessage } from "@ag-ui/core";
 
-export type ConversationOperationKind = "action" | "run";
+export type WorkbenchUserMessage = UserMessage & { readonly content: string };
 
 export interface ActiveConversationOperation {
-  readonly kind: ConversationOperationKind;
   readonly requestId: string;
   readonly turnId: string;
 }
@@ -16,34 +14,15 @@ export interface TurnFailure {
   readonly stage?: string;
 }
 
-export interface ConversationUserMessage {
-  readonly content: string;
-  readonly id: string;
-}
-
-export interface BusinessSurface {
-  readonly presentation: Extract<PresentationResult, { mode: "generative-ui" }>;
-  readonly status: "active" | "historical";
-  readonly surfaceId: string;
-}
-
 export interface ConversationTurn {
-  readonly businessSurfaces: readonly BusinessSurface[];
   readonly failure?: TurnFailure;
-  readonly presentation?: PresentationResult;
-  readonly presentationRequestId?: string;
   readonly requestId: string;
+  readonly responseMessages: readonly Message[];
   readonly runId?: string;
-  readonly runtimeResult?: RuntimeRunResult;
-  readonly status:
-    | "cancelled"
-    | "completed"
-    | "degraded"
-    | "failed"
-    | "pending";
+  readonly status: "cancelled" | "completed" | "failed" | "pending";
   readonly threadId?: string;
   readonly turnId: string;
-  readonly userMessage: ConversationUserMessage;
+  readonly userMessage: WorkbenchUserMessage;
 }
 
 export interface ConversationState {
@@ -53,15 +32,15 @@ export interface ConversationState {
 }
 
 export interface StartRunInput {
-  readonly message: string;
+  readonly message: WorkbenchUserMessage;
   readonly requestId: string;
   readonly turnId: string;
 }
 
-export interface StartActionInput {
-  readonly requestId: string;
-  readonly surfaceId: string;
-  readonly turnId: string;
+export interface ResolveRunInput {
+  readonly messages: readonly Message[];
+  readonly runId: string;
+  readonly threadId: string;
 }
 
 export function createConversationState(inputValue = ""): ConversationState {
@@ -80,19 +59,16 @@ export function startRun(
   input: StartRunInput,
 ): ConversationState {
   if (state.activeOperation !== undefined) return state;
-  const message = input.message.trim();
-  if (message === "") return state;
-
+  if (input.message.content.trim() === "") return state;
   const turn: ConversationTurn = {
-    businessSurfaces: [],
     requestId: input.requestId,
+    responseMessages: [],
     status: "pending",
     turnId: input.turnId,
-    userMessage: { content: message, id: `${input.turnId}:user` },
+    userMessage: input.message,
   };
   return {
     activeOperation: {
-      kind: "run",
       requestId: input.requestId,
       turnId: input.turnId,
     },
@@ -114,75 +90,24 @@ function updateTurn(
   };
 }
 
-function historicalSurfaces(
-  turns: readonly ConversationTurn[],
-): readonly ConversationTurn[] {
-  return turns.map((turn) => ({
-    ...turn,
-    businessSurfaces: turn.businessSurfaces.map((surface) =>
-      surface.status === "active"
-        ? { ...surface, status: "historical" }
-        : surface,
-    ),
-  }));
-}
-
-function surfacesForPresentation(
-  turn: ConversationTurn,
-  presentation: PresentationResult,
-): readonly BusinessSurface[] {
-  const historical = turn.businessSurfaces.map((surface) => ({
-    ...surface,
-    status: "historical" as const,
-  }));
-  if (presentation.status === "failed" || presentation.mode !== "generative-ui")
-    return historical;
-  return [
-    ...historical,
-    {
-      presentation,
-      status: "active",
-      surfaceId: presentation.surfaceId,
-    },
-  ];
-}
-
 function withoutActiveOperation(state: ConversationState): ConversationState {
   const { activeOperation: _activeOperation, ...inactiveState } = state;
   return inactiveState;
 }
 
-function resultStatus(result: RuntimeRunResult): ConversationTurn["status"] {
-  return result.status === "degraded" ? "degraded" : "completed";
-}
-
 export function resolveRun(
   state: ConversationState,
   turnId: string,
-  result: RuntimeRunResult,
+  result: ResolveRunInput,
 ): ConversationState {
-  if (
-    state.activeOperation?.kind !== "run" ||
-    state.activeOperation.turnId !== turnId ||
-    result.status === "failed"
-  )
-    return state;
-
-  const turns = historicalSurfaces(state.turns);
-  return updateTurn(
-    { ...withoutActiveOperation(state), turns },
-    turnId,
-    (turn) => ({
-      ...turn,
-      businessSurfaces: surfacesForPresentation(turn, result.presentation),
-      presentation: result.presentation,
-      presentationRequestId: result.presentationRequestId,
-      runId: result.runId,
-      runtimeResult: result,
-      status: resultStatus(result),
-      threadId: result.threadId,
-    }),
-  );
+  if (state.activeOperation?.turnId !== turnId) return state;
+  return updateTurn(withoutActiveOperation(state), turnId, (turn) => ({
+    ...turn,
+    responseMessages: result.messages,
+    runId: result.runId,
+    status: "completed",
+    threadId: result.threadId,
+  }));
 }
 
 export function failOperation(
@@ -199,56 +124,6 @@ export function failOperation(
   }));
 }
 
-export function startAction(
-  state: ConversationState,
-  input: StartActionInput,
-): ConversationState {
-  if (state.activeOperation !== undefined) return state;
-  const turn = state.turns.find((item) => item.turnId === input.turnId);
-  const surface = turn?.businessSurfaces.find(
-    (item) => item.surfaceId === input.surfaceId,
-  );
-  if (surface?.status !== "active") return state;
-  return {
-    ...state,
-    activeOperation: {
-      kind: "action",
-      requestId: input.requestId,
-      turnId: input.turnId,
-    },
-  };
-}
-
-export function resolveAction(
-  state: ConversationState,
-  turnId: string,
-  result: RuntimeRunResult,
-): ConversationState {
-  if (
-    state.activeOperation?.kind !== "action" ||
-    state.activeOperation.turnId !== turnId ||
-    state.activeOperation.requestId !== result.requestId ||
-    result.status === "failed"
-  )
-    return state;
-
-  const turns = historicalSurfaces(state.turns);
-  return updateTurn(
-    { ...withoutActiveOperation(state), turns },
-    turnId,
-    (turn) => ({
-      ...turn,
-      businessSurfaces: surfacesForPresentation(turn, result.presentation),
-      presentation: result.presentation,
-      presentationRequestId: result.presentationRequestId,
-      runId: result.runId,
-      runtimeResult: result,
-      status: resultStatus(result),
-      threadId: result.threadId,
-    }),
-  );
-}
-
 export function retryTurn(
   state: ConversationState,
   turnId: string,
@@ -261,5 +136,5 @@ export function retryTurn(
     state.activeOperation !== undefined
   )
     return state;
-  return startRun(state, { ...input, message: turn.userMessage.content });
+  return startRun(state, { ...input, message: turn.userMessage });
 }

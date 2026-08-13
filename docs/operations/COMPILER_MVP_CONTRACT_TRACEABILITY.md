@@ -1,7 +1,8 @@
 # Compiler MVP 契约覆盖和需求追溯矩阵
 
-> 历史归档：本文保留 Compiler MVP 当时的证据路径。
-> ADR-0019 迁移后的当前测试位于 `packages/presentation-pipeline/test`、`packages/ui-compiler-core/test` 和 `apps/agent-runtime-host/test`；独立 Service HTTP、容器和端口证据不再是当前门禁。
+> **Status: Historical.**
+> The referenced Compiler and contract packages have been removed.
+> 本文只保留 Compiler MVP 当时的证据路径，不描述当前测试位置或门禁。
 
 ## 目的和范围
 

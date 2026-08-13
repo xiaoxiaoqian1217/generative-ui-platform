@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   applyA2UIOperations,
-  createRenderedRuntimeAction,
-  createRuntimeAction,
+  createA2UIAction,
+  createRenderedA2UIAction,
   destroySurface,
   isRenderableComponent,
   registeredComponentTypes,
@@ -138,7 +138,7 @@ describe("A2UI v0.9 reducer", () => {
     const surface = applied.surfaces.get("surface-1");
     const confirm = surface?.components.get("confirm");
     if (!surface || !confirm) throw new Error("Expected confirm component.");
-    const action = createRuntimeAction("surface-1", confirm, surface.dataModel);
+    const action = createA2UIAction("surface-1", confirm, surface.dataModel);
     expect(action).toEqual({
       actionId: "confirm-1",
       actionType: "confirm-plan",
@@ -147,7 +147,7 @@ describe("A2UI v0.9 reducer", () => {
     });
     expect(JSON.stringify(action)).not.toContain("requiresApproval");
     expect(
-      createRuntimeAction("surface-1", confirm, {
+      createA2UIAction("surface-1", confirm, {
         sourceData: {},
       }),
     ).toBeUndefined();
@@ -160,7 +160,7 @@ describe("A2UI v0.9 reducer", () => {
     const confirm = surface?.components.get("confirm");
     if (!surface || !confirm) throw new Error("Expected confirm component.");
     expect(
-      createRenderedRuntimeAction("surface-1", confirm, surface.dataModel),
+      createRenderedA2UIAction("surface-1", confirm, surface.dataModel),
     ).toMatchObject({
       action: { actionId: "confirm-1" },
       requiresConfirmation: true,

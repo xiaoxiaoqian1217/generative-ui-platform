@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { computed, h, type VNode } from "vue";
+import type { JsonValue } from "@generative-ui/shared-types";
 import {
-  createRenderedRuntimeAction,
+  createRenderedA2UIAction,
   isRenderableComponent,
   resolveDynamicValue,
   type A2UISurface,
 } from "./a2ui.js";
-import type { RenderedRuntimeAction } from "./a2ui.js";
+import type { RenderedA2UIAction } from "./a2ui.js";
 
 const props = withDefaults(
   defineProps<{ readOnly?: boolean; surface: A2UISurface }>(),
   { readOnly: false },
 );
-const emit = defineEmits<{ action: [action: RenderedRuntimeAction] }>();
+const emit = defineEmits<{ action: [action: RenderedA2UIAction] }>();
 const stringify = (value: unknown): string =>
   typeof value === "string" ||
   typeof value === "number" ||
@@ -42,7 +43,7 @@ function componentProps(
       )
       .map(([key, value]) => [
         key,
-        resolveDynamicValue(value, props.surface.dataModel),
+        resolveDynamicValue(value as JsonValue, props.surface.dataModel),
       ]),
   );
 }
@@ -78,7 +79,7 @@ function renderComponent(componentId: string): VNode | undefined {
         type: "button",
         onClick: () => {
           if (props.readOnly) return;
-          const action = createRenderedRuntimeAction(
+          const action = createRenderedA2UIAction(
             props.surface.surfaceId,
             component,
             props.surface.dataModel,

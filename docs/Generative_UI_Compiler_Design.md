@@ -1,7 +1,8 @@
 # Generative UI Compiler MVP 系统设计说明书
 
-> 本文是必须保留的历史 Compiler MVP 设计基线。
-> 其中独立 UI Compiler Service、HTTP、容器和端口结论已被 ADR-0019 取代；Sanitizer、Router、Catalog、Model Adapter、Core 与降级边界现由 `packages/presentation-pipeline` 承载。
+> **Status: Historical.**
+> 本文保留 Compiler MVP 的历史设计基线。
+> Compiler、Presentation Pipeline、Runtime Host 和对应 contract packages 已从当前仓库删除。
 
 - **文档版本：** 1.3
 - **设计阶段：** MVP 系统设计（评审修订版）

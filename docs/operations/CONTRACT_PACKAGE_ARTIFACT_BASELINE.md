@@ -1,5 +1,8 @@
 # 契约包构建产物基线
 
+> **Status: Historical.**
+> The measured contract packages have been removed.
+
 本基线记录 ADR-0012 约束下的可执行契约包构建产物。
 测量日期为 2026-08-02。
 

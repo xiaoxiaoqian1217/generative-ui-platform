@@ -1,5 +1,9 @@
 # Generative UI Platform 平台级架构
 
+> **Status: Historical.**
+> This topology includes modules removed from the current repository.
+> Use ADR-0028 for the current architecture boundary.
+
 本文描述 ADR-0027 下的当前跨子系统关系。
 Compiler 内部架构继续以 `docs/ARCHITECTURE.md`、`docs/Generative_UI_Compiler_Design.md` 和 Compiler ADR 为准。
 

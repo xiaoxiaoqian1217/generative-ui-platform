@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-  computed,
-  defineAsyncComponent,
-  onMounted,
-  ref,
-} from "vue";
+import { computed, defineAsyncComponent, onMounted, ref } from "vue";
 import { quickScenarios } from "./scenarios.js";
 import {
   BUILTIN_CASES,
@@ -90,17 +85,23 @@ const configurationError = configResolution.error;
 const workbenchVersion = __WORKBENCH_VERSION__;
 
 const connectionState = ref<ConnectionState>("connecting");
-const route = ref<WorkbenchRoute>(resolveWorkbenchRoute(window.location.pathname));
+const route = ref<WorkbenchRoute>(
+  resolveWorkbenchRoute(window.location.pathname),
+);
 const settingsAgentUrl = ref(config.agentUrl);
 const settingsTimeoutMs = ref(String(initialLocalSettings.requestTimeoutMs));
 const settingsShowDebugDetails = ref(initialLocalSettings.showDebugDetails);
 const settingsNotice = ref("");
-const customCases = ref<readonly WorkbenchCase[]>(loadCustomCases(window.localStorage));
+const customCases = ref<readonly WorkbenchCase[]>(
+  loadCustomCases(window.localStorage),
+);
 const caseImport = ref("");
 const caseNotice = ref("");
 const latestCaseFailure = ref(loadCaseFailureDiagnosis(window.localStorage));
 const allCases = computed(() => [...BUILTIN_CASES, ...customCases.value]);
-const inspection = ref<InspectionSnapshot | undefined>(loadInspectionSnapshot(window.sessionStorage));
+const inspection = ref<InspectionSnapshot | undefined>(
+  loadInspectionSnapshot(window.sessionStorage),
+);
 
 const connectionLabels: Record<ConnectionState, string> = {
   connected: "已连接",
@@ -131,7 +132,8 @@ function saveSettings(): void {
     settingsNotice.value = "设置已保存在此浏览器。正在重新加载连接配置。";
     window.setTimeout(() => window.location.reload(), 100);
   } catch {
-    settingsNotice.value = "设置无效。Agent 地址必须是 HTTP(S) 地址，超时必须在 1,000 到 300,000 毫秒之间。";
+    settingsNotice.value =
+      "设置无效。Agent 地址必须是 HTTP(S) 地址，超时必须在 1,000 到 300,000 毫秒之间。";
   }
 }
 
@@ -197,9 +199,8 @@ onMounted(() => {
         <template v-if="route === '/inspect'">
           <p>选择或重放一次运行后，在此查看已脱敏的阶段、关联 ID、耗时、展示决策和降级信息。</p>
           <div v-if="inspection" data-testid="inspection-summary">
-            <p>{{ inspection.status }} · {{ inspection.presentationMode ?? '无展示结果' }}</p>
-            <dl><div><dt>requestId</dt><dd>{{ inspection.requestId }}</dd></div><div><dt>runId</dt><dd>{{ inspection.runId }}</dd></div><div><dt>降级原因</dt><dd>{{ inspection.degradationReasonCode ?? '—' }}</dd></div></dl>
-            <p v-for="stage in inspection.stages" :key="stage.name">{{ stage.name }} · {{ stage.status }} · {{ stage.durationMs ?? '—' }} ms · {{ stage.errorCode ?? '' }}</p>
+            <p>{{ inspection.status }} · {{ inspection.outputKind }}</p>
+            <dl><div><dt>requestId</dt><dd>{{ inspection.requestId }}</dd></div><div><dt>runId</dt><dd>{{ inspection.runId }}</dd></div><div><dt>Assistant 消息</dt><dd>{{ inspection.assistantMessageCount }}</dd></div></dl>
           </div>
           <p v-else data-testid="inspection-empty">尚未保存可检查的运行摘要。</p>
         </template>

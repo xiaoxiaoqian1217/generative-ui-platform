@@ -58,9 +58,9 @@ packages/
 - `ag-ui-adapter`：AG-UI 边界辅助能力；后续只保留协议相关职责。
 - `shared-types`：真正跨模块使用的最小共享类型。
 
-### Temporary compatibility contracts
+### Removed compatibility contracts
 
-以下包目前仍被 `web-workbench` / `ag-ui-adapter` 的旧代码直接引用，因此暂时保留，禁止继续扩展：
+以下迁移期契约已经解除依赖并删除：
 
 ```text
 packages/
@@ -69,7 +69,20 @@ packages/
 └─ runtime-contract/
 ```
 
-它们不是当前产品方向。完成 Workbench 解耦后应继续删除。
+Workbench 直接使用 CopilotKit / AG-UI。
+AG-UI Adapter 只使用 `@ag-ui/core` 原生契约。
+
+### Frozen Workbench capabilities
+
+以下能力为后续真实场景保留，但不属于当前 Release Gate：
+
+- Playground / Inspect / Cases / Catalog / Scenarios / Settings 路由；
+- 本地 A2UI reducer、受控 renderer、raw viewer 与 component registry；
+- 已接受的 Workbench shell 与 inspection 原型基线；
+- case library 与 inspection 支持。
+
+冻结表示保留但不扩建平台能力。
+这些能力不是迁移债务，不能因为不在当前 `locateDevice` 链路中就直接删除。
 
 ## 已移除的旧方向
 
@@ -119,3 +132,35 @@ archive/pre-scope-reset-2026-08-13
 2. 如果删掉它，当前纵向场景是否无法成立？
 
 如果答案都是否，当前阶段不新增。
+
+## 快速开始
+
+```bash
+pnpm install --frozen-lockfile
+pnpm dev:web-workbench
+```
+
+启动可复用 AG-UI Mock：
+
+```bash
+pnpm --filter @generative-ui/ag-ui-mock build
+pnpm --filter @generative-ui/ag-ui-mock exec ag-ui-mock --port 4800
+```
+
+在 Workbench Settings 中将 Agent 地址设置为 `http://127.0.0.1:4800`，然后输入 `定位无人机 01`。
+
+## 验证
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm docs:check
+```
+
+## 文档
+
+- [当前文档导航](./docs/README.md)；
+- [当前阶段决策 ADR-0028](./docs/adr/0028-use-native-ag-ui-and-retire-compatibility-contracts.md)；
+- [Web Workbench 手册](./apps/web-workbench/README.md)；
+- [AG-UI Mock 手册](./packages/ag-ui-mock/README.md)。

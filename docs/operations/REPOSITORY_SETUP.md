@@ -1,5 +1,8 @@
 # GitHub Repository Setup
 
+> **Status: Historical.**
+> Validate repository settings against the current GitHub state before applying this record.
+
 Files in this repository configure most automation. Some repository-level controls require one-time GitHub settings.
 
 ## Required one-time settings

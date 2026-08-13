@@ -1,5 +1,8 @@
 # Runtime Truth Model 迁移与冲突处置
 
+> **Status: Historical.**
+> Runtime Truth is outside the current phase and its implementation is removed.
+
 本文记录 ADR-0024 被确认后的迁移约束。
 本文不是新的架构决策，所有目标语义均来自已接受的 [ADR-0024](../adr/0024-adopt-runtime-truth-model-and-safe-command-admission.md)。
 

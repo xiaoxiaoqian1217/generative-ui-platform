@@ -2,32 +2,26 @@
 import { computed, nextTick, ref, watch } from "vue";
 import type { ConversationTurn } from "../conversation/conversation-store.js";
 import ConversationTurnPresentation from "../conversation/ConversationTurnPresentation.vue";
-import type { RenderedRuntimeAction } from "../renderer/a2ui.js";
 
 export type ConversationRunState =
   | "idle"
   | "running"
-  | "rendering"
   | "completed"
-  | "degraded"
   | "failed"
   | "cancelled";
 
 const props = defineProps<{
-  actionsDisabled: boolean;
   isRunning: boolean;
   runState: ConversationRunState;
   turns: readonly ConversationTurn[];
 }>();
 
 const emit = defineEmits<{
-  action: [action: RenderedRuntimeAction];
   inspect: [turnId: string];
   retry: [turnId: string];
 }>();
 
 const scrollHost = ref<HTMLElement>();
-
 const isEmpty = computed(() => props.turns.length === 0);
 
 watch(
@@ -38,16 +32,6 @@ watch(
     if (host) host.scrollTop = host.scrollHeight;
   },
 );
-
-function turnDuration(turn: ConversationTurn): string {
-  const result = turn.runtimeResult;
-  if (result?.diagnostics?.stages === undefined) return "…";
-  const total = result.diagnostics.stages.reduce(
-    (sum, stage) => sum + (stage.durationMs ?? 0),
-    0,
-  );
-  return total > 0 ? `${(total / 1000).toFixed(1)}s` : "…";
-}
 </script>
 
 <template>
@@ -55,8 +39,7 @@ function turnDuration(turn: ConversationTurn): string {
     <div v-if="isEmpty" class="shell-chat-empty">
       <p>开始一段真实 Agent Conversation</p>
       <p class="shell-chat-empty-sub">
-        用自然语言描述你的意图。Assistant 的最终 Markdown 与 Generated UI
-        会直接内联在这里。
+        Assistant 消息直接来自 AG-UI，Frontend Tool 可以更新 Workbench。
       </p>
     </div>
 
@@ -78,21 +61,14 @@ function turnDuration(turn: ConversationTurn): string {
             class="shell-turn-hint shell-turn-hint-running"
             role="status"
           >
-            <span class="shell-spinner"></span>正在运行…
-          </div>
-          <div
-            v-else-if="turn.status === 'degraded'"
-            class="shell-turn-hint shell-turn-hint-degraded"
-            role="status"
-          >
-            ⚠ 已降级
+            <span class="shell-spinner"></span>正在运行...
           </div>
           <div
             v-else-if="turn.status === 'failed'"
             class="shell-turn-hint shell-turn-hint-failed"
             role="alert"
           >
-            ✕ 运行失败
+            运行失败
           </div>
           <div
             v-else-if="turn.status === 'cancelled'"
@@ -103,9 +79,7 @@ function turnDuration(turn: ConversationTurn): string {
           </div>
 
           <ConversationTurnPresentation
-            :actions-disabled="actionsDisabled"
             :turn="turn"
-            @action="emit('action', $event)"
             @retry="emit('retry', $event)"
           />
 
@@ -116,7 +90,7 @@ function turnDuration(turn: ConversationTurn): string {
               type="button"
               @click="emit('inspect', turn.turnId)"
             >
-              ⏱ {{ turnDuration(turn) }} · Inspect
+              Inspect
             </button>
           </div>
         </div>

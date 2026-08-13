@@ -1,5 +1,8 @@
 # 平台系统架构
 
+> **Status: Historical.**
+> This diagram set does not describe the current repository topology.
+
 本文描述 ADR-0027 下的当前系统主线。
 
 ## 当前端到端主链路

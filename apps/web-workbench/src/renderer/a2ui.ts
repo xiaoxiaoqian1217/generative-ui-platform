@@ -1,10 +1,81 @@
-import {
-  type A2UIComponent,
-  type A2UIDataModel,
-  validateA2UIOperation,
-} from "@generative-ui/compiler-contract";
-import type { RuntimeActionEnvelope } from "@generative-ui/runtime-contract";
 import type { JsonValue } from "@generative-ui/shared-types";
+import { z } from "zod";
+
+const jsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(jsonValueSchema),
+    z.record(jsonValueSchema),
+  ]),
+);
+
+const actionContextSchema = z
+  .object({
+    actionId: z.string().min(1),
+    destructive: z.boolean(),
+    requiresApproval: z.boolean(),
+  })
+  .catchall(jsonValueSchema);
+
+const componentSchema = z
+  .object({
+    id: z.string().min(1),
+    component: z.string().min(1),
+    children: z.array(z.string()).optional(),
+    action: z
+      .object({
+        event: z.object({
+          name: z.string().min(1),
+          context: actionContextSchema,
+        }),
+      })
+      .optional(),
+  })
+  .catchall(jsonValueSchema);
+
+export type A2UIComponent = z.infer<typeof componentSchema>;
+export type A2UIDataModel = JsonValue;
+
+const operationSchema = z.union([
+  z.object({
+    version: z.literal("v0.9"),
+    createSurface: z.object({
+      surfaceId: z.string().min(1),
+      catalogId: z.string().min(1),
+      theme: z.record(z.string()).optional(),
+    }),
+  }),
+  z.object({
+    version: z.literal("v0.9"),
+    updateComponents: z.object({
+      surfaceId: z.string().min(1),
+      components: z.array(componentSchema),
+    }),
+  }),
+  z.object({
+    version: z.literal("v0.9"),
+    updateDataModel: z.object({
+      surfaceId: z.string().min(1),
+      path: z.string(),
+      value: jsonValueSchema,
+    }),
+  }),
+]);
+
+export interface A2UIAction {
+  readonly actionId: string;
+  readonly actionType: string;
+  readonly payload?: Readonly<Record<string, JsonValue>>;
+  readonly surfaceId: string;
+}
+
+export interface A2UIContent {
+  readonly operations: readonly unknown[];
+  readonly surfaceId: string;
+}
 
 export const registeredComponentTypes = [
   "Badge",
@@ -127,17 +198,18 @@ export function applyA2UIOperations(
 ): A2UIApplyResult {
   const next = cloneSurfaces(previous);
   for (const [operationIndex, candidate] of operations.entries()) {
-    const validation = validateA2UIOperation(candidate);
+    const validation = operationSchema.safeParse(candidate);
     if (!validation.success)
       return {
         success: false,
         error: {
           code: "A2UI_OPERATION_INVALID",
-          message: validation.error.message,
+          message:
+            validation.error.issues[0]?.message ?? "Invalid A2UI operation.",
           operationIndex,
         },
       };
-    const operation = validation.value;
+    const operation = validation.data;
     if ("createSurface" in operation) {
       const { surfaceId, catalogId, theme } = operation.createSurface;
       const safeTheme: Record<string, string> = {};
@@ -242,11 +314,11 @@ export function resolveDynamicValue(
     : value;
 }
 
-export function createRuntimeAction(
+export function createA2UIAction(
   surfaceId: string,
   component: A2UIComponent,
   dataModel: A2UIDataModel | undefined,
-): RuntimeActionEnvelope | undefined {
+): A2UIAction | undefined {
   const event = component.action?.event;
   if (!event) return undefined;
   const {
@@ -257,7 +329,7 @@ export function createRuntimeAction(
   } = event.context;
   const resolvedPayload: Record<string, JsonValue> = {};
   for (const [key, value] of Object.entries(payload)) {
-    const resolved = resolveDynamicValue(value, dataModel);
+    const resolved = resolveDynamicValue(value as JsonValue, dataModel);
     if (resolved === undefined) return undefined;
     resolvedPayload[key] = resolved;
   }
@@ -269,18 +341,18 @@ export function createRuntimeAction(
   };
 }
 
-export interface RenderedRuntimeAction {
-  readonly action: RuntimeActionEnvelope;
+export interface RenderedA2UIAction {
+  readonly action: A2UIAction;
   readonly requiresConfirmation: boolean;
   readonly destructive: boolean;
 }
 
-export function createRenderedRuntimeAction(
+export function createRenderedA2UIAction(
   surfaceId: string,
   component: A2UIComponent,
   dataModel: A2UIDataModel | undefined,
-): RenderedRuntimeAction | undefined {
-  const action = createRuntimeAction(surfaceId, component, dataModel);
+): RenderedA2UIAction | undefined {
+  const action = createA2UIAction(surfaceId, component, dataModel);
   const context = component.action?.event.context;
   if (!action || context === undefined) return undefined;
   return {

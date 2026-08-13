@@ -2,6 +2,9 @@
 
 # 平台开发验证环境
 
+> **Status: Historical.**
+> The Runtime Platform services and commands in this document are no longer the active development environment.
+
 ## 定位和边界
 
 本环境是 Generative UI Platform 的开发、联调、诊断、自动化回归和能力演示基础设施。
@@ -209,7 +212,7 @@ pnpm docs:check
 - [ADR-0019](../adr/0019-embed-presentation-pipeline-in-agent-runtime-host.md)
 - [ADR-0024](../adr/0024-adopt-runtime-truth-model-and-safe-command-admission.md)
 - [ADR-0026](../adr/0026-adopt-ag-ui-as-workbench-runtime-application-protocol.md)
-- [Presentation Pipeline Package](../../packages/presentation-pipeline/README.md)
-- [Runtime Host](../../apps/agent-runtime-host/README.md)
-- [Reference Business Agent](../../apps/business-agent-langgraph/README.md)
+- Removed historical package: `packages/presentation-pipeline`
+- Removed historical app: `apps/agent-runtime-host`
+- Removed historical app: `apps/business-agent-langgraph`
 - [Workbench](../../apps/web-workbench/README.md)

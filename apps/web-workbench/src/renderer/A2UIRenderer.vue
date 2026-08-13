@@ -1,36 +1,28 @@
 <script setup lang="ts">
-import type { PresentationResult } from "@generative-ui/presentation-contract";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import {
+  type A2UIContent,
   applyA2UIOperations,
   destroySurface,
   type A2UISurface,
 } from "./a2ui.js";
-import type { RenderedRuntimeAction } from "./a2ui.js";
+import type { RenderedA2UIAction } from "./a2ui.js";
 import A2UISurfaceRenderer from "./A2UISurfaceRenderer.vue";
 
 const props = withDefaults(
-  defineProps<{ presentation: PresentationResult; readOnly?: boolean }>(),
+  defineProps<{ content: A2UIContent; readOnly?: boolean }>(),
   { readOnly: false },
 );
-const emit = defineEmits<{ action: [action: RenderedRuntimeAction] }>();
+const emit = defineEmits<{ action: [action: RenderedA2UIAction] }>();
 const surfaces = ref<ReadonlyMap<string, A2UISurface>>(new Map());
 const activeSurfaceId = ref<string>();
 watch(
-  () => props.presentation,
-  (presentation) => {
-    if (
-      presentation.status !== "completed" ||
-      presentation.mode !== "generative-ui"
-    )
-      return;
-    const applied = applyA2UIOperations(
-      surfaces.value,
-      presentation.operations,
-    );
+  () => props.content,
+  (content) => {
+    const applied = applyA2UIOperations(surfaces.value, content.operations);
     if (!applied.success) return;
     surfaces.value = applied.surfaces;
-    activeSurfaceId.value = presentation.surfaceId;
+    activeSurfaceId.value = content.surfaceId;
   },
   { immediate: true },
 );
@@ -39,13 +31,7 @@ onBeforeUnmount(() => {
     surfaces.value = destroySurface(surfaces.value, activeSurfaceId.value);
 });
 const surface = computed(() => {
-  const presentation = props.presentation;
-  if (
-    presentation.status !== "completed" ||
-    presentation.mode !== "generative-ui"
-  )
-    return undefined;
-  return surfaces.value.get(presentation.surfaceId);
+  return surfaces.value.get(props.content.surfaceId);
 });
 </script>
 

@@ -1,5 +1,8 @@
 # 平台范围调整决策摘要
 
+> **Status: Historical.**
+> ADR-0028 supersedes this document as the current phase decision.
+
 ## 状态
 
 已接受。

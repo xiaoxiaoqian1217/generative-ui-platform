@@ -15,13 +15,7 @@ afterEach(async () => {
   await Promise.all(runningServers.splice(0).map((server) => server.stop()));
 });
 
-async function runScenario(
-  scenario: "echo" | "locate-device",
-  message: string,
-): Promise<AguiEvent[]> {
-  const server = createAguiMockServer({ port: 0, scenario });
-  runningServers.push(server);
-  const url = await server.start();
+async function postMessage(url: string, message: string): Promise<AguiEvent[]> {
   const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -46,9 +40,16 @@ async function runScenario(
     .map((line) => JSON.parse(line.slice("data: ".length)) as AguiEvent);
 }
 
+async function runMessage(message: string): Promise<AguiEvent[]> {
+  const server = createAguiMockServer({ port: 0 });
+  runningServers.push(server);
+  const url = await server.start();
+  return postMessage(url, message);
+}
+
 describe("createAguiMockServer", () => {
   it("advertises a CopilotKit-compatible AG-UI runtime for Workbench", async () => {
-    const server = createAguiMockServer({ port: 0, scenario: "locate-device" });
+    const server = createAguiMockServer({ port: 0 });
     runningServers.push(server);
     const url = await server.start();
 
@@ -62,7 +63,7 @@ describe("createAguiMockServer", () => {
   });
 
   it("replays the echo scenario as a standard AG-UI text event stream", async () => {
-    const events = await runScenario("echo", "hello");
+    const events = await runMessage("hello");
 
     expect(events.map((event) => event.type)).toEqual([
       "RUN_STARTED",
@@ -78,8 +79,28 @@ describe("createAguiMockServer", () => {
     });
   });
 
+  it("serves the connection probe and business scenarios from one server", async () => {
+    const server = createAguiMockServer({ port: 0 });
+    runningServers.push(server);
+    const url = await server.start();
+
+    const connectionEvents = await postMessage(url, "连接测试");
+    const locateEvents = await postMessage(url, "定位无人机 01");
+
+    expect(
+      connectionEvents.find((event) => event.type === "TEXT_MESSAGE_CONTENT"),
+    ).toMatchObject({
+      delta: "AG-UI mock is connected.",
+    });
+    expect(
+      locateEvents.find((event) => event.type === "TOOL_CALL_START"),
+    ).toMatchObject({
+      toolCallName: "locateDevice",
+    });
+  });
+
   it("replays locate-device with the official AG-UI tool-call sequence", async () => {
-    const events = await runScenario("locate-device", "定位无人机 01");
+    const events = await runMessage("定位无人机 01");
 
     expect(events.map((event) => event.type)).toEqual([
       "RUN_STARTED",
@@ -101,7 +122,7 @@ describe("createAguiMockServer", () => {
   });
 
   it("finishes locate-device after the browser returns the frontend tool result", async () => {
-    const server = createAguiMockServer({ port: 0, scenario: "locate-device" });
+    const server = createAguiMockServer({ port: 0 });
     runningServers.push(server);
     const url = await server.start();
     const firstResponse = await fetch(url, {
@@ -145,13 +166,7 @@ describe("createAguiMockServer", () => {
       .map((line) => JSON.parse(line.slice("data: ".length)) as AguiEvent);
 
     expect(events.map((event) => event.type)).toContain("TEXT_MESSAGE_CONTENT");
-    expect(events.find((event) => event.type === "CUSTOM")).toMatchObject({
-      name: "generative-ui.presentation-result",
-      value: {
-        mappingVersion: "1.0",
-        result: { mode: "markdown", status: "completed" },
-      },
-    });
+    expect(events.some((event) => event.type === "CUSTOM")).toBe(false);
     expect(events.some((event) => event.type === "TOOL_CALL_START")).toBe(
       false,
     );

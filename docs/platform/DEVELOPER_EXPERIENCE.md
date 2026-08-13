@@ -1,5 +1,8 @@
 # 平台开发者体验
 
+> **Status: Historical.**
+> Use the root README and current package manuals for runnable commands.
+
 ## 五分钟真实 Provider 快速开始
 
 需要 Node.js 24 或更高版本和 pnpm 10.13.1。

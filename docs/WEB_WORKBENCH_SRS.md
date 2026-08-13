@@ -1,5 +1,9 @@
 # Generative UI Workbench Specification
 
+> **Status: Frozen / Historical.**
+> This SRS describes the previous Presentation-first phase and is not the current release gate.
+> Use ADR-0028 and `apps/web-workbench/README.md` for current behavior.
+
 **文档版本：** 0.7
 
 **项目阶段：** Presentation-first MVP

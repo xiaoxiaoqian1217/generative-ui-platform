@@ -1,16 +1,5 @@
 <script setup lang="ts">
-import type {
-  RuntimeRunRequest,
-  RuntimeRunResult,
-} from "@generative-ui/runtime-contract";
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  shallowRef,
-} from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from "vue";
 import {
   type AgentTransportClient,
   type ConnectionState,
@@ -22,18 +11,16 @@ import {
   type ConversationState,
   createConversationState,
   failOperation,
-  resolveAction,
   resolveRun,
   setConversationInput,
-  startAction,
   startRun,
   type TurnFailure,
+  type WorkbenchUserMessage,
 } from "../conversation/conversation-store.js";
 import { locateDevice } from "../features/frontend-tools/locate-device.js";
 import type { Device } from "../features/map/devices.js";
 import MapWorkspace from "../features/map/MapWorkspace.vue";
 import { saveInspectionSnapshot } from "../inspect/inspection-snapshot.js";
-import type { RenderedRuntimeAction } from "../renderer/a2ui.js";
 import type {
   AgentEndpoints,
   WorkbenchConfig,
@@ -43,14 +30,7 @@ import ConversationMainArea from "../shell/ConversationMainArea.vue";
 import ConversationSidebar from "../shell/ConversationSidebar.vue";
 import InspectPanel from "../shell/InspectPanel.vue";
 
-type RunState =
-  | "idle"
-  | "running"
-  | "rendering"
-  | "completed"
-  | "degraded"
-  | "failed"
-  | "cancelled";
+type RunState = "idle" | "running" | "completed" | "failed" | "cancelled";
 
 interface DisplayError {
   code: string;
@@ -61,16 +41,10 @@ interface DisplayError {
 
 interface LocalConversation {
   readonly conversationId: string;
+  readonly state: ConversationState;
+  readonly threadId: string;
   readonly title: string;
   readonly updatedAt: string;
-  readonly state: ConversationState;
-}
-
-interface LocalConversationInput {
-  readonly conversationId: string;
-  readonly title: string;
-  readonly updatedAt: string;
-  readonly state: ConversationState;
 }
 
 const props = defineProps<{
@@ -87,16 +61,15 @@ const connectionState = ref<ConnectionState>("connecting");
 const runState = ref<RunState>("idle");
 const conversations = shallowRef<LocalConversation[]>([]);
 const selectedConversationId = ref<string>();
-const sidebarNotice = ref("");
 const inspectedTurnId = ref<string>();
 const activeController = ref<AbortController>();
 const selectedDevice = ref<Device>();
 
-const currentConversation = computed<LocalConversation | undefined>(() => {
-  const list: LocalConversation[] = conversations.value;
-  const id: string | undefined = selectedConversationId.value;
-  return list.find((item) => item.conversationId === id);
-});
+const currentConversation = computed<LocalConversation | undefined>(() =>
+  conversations.value.find(
+    (item) => item.conversationId === selectedConversationId.value,
+  ),
+);
 const conversation = computed({
   get: () => currentConversation.value?.state ?? createConversationState(),
   set: (next: ConversationState) => {
@@ -116,24 +89,12 @@ const input = computed({
     conversation.value = setConversationInput(conversation.value, value);
   },
 });
-
-const currentTurn = computed(() => conversation.value.turns.at(-1));
-const result = computed(() => currentTurn.value?.runtimeResult);
-const conversationThreadId = computed(() => {
-  for (const turn of [...conversation.value.turns].reverse()) {
-    if (turn.threadId !== undefined) return turn.threadId;
-  }
-  return undefined;
-});
 const inspectedTurn = computed(() =>
   conversation.value.turns.find(
     (turn) => turn.turnId === inspectedTurnId.value,
   ),
 );
-
-const isRunning = computed(
-  () => runState.value === "running" || runState.value === "rendering",
-);
+const isRunning = computed(() => runState.value === "running");
 const canSend = computed(
   () =>
     input.value.trim().length > 0 &&
@@ -148,25 +109,6 @@ const isInputDisabled = computed(
 
 let client: AgentTransportClient | undefined;
 let clientGeneration = 0;
-let healthTimer: ReturnType<typeof globalThis.setInterval> | undefined;
-
-const connectionLabels: Record<ConnectionState, string> = {
-  connected: "已连接",
-  connecting: "正在连接",
-  disconnected: "连接已关闭",
-  reconnecting: "连接中断，正在重连",
-  unavailable: "不可用",
-};
-
-const runLabels: Record<RunState, string> = {
-  cancelled: "已取消",
-  completed: "已完成",
-  degraded: "已安全降级",
-  failed: "运行失败",
-  idle: "等待发送",
-  rendering: "正在渲染",
-  running: "Agent 运行中",
-};
 
 function applyConnectionState(next: ConnectionState): void {
   connectionState.value = next;
@@ -179,10 +121,6 @@ function configureRuntime(): void {
   client?.close();
   client = undefined;
   activeController.value?.abort();
-  if (healthTimer !== undefined) {
-    globalThis.clearInterval(healthTimer);
-    healthTimer = undefined;
-  }
 
   const onConnectionStateChange = (state: ConnectionState) => {
     if (generation === clientGeneration) applyConnectionState(state);
@@ -190,13 +128,10 @@ function configureRuntime(): void {
 
   applyConnectionState("connecting");
   client = createBusinessAgentClient({
-    runtimeUrl: props.endpoints.agUi,
     timeoutMs: props.requestTimeoutMs,
     onConnectionStateChange,
   });
   client.connect();
-
-  // Connection state is driven by CopilotKit core; no separate health endpoint.
   window.setTimeout(() => {
     if (
       generation === clientGeneration &&
@@ -212,38 +147,6 @@ function createId(prefix: string): string {
     globalThis.crypto.randomUUID?.() ??
     `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`
   );
-}
-
-function createRequest(message: string): RuntimeRunRequest {
-  const requestId = createId("request");
-  return {
-    protocolVersion: "1.0",
-    requestId,
-    runId: createId("run"),
-    ...(conversationThreadId.value === undefined
-      ? {}
-      : { threadId: conversationThreadId.value }),
-    message: { role: "user", content: message },
-    presentation: {
-      context: {
-        locale: navigator.language,
-        theme: "workbench",
-        viewport: { height: window.innerHeight, width: window.innerWidth },
-      },
-    },
-  };
-}
-
-function platformErrorFromResult(
-  value: RuntimeRunResult,
-): DisplayError | undefined {
-  if (value.status !== "failed") return undefined;
-  return {
-    code: value.error.code,
-    message: value.error.message,
-    retryable: value.error.retryable,
-    stage: "agent",
-  };
 }
 
 function displayErrorFromUnknown(value: unknown): DisplayError {
@@ -274,13 +177,20 @@ function turnFailure(error: DisplayError): TurnFailure {
 
 async function sendMessage(message = input.value): Promise<void> {
   const normalized = message.trim();
-  if (!client || normalized === "" || !canSend.value) return;
+  const current = currentConversation.value;
+  if (!client || !current || normalized === "" || !canSend.value) return;
 
-  const request = createRequest(normalized);
-  const turnId = `turn-${request.requestId}`;
+  const requestId = createId("message");
+  const runId = createId("run");
+  const userMessage: WorkbenchUserMessage = {
+    id: requestId,
+    role: "user",
+    content: normalized,
+  };
+  const turnId = `turn-${requestId}`;
   const nextConversation = startRun(conversation.value, {
-    message: normalized,
-    requestId: request.requestId,
+    message: userMessage,
+    requestId,
     turnId,
   });
   if (nextConversation === conversation.value) return;
@@ -290,38 +200,32 @@ async function sendMessage(message = input.value): Promise<void> {
   runState.value = "running";
 
   try {
-    const runtimeResult = await client.run(request, controller.signal);
-    saveInspectionSnapshot(window.sessionStorage, runtimeResult);
-    if (runtimeResult.status === "failed") {
-      const failure = platformErrorFromResult(runtimeResult);
-      if (failure !== undefined)
-        conversation.value = failOperation(
-          conversation.value,
-          turnId,
-          turnFailure(failure),
-        );
-      runState.value = "failed";
-      return;
-    }
-
-    conversation.value = resolveRun(conversation.value, turnId, runtimeResult);
-    runState.value = "rendering";
-    await nextTick();
-    runState.value = runtimeResult.status;
+    const result = await client.run(
+      { message: userMessage, runId, threadId: current.threadId },
+      controller.signal,
+    );
+    conversation.value = resolveRun(conversation.value, turnId, {
+      messages: result.newMessages,
+      runId,
+      threadId: current.threadId,
+    });
+    saveInspectionSnapshot(window.sessionStorage, {
+      messages: result.newMessages,
+      requestId,
+      runId,
+      threadId: current.threadId,
+    });
+    runState.value = "completed";
   } catch (caught) {
     const displayError = displayErrorFromUnknown(caught);
+    const cancelled = displayError.code === "WORKBENCH_REQUEST_CANCELLED";
     conversation.value = failOperation(
       conversation.value,
       turnId,
       turnFailure(displayError),
-      displayError.code === "WORKBENCH_REQUEST_CANCELLED"
-        ? "cancelled"
-        : "failed",
+      cancelled ? "cancelled" : "failed",
     );
-    runState.value =
-      displayError.code === "WORKBENCH_REQUEST_CANCELLED"
-        ? "cancelled"
-        : "failed";
+    runState.value = cancelled ? "cancelled" : "failed";
   } finally {
     if (activeController.value === controller)
       activeController.value = undefined;
@@ -339,116 +243,17 @@ function retryTurn(turnId: string): void {
   void sendMessage(turn.userMessage.content);
 }
 
-async function handleA2UIAction(
-  rendered: RenderedRuntimeAction,
-): Promise<void> {
-  if (
-    !client ||
-    !result.value ||
-    result.value.status === "failed" ||
-    conversation.value.activeOperation !== undefined
-  )
-    return;
-  if (
-    rendered.requiresConfirmation &&
-    !window.confirm(
-      rendered.destructive
-        ? "此高风险操作将继续执行。确认吗？"
-        : "此操作需要确认。确认吗？",
-    )
-  )
-    return;
-  const turn = conversation.value.turns.find((item) =>
-    item.businessSurfaces.some(
-      (surface) =>
-        surface.surfaceId === rendered.action.surfaceId &&
-        surface.status === "active",
-    ),
-  );
-  if (turn === undefined || turn.runtimeResult === undefined) return;
-  const requestId = createId("action");
-  const nextConversation = startAction(conversation.value, {
-    requestId,
-    surfaceId: rendered.action.surfaceId,
-    turnId: turn.turnId,
-  });
-  if (nextConversation === conversation.value) return;
-  conversation.value = nextConversation;
-  const controller = new AbortController();
-  activeController.value = controller;
-  runState.value = "running";
-  try {
-    // Business Agent action is sent as a follow-up run in the same thread.
-    const actionResult = await client.run(
-      {
-        protocolVersion: "1.0",
-        requestId,
-        runId: createId("run"),
-        threadId: turn.runtimeResult.threadId,
-        message: {
-          role: "user",
-          content: `Action: ${rendered.action.actionId}`,
-        },
-        presentation: {
-          context: {
-            locale: navigator.language,
-            theme: "workbench",
-            viewport: { height: window.innerHeight, width: window.innerWidth },
-          },
-        },
-      },
-      controller.signal,
-    );
-    saveInspectionSnapshot(window.sessionStorage, actionResult);
-    if (actionResult.status === "failed") {
-      const failure = platformErrorFromResult(actionResult);
-      if (failure !== undefined)
-        conversation.value = failOperation(
-          conversation.value,
-          turn.turnId,
-          turnFailure(failure),
-        );
-      runState.value = "failed";
-      return;
-    }
-    conversation.value = resolveAction(
-      conversation.value,
-      turn.turnId,
-      actionResult,
-    );
-    runState.value = "rendering";
-    await nextTick();
-    runState.value = actionResult.status;
-  } catch (caught) {
-    const displayError = displayErrorFromUnknown(caught);
-    conversation.value = failOperation(
-      conversation.value,
-      turn.turnId,
-      turnFailure(displayError),
-      displayError.code === "WORKBENCH_REQUEST_CANCELLED"
-        ? "cancelled"
-        : "failed",
-    );
-    runState.value =
-      displayError.code === "WORKBENCH_REQUEST_CANCELLED"
-        ? "cancelled"
-        : "failed";
-  } finally {
-    if (activeController.value === controller)
-      activeController.value = undefined;
-  }
-}
-
 function newConversation(): void {
   const id = createId("conversation");
   const now = new Date().toISOString();
-  const next: LocalConversationInput = {
+  const next: LocalConversation = {
     conversationId: id,
+    state: createConversationState(),
+    threadId: createId("thread"),
     title: "新会话",
     updatedAt: now,
-    state: createConversationState(),
   };
-  conversations.value = [...conversations.value, next as LocalConversation];
+  conversations.value = [...conversations.value, next];
   selectedConversationId.value = id;
   inspectedTurnId.value = undefined;
   runState.value = "idle";
@@ -458,14 +263,6 @@ function selectConversation(conversationId: string): void {
   selectedConversationId.value = conversationId;
   inspectedTurnId.value = undefined;
   runState.value = "idle";
-}
-
-function inspectTurn(turnId: string): void {
-  inspectedTurnId.value = turnId;
-}
-
-function closeInspect(): void {
-  inspectedTurnId.value = undefined;
 }
 
 function handleLocateDevice(deviceId: string): string {
@@ -478,16 +275,13 @@ function handleLocateDevice(deviceId: string): string {
 
 onMounted(() => {
   configureRuntime();
-  if (conversations.value.length === 0) {
-    newConversation();
-  }
+  if (conversations.value.length === 0) newConversation();
 });
 
 onBeforeUnmount(() => {
   clientGeneration += 1;
   activeController.value?.abort();
   client?.close();
-  if (healthTimer !== undefined) globalThis.clearInterval(healthTimer);
 });
 </script>
 
@@ -499,7 +293,7 @@ onBeforeUnmount(() => {
     <div class="shell" data-testid="conversation-shell">
       <ConversationSidebar
         :conversations="conversations"
-        :notice="sidebarNotice"
+        notice=""
         :selected-conversation-id="selectedConversationId"
         @new-conversation="newConversation"
         @select-conversation="selectConversation"
@@ -507,12 +301,10 @@ onBeforeUnmount(() => {
 
       <main class="shell-stage">
         <ConversationMainArea
-          :actions-disabled="conversation.activeOperation !== undefined"
           :is-running="isRunning"
           :run-state="runState"
           :turns="conversation.turns"
-          @action="handleA2UIAction"
-          @inspect="inspectTurn"
+          @inspect="inspectedTurnId = $event"
           @retry="retryTurn"
         />
 
@@ -535,7 +327,7 @@ onBeforeUnmount(() => {
       <InspectPanel
         v-if="inspectedTurn !== undefined"
         :turn="inspectedTurn"
-        @close="closeInspect"
+        @close="inspectedTurnId = undefined"
       />
     </div>
   </CopilotKitConversationProvider>

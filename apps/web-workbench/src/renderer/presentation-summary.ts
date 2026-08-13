@@ -1,10 +1,32 @@
-import type { RuntimeRunResult } from "@generative-ui/runtime-contract";
+export interface InspectableOutputError {
+  readonly code: string;
+  readonly message: string;
+  readonly retryable: boolean;
+  readonly stage?: string;
+}
 
-type PresentationResult = NonNullable<RuntimeRunResult["presentation"]>;
+export type InspectableOutput =
+  | {
+      readonly errors: readonly InspectableOutputError[];
+      readonly requestId: string;
+      readonly status: "failed";
+    }
+  | {
+      readonly errors?: readonly InspectableOutputError[];
+      readonly markdown: string;
+      readonly mode: "markdown";
+      readonly requestId: string;
+      readonly status: "completed" | "degraded";
+    }
+  | {
+      readonly operations: readonly unknown[];
+      readonly mode: "generative-ui";
+      readonly requestId: string;
+      readonly status: "completed" | "degraded";
+      readonly surfaceId: string;
+    };
 
-function summarizeErrors(
-  errors: Extract<PresentationResult, { errors: unknown }>["errors"],
-) {
+function summarizeErrors(errors: readonly InspectableOutputError[]) {
   return errors.map((error) => ({
     code: error.code,
     message: error.message,
@@ -13,7 +35,7 @@ function summarizeErrors(
   }));
 }
 
-export function summarizePresentationResult(result: PresentationResult) {
+export function summarizeInspectableOutput(result: InspectableOutput) {
   if (result.status === "failed") {
     return {
       requestId: result.requestId,
@@ -39,7 +61,7 @@ export function summarizePresentationResult(result: PresentationResult) {
     mode: result.mode,
     markdownCharacters: result.markdown.length,
     ...(result.status === "degraded"
-      ? { errors: summarizeErrors(result.errors) }
+      ? { errors: summarizeErrors(result.errors ?? []) }
       : {}),
   };
 }

@@ -1,17 +1,22 @@
 # Source Boundaries
 
-Workbench 源码按职责拆分。
+Workbench source code is split by active responsibility.
 
-| 目录 | 职责 |
+| Directory | Responsibility |
 |---|---|
-| `app/` | 应用组合、运行控制和快捷场景 |
-| `runtime/` | 只面向 Agent Runtime Host 的 HTTP、WebSocket、健康探测和错误边界 |
-| `renderer/` | 安全 Markdown、PresentationResult 和受控 A2UI Raw Viewer |
-| `diagnostics/` | 关联 ID 和 Runtime Host 安全阶段摘要 |
-| `settings/` | 单一 Runtime Host 与环境配置 |
+| `agent/` | CopilotKit Agent discovery, cloning, execution, and cancellation |
+| `app/` | Application composition, stable routes, and current scenarios |
+| `conversation/` | Native AG-UI message state and CopilotKit provider integration |
+| `features/frontend-tools/` | Browser-side Frontend Tool implementations |
+| `features/map/` | MapLibre state and rendering |
+| `components/domain/` | Controlled business components such as `DeviceCard` |
+| `inspect/` | Safe AG-UI turn inspection snapshots |
+| `renderer/` | Safe Markdown plus frozen local A2UI support |
+| `settings/` | Agent origin and local Workbench settings |
+| `shell/` | Conversation-first shell components |
 
-`runtime/` 不得连接 Business Agent、Presentation Pipeline、UI Compiler Core 或模型供应商。
-`renderer/` 不得执行声明式数据中的任意代码。
-A2UI Raw Viewer 只显示通过 Runtime Contract 校验后的只读文本，并默认隐藏。
-`renderer/` 已包含受控 Component Registry 和 A2UI Renderer。
-组件产生的 Action 会经 `runtime/` 回传唯一的 Agent Runtime Host。
+Protocol-boundary code uses native CopilotKit and AG-UI contracts.
+Do not recreate `RuntimeRunResult`, `PresentationResult`, or a parallel Workbench protocol.
+
+The frozen A2UI renderer validates its local bounded data model and never executes arbitrary code.
+Frozen renderer and case-library code must remain independent of the removed contract packages.

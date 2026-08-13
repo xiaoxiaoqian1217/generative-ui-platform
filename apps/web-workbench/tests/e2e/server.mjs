@@ -8,11 +8,8 @@ const appRoot = fileURLToPath(new URL("../..", import.meta.url));
 const distRoot = join(appRoot, "dist");
 const port = Number(process.env.WEB_WORKBENCH_E2E_PORT ?? "4173");
 const aguiMockPort = Number(process.env.AG_UI_MOCK_E2E_PORT ?? "4180");
-const locateDeviceMock = createAguiMockServer({
-  port: aguiMockPort,
-  scenario: "locate-device",
-});
-await locateDeviceMock.start();
+const aguiMock = createAguiMockServer({ port: aguiMockPort });
+await aguiMock.start();
 let agentAvailable = true;
 let retryableTimeoutRequests = 0;
 let frontendToolProbe = {
@@ -45,92 +42,29 @@ async function readJson(request) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-function runtimeResult(request) {
-  const wantsA2UI = request.message.content.includes("A2UI");
-  const presentationRequestId = `presentation-${request.requestId}`;
-  return {
-    protocolVersion: "1.0",
-    requestId: request.requestId,
-    threadId: "thread-e2e",
-    runId: `run-${request.requestId}`,
-    presentationRequestId,
-    status: "completed",
-    presentation: wantsA2UI
-      ? {
-          requestId: presentationRequestId,
-          status: "completed",
-          mode: "generative-ui",
-          surfaceId: "surface-e2e",
-          operations: [
-            {
-              version: "v0.9",
-              createSurface: {
-                surfaceId: "surface-e2e",
-                catalogId: "fixture",
-              },
-            },
-            {
-              version: "v0.9",
-              updateComponents: {
-                surfaceId: "surface-e2e",
-                components: [
-                  {
-                    id: "root",
-                    component: "Card",
-                    title: { path: "/sourceData/title" },
-                    children: ["summary", "continue"],
-                  },
-                  {
-                    id: "summary",
-                    component: "Text",
-                    text: { path: "/sourceData/summary" },
-                  },
-                  {
-                    id: "continue",
-                    component: "Button",
-                    label: "继续",
-                    action: {
-                      event: {
-                        name: "fixture.continue",
-                        context: {
-                          actionId: "continue",
-                          destructive: false,
-                          requiresApproval: false,
-                        },
-                      },
-                    },
-                  },
-                ],
-              },
-            },
-            {
-              version: "v0.9",
-              updateDataModel: {
-                surfaceId: "surface-e2e",
-                path: "/",
-                value: { sourceData: { title: "Ready", summary: "Ready" } },
-              },
-            },
-          ],
-        }
-      : {
-          requestId: presentationRequestId,
-          status: "completed",
-          mode: "markdown",
-          markdown:
-            "## Runtime 在线\n\n**Markdown 已安全渲染。** <script>window.__unsafe = true</script>",
-        },
-    diagnostics: {
-      stages: [
-        { name: "business-agent", status: "completed", durationMs: 12 },
-        { name: "presentation-pipeline", status: "completed", durationMs: 8 },
-      ],
-    },
-  };
+function assistantText(request) {
+  return request.message.content.includes("A2UI")
+    ? "A2UI capability is frozen for a later phase."
+    : "## Agent online\n\n**AG-UI Markdown rendered safely.** <script>window.__unsafe = true</script>";
 }
 
 function sse(response, event) {
   response.write(`data: ${JSON.stringify(event)}\n\n`);
+}
+
+function streamAssistantText(response, body, content) {
+  const messageId = `assistant-${body.runId}`;
+  sse(response, {
+    type: "TEXT_MESSAGE_START",
+    messageId,
+    role: "assistant",
+  });
+  sse(response, {
+    type: "TEXT_MESSAGE_CONTENT",
+    messageId,
+    delta: content,
+  });
+  sse(response, { type: "TEXT_MESSAGE_END", messageId });
 }
 
 function copilotRunRequest(body) {
@@ -253,14 +187,14 @@ const server = createServer(async (request, response) => {
     }
     const body = await readJson(request);
     const runRequest = copilotRunRequest(body);
-    if (runRequest.message.content.includes("缓慢")) await wait(2_000);
+    if (runRequest.message.content.includes("slow response")) await wait(2_000);
     if (
-      runRequest.message.content.includes("超时后重试") &&
+      runRequest.message.content.includes("timeout then retry") &&
       retryableTimeoutRequests++ === 0
     )
       await wait(2_000);
 
-    if (runRequest.message.content.includes("调用前端状态工具")) {
+    if (runRequest.message.content.includes("call frontend status tool")) {
       const toolCallId = "e2e-show-workbench-status";
       const toolResult = frontendToolResult(body, toolCallId);
       frontendToolProbe = {
@@ -302,7 +236,6 @@ const server = createServer(async (request, response) => {
       };
     }
 
-    const result = runtimeResult(runRequest);
     response.writeHead(200, {
       "cache-control": "no-store",
       connection: "keep-alive",
@@ -313,16 +246,7 @@ const server = createServer(async (request, response) => {
       threadId: body.threadId,
       runId: body.runId,
     });
-    sse(response, {
-      type: "CUSTOM",
-      name: "generative-ui.presentation-result",
-      value: { mappingVersion: "1.0", result: result.presentation },
-    });
-    sse(response, {
-      type: "CUSTOM",
-      name: "generative-ui.runtime-run-result",
-      value: { mappingVersion: "1.0", result },
-    });
+    streamAssistantText(response, body, assistantText(runRequest));
     sse(response, {
       type: "RUN_FINISHED",
       threadId: body.threadId,
@@ -361,7 +285,7 @@ server.listen(port, "127.0.0.1", () => {
 
 function shutdown() {
   server.close(() => {
-    void locateDeviceMock.stop().finally(() => process.exit(0));
+    void aguiMock.stop().finally(() => process.exit(0));
   });
 }
 

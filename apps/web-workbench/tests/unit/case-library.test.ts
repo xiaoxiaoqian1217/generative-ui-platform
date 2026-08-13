@@ -23,17 +23,10 @@ describe("Workbench case library", () => {
       evaluateCase(
         { presentationMode: "markdown" },
         {
-          protocolVersion: "1.0",
-          requestId: "r",
-          threadId: "t",
-          runId: "run",
-          presentationRequestId: "p",
           status: "completed",
-          presentation: {
-            requestId: "p",
+          output: {
             status: "completed",
             mode: "markdown",
-            markdown: "Any copy can change.",
           },
         },
       ),
@@ -76,17 +69,10 @@ describe("Workbench case library", () => {
         degradationReasonCode: "POLICY_FALLBACK",
       },
       {
-        protocolVersion: "1.0",
-        requestId: "r",
-        threadId: "t",
-        runId: "run",
-        presentationRequestId: "p",
         status: "completed",
-        presentation: {
-          requestId: "p",
+        output: {
           status: "completed",
           mode: "generative-ui",
-          surfaceId: "s",
           operations: [
             {
               updateComponents: {

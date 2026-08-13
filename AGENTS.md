@@ -31,9 +31,9 @@ packages/
 - `packages/ag-ui-adapter`：仅允许承载 AG-UI 协议边界辅助能力。
 - `packages/shared-types`：最小跨模块共享类型。
 
-## Temporary compatibility contracts
+## Removed compatibility contracts
 
-以下包仍被现有 Workbench / AG-UI Adapter 代码直接引用，暂时保留，但禁止新增能力：
+以下迁移期契约已经解除依赖并删除，不要重新创建：
 
 ```text
 packages/compiler-contract/
@@ -41,7 +41,19 @@ packages/presentation-contract/
 packages/runtime-contract/
 ```
 
-它们属于迁移债务，不是产品主线。完成依赖解除后继续删除。
+Workbench 直接使用 CopilotKit / AG-UI，AG-UI Adapter 只使用 `@ag-ui/core` 原生契约。
+
+## Frozen architecture
+
+以下 Workbench 能力为后续阶段保留，但不属于当前 Release Gate：
+
+- Playground / Inspect / Cases / Catalog / Scenarios / Settings 路由；
+- 本地 A2UI reducer、受控 renderer、raw viewer 与 component registry；
+- 已接受的 Workbench shell 与 inspection 原型基线；
+- 已解除旧 contract 依赖的 case library 与 inspection 支持。
+
+冻结表示保留但不扩建平台能力。
+不要把冻结能力当作迁移债务删除，也不要用它们恢复已移除的 Runtime / Compiler / Presentation 架构。
 
 ## Removed architecture
 
@@ -101,5 +113,6 @@ c33504db91614420c2ccdf26a8c707f61d659065
 
 - 默认目标分支为 `dev_1.0`。
 - 修改前检查当前范围，不因为历史文档存在就恢复已删除架构。
-- 大范围架构变更需要用户明确授权；本次 scope reset 已明确授权删除旧 Runtime / Compiler / Presentation 实现。
+- 大范围架构变更需要用户明确授权；不得以历史文档为依据恢复旧 Runtime / Compiler / Presentation 实现。
 - 保持改动与当前纵向场景相关，避免顺手扩展未来能力。
+- ADR-0028 是当前阶段决策，并定义 Active、Frozen、Removed 与 Historical 的区别。

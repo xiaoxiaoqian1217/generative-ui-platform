@@ -1,4 +1,23 @@
-import type { RuntimeRunResult } from "@generative-ui/runtime-contract";
+export interface CaseObservation {
+  readonly diagnostics?: {
+    readonly degradationReasonCode?: string;
+    readonly stages?: readonly { readonly name: string }[];
+  };
+  readonly error?: { readonly code: string };
+  readonly output?:
+    | {
+        readonly errors?: readonly { readonly code: string }[];
+        readonly mode: "markdown";
+        readonly status: "completed" | "degraded";
+      }
+    | {
+        readonly errors?: readonly { readonly code: string }[];
+        readonly mode: "generative-ui";
+        readonly operations: readonly unknown[];
+        readonly status: "completed" | "degraded";
+      };
+  readonly status: "completed" | "degraded" | "failed";
+}
 
 export interface SemanticExpectation {
   readonly presentationMode?: "markdown" | "generative-ui";
@@ -97,17 +116,13 @@ export const BUILTIN_CASES: readonly WorkbenchCase[] = Object.freeze([
   }),
 ]);
 
-function presentationCapabilities(result: RuntimeRunResult) {
+function outputCapabilities(result: CaseObservation) {
   const componentTypes = new Set<string>();
   const actionTypes = new Set<string>();
-  const presentation = result.presentation;
-  if (
-    presentation === undefined ||
-    presentation.status === "failed" ||
-    presentation.mode !== "generative-ui"
-  )
+  const output = result.output;
+  if (output === undefined || output.mode !== "generative-ui")
     return { componentTypes, actionTypes };
-  for (const operation of presentation.operations) {
+  for (const operation of output.operations) {
     if (typeof operation !== "object" || operation === null) continue;
     const update = (operation as Record<string, unknown>).updateComponents;
     if (typeof update !== "object" || update === null) continue;
@@ -126,27 +141,23 @@ function presentationCapabilities(result: RuntimeRunResult) {
   return { componentTypes, actionTypes };
 }
 
-function resultErrorCode(result: RuntimeRunResult): string | undefined {
-  if (result.status === "failed") return result.error.code;
-  return result.presentation?.status === "failed"
-    ? result.presentation.errors[0]?.code
-    : result.presentation?.status === "degraded"
-      ? result.presentation.errors[0]?.code
-      : undefined;
+function resultErrorCode(result: CaseObservation): string | undefined {
+  if (result.status === "failed") return result.error?.code;
+  return result.output?.status === "degraded"
+    ? result.output.errors?.[0]?.code
+    : undefined;
 }
 
 export function evaluateCase(
   expectation: SemanticExpectation,
-  result: RuntimeRunResult,
+  result: CaseObservation,
 ): CaseEvaluation {
   const failures: string[] = [];
-  const presentation = result.presentation;
-  const capabilities = presentationCapabilities(result);
+  const output = result.output;
+  const capabilities = outputCapabilities(result);
   if (
     expectation.presentationMode !== undefined &&
-    (presentation === undefined ||
-      presentation.status === "failed" ||
-      presentation.mode !== expectation.presentationMode)
+    (output === undefined || output.mode !== expectation.presentationMode)
   )
     failures.push(`展示模式应为 ${expectation.presentationMode}。`);
   if (
@@ -163,7 +174,7 @@ export function evaluateCase(
     failures.push(`错误码应为 ${expectation.errorCode}。`);
   if (
     expectation.errorStage !== undefined &&
-    !result.diagnostics?.stages.some(
+    !result.diagnostics?.stages?.some(
       (stage) => stage.name === expectation.errorStage,
     )
   )

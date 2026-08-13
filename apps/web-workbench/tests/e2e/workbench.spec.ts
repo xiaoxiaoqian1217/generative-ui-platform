@@ -40,7 +40,7 @@ test("Conversation-first Shell sends a real message and renders safe Markdown in
   await expect(turn.getByTestId("user-message")).toHaveText("展示 Markdown");
   await expect(
     turn.getByTestId("markdown-result").getByRole("heading", { level: 2 }),
-  ).toHaveText("Runtime 在线");
+  ).toHaveText("Agent online");
   await expect(
     turn.getByTestId("markdown-result").locator("script"),
   ).toHaveCount(0);
@@ -62,19 +62,19 @@ test("Conversation-first Shell opens a per-turn Inspect overlay", async ({
     .first();
   await expect(
     turn.getByTestId("markdown-result").getByRole("heading", { level: 2 }),
-  ).toHaveText("Runtime 在线");
+  ).toHaveText("Agent online");
 
   await page.locator("[data-testid^='inspect-turn-']").first().click();
   await expect(page.getByTestId("inspect-panel")).toBeVisible();
   await expect(page.getByTestId("inspect-panel")).toContainText("turn-");
-  await expect(page.getByTestId("presentation-result-viewer")).toContainText(
-    "markdown",
+  await expect(page.getByTestId("agent-message-viewer")).toContainText(
+    "assistant",
   );
   await page.getByTestId("inspect-close").click();
   await expect(page.getByTestId("inspect-panel")).toHaveCount(0);
 });
 
-test("Conversation-first Shell keeps A2UI raw data controlled", async ({
+test("Conversation-first Shell treats frozen A2UI capability as normal Agent text", async ({
   page,
 }) => {
   await page.goto("/");
@@ -89,7 +89,9 @@ test("Conversation-first Shell keeps A2UI raw data controlled", async ({
     .getByTestId("conversation-turns")
     .locator("[data-testid^='conversation-turn-']")
     .first();
-  await expect(turn.getByTestId("a2ui-renderer")).toContainText("Ready");
+  await expect(turn.getByTestId("markdown-result")).toContainText(
+    "A2UI capability is frozen",
+  );
   await expect(turn.getByTestId("a2ui-raw-content")).toHaveCount(0);
   await expect(turn.locator("[data-testid^='inspect-turn-']")).toBeVisible();
 });
@@ -103,7 +105,7 @@ test("Frontend Tool is advertised, executed in the browser, and continued throug
     "已连接",
   );
 
-  await conversationInput(page).fill("调用前端状态工具");
+  await conversationInput(page).fill("call frontend status tool");
   await conversationSend(page).click();
 
   await expect
@@ -156,6 +158,32 @@ test("AGUIMock locateDevice drives the independent GIS business surface", async 
   );
 });
 
+test("AGUIMock serves the connection probe from the unified scenario server", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "generative-ui.workbench.settings.v1",
+      JSON.stringify({
+        agentUrl: "http://127.0.0.1:4180",
+        requestTimeoutMs: 30_000,
+        showDebugDetails: false,
+      }),
+    );
+  });
+  await page.goto("/");
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "已连接",
+  );
+
+  await conversationInput(page).fill("连接测试");
+  await conversationSend(page).click();
+
+  await expect(page.getByTestId("markdown-result")).toContainText(
+    "AG-UI mock is connected.",
+  );
+});
+
 test("the GIS workspace can locate its test device manually", async ({
   page,
 }) => {
@@ -173,7 +201,7 @@ test("the GIS workspace can locate its test device manually", async ({
 
 test("stop cancels a turn", async ({ page }) => {
   await page.goto("/");
-  await conversationInput(page).fill("缓慢响应");
+  await conversationInput(page).fill("slow response");
   await conversationSend(page).click();
   const stop = page.getByRole("button", { name: "停止生成" });
   await expect(stop).toBeVisible();
@@ -193,7 +221,7 @@ test("a retryable timeout can be explicitly retried in its turn", async ({
     );
   });
   await page.goto("/");
-  await conversationInput(page).fill("超时后重试");
+  await conversationInput(page).fill("timeout then retry");
   await conversationSend(page).click();
   await expect(page.getByTestId("turn-failure")).toContainText(
     "WORKBENCH_REQUEST_TIMEOUT",

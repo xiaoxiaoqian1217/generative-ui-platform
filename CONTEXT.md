@@ -54,7 +54,7 @@ packages/
 └─ shared-types/
 ```
 
-仍存在三个迁移期兼容合同：
+以下三个迁移期兼容合同已经解除依赖并删除：
 
 ```text
 packages/compiler-contract/
@@ -62,11 +62,20 @@ packages/presentation-contract/
 packages/runtime-contract/
 ```
 
-它们仍被现有代码直接引用，只允许解除依赖，不允许继续扩展。
+不要重新创建它们。
+Workbench 直接使用 CopilotKit / AG-UI，AG-UI Adapter 只使用 `@ag-ui/core` 原生契约。
+
+## Frozen Workbench capabilities
+
+现有 Playground、Inspect、Cases、Catalog、Scenarios 与 Settings 路由继续保留。
+本地 A2UI reducer、受控 renderer、raw viewer、component registry、已接受的 shell 原型、case library 与 inspection 支持也继续保留。
+
+这些能力属于冻结，而不是废除。
+它们可以接受兼容性维护，但不属于当前 Release Gate，也不得重新依赖已删除的 contracts。
 
 ## Removed implementation
 
-以下上一阶段实现已经退出当前主线并应删除：
+以下上一阶段实现已经退出当前主线并删除：
 
 ```text
 apps/agent-runtime-host/

@@ -2,6 +2,9 @@
 
 # 平台一键开发环境
 
+> **Status: Historical.**
+> The one-command Runtime Platform environment described here has been removed.
+
 本地开发编排提供 Workbench、Agent Runtime Host 和 Reference Business Agent 的三服务拓扑。
 Presentation Pipeline、Model Provider 与 Component Catalog 都嵌入 Runtime Host 进程。
 它们不是独立服务，不使用独立端口，也不存在 UI Compiler URL 或 UI Compiler HTTP Service。

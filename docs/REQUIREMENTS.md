@@ -1,7 +1,9 @@
 # Generative UI Platform - Generative UI Compiler MVP 需求规格说明书
 
-> 本文是必须保留的历史 Compiler MVP 基线。
-> 其中独立 UI Compiler Service、HTTP、端口和部署结论已被 ADR-0019 取代；当前实现宿主为 `packages/presentation-pipeline`，并由 Agent Runtime Host 进程内组装。
+> **Status: Historical.**
+> 本文保留 Compiler MVP 的历史需求基线。
+> Compiler 与 Presentation 实现及其 contract packages 已从当前仓库删除。
+> 不得将本文中的路径、命令或 Release Gate 当作当前事实。
 
 **文档版本：** 1.5
 **项目阶段：** MVP

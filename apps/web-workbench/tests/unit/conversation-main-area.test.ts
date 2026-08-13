@@ -7,11 +7,15 @@ import ConversationMainArea from "../../src/shell/ConversationMainArea.vue";
 
 function makeTurn(overrides: Partial<ConversationTurn> = {}): ConversationTurn {
   return {
-    businessSurfaces: [],
     requestId: "req-1",
+    responseMessages: [],
     status: "completed",
     turnId: "turn-1",
-    userMessage: { content: "展示状态", id: "turn-1:user" },
+    userMessage: {
+      content: "Show status",
+      id: "turn-1:user",
+      role: "user",
+    },
     ...overrides,
   };
 }
@@ -19,86 +23,65 @@ function makeTurn(overrides: Partial<ConversationTurn> = {}): ConversationTurn {
 describe("ConversationMainArea", () => {
   it("shows an empty state when there are no turns", () => {
     const wrapper = mount(ConversationMainArea, {
-      props: {
-        actionsDisabled: false,
-        isRunning: false,
-        runState: "idle",
-        turns: [],
-      },
+      props: { isRunning: false, runState: "idle", turns: [] },
     });
 
     expect(wrapper.find("[data-testid='conversation-main']").exists()).toBe(
       true,
     );
-    expect(wrapper.text()).toContain("开始一段真实 Agent Conversation");
+    expect(wrapper.text()).toContain("Agent Conversation");
     expect(wrapper.find("[data-testid='conversation-turns']").exists()).toBe(
       false,
     );
   });
 
-  it("renders the user message in a right-aligned bubble and exposes a per-turn Inspect entry", () => {
-    const turn = makeTurn();
+  it("renders the user message and exposes a per-turn Inspect entry", () => {
     const wrapper = mount(ConversationMainArea, {
       props: {
-        actionsDisabled: false,
         isRunning: false,
         runState: "completed",
-        turns: [turn],
+        turns: [makeTurn()],
       },
     });
 
     expect(wrapper.find("[data-testid='user-message']").text()).toBe(
-      "展示状态",
+      "Show status",
     );
-    expect(wrapper.find(".shell-bubble-user").exists()).toBe(true);
     expect(wrapper.find("[data-testid='inspect-turn-turn-1']").exists()).toBe(
       true,
     );
   });
 
   it("shows an in-progress spinner for a pending turn", () => {
-    const turn = makeTurn({ status: "pending" });
     const wrapper = mount(ConversationMainArea, {
       props: {
-        actionsDisabled: false,
         isRunning: true,
         runState: "running",
-        turns: [turn],
+        turns: [makeTurn({ status: "pending" })],
       },
     });
 
     expect(wrapper.find(".shell-turn-hint-running").exists()).toBe(true);
-    expect(wrapper.text()).toContain("正在运行");
   });
 
-  it("shows degraded and failed hints inline", () => {
-    const degraded = makeTurn({ status: "degraded" });
-    const failed = makeTurn({
-      status: "failed",
-      turnId: "turn-2",
-      requestId: "req-2",
-    });
+  it("shows a failed hint inline", () => {
     const wrapper = mount(ConversationMainArea, {
       props: {
-        actionsDisabled: false,
         isRunning: false,
-        runState: "completed",
-        turns: [degraded, failed],
+        runState: "failed",
+        turns: [makeTurn({ status: "failed" })],
       },
     });
 
-    expect(wrapper.text()).toContain("已降级");
-    expect(wrapper.text()).toContain("运行失败");
+    expect(wrapper.find(".shell-turn-hint-failed").exists()).toBe(true);
   });
 
   it("emits inspect when the per-turn Inspect entry is clicked", async () => {
-    const turn = makeTurn();
     const wrapper = mount(ConversationMainArea, {
       props: {
-        actionsDisabled: false,
         isRunning: false,
         runState: "completed",
-        turns: [turn],
+        turns: [makeTurn()],
       },
     });
 

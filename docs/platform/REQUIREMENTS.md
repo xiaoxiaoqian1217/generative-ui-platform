@@ -1,5 +1,9 @@
 # Generative UI Platform 平台级需求
 
+> **Status: Historical.**
+> The Runtime and Presentation platform described here is not the current release gate.
+> Use ADR-0028 for the current scope.
+
 **适用范围：** 整个仓库。
 
 **当前阶段：** Presentation-first Generative UI。

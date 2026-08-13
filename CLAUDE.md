@@ -7,7 +7,9 @@ Before coding:
 
 1. Identify the affected module and its allowed dependencies.
 2. Confirm the task is inside the current approved scope.
-3. Reuse shared contracts rather than redefining types.
+3. Prefer native CopilotKit and AG-UI contracts at protocol boundaries.
+4. Put only genuinely cross-module types in `packages/shared-types`.
+5. Do not recreate removed Runtime, Presentation, or Compiler contracts.
 
 Before finishing:
 
