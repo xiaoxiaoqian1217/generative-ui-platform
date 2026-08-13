@@ -39,7 +39,7 @@ Workbench 与 Runtime Host 的当前 AG-UI Transport 为 HTTP POST + SSE，不�
 | --- | --- | --- |
 | Reference Business Agent | `apps/business-agent-langgraph/.env[.local]` | `BUSINESS_AGENT_HOST=127.0.0.1`，`BUSINESS_AGENT_PORT=8300`。 |
 | Agent Runtime Host | `apps/agent-runtime-host/.env[.local]` | `HOST=127.0.0.1`，`PORT=8200`，`BUSINESS_AGENT_CONTRACT_URL=http://localhost:8300`，以及应用 README 列出的 Business Agent Transport、真实 Provider、超时和并发变量。 |
-| Workbench | `apps/web-workbench/.env[.local]` | `VITE_RUNTIME_HOST_URL` 和 `VITE_WORKBENCH_ENVIRONMENT`。 |
+| Workbench | `apps/web-workbench/.env[.local]` | `VITE_AGENT_URL` 和 `VITE_WORKBENCH_ENVIRONMENT`。 |
 
 CI 和平台 E2E 使用进程内确定性替身，因此不会读取或依赖真实 Provider 配置。
 真实 Provider 要求显式 `PRESENTATION_MODEL_PROVIDER`、`PRESENTATION_MODEL_NAME` 和 `PRESENTATION_MODEL_API_KEY`。

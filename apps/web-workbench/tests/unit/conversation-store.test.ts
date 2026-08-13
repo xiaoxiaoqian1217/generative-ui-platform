@@ -39,17 +39,23 @@ describe("Conversation Store", () => {
       }),
       "turn-1",
       {
+        agentState: { task: { status: "completed" } },
+        eventTypes: ["RUN_STARTED", "STATE_SNAPSHOT", "RUN_FINISHED"],
         messages: [
           { id: "assistant-1", role: "assistant", content: "已定位。" },
         ],
         runId: "run-1",
+        runResult: { artifact: { id: "artifact-1" } },
         threadId: "thread-1",
       },
     );
 
     expect(resolved.turns[0]).toMatchObject({
+      agentState: { task: { status: "completed" } },
+      eventTypes: ["RUN_STARTED", "STATE_SNAPSHOT", "RUN_FINISHED"],
       responseMessages: [{ role: "assistant", content: "已定位。" }],
       runId: "run-1",
+      runResult: { artifact: { id: "artifact-1" } },
       status: "completed",
       threadId: "thread-1",
     });

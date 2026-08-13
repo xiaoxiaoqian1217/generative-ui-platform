@@ -33,6 +33,7 @@
     "MAINT",
     "Markdown",
     "Monorepo",
+    "OPENWEBUI",
     "pnpm",
     "PowerShell",
     "README",
@@ -47,6 +48,8 @@
     "Wayfinding",
     "workflows",
     "worktree",
-    "xiaoxiaoqian"
+    "xiaoxiaoqian",
+    "zhouwen",
+    "giser"
   ]
 }

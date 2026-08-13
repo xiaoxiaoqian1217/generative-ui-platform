@@ -15,8 +15,11 @@ export interface TurnFailure {
 }
 
 export interface ConversationTurn {
+  readonly agentState?: unknown;
+  readonly eventTypes?: readonly string[];
   readonly failure?: TurnFailure;
   readonly requestId: string;
+  readonly runResult?: unknown;
   readonly responseMessages: readonly Message[];
   readonly runId?: string;
   readonly status: "cancelled" | "completed" | "failed" | "pending";
@@ -38,7 +41,10 @@ export interface StartRunInput {
 }
 
 export interface ResolveRunInput {
+  readonly agentState?: unknown;
+  readonly eventTypes?: readonly string[];
   readonly messages: readonly Message[];
+  readonly runResult?: unknown;
   readonly runId: string;
   readonly threadId: string;
 }
@@ -103,7 +109,14 @@ export function resolveRun(
   if (state.activeOperation?.turnId !== turnId) return state;
   return updateTurn(withoutActiveOperation(state), turnId, (turn) => ({
     ...turn,
+    ...(result.agentState === undefined
+      ? {}
+      : { agentState: result.agentState }),
+    ...(result.eventTypes === undefined
+      ? {}
+      : { eventTypes: result.eventTypes }),
     responseMessages: result.messages,
+    ...(result.runResult === undefined ? {} : { runResult: result.runResult }),
     runId: result.runId,
     status: "completed",
     threadId: result.threadId,

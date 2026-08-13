@@ -4,17 +4,16 @@
 
 `apps/web-workbench` is the active product and integration workbench.
 
-Its current release gate is the vertical AG-UI Frontend Tool flow:
+Its current release gate uses one thin CopilotKit Runtime boundary:
 
 ```text
-Business Agent or AGUIMock
--> AG-UI
--> CopilotKit
--> Web Workbench
--> useFrontendTool("locateDevice")
--> MapLibre
--> AG-UI tool result
+Web Workbench
+-> thin CopilotKit Runtime
+-> AGUIMock or single-agent-chat-server
 ```
+
+Only the AGUIMock source advertises the browser `locateDevice` Frontend Tool and drives MapLibre plus `DeviceCard`.
+The SACS source streams Business Agent text, state, activity, and structured results without client-provided Frontend Tools.
 
 Workbench consumes native AG-UI messages through CopilotKit.
 It does not wrap the run in `RuntimeRunResult`, `PresentationResult`, or another application protocol.
@@ -29,9 +28,11 @@ The active Conversation route supports:
 - the `locateDevice` browser tool;
 - MapLibre device selection, map movement, marker highlighting, and a controlled `DeviceCard`;
 - per-turn AG-UI inspection;
-- cancellation, retryable timeout handling, agent outage handling, and recovery.
+- cancellation, retryable timeout handling, agent outage handling, and recovery;
+- explicit selection between AGUIMock and `single-agent-chat-server`.
 
-The Agent only sees the stable `locateDevice` tool capability.
+AGUIMock sees the stable `locateDevice` tool capability.
+SACS receives no client-provided tools because its current profile does not support them.
 MapLibre and device-selection state remain browser-side implementation details.
 
 Workbench never executes model-generated arbitrary HTML or JavaScript.
@@ -93,33 +94,27 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-This starts Web Workbench and the unified AG-UI Mock together.
-The Vite development server proxies same-origin `/api/copilotkit` requests to `http://127.0.0.1:4800`.
+This starts Web Workbench, the reusable AG-UI Mock, and the thin CopilotKit Runtime together.
+The Vite development server proxies same-origin `/api/copilotkit` requests to `http://127.0.0.1:4801`.
 No Settings override is required for the default Mock flow.
 
-To supply an Agent origin at build time:
+Production deployments should expose `/api/copilotkit` on the Workbench origin through a reverse proxy.
+The local Vite proxy already provides that same-origin path.
 
-```bash
-VITE_AGENT_URL=http://127.0.0.1:4800 pnpm dev:web-workbench
-```
+## Run integration services separately
 
-On PowerShell:
-
-```powershell
-$env:VITE_AGENT_URL = "http://127.0.0.1:4800"
-pnpm dev:web-workbench
-```
-
-## Run the reusable AG-UI mock separately
-
-To run the two development processes in separate terminals:
+To run the three development processes in separate terminals:
 
 ```bash
 pnpm dev:ag-ui-mock
+pnpm dev:copilot-runtime
 pnpm dev:web-workbench
 ```
 
-The default same-origin configuration uses the Vite proxy.
+The default same-origin configuration uses the Vite proxy to reach the Runtime.
+The Runtime registers AGUIMock and SACS at the same time; the Workbench selector chooses one Agent identity for each conversation.
+SACS credentials remain in the Runtime process and are never browser configuration.
+See [`apps/copilot-runtime/README.md`](../copilot-runtime/README.md) for its environment variables and real-service smoke test.
 Enter `定位无人机 01` in Conversation.
 
 The mock requests `locateDevice({ deviceId: "01" })`.
@@ -155,10 +150,11 @@ pnpm build
 pnpm docs:check
 ```
 
-The browser E2E suite covers native AG-UI Markdown, inspection, Frontend Tool continuation, the real `locateDevice` map flow, cancellation, retry, outage, and recovery.
+The browser E2E suite covers native AG-UI Markdown, inspection, Frontend Tool continuation, the real `locateDevice` map flow, SACS profile interoperability, cancellation, retry, outage, and recovery.
 
 ## Documentation status
 
-- [ADR-0028](../../docs/adr/0028-use-native-ag-ui-and-retire-compatibility-contracts.md) is the current phase decision.
+- [ADR-0029](../../docs/adr/0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md) is the current Agent integration decision.
+- [ADR-0028](../../docs/adr/0028-use-native-ag-ui-and-retire-compatibility-contracts.md) continues to constrain native AG-UI and removed compatibility contracts.
 - [Workbench prototype baselines](../../docs/workbench/PROTOTYPE_BASELINES.md) are frozen design inputs.
 - [The old Workbench SRS](../../docs/WEB_WORKBENCH_SRS.md) is historical and is not the current release gate.

@@ -32,6 +32,7 @@ import {
   saveWorkbenchLocalSettings,
 } from "../settings/local-settings.js";
 import type { ConnectionState } from "../agent/business-agent-client.js";
+import type { AgentSource } from "../settings/agent-source.js";
 
 const ConversationPage = defineAsyncComponent(
   () => import("./ConversationPage.vue"),
@@ -85,6 +86,7 @@ const configurationError = configResolution.error;
 const workbenchVersion = __WORKBENCH_VERSION__;
 
 const connectionState = ref<ConnectionState>("connecting");
+const agentSource = ref<AgentSource>(initialLocalSettings.agentSource);
 const route = ref<WorkbenchRoute>(
   resolveWorkbenchRoute(window.location.pathname),
 );
@@ -125,6 +127,7 @@ function saveSettings(): void {
     )
       throw new Error("invalid-settings");
     saveWorkbenchLocalSettings(window.localStorage, {
+      agentSource: agentSource.value,
       agentUrl: settingsAgentUrl.value,
       requestTimeoutMs: parsedTimeout,
       showDebugDetails: settingsShowDebugDetails.value,
@@ -166,6 +169,14 @@ function onConversationConnectionStateChange(next: ConnectionState): void {
   connectionState.value = next;
 }
 
+function onAgentSourceChange(next: AgentSource): void {
+  agentSource.value = next;
+  saveWorkbenchLocalSettings(window.localStorage, {
+    ...loadWorkbenchLocalSettings(window.localStorage),
+    agentSource: next,
+  });
+}
+
 onMounted(() => {
   window.addEventListener("popstate", () => {
     route.value = resolveWorkbenchRoute(window.location.pathname);
@@ -186,10 +197,12 @@ onMounted(() => {
 
     <main v-if="route === '/conversation'" class="shell-route">
       <ConversationPage
+        :agent-source="agentSource"
         :config="config"
         :endpoints="endpoints"
         :request-timeout-ms="initialLocalSettings.requestTimeoutMs"
         @connection-state-change="onConversationConnectionStateChange"
+        @agent-source-change="onAgentSourceChange"
       />
     </main>
 
@@ -220,7 +233,7 @@ onMounted(() => {
           <p>此页当前不可用。Catalog / Scenarios 元数据由 Business Agent 通过 AG-UI 提供，暂未实现。</p>
         </template>
         <form v-else class="settings-form" @submit.prevent="saveSettings">
-          <p>本地设置仅保存 Agent 地址、超时和调试显示；不保存模型、密钥或任何凭证。</p>
+          <p>本地设置仅保存 Agent Source、Agent 地址、超时和调试显示；不保存模型、密钥或任何凭证。</p>
           <label>Business Agent 地址 <input v-model="settingsAgentUrl" data-testid="settings-agent-url" type="url" required /></label>
           <label>请求超时（毫秒） <input v-model="settingsTimeoutMs" data-testid="settings-timeout" type="number" min="1000" max="300000" required /></label>
           <label><input v-model="settingsShowDebugDetails" data-testid="settings-debug" type="checkbox" /> 显示本地调试详情</label>

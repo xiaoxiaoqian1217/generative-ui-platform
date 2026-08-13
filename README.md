@@ -42,21 +42,19 @@ CopilotKit Frontend Tool
 
 ### 当前可执行基线
 
-在 #207 实现前，仓库当前仍可通过 AGUIMock 验证已跑通的 Controlled UI 场景：
+仓库当前通过 thin CopilotKit Runtime 暴露统一 Agent integration endpoint：
 
 ```text
-AGUIMock
-   ↓ AG-UI
-CopilotKit Frontend
-   ↓
 Web Workbench
    ↓
-Frontend Tool / MapLibre / DeviceCard
+CopilotKit Runtime
+   ↓
+AGUIMock / single-agent-chat-server
 ```
 
 ### 已接受的目标接入边界
 
-根据 ADR-0029，下一步引入一个 **薄 CopilotKit Runtime Integration Layer**：
+根据 ADR-0029，仓库已经引入一个 **薄 CopilotKit Runtime Integration Layer**：
 
 ```text
 ┌──────────────────────────────────────┐
@@ -117,6 +115,7 @@ CopilotKit Runtime 在当前阶段只负责：
 
 ```text
 apps/
+├─ copilot-runtime/
 └─ web-workbench/
 
 packages/
@@ -130,7 +129,7 @@ packages/
 - `ag-ui-adapter`：仅承载 AG-UI 协议边界辅助能力。
 - `shared-types`：真正跨模块使用的最小共享类型。
 
-#207 可以在 Monorepo 中增加最小 CopilotKit Runtime Host，但必须保持 Supporting Infrastructure 边界，不得引入新的业务状态模型。
+`apps/copilot-runtime` 是已经落地的最小 Runtime Host，并保持 Supporting Infrastructure 边界。
 
 ### Removed compatibility contracts
 
@@ -148,7 +147,7 @@ Workbench 继续使用 CopilotKit / 原生 AG-UI 契约。
 
 ## A2UI 下一阶段
 
-#207 完成并建立统一 Agent 接入边界后，主线进入：
+统一 Agent 接入边界已经建立，主线进入：
 
 ```text
 A2UI Renderer MVP
@@ -221,9 +220,9 @@ archive/pre-scope-reset-2026-08-13
 Completed
 #202 Controlled UI Vertical Slice
 AGUIMock + Frontend Tool + MapLibre + DeviceCard
+#207 Thin CopilotKit Runtime Integration
 
 Current
-#207 Thin CopilotKit Runtime Integration
   ↓
 #200 Real SACS Interoperability
 
@@ -256,10 +255,10 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-在 #207 尚未实现前，`pnpm dev` 继续启动当前 Web Workbench 与 AG-UI Mock 基线。
-输入 `连接测试` 或 `定位无人机 01` 可以验证当前 Mock 场景。
-
-#207 实现后再更新这里的 Runtime 启动方式，不提前把目标架构写成已经可运行的命令。
+`pnpm dev` 启动 Web Workbench、AG-UI Mock 和 thin CopilotKit Runtime。
+输入 `连接测试` 或 `定位无人机 01` 可以验证 AGUIMock 场景。
+Workbench 中的 Agent Source 选择器可以切换到 `single-agent-chat-server`。
+真实 SACS 的服务端环境变量和 smoke test 见 [`apps/copilot-runtime/README.md`](./apps/copilot-runtime/README.md)。
 
 ## 验证
 

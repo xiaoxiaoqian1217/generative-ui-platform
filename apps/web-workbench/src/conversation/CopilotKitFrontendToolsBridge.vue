@@ -5,6 +5,8 @@ import { z } from "zod";
 import { bindCopilotKitProviderCore } from "../agent/business-agent-client.js";
 
 const props = defineProps<{
+  agentId: string;
+  enabled: boolean;
   locateDevice: ((deviceId: string) => string) | undefined;
 }>();
 
@@ -19,7 +21,8 @@ useFrontendTool({
   name: "show_workbench_status",
   description:
     "Return the current Web Workbench frontend status from the browser. Use this only when the user asks to verify frontend connectivity or Workbench status.",
-  agentId: "default",
+  agentId: props.agentId,
+  available: props.enabled,
   handler: async (_args, { signal }) => {
     signal?.throwIfAborted();
     return JSON.stringify({
@@ -36,7 +39,8 @@ useFrontendTool({
   description:
     "Locate a business device on the GIS workspace by its device ID. The browser owns the map implementation.",
   parameters: z.object({ deviceId: z.string().min(1) }).strict(),
-  agentId: "default",
+  agentId: props.agentId,
+  available: props.enabled,
   handler: async ({ deviceId }, { signal }) => {
     signal?.throwIfAborted();
     return (

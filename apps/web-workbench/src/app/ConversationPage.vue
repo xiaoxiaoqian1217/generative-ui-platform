@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+} from "vue";
 import {
   type AgentTransportClient,
   type ConnectionState,
@@ -25,6 +32,11 @@ import type {
   AgentEndpoints,
   WorkbenchConfig,
 } from "../settings/agent-config.js";
+import {
+  AGENT_SOURCES,
+  agentSourceProfile,
+  type AgentSource,
+} from "../settings/agent-source.js";
 import ConversationComposer from "../shell/ConversationComposer.vue";
 import ConversationMainArea from "../shell/ConversationMainArea.vue";
 import ConversationSidebar from "../shell/ConversationSidebar.vue";
@@ -48,12 +60,14 @@ interface LocalConversation {
 }
 
 const props = defineProps<{
+  agentSource: AgentSource;
   config: WorkbenchConfig;
   endpoints: AgentEndpoints;
   requestTimeoutMs: number;
 }>();
 
 const emit = defineEmits<{
+  agentSourceChange: [source: AgentSource];
   connectionStateChange: [state: ConnectionState];
 }>();
 
@@ -64,6 +78,10 @@ const selectedConversationId = ref<string>();
 const inspectedTurnId = ref<string>();
 const activeController = ref<AbortController>();
 const selectedDevice = ref<Device>();
+const selectedAgentSource = ref(props.agentSource);
+const selectedAgentProfile = computed(() =>
+  agentSourceProfile(selectedAgentSource.value),
+);
 
 const currentConversation = computed<LocalConversation | undefined>(() =>
   conversations.value.find(
@@ -128,18 +146,26 @@ function configureRuntime(): void {
 
   applyConnectionState("connecting");
   client = createBusinessAgentClient({
+    agentId: selectedAgentProfile.value.agentId,
     timeoutMs: props.requestTimeoutMs,
     onConnectionStateChange,
   });
   client.connect();
-  window.setTimeout(() => {
-    if (
-      generation === clientGeneration &&
-      connectionState.value === "connecting"
-    ) {
-      applyConnectionState("connected");
-    }
-  }, 1_000);
+}
+
+async function selectAgentSource(event: Event): Promise<void> {
+  const source = (event.target as HTMLSelectElement).value as AgentSource;
+  if (!AGENT_SOURCES.includes(source) || source === selectedAgentSource.value)
+    return;
+  selectedAgentSource.value = source;
+  emit("agentSourceChange", source);
+  conversations.value = [];
+  selectedConversationId.value = undefined;
+  runState.value = "idle";
+  selectedDevice.value = undefined;
+  await nextTick();
+  configureRuntime();
+  newConversation();
 }
 
 function createId(prefix: string): string {
@@ -175,10 +201,24 @@ function turnFailure(error: DisplayError): TurnFailure {
   };
 }
 
-async function sendMessage(message = input.value): Promise<void> {
+async function sendMessage(
+  message = input.value,
+  options: { allowUnavailable?: boolean } = {},
+): Promise<void> {
   const normalized = message.trim();
   const current = currentConversation.value;
-  if (!client || !current || normalized === "" || !canSend.value) return;
+  const canProbeUnavailable =
+    options.allowUnavailable === true &&
+    connectionState.value === "reconnecting";
+  if (
+    !client ||
+    !current ||
+    normalized === "" ||
+    isRunning.value ||
+    conversation.value.activeOperation !== undefined ||
+    (connectionState.value !== "connected" && !canProbeUnavailable)
+  )
+    return;
 
   const requestId = createId("message");
   const runId = createId("run");
@@ -205,7 +245,10 @@ async function sendMessage(message = input.value): Promise<void> {
       controller.signal,
     );
     conversation.value = resolveRun(conversation.value, turnId, {
+      agentState: result.state,
+      eventTypes: result.eventTypes,
       messages: result.newMessages,
+      runResult: result.result,
       runId,
       threadId: current.threadId,
     });
@@ -239,8 +282,10 @@ function cancelRequest(): void {
 function retryTurn(turnId: string): void {
   const turn = conversation.value.turns.find((item) => item.turnId === turnId);
   if (turn === undefined || turn.failure?.retryable !== true) return;
+  if (connectionState.value === "unavailable")
+    applyConnectionState("reconnecting");
   input.value = turn.userMessage.content;
-  void sendMessage(turn.userMessage.content);
+  void sendMessage(turn.userMessage.content, { allowUnavailable: true });
 }
 
 function newConversation(): void {
@@ -287,6 +332,9 @@ onBeforeUnmount(() => {
 
 <template>
   <CopilotKitConversationProvider
+    :key="selectedAgentProfile.agentId"
+    :agent-id="selectedAgentProfile.agentId"
+    :frontend-tools-enabled="selectedAgentProfile.frontendTools"
     :locate-device="handleLocateDevice"
     :runtime-url="endpoints.agUi"
   >
@@ -300,6 +348,34 @@ onBeforeUnmount(() => {
       />
 
       <main class="shell-stage">
+        <section class="agent-source-bar" data-testid="agent-source-panel">
+          <label>
+            <span>Agent Source</span>
+            <select
+              :value="selectedAgentSource"
+              data-testid="agent-source-select"
+              @change="selectAgentSource"
+            >
+              <option
+                v-for="source in AGENT_SOURCES"
+                :key="source"
+                :value="source"
+              >
+                {{ agentSourceProfile(source).label }}
+              </option>
+            </select>
+          </label>
+          <div>
+            <p>{{ selectedAgentProfile.description }}</p>
+            <p
+              v-if="!selectedAgentProfile.frontendTools"
+              class="agent-capability-gap"
+              data-testid="frontend-tool-capability-gap"
+            >
+              Capability gap: this SACS profile does not support client-provided Frontend Tools.
+            </p>
+          </div>
+        </section>
         <ConversationMainArea
           :is-running="isRunning"
           :run-state="runState"

@@ -26,17 +26,17 @@ MapLibre + DeviceCard
 
 ### Current executable baseline
 
-在 #207 实现前，当前仓库仍以 AGUIMock 作为可执行测试 Agent：
+当前仓库通过 thin CopilotKit Runtime 暴露统一 Agent integration endpoint：
 
 ```text
-AGUIMock
-   ↓ AG-UI
-CopilotKit
-   ↓
 Web Workbench
+   ↓
+CopilotKit Runtime
+   ↓
+AGUIMock / single-agent-chat-server
 ```
 
-不要把目标架构误写成已经完成的实现。
+AGUIMock 继续作为确定性测试 Agent，SACS 作为真实 Business Agent profile。
 
 ### Accepted integration target
 
@@ -128,6 +128,7 @@ Runtime 不得伪造 SACS 不支持的 Tool Calling。
 
 ```text
 apps/
+├─ copilot-runtime/
 └─ web-workbench/
 
 packages/
@@ -136,7 +137,7 @@ packages/
 └─ shared-types/
 ```
 
-#207 可以增加最小 CopilotKit Runtime Host，具体目录应服从现有 Monorepo 的最小自然边界。
+`apps/copilot-runtime` 是已经落地的最小 CopilotKit Runtime Host。
 不要为了目录形式恢复旧的 `apps/agent-runtime-host`。
 
 以下三个迁移期兼容合同已经解除依赖并删除：
@@ -152,7 +153,7 @@ Workbench 继续直接使用 CopilotKit / 原生 AG-UI 契约。
 
 ## A2UI next phase
 
-#207 建立统一 Agent integration boundary 后，产品主线进入：
+统一 Agent integration boundary 已经建立，产品主线进入：
 
 ```text
 A2UI Renderer MVP
@@ -249,9 +250,9 @@ c33504db91614420c2ccdf26a8c707f61d659065
 ```text
 Completed
 #202 Controlled UI Vertical Slice
+#207 Thin CopilotKit Runtime
 
 Current
-#207 Thin CopilotKit Runtime
   ↓
 #200 Real SACS Interoperability
 

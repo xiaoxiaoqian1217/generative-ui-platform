@@ -5,9 +5,12 @@ import type { ConversationTurn } from "../conversation/conversation-store.js";
 const props = defineProps<{ turn: ConversationTurn }>();
 defineEmits<{ close: [] }>();
 
-const assistantMessages = computed(() =>
-  props.turn.responseMessages.filter((message) => message.role === "assistant"),
-);
+const runObservation = computed(() => ({
+  agentState: props.turn.agentState,
+  eventTypes: props.turn.eventTypes,
+  messages: props.turn.responseMessages,
+  result: props.turn.runResult,
+}));
 </script>
 
 <template>
@@ -30,8 +33,8 @@ const assistantMessages = computed(() =>
     </dl>
 
     <section class="viewer-card" data-testid="agent-message-viewer">
-      <p class="eyebrow">Assistant messages</p>
-      <pre>{{ JSON.stringify(assistantMessages, null, 2) }}</pre>
+      <p class="eyebrow">Native AG-UI observation</p>
+      <pre>{{ JSON.stringify(runObservation, null, 2) }}</pre>
     </section>
   </aside>
 </template>

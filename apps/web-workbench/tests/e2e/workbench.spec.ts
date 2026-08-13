@@ -7,7 +7,6 @@ const conversationSend = (page: Page) => page.getByTestId("composer-send");
 
 test.beforeEach(async ({ request }) => {
   await request.post("/__control__/restore");
-  await request.post("/__control__/agent-up");
 });
 
 test("Conversation-first Shell is the default product interface", async ({
@@ -127,16 +126,6 @@ test("Frontend Tool is advertised, executed in the browser, and continued throug
 test("AGUIMock locateDevice drives the independent GIS business surface", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      "generative-ui.workbench.settings.v1",
-      JSON.stringify({
-        agentUrl: "http://127.0.0.1:4180",
-        requestTimeoutMs: 30_000,
-        showDebugDetails: false,
-      }),
-    );
-  });
   await page.goto("/");
   await expect(page.getByTestId("conversation-sidebar")).toBeVisible();
   await expect(page.getByTestId("conversation-main")).toBeVisible();
@@ -161,16 +150,6 @@ test("AGUIMock locateDevice drives the independent GIS business surface", async 
 test("AGUIMock serves the connection probe from the unified scenario server", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      "generative-ui.workbench.settings.v1",
-      JSON.stringify({
-        agentUrl: "http://127.0.0.1:4180",
-        requestTimeoutMs: 30_000,
-        showDebugDetails: false,
-      }),
-    );
-  });
   await page.goto("/");
   await expect(page.getByTestId("agent-connection-status")).toContainText(
     "已连接",
@@ -246,4 +225,107 @@ test("agent outage disables input and recovers", async ({ page }) => {
   await conversationInput(page).fill("恢复后的结果");
   await conversationSend(page).click();
   await expect(page.getByTestId("markdown-result")).toBeVisible();
+});
+
+test("SACS Source streams text, state, activity, and artifact without Frontend Tools", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await page
+    .getByTestId("agent-source-select")
+    .selectOption("single-agent-chat-server");
+  await expect(page.getByTestId("frontend-tool-capability-gap")).toBeVisible();
+
+  await conversationInput(page).fill("run SACS business task");
+  await conversationSend(page).click();
+  await expect(page.getByTestId("markdown-result")).toContainText(
+    "artifact report-42",
+  );
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  const observation = page.getByTestId("agent-message-viewer");
+  await expect(observation).toContainText("STATE_SNAPSHOT");
+  await expect(observation).toContainText("STATE_DELTA");
+  await expect(observation).toContainText("ACTIVITY_SNAPSHOT");
+  await expect(observation).toContainText("ACTIVITY_DELTA");
+  await expect(observation).toContainText("report-42");
+
+  const received = await (await request.get("/__control__/sacs")).json();
+  expect(received.at(-1).authorization).toBe("Bearer e2e-sacs-key");
+  expect(received.at(-1).userJwt).toBe("e2e-signed-user");
+  expect(received.at(-1).body.tools).toEqual([]);
+});
+
+test("the selected Agent Source survives a page reload", async ({ page }) => {
+  await page.goto("/");
+  await page
+    .getByTestId("agent-source-select")
+    .selectOption("single-agent-chat-server");
+
+  await page.reload();
+
+  await expect(page.getByTestId("agent-source-select")).toHaveValue(
+    "single-agent-chat-server",
+  );
+  await expect(page.getByTestId("frontend-tool-capability-gap")).toBeVisible();
+});
+
+test("a structured SACS result without assistant text still enters Inspect", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByTestId("agent-source-select")
+    .selectOption("single-agent-chat-server");
+  await conversationInput(page).fill("structured result only");
+  await conversationSend(page).click();
+
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  await expect(page.getByTestId("agent-message-viewer")).toContainText(
+    "report-42",
+  );
+  await expect(page.getByTestId("turn-failure")).toHaveCount(0);
+});
+
+test("an unavailable SACS upstream is retryable while Runtime stays available", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByTestId("agent-source-select")
+    .selectOption("single-agent-chat-server");
+  await page.request.post("/__control__/sacs-down");
+  await conversationInput(page).fill("run SACS business task");
+  await conversationSend(page).click();
+
+  await expect(page.getByTestId("turn-failure")).toContainText(
+    "WORKBENCH_AGENT_UNAVAILABLE",
+  );
+  await expect(page.getByRole("button", { name: "重试" })).toBeVisible();
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "不可用",
+  );
+  await page.request.post("/__control__/restore");
+  await page.getByRole("button", { name: "重试" }).click();
+  await expect(page.getByTestId("markdown-result")).toContainText(
+    "artifact report-42",
+  );
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "已连接",
+  );
+});
+
+test("SACS RUN_ERROR enters the bounded failed state", async ({ page }) => {
+  await page.goto("/");
+  await page
+    .getByTestId("agent-source-select")
+    .selectOption("single-agent-chat-server");
+  await conversationInput(page).fill("SACS error");
+  await conversationSend(page).click();
+  await expect(page.getByTestId("turn-failure")).toContainText(
+    "WORKBENCH_RUN_ERROR",
+  );
+  await expect(page.getByTestId("turn-failure")).not.toContainText(
+    "bounded fixture failure",
+  );
 });

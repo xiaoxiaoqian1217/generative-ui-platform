@@ -14,13 +14,15 @@ function storage() {
 }
 
 describe("Workbench local settings", () => {
-  it("stores only agent endpoint, timeout, and debug preference", () => {
+  it("stores only agent source, endpoint, timeout, and debug preference", () => {
     const value = saveWorkbenchLocalSettings(storage(), {
+      agentSource: "single-agent-chat-server",
       agentUrl: "https://agent.example.test/path",
       requestTimeoutMs: 45_000,
       showDebugDetails: true,
     });
     expect(value).toEqual({
+      agentSource: "single-agent-chat-server",
       agentUrl: "https://agent.example.test",
       requestTimeoutMs: 45_000,
       showDebugDetails: true,
@@ -31,6 +33,7 @@ describe("Workbench local settings", () => {
     const value = storage();
     value.setItem(WORKBENCH_LOCAL_SETTINGS_KEY, "{not-json");
     expect(loadWorkbenchLocalSettings(value)).toEqual({
+      agentSource: "ag-ui-mock",
       requestTimeoutMs: 30_000,
       showDebugDetails: false,
     });
@@ -42,6 +45,7 @@ describe("Workbench local settings", () => {
       }),
     );
     expect(loadWorkbenchLocalSettings(value)).toEqual({
+      agentSource: "ag-ui-mock",
       requestTimeoutMs: 30_000,
       showDebugDetails: false,
     });

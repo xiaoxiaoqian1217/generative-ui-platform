@@ -112,7 +112,7 @@ Runtime must not fabricate Tool Calling events to make SACS appear to support a 
 
 ### 3. #200 validates real AG-UI interoperability through the unified integration boundary
 
-#200 remains the Real Agent Profile / interoperability issue.
+\#200 remains the Real Agent Profile / interoperability issue.
 Its value is not limited to proving text chat.
 The real SACS integration should exercise the business-facing AG-UI facts that SACS already publishes, especially:
 

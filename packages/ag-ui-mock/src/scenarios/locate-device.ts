@@ -3,7 +3,9 @@ import { buildTextResponse } from "@copilotkit/aimock/agui";
 
 export function registerLocateDeviceScenario(mock: AGUIMock): void {
   mock.onPredicate(
-    (input) => input.messages?.at(-1)?.role === "tool",
+    (input) =>
+      input.messages?.at(-1)?.role === "tool" &&
+      String(input.messages.at(-1)?.content).includes('"status":"located"'),
     buildTextResponse("已定位无人机 01。"),
   );
   mock.onToolCall(

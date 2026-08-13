@@ -18,3 +18,4 @@ overrides:
 peerDependencyRules:
   allowedVersions:
     "@copilotkit/channels-core@0.2.1>vitest": "3.2.6"
+    "@copilotkit/channels-core@0.4.0>vitest": "3.2.6"

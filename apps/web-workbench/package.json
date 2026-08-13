@@ -9,7 +9,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "pnpm --filter @generative-ui/ag-ui-mock build && pnpm build && playwright test"
+    "test:e2e": "pnpm --filter @generative-ui/ag-ui-mock build && pnpm --filter @generative-ui/copilot-runtime build && pnpm build && playwright test"
   },
   "dependencies": {
     "@ag-ui/core": "0.0.57",
@@ -26,6 +26,7 @@
     "@types/markdown-it": "14.1.2",
     "@types/ws": "8.18.1",
     "@generative-ui/ag-ui-mock": "workspace:*",
+    "@generative-ui/copilot-runtime": "workspace:*",
     "@vitejs/plugin-vue": "6.0.8",
     "@vue/test-utils": "2.4.6",
     "jsdom": "26.1.0",

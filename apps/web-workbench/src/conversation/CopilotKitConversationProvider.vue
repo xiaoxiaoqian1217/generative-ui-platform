@@ -3,6 +3,8 @@ import { CopilotKitProvider } from "@copilotkit/vue/v2";
 import CopilotKitFrontendToolsBridge from "./CopilotKitFrontendToolsBridge.vue";
 
 defineProps<{
+  agentId: string;
+  frontendToolsEnabled: boolean;
   locateDevice?: (deviceId: string) => string;
   runtimeUrl: string;
 }>();
@@ -10,7 +12,11 @@ defineProps<{
 
 <template>
   <CopilotKitProvider :runtime-url="runtimeUrl">
-    <CopilotKitFrontendToolsBridge :locate-device="locateDevice" />
+    <CopilotKitFrontendToolsBridge
+      :agent-id="agentId"
+      :enabled="frontendToolsEnabled"
+      :locate-device="locateDevice"
+    />
     <slot />
   </CopilotKitProvider>
 </template>

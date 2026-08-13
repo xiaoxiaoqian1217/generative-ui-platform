@@ -21,19 +21,18 @@ Step 2
 
 ## Current implementation fact
 
-在 #207 尚未实现前，当前可执行基线仍是：
+当前可执行 Agent integration 基线是：
 
 ```text
-AGUIMock
-  ↓ AG-UI
-CopilotKit Frontend
-  ↓
 Web Workbench
   ↓
-Frontend Tool / MapLibre / DeviceCard
+CopilotKit Runtime
+thin Integration Layer
+  ↓
+AGUIMock / single-agent-chat-server
 ```
 
-不得把尚未落地的 CopilotKit Runtime 或 A2UI 目标写成已经实现的代码事实。
+不得把尚未落地的 A2UI 目标写成已经实现的代码事实。
 
 ## Accepted target architecture
 
@@ -89,6 +88,7 @@ CopilotKit Runtime 只允许承担 Supporting Infrastructure 职责：
 
 ```text
 apps/
+├─ copilot-runtime/
 └─ web-workbench/
 
 packages/
@@ -104,7 +104,7 @@ packages/
 - `packages/ag-ui-adapter`：仅允许承载 AG-UI 协议边界辅助能力。
 - `packages/shared-types`：最小跨模块共享类型。
 
-#207 可以增加最小 CopilotKit Runtime Host，但应选择现有 Monorepo 中最小自然落点。
+`apps/copilot-runtime` 是已经落地的最小 CopilotKit Runtime Host。
 不得因为历史代码存在就恢复 `apps/agent-runtime-host`。
 
 ## Removed compatibility contracts
@@ -224,9 +224,9 @@ c33504db91614420c2ccdf26a8c707f61d659065
 ```text
 Completed
 #202 Controlled UI Vertical Slice
+#207 Thin CopilotKit Runtime
 
 Current
-#207 Thin CopilotKit Runtime
   ↓
 #200 Real SACS Interoperability
 

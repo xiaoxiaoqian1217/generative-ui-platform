@@ -49,6 +49,7 @@ textarea:focus-visible {
 }
 
 .shell-route {
+  display: flex;
   flex: 1;
   min-height: 0;
 }
@@ -198,6 +199,46 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   min-width: 400px;
+}
+
+.agent-source-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 58px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+
+.agent-source-bar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.agent-source-bar select {
+  min-width: 168px;
+  padding: 6px 28px 6px 9px;
+  border: 1px solid #cbd0d8;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.agent-source-bar p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.agent-source-bar .agent-capability-gap {
+  color: var(--degraded);
 }
 
 .shell-chat-scroll {
@@ -881,6 +922,12 @@ textarea:focus-visible {
 
   .shell-stage {
     min-width: 0;
+  }
+
+  .agent-source-bar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
   }
 
   .map-workspace {

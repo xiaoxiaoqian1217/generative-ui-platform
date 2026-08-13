@@ -1,4 +1,7 @@
+import { type AgentSource, normalizeAgentSource } from "./agent-source.js";
+
 export interface WorkbenchLocalSettings {
+  readonly agentSource: AgentSource;
   readonly agentUrl?: string;
   readonly requestTimeoutMs: number;
   readonly showDebugDetails: boolean;
@@ -7,6 +10,7 @@ export interface WorkbenchLocalSettings {
 export const WORKBENCH_LOCAL_SETTINGS_KEY =
   "generative-ui.workbench.settings.v1";
 const DEFAULT_SETTINGS: WorkbenchLocalSettings = Object.freeze({
+  agentSource: "ag-ui-mock",
   requestTimeoutMs: 30_000,
   showDebugDetails: false,
 });
@@ -37,6 +41,7 @@ function parse(value: unknown): WorkbenchLocalSettings {
       ? validAgentUrl(record.agentUrl)
       : undefined;
   return {
+    agentSource: normalizeAgentSource(record.agentSource),
     ...(agentUrl === undefined ? {} : { agentUrl }),
     requestTimeoutMs:
       typeof timeout === "number" &&
