@@ -19,4 +19,4 @@ gh repo create "$OWNER/$REPO" "$FLAG" --source . --remote origin --push
 gh workflow run seed-issues.yml --repo "$OWNER/$REPO"
 
 echo "Repository created: https://github.com/$OWNER/$REPO"
-echo "Next: review docs/operations/REPOSITORY_SETUP.md and configure optional AI secrets."
+echo "Next: configure optional AI secrets."

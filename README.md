@@ -130,7 +130,7 @@ packages/
 - `ag-ui-adapter`：仅承载 AG-UI 协议边界辅助能力。
 - `shared-types`：真正跨模块使用的最小共享类型。
 
-#207 可以在 Monorepo 中增加最小 CopilotKit Runtime Host，但必须保持 Supporting Infrastructure 边界，不得引入新的业务状态模型。
+Issue #207 可以在 Monorepo 中增加最小 CopilotKit Runtime Host，但必须保持 Supporting Infrastructure 边界，不得引入新的业务状态模型。
 
 ### Removed compatibility contracts
 
@@ -148,7 +148,7 @@ Workbench 继续使用 CopilotKit / 原生 AG-UI 契约。
 
 ## A2UI 下一阶段
 
-#207 完成并建立统一 Agent 接入边界后，主线进入：
+Issue #207 完成并建立统一 Agent 接入边界后，主线进入：
 
 ```text
 A2UI Renderer MVP
@@ -259,7 +259,7 @@ pnpm dev
 在 #207 尚未实现前，`pnpm dev` 继续启动当前 Web Workbench 与 AG-UI Mock 基线。
 输入 `连接测试` 或 `定位无人机 01` 可以验证当前 Mock 场景。
 
-#207 实现后再更新这里的 Runtime 启动方式，不提前把目标架构写成已经可运行的命令。
+Issue #207 实现后再更新这里的 Runtime 启动方式，不提前把目标架构写成已经可运行的命令。
 
 ## 验证
 

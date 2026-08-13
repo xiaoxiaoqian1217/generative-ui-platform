@@ -161,4 +161,4 @@ The browser E2E suite covers native AG-UI Markdown, inspection, Frontend Tool co
 
 - [ADR-0028](../../docs/adr/0028-use-native-ag-ui-and-retire-compatibility-contracts.md) is the current phase decision.
 - [Workbench prototype baselines](../../docs/workbench/PROTOTYPE_BASELINES.md) are frozen design inputs.
-- [The old Workbench SRS](../../docs/WEB_WORKBENCH_SRS.md) is historical and is not the current release gate.
+- The old Workbench SRS is historical and is not the current release gate; it was removed from the main docs tree and can be consulted via Git history or `archive/pre-scope-reset-2026-08-13`.
