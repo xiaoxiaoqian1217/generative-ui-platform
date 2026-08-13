@@ -136,7 +136,7 @@ packages/
 └─ shared-types/
 ```
 
-#207 可以增加最小 CopilotKit Runtime Host，具体目录应服从现有 Monorepo 的最小自然边界。
+Issue #207 可以增加最小 CopilotKit Runtime Host，具体目录应服从现有 Monorepo 的最小自然边界。
 不要为了目录形式恢复旧的 `apps/agent-runtime-host`。
 
 以下三个迁移期兼容合同已经解除依赖并删除：
@@ -152,7 +152,7 @@ Workbench 继续直接使用 CopilotKit / 原生 AG-UI 契约。
 
 ## A2UI next phase
 
-#207 建立统一 Agent integration boundary 后，产品主线进入：
+Issue #207 建立统一 Agent integration boundary 后，产品主线进入：
 
 ```text
 A2UI Renderer MVP

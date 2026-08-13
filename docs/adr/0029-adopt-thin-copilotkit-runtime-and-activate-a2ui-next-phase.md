@@ -112,7 +112,7 @@ Runtime 不得伪造 Tool Calling 事件，使 SACS 看起来支持它没有发�
 
 ### 3. #200 通过统一接入边界验证真实 AG-UI 互操作
 
-#200 继续承担 Real Agent Profile / interoperability 验证。
+Issue #200 继续承担 Real Agent Profile / interoperability 验证。
 它的价值不应缩减成“文本聊天能通”。
 
 真实 SACS 集成应重点验证它已经发布的业务 AG-UI 事实：
@@ -238,7 +238,7 @@ Runtime Platform / Controlled-generation Compiler
 
 ### 从 Frozen 中重新激活
 
-#207 完成后，以下 Workbench 资产可以围绕 A2UI 阶段继续获得聚焦实现：
+Issue #207 完成后，以下 Workbench 资产可以围绕 A2UI 阶段继续获得聚焦实现：
 
 - A2UI renderer 集成；
 - Component Catalog 实验；
