@@ -3,6 +3,10 @@ import {
   createAguiMockServer,
   type ReusableAguiMockServer,
 } from "../src/index.js";
+import {
+  INSPECTION_SUMMARY_A2UI_MESSAGE_ID,
+  inspectionSummaryOperations,
+} from "../src/scenarios/inspection-summary-a2ui.js";
 
 interface AguiEvent {
   readonly type: string;
@@ -77,6 +81,39 @@ describe("createAguiMockServer", () => {
     ).toMatchObject({
       delta: "AG-UI mock is connected.",
     });
+  });
+
+  it("replays the inspection summary as a deterministic A2UI activity", async () => {
+    const first = await runMessage("展示巡检摘要 A2UI");
+    const second = await runMessage("展示巡检摘要 A2UI");
+
+    for (const events of [first, second]) {
+      expect(events.map((event) => event.type)).toEqual([
+        "RUN_STARTED",
+        "ACTIVITY_SNAPSHOT",
+        "RUN_FINISHED",
+      ]);
+      const activity = events.find(
+        (event) => event.type === "ACTIVITY_SNAPSHOT",
+      );
+      expect(activity).toMatchObject({
+        activityType: "a2ui-surface",
+        messageId: INSPECTION_SUMMARY_A2UI_MESSAGE_ID,
+        replace: true,
+      });
+      expect(activity?.content).toEqual({
+        a2ui_operations: inspectionSummaryOperations,
+      });
+    }
+
+    const firstActivity = first.find(
+      (event) => event.type === "ACTIVITY_SNAPSHOT",
+    );
+    const secondActivity = second.find(
+      (event) => event.type === "ACTIVITY_SNAPSHOT",
+    );
+    expect(secondActivity?.content).toEqual(firstActivity?.content);
+    expect(secondActivity?.messageId).toBe(firstActivity?.messageId);
   });
 
   it("serves the connection probe and business scenarios from one server", async () => {

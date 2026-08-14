@@ -7,7 +7,10 @@ export function registerEchoScenario(mock: AGUIMock): void {
     /(?:Markdown|恢复后的结果)/i,
     "## Agent online\n\n**AG-UI Markdown rendered safely.** <script>window.__unsafe = true</script>",
   );
-  mock.onMessage(/A2UI/i, "A2UI capability is frozen for a later phase.");
+  mock.onMessage(
+    /A2UI/i,
+    "A2UI is available through the deterministic inspection summary scenario.",
+  );
   mock.onPredicate(
     (input) =>
       input.messages?.at(-1)?.role === "tool" &&

@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { ActivityMessage } from "@ag-ui/core";
 import { computed, reactive } from "vue";
 import MarkdownRenderer from "../renderer/MarkdownRenderer.vue";
+import ActivityMessagePresentation from "./ActivityMessagePresentation.vue";
 import type {
   ConversationTurn,
   InterruptResponse,
@@ -12,15 +14,29 @@ const emit = defineEmits<{
   retry: [turnId: string];
 }>();
 
-const assistantMessages = computed(() =>
-  props.turn.responseMessages.flatMap((message) =>
-    message.role === "assistant" &&
-    typeof message.content === "string" &&
-    message.content.length > 0
-      ? [{ id: message.id, content: message.content }]
-      : [],
-  ),
-);
+type PresentableMessage =
+  | { id: string; kind: "activity"; activity: ActivityMessage }
+  | { content: string; id: string; kind: "assistant" };
+
+const presentableMessages = computed<PresentableMessage[]>(() => {
+  const messages: PresentableMessage[] = [];
+  for (const message of props.turn.responseMessages) {
+    if (message.role === "activity") {
+      messages.push({ id: message.id, kind: "activity", activity: message });
+    } else if (
+      message.role === "assistant" &&
+      typeof message.content === "string" &&
+      message.content.length > 0
+    ) {
+      messages.push({
+        content: message.content,
+        id: message.id,
+        kind: "assistant",
+      });
+    }
+  }
+  return messages;
+});
 
 const failureSummary = computed(() => {
   if (props.turn.status === "cancelled") return "请求已取消。";
@@ -66,13 +82,12 @@ function respondInterrupt(
     </button>
   </section>
 
-  <div
-    v-for="message in assistantMessages"
-    :key="message.id"
-    class="assistant-markdown"
-  >
-    <MarkdownRenderer :markdown="message.content ?? ''" />
-  </div>
+  <template v-for="message in presentableMessages" :key="message.id">
+    <div v-if="message.kind === 'assistant'" class="assistant-markdown">
+      <MarkdownRenderer :markdown="message.content" />
+    </div>
+    <ActivityMessagePresentation v-else :message="message.activity" />
+  </template>
 
   <section
     v-if="turn.status === 'interrupted' && turn.pendingInterrupts?.length"

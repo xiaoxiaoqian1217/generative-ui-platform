@@ -6,6 +6,7 @@ export const AGENT_SOURCES = [
 export type AgentSource = (typeof AGENT_SOURCES)[number];
 
 export interface AgentSourceProfile {
+  readonly a2uiCatalogEnabled: boolean;
   readonly agentId: AgentSource;
   readonly description: string;
   readonly frontendTools: boolean;
@@ -14,12 +15,14 @@ export interface AgentSourceProfile {
 
 const profiles: Record<AgentSource, AgentSourceProfile> = {
   "ag-ui-mock": {
+    a2uiCatalogEnabled: true,
     agentId: "ag-ui-mock",
     description: "Deterministic capability fixture with Frontend Tools",
     frontendTools: true,
     label: "AGUIMock",
   },
   "single-agent-chat-server": {
+    a2uiCatalogEnabled: false,
     agentId: "single-agent-chat-server",
     description: "Real Business Agent profile without Frontend Tools",
     frontendTools: false,

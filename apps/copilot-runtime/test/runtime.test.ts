@@ -17,6 +17,16 @@ async function readEventStream(response: Response): Promise<string> {
   }
 }
 
+function parseEventStream(stream: string): unknown[] {
+  return stream.split("\n\n").flatMap((block) => {
+    const data = block
+      .split("\n")
+      .find((line) => line.startsWith("data: "))
+      ?.slice(6);
+    return data === undefined ? [] : [JSON.parse(data)];
+  });
+}
+
 async function upstream(handle: RequestListener): Promise<string> {
   const server = createServer(handle);
   servers.push(server);
@@ -128,6 +138,25 @@ describe("thin CopilotKit Runtime", () => {
   });
 
   it("routes runs to the selected upstream and keeps SACS credentials server-side", async () => {
+    // 合成透传探针:只验证 ACTIVITY_SNAPSHOT 经 Runtime 原样透传,
+    // 不复制 AGUIMock 的具体 fixture 内容。
+    const mockActivitySnapshot = {
+      type: "ACTIVITY_SNAPSHOT",
+      messageId: "probe-activity-1",
+      activityType: "a2ui-surface",
+      content: {
+        a2ui_operations: [
+          {
+            version: "v0.9",
+            createSurface: {
+              surfaceId: "runtime-passthrough-probe",
+              catalogId: "urn:test:probe-catalog",
+            },
+          },
+        ],
+      },
+      replace: true,
+    };
     const received: Array<{
       authorization?: string;
       body: unknown;
@@ -144,6 +173,7 @@ describe("thin CopilotKit Runtime", () => {
       response.writeHead(200, { "content-type": "text/event-stream" });
       response.end(
         'data: {"type":"RUN_STARTED","threadId":"thread-1","runId":"run-1"}\n\n' +
+          `data: ${JSON.stringify(mockActivitySnapshot)}\n\n` +
           'data: {"type":"RUN_FINISHED","threadId":"thread-1","runId":"run-1"}\n\n',
       );
     });
@@ -206,7 +236,17 @@ describe("thin CopilotKit Runtime", () => {
     );
     const sacsEvents = await readEventStream(sacsResponse);
 
-    expect(mockEvents).toContain('"type":"RUN_STARTED"');
+    const parsedMockEvents = parseEventStream(mockEvents) as Array<{
+      type?: string;
+    }>;
+    expect(parsedMockEvents.map((event) => event.type)).toEqual([
+      "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
+      "RUN_FINISHED",
+    ]);
+    expect(
+      parsedMockEvents.find((event) => event.type === "ACTIVITY_SNAPSHOT"),
+    ).toEqual(mockActivitySnapshot);
     expect(sacsEvents).toContain('"type":"RUN_FINISHED"');
     expect(received).toEqual([
       { body: run, path: "/" },

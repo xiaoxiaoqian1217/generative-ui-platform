@@ -23,6 +23,8 @@ It does not wrap the run in `RuntimeRunResult`, `PresentationResult`, or another
 The active Conversation route supports:
 
 - native AG-UI user and assistant messages;
+- fixed A2UI activity rendering through CopilotKit's Vue Basic Catalog;
+- deterministic A2UI inspection-summary and invalid-catalog fixtures from AGUIMock;
 - safe Markdown rendering for assistant text;
 - CopilotKit `useFrontendTool` registration;
 - the `locateDevice` browser tool;
@@ -50,7 +52,7 @@ The following capabilities remain in the repository for later evaluation:
 
 These capabilities are frozen rather than removed.
 They may receive compatibility maintenance, but they are not part of the current release gate.
-Do not expand them into an A2UI, Catalog, Theme, Runtime, Presentation, or Compiler platform without a new real scenario and an explicit phase decision.
+The focused A2UI Renderer MVP is active under ADR-0029, while custom catalogs, theme work, dynamic A2UI, and any Runtime, Presentation, or Compiler platform remain outside this slice.
 
 ## Removed dependencies
 

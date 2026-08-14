@@ -5,29 +5,27 @@ export interface QuickScenario {
   message: string;
 }
 
+/**
+ * 快捷场景必须与 AGUIMock 当前已注册的场景一一对应；
+ * 没有 mock 支撑的入口不得加入列表。
+ */
 export const quickScenarios: QuickScenario[] = [
   {
+    id: "inspection-summary-a2ui",
+    label: "巡检摘要 (A2UI)",
+    description: "验证 Basic Catalog 固定渲染",
+    message: "展示巡检摘要 A2UI",
+  },
+  {
     id: "markdown",
-    label: "Markdown 摘要",
+    label: "http://localhost:5173/conversation",
     description: "验证安全 Markdown 展示",
     message: "请用 Markdown 总结当前平台状态。",
   },
   {
-    id: "devices",
-    label: "设备状态",
-    description: "查看结构化设备结果",
-    message: "查看当前可用的无人机和无人车。",
-  },
-  {
-    id: "patrol",
-    label: "巡防方案",
-    description: "验证生成式 UI 结果",
-    message: "使用一架无人机和两台无人车巡查 A 区域。",
-  },
-  {
-    id: "degraded",
+    id: "run-error",
     label: "安全降级",
-    description: "验证失败与降级诊断",
-    message: "返回一个需要安全降级的展示结果。",
+    description: "验证 bounded RUN_ERROR 与降级诊断",
+    message: "触发一次 mock failure 验证降级诊断",
   },
 ];

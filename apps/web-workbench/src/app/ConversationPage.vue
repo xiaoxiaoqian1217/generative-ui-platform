@@ -15,6 +15,7 @@ import {
 } from "../agent/business-agent-client.js";
 import type { ResumeEntry } from "@ag-ui/core";
 import CopilotKitConversationProvider from "../conversation/CopilotKitConversationProvider.vue";
+import { quickScenarios } from "./scenarios.js";
 import {
   type ConversationState,
   createConversationState,
@@ -413,6 +414,7 @@ onBeforeUnmount(() => {
 <template>
   <CopilotKitConversationProvider
     :key="selectedAgentProfile.agentId"
+    :a2ui-enabled="selectedAgentProfile.a2uiCatalogEnabled"
     :agent-id="selectedAgentProfile.agentId"
     :frontend-tools-enabled="selectedAgentProfile.frontendTools"
     :locate-device="handleLocateDevice"
@@ -423,8 +425,10 @@ onBeforeUnmount(() => {
       <ConversationSidebar
         :conversations="conversations"
         notice=""
+        :quick-scenarios="quickScenarios"
         :selected-conversation-id="selectedConversationId"
         @new-conversation="newConversation"
+        @run-scenario="sendMessage"
         @select-conversation="selectConversation"
       />
 

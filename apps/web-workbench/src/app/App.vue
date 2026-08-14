@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onMounted, ref } from "vue";
-import { quickScenarios } from "./scenarios.js";
 import {
   BUILTIN_CASES,
   exportCustomCases,

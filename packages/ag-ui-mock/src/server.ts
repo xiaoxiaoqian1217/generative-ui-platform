@@ -5,6 +5,7 @@ import {
 } from "node:http";
 import { AGUIMock } from "@copilotkit/aimock";
 import { registerEchoScenario } from "./scenarios/echo.js";
+import { registerInspectionSummaryA2uiScenario } from "./scenarios/inspection-summary-a2ui.js";
 import { registerLocateDeviceScenario } from "./scenarios/locate-device.js";
 import { registerRunErrorScenario } from "./scenarios/run-error.js";
 
@@ -50,6 +51,7 @@ export function createAguiMockServer(
   const port = options.port ?? 4800;
   const mock = new AGUIMock();
 
+  registerInspectionSummaryA2uiScenario(mock);
   registerEchoScenario(mock);
   registerLocateDeviceScenario(mock);
   registerRunErrorScenario(mock);

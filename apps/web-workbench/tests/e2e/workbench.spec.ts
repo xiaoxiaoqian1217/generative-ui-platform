@@ -104,7 +104,7 @@ test("Conversation-first Shell opens a per-turn Inspect overlay with swimlane ti
   await expect(page.getByTestId("inspect-panel")).toHaveCount(0);
 });
 
-test("Conversation-first Shell treats frozen A2UI capability as normal Agent text", async ({
+test("Conversation-first Shell explains the deterministic A2UI scenario for generic requests", async ({
   page,
 }) => {
   await page.goto("/");
@@ -120,10 +120,72 @@ test("Conversation-first Shell treats frozen A2UI capability as normal Agent tex
     .locator("[data-testid^='conversation-turn-']")
     .first();
   await expect(turn.getByTestId("markdown-result")).toContainText(
-    "A2UI capability is frozen",
+    "A2UI is available through the deterministic inspection summary scenario",
   );
   await expect(turn.getByTestId("a2ui-raw-content")).toHaveCount(0);
   await expect(turn.locator("[data-testid^='inspect-turn-']")).toBeVisible();
+});
+
+test("the inspection summary renders identically across consecutive runs", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "已连接",
+  );
+
+  const scenario = page.getByRole("button", { name: /巡检摘要 \(A2UI\)/ });
+  await scenario.click();
+
+  const firstSurface = page.locator("[data-surface-id='inspection-summary']");
+  await expect(firstSurface).toBeVisible();
+  await expect(firstSurface).toContainText("巡检结果");
+  await expect(firstSurface).toContainText("正常设备");
+  await expect(firstSurface).toContainText("4");
+  await expect(firstSurface).toContainText("告警设备");
+  await expect(firstSurface).toContainText("1");
+  await expect(
+    firstSurface.getByRole("button", { name: "查看详情" }),
+  ).toBeVisible();
+  const firstText = await firstSurface.innerText();
+
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  await expect(
+    page
+      .getByTestId("swimlane-timeline")
+      .locator("[data-type='ACTIVITY_SNAPSHOT']"),
+  ).toBeVisible();
+  await page.getByTestId("inspect-close").click();
+
+  await page.getByTestId("new-conversation").click();
+  await scenario.click();
+
+  const secondSurface = page.locator("[data-surface-id='inspection-summary']");
+  await expect(secondSurface).toBeVisible();
+  expect(await secondSurface.innerText()).toBe(firstText);
+});
+
+test("an invalid A2UI surface is isolated and the conversation remains usable", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "已连接",
+  );
+
+  await conversationInput(page).fill("展示损坏的 A2UI");
+  await conversationSend(page).click();
+
+  await expect(
+    page.getByText(/A2UI render error: Catalog not found/),
+  ).toBeVisible();
+  await expect(conversationInput(page)).toBeEnabled();
+
+  await conversationInput(page).fill("hello");
+  await conversationSend(page).click();
+  await expect(page.getByTestId("markdown-result")).toContainText(
+    "AG-UI mock is connected.",
+  );
 });
 
 test("Frontend Tool is advertised, executed in the browser, and continued through AG-UI", async ({

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { QuickScenario } from "../app/scenarios.js";
+
 interface LocalConversation {
   readonly conversationId: string;
   readonly title: string;
@@ -8,11 +10,13 @@ interface LocalConversation {
 defineProps<{
   conversations: readonly LocalConversation[];
   notice: string;
+  quickScenarios: readonly QuickScenario[];
   selectedConversationId?: string | undefined;
 }>();
 
 const emit = defineEmits<{
   newConversation: [];
+  runScenario: [message: string];
   selectConversation: [conversationId: string];
 }>();
 
@@ -64,5 +68,21 @@ function formatUpdatedAt(value: string): string {
         <span class="shell-conv-meta">{{ formatUpdatedAt(item.updatedAt) }}</span>
       </button>
     </div>
+    <section class="shell-scenarios" data-testid="quick-scenarios">
+      <div class="shell-scenarios-head">
+        <span>快捷场景</span>
+        <span>{{ quickScenarios.length }}</span>
+      </div>
+      <button
+        v-for="scenario in quickScenarios"
+        :key="scenario.id"
+        class="shell-scenario-item"
+        type="button"
+        @click="emit('runScenario', scenario.message)"
+      >
+        <strong>{{ scenario.label }}</strong>
+        <span>{{ scenario.description }}</span>
+      </button>
+    </section>
   </aside>
 </template>

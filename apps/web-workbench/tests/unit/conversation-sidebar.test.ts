@@ -15,7 +15,7 @@ const conversations = [
 describe("ConversationSidebar", () => {
   it("renders the conversation list and emits selection", async () => {
     const wrapper = mount(ConversationSidebar, {
-      props: { conversations, notice: "" },
+      props: { conversations, notice: "", quickScenarios: [] },
     });
 
     const item = wrapper.find(".shell-conv-item");
@@ -26,7 +26,12 @@ describe("ConversationSidebar", () => {
 
   it("marks the selected conversation as active", () => {
     const wrapper = mount(ConversationSidebar, {
-      props: { conversations, notice: "", selectedConversationId: "conv-1" },
+      props: {
+        conversations,
+        notice: "",
+        quickScenarios: [],
+        selectedConversationId: "conv-1",
+      },
     });
 
     expect(wrapper.find(".shell-conv-item").classes()).toContain("active");
@@ -34,10 +39,30 @@ describe("ConversationSidebar", () => {
 
   it("emits newConversation when the New button is clicked", async () => {
     const wrapper = mount(ConversationSidebar, {
-      props: { conversations: [], notice: "" },
+      props: { conversations: [], notice: "", quickScenarios: [] },
     });
 
     await wrapper.find("[data-testid='new-conversation']").trigger("click");
     expect(wrapper.emitted("newConversation")).toEqual([[]]);
+  });
+
+  it("emits the selected quick scenario message", async () => {
+    const wrapper = mount(ConversationSidebar, {
+      props: {
+        conversations: [],
+        notice: "",
+        quickScenarios: [
+          {
+            id: "inspection-summary-a2ui",
+            label: "巡检摘要 (A2UI)",
+            description: "验证固定渲染",
+            message: "展示巡检摘要 A2UI",
+          },
+        ],
+      },
+    });
+
+    await wrapper.find(".shell-scenario-item").trigger("click");
+    expect(wrapper.emitted("runScenario")).toEqual([["展示巡检摘要 A2UI"]]);
   });
 });
