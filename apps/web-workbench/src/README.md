@@ -10,7 +10,7 @@ Workbench source code is split by active responsibility.
 | `features/frontend-tools/` | Browser-side Frontend Tool implementations |
 | `features/map/` | MapLibre state and rendering |
 | `components/domain/` | Controlled business components such as `DeviceCard` |
-| `inspect/` | Safe AG-UI turn inspection snapshots |
+| `inspect/` | Turn inspection observation model, swimlane timeline, and structured JSON viewer |
 | `renderer/` | Safe Markdown plus frozen local A2UI support |
 | `settings/` | Agent origin and local Workbench settings |
 | `shell/` | Conversation-first shell components |

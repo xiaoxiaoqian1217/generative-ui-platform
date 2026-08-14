@@ -8,12 +8,13 @@ The current E2E release gate covers:
 
 - the Conversation-first shell;
 - native AG-UI Markdown rendering and script safety;
-- per-turn AG-UI inspection;
+- per-turn Turn Inspect: swimlane timeline, observed order, raw JSON detail, process events without contract artifacts, and large-payload lazy rendering;
 - frozen A2UI requests remaining normal Agent text;
-- browser Frontend Tool execution and AG-UI continuation;
+- browser Frontend Tool execution and AG-UI continuation with tool call / result correlation;
 - the `locateDevice` MapLibre flow;
 - Agent source switching and the explicit SACS Frontend Tool capability gap;
 - SACS streaming text, state snapshot/delta, activity snapshot/delta, artifact result, and `RUN_ERROR` handling;
+- SACS interrupt / resume with real correlation and durable-run conflict facts;
 - cancellation;
 - retryable timeout behavior;
 - Agent outage and recovery.

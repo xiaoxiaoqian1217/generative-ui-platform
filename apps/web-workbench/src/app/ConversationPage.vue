@@ -13,12 +13,15 @@ import {
   createBusinessAgentClient,
   WorkbenchAgentError,
 } from "../agent/business-agent-client.js";
+import type { ResumeEntry } from "@ag-ui/core";
 import CopilotKitConversationProvider from "../conversation/CopilotKitConversationProvider.vue";
 import {
   type ConversationState,
   createConversationState,
   failOperation,
+  type InterruptResponse,
   resolveRun,
+  resumeInterrupt,
   setConversationInput,
   startRun,
   type TurnFailure,
@@ -28,6 +31,11 @@ import { locateDevice } from "../features/frontend-tools/locate-device.js";
 import type { Device } from "../features/map/devices.js";
 import MapWorkspace from "../features/map/MapWorkspace.vue";
 import { saveInspectionSnapshot } from "../inspect/inspection-snapshot.js";
+import {
+  createObservationRecorder,
+  type ObservationRecorder,
+  type TurnObservationInput,
+} from "../inspect/turn-inspection.js";
 import type {
   AgentEndpoints,
   WorkbenchConfig,
@@ -127,6 +135,13 @@ const isInputDisabled = computed(
 
 let client: AgentTransportClient | undefined;
 let clientGeneration = 0;
+let activeRecorder: ObservationRecorder | undefined;
+
+// Issue #205：Frontend Tool handler 在 run 进行中异步触发，
+// 通过该稳定委托把观察事实写入当前 active run 的 recorder。
+function forwardObservation(input: TurnObservationInput): void {
+  activeRecorder?.record(input);
+}
 
 function applyConnectionState(next: ConnectionState): void {
   connectionState.value = next;
@@ -201,6 +216,72 @@ function turnFailure(error: DisplayError): TurnFailure {
   };
 }
 
+async function executeRun(
+  turnId: string,
+  threadId: string,
+  request: {
+    message?: WorkbenchUserMessage;
+    requestId: string;
+    resume?: readonly ResumeEntry[];
+  },
+): Promise<void> {
+  const active = client;
+  if (active === undefined) return;
+  const runId = createId("run");
+  const controller = new AbortController();
+  activeController.value = controller;
+  runState.value = "running";
+  const recorder = createObservationRecorder();
+  activeRecorder = recorder;
+
+  try {
+    const result = await active.run(
+      {
+        ...(request.message === undefined ? {} : { message: request.message }),
+        observe: forwardObservation,
+        ...(request.resume === undefined ? {} : { resume: request.resume }),
+        runId,
+        threadId,
+      },
+      controller.signal,
+    );
+    conversation.value = resolveRun(conversation.value, turnId, {
+      agentState: result.state,
+      eventTypes: result.eventTypes,
+      ...(result.interrupts === undefined
+        ? {}
+        : { interrupts: result.interrupts }),
+      messages: result.newMessages,
+      observations: recorder.observations(),
+      runResult: result.result,
+      runId,
+      threadId,
+    });
+    saveInspectionSnapshot(window.sessionStorage, {
+      messages: result.newMessages,
+      requestId: request.requestId,
+      runId,
+      threadId,
+    });
+    runState.value = result.interrupts?.length ? "idle" : "completed";
+  } catch (caught) {
+    const displayError = displayErrorFromUnknown(caught);
+    const cancelled = displayError.code === "WORKBENCH_REQUEST_CANCELLED";
+    conversation.value = failOperation(
+      conversation.value,
+      turnId,
+      turnFailure(displayError),
+      cancelled ? "cancelled" : "failed",
+      recorder.observations(),
+    );
+    runState.value = cancelled ? "cancelled" : "failed";
+  } finally {
+    if (activeRecorder === recorder) activeRecorder = undefined;
+    if (activeController.value === controller)
+      activeController.value = undefined;
+  }
+}
+
 async function sendMessage(
   message = input.value,
   options: { allowUnavailable?: boolean } = {},
@@ -221,7 +302,6 @@ async function sendMessage(
     return;
 
   const requestId = createId("message");
-  const runId = createId("run");
   const userMessage: WorkbenchUserMessage = {
     id: requestId,
     role: "user",
@@ -235,44 +315,44 @@ async function sendMessage(
   });
   if (nextConversation === conversation.value) return;
   conversation.value = nextConversation;
-  const controller = new AbortController();
-  activeController.value = controller;
-  runState.value = "running";
 
-  try {
-    const result = await client.run(
-      { message: userMessage, runId, threadId: current.threadId },
-      controller.signal,
-    );
-    conversation.value = resolveRun(conversation.value, turnId, {
-      agentState: result.state,
-      eventTypes: result.eventTypes,
-      messages: result.newMessages,
-      runResult: result.result,
-      runId,
-      threadId: current.threadId,
-    });
-    saveInspectionSnapshot(window.sessionStorage, {
-      messages: result.newMessages,
-      requestId,
-      runId,
-      threadId: current.threadId,
-    });
-    runState.value = "completed";
-  } catch (caught) {
-    const displayError = displayErrorFromUnknown(caught);
-    const cancelled = displayError.code === "WORKBENCH_REQUEST_CANCELLED";
-    conversation.value = failOperation(
-      conversation.value,
-      turnId,
-      turnFailure(displayError),
-      cancelled ? "cancelled" : "failed",
-    );
-    runState.value = cancelled ? "cancelled" : "failed";
-  } finally {
-    if (activeController.value === controller)
-      activeController.value = undefined;
-  }
+  await executeRun(turnId, current.threadId, {
+    message: userMessage,
+    requestId,
+  });
+}
+
+function respondToInterrupt(response: InterruptResponse): void {
+  const current = currentConversation.value;
+  if (!client || !current) return;
+  const turn = conversation.value.turns.find(
+    (item) => item.turnId === response.turnId,
+  );
+  if (
+    turn?.status !== "interrupted" ||
+    conversation.value.activeOperation !== undefined ||
+    connectionState.value !== "connected"
+  )
+    return;
+  const requestId = createId("message");
+  const nextConversation = resumeInterrupt(conversation.value, turn.turnId, {
+    requestId,
+  });
+  if (nextConversation === conversation.value) return;
+  conversation.value = nextConversation;
+
+  void executeRun(turn.turnId, current.threadId, {
+    requestId,
+    resume: [
+      {
+        interruptId: response.interruptId,
+        status: response.status,
+        ...(response.payload === undefined
+          ? {}
+          : { payload: response.payload }),
+      },
+    ],
+  });
 }
 
 function cancelRequest(): void {
@@ -336,6 +416,7 @@ onBeforeUnmount(() => {
     :agent-id="selectedAgentProfile.agentId"
     :frontend-tools-enabled="selectedAgentProfile.frontendTools"
     :locate-device="handleLocateDevice"
+    :observe="forwardObservation"
     :runtime-url="endpoints.agUi"
   >
     <div class="shell" data-testid="conversation-shell">
@@ -381,6 +462,7 @@ onBeforeUnmount(() => {
           :run-state="runState"
           :turns="conversation.turns"
           @inspect="inspectedTurnId = $event"
+          @respond-interrupt="respondToInterrupt"
           @retry="retryTurn"
         />
 

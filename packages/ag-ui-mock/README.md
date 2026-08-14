@@ -10,6 +10,7 @@
 
 - `echo` 提供 `hello`、`echo` 和 `连接测试` 三个基础 AG-UI 连接探针。
 - `locate-device` 先请求浏览器执行 `locateDevice({ deviceId: "01" })`，再消费工具结果并返回最终 AG-UI 文本消息。
+- `run-error` 对包含 `mock failure` 的输入返回 bounded `RUN_ERROR`（`MOCK_FIXTURE_ERROR`），用于失败定位与 Inspect 回归。
 
 服务器启动时会注册全部场景，不需要也不支持逐个启用场景。
 新增场景后，应将其注册到同一个服务器实例。

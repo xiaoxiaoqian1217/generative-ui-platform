@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue";
-import type { ConversationTurn } from "../conversation/conversation-store.js";
+import type {
+  ConversationTurn,
+  InterruptResponse,
+} from "../conversation/conversation-store.js";
 import ConversationTurnPresentation from "../conversation/ConversationTurnPresentation.vue";
 
 export type ConversationRunState =
@@ -18,6 +21,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   inspect: [turnId: string];
+  respondInterrupt: [response: InterruptResponse];
   retry: [turnId: string];
 }>();
 
@@ -77,9 +81,17 @@ watch(
           >
             已取消
           </div>
+          <div
+            v-else-if="turn.status === 'interrupted'"
+            class="shell-turn-hint shell-turn-hint-interrupted"
+            role="status"
+          >
+            Agent 请求确认，等待用户输入
+          </div>
 
           <ConversationTurnPresentation
             :turn="turn"
+            @respond-interrupt="emit('respondInterrupt', $event)"
             @retry="emit('retry', $event)"
           />
 

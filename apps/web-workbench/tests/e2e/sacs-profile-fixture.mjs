@@ -61,6 +61,32 @@ export async function createSacsProfileFixture({ host, port }) {
       runId: body.runId,
     });
 
+    // Issue #205：resume run —— AG-UI RunAgentInput.resume 到达 SACS 后
+    // 继续执行并结束，echo 公开 resume payload 便于断言真实关联。
+    if (Array.isArray(body.resume) && body.resume.length > 0) {
+      const entry = body.resume[0];
+      const messageId = `sacs-${body.runId}`;
+      const text =
+        entry.status === "cancelled"
+          ? "Task interrupted and cancelled by user."
+          : `Task resumed after confirmation: ${String(entry.payload)}.`;
+      sse(response, {
+        type: "TEXT_MESSAGE_START",
+        messageId,
+        role: "assistant",
+      });
+      sse(response, { type: "TEXT_MESSAGE_CONTENT", messageId, delta: text });
+      sse(response, { type: "TEXT_MESSAGE_END", messageId });
+      sse(response, {
+        type: "RUN_FINISHED",
+        threadId: body.threadId,
+        runId: body.runId,
+        result: { resumed: true, interruptId: entry.interruptId },
+      });
+      response.end();
+      return;
+    }
+
     const lastUserMessage = [...(body.messages ?? [])]
       .reverse()
       .find((message) => message.role === "user")?.content;
@@ -74,10 +100,64 @@ export async function createSacsProfileFixture({ host, port }) {
       return;
     }
 
+    // Issue #205：durable run 公开冲突事实（如 run_id_conflict）。
+    if (String(lastUserMessage).includes("durable conflict")) {
+      sse(response, {
+        type: "RUN_ERROR",
+        code: "run_id_conflict",
+        message: "a durable run already exists for this thread",
+      });
+      response.end();
+      return;
+    }
+
+    // Issue #205：Interrupt / Resume —— RUN_FINISHED 携带 interrupt outcome。
+    if (String(lastUserMessage).includes("confirm task")) {
+      const messageId = `sacs-${body.runId}`;
+      sse(response, {
+        type: "TEXT_MESSAGE_START",
+        messageId,
+        role: "assistant",
+      });
+      sse(response, {
+        type: "TEXT_MESSAGE_CONTENT",
+        messageId,
+        delta: "Task requires user confirmation before continuing.",
+      });
+      sse(response, { type: "TEXT_MESSAGE_END", messageId });
+      sse(response, {
+        type: "RUN_FINISHED",
+        threadId: body.threadId,
+        runId: body.runId,
+        outcome: {
+          type: "interrupt",
+          interrupts: [
+            {
+              id: `interrupt-${body.runId}`,
+              reason: "need_confirmation",
+              message: "请确认是否继续执行任务",
+            },
+          ],
+        },
+      });
+      response.end();
+      return;
+    }
+
     const messageId = `sacs-${body.runId}`;
+    // Issue #205：大 payload 场景，验证 JSON viewer 折叠 / lazy rendering。
+    const largePayload = String(lastUserMessage).includes("large payload");
     sse(response, {
       type: "STATE_SNAPSHOT",
-      snapshot: { task: { progress: 25, status: "running" } },
+      snapshot: largePayload
+        ? {
+            items: Array.from({ length: 120 }, (_, index) => ({
+              id: `item-${index}`,
+              value: index,
+            })),
+            task: { progress: 25, status: "running" },
+          }
+        : { task: { progress: 25, status: "running" } },
     });
     sse(response, {
       type: "STATE_DELTA",

@@ -27,9 +27,12 @@ The active Conversation route supports:
 - CopilotKit `useFrontendTool` registration;
 - the `locateDevice` browser tool;
 - MapLibre device selection, map movement, marker highlighting, and a controlled `DeviceCard`;
-- per-turn AG-UI inspection;
+- per-turn Turn Inspect: a swimlane timeline of the observations the Workbench really saw (Workbench / CopilotKit Runtime / Agent / Frontend Tool lanes appear only when they actually occurred) plus on-demand raw JSON detail;
+- SACS interrupt / resume: an interrupted run renders an in-turn confirmation card, and the user's answer is sent back as a native AG-UI `resume` entry;
 - cancellation, retryable timeout handling, agent outage handling, and recovery;
 - explicit selection between AGUIMock and `single-agent-chat-server`.
+
+Turn Inspect records only observable public facts in observed order; it does not infer server-side sequences, and it does not create a Runtime Repository, Recovery Platform, or a private diagnostic protocol.
 
 AGUIMock sees the stable `locateDevice` tool capability.
 SACS receives no client-provided tools because its current profile does not support them.
@@ -150,7 +153,7 @@ pnpm build
 pnpm docs:check
 ```
 
-The browser E2E suite covers native AG-UI Markdown, inspection, Frontend Tool continuation, the real `locateDevice` map flow, SACS profile interoperability, cancellation, retry, outage, and recovery.
+The browser E2E suite covers native AG-UI Markdown, the Turn Inspect swimlane timeline and raw JSON detail, Frontend Tool continuation, the real `locateDevice` map flow, SACS profile interoperability (state, activity, artifact, bounded `RUN_ERROR`, interrupt / resume, durable-run conflict facts), large-payload lazy rendering, cancellation, retry, outage, and recovery.
 
 ## Documentation status
 

@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, reactive } from "vue";
 import MarkdownRenderer from "../renderer/MarkdownRenderer.vue";
-import type { ConversationTurn } from "./conversation-store.js";
+import type {
+  ConversationTurn,
+  InterruptResponse,
+} from "./conversation-store.js";
 
 const props = defineProps<{ turn: ConversationTurn }>();
-const emit = defineEmits<{ retry: [turnId: string] }>();
+const emit = defineEmits<{
+  respondInterrupt: [response: InterruptResponse];
+  retry: [turnId: string];
+}>();
 
 const assistantMessages = computed(() =>
   props.turn.responseMessages.flatMap((message) =>
@@ -22,6 +28,23 @@ const failureSummary = computed(() => {
     return "请求超时，请重试。";
   return "请求未能完成。";
 });
+
+const interruptInputs = reactive<Record<string, string>>({});
+
+function respondInterrupt(
+  interruptId: string,
+  status: "cancelled" | "resolved",
+): void {
+  const input = interruptInputs[interruptId]?.trim();
+  emit("respondInterrupt", {
+    interruptId,
+    ...(status === "resolved" && input !== undefined && input !== ""
+      ? { payload: input }
+      : {}),
+    status,
+    turnId: props.turn.turnId,
+  });
+}
 </script>
 
 <template>
@@ -50,4 +73,48 @@ const failureSummary = computed(() => {
   >
     <MarkdownRenderer :markdown="message.content ?? ''" />
   </div>
+
+  <section
+    v-if="turn.status === 'interrupted' && turn.pendingInterrupts?.length"
+    class="turn-interrupt"
+    data-testid="turn-interrupt"
+  >
+    <form
+      v-for="interrupt in turn.pendingInterrupts"
+      :key="interrupt.id"
+      class="turn-interrupt-card"
+      :data-testid="`interrupt-${interrupt.id}`"
+      @submit.prevent="respondInterrupt(interrupt.id, 'resolved')"
+    >
+      <p class="eyebrow">Agent 中断请求</p>
+      <p class="turn-interrupt-reason" data-testid="interrupt-reason">
+        {{ interrupt.message ?? interrupt.reason }}
+      </p>
+      <label class="turn-interrupt-input">
+        回复
+        <input
+          v-model="interruptInputs[interrupt.id]"
+          :data-testid="`interrupt-input-${interrupt.id}`"
+          type="text"
+        />
+      </label>
+      <div class="button-group">
+        <button
+          class="primary-button"
+          :data-testid="`interrupt-submit-${interrupt.id}`"
+          type="submit"
+        >
+          提交
+        </button>
+        <button
+          class="secondary-button"
+          :data-testid="`interrupt-cancel-${interrupt.id}`"
+          type="button"
+          @click="respondInterrupt(interrupt.id, 'cancelled')"
+        >
+          取消
+        </button>
+      </div>
+    </form>
+  </section>
 </template>

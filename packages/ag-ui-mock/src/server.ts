@@ -6,6 +6,7 @@ import {
 import { AGUIMock } from "@copilotkit/aimock";
 import { registerEchoScenario } from "./scenarios/echo.js";
 import { registerLocateDeviceScenario } from "./scenarios/locate-device.js";
+import { registerRunErrorScenario } from "./scenarios/run-error.js";
 
 export interface CreateAguiMockServerOptions {
   readonly host?: string;
@@ -51,6 +52,7 @@ export function createAguiMockServer(
 
   registerEchoScenario(mock);
   registerLocateDeviceScenario(mock);
+  registerRunErrorScenario(mock);
 
   const server = createServer(async (request, response) => {
     allowWorkbenchCors(response);

@@ -1,9 +1,15 @@
-import type { UserMessage } from "@ag-ui/core";
+import type { Interrupt, ResumeEntry, UserMessage } from "@ag-ui/core";
 import {
   type CopilotKitCore,
   CopilotKitCoreRuntimeConnectionStatus,
 } from "@copilotkit/core";
 import type { RunAgentResult } from "@copilotkit/vue/v2";
+import {
+  observationInputFromAgUiEvent,
+  type TurnObservationInput,
+} from "../inspect/turn-inspection.js";
+
+export type ObservationSink = (input: TurnObservationInput) => void;
 
 export type ConnectionState =
   | "connecting"
@@ -36,7 +42,9 @@ export class WorkbenchAgentError extends Error {
 }
 
 export interface AgentRunInput {
-  readonly message: UserMessage & { readonly content: string };
+  readonly message?: UserMessage & { readonly content: string };
+  readonly observe?: ObservationSink;
+  readonly resume?: readonly ResumeEntry[];
   readonly runId: string;
   readonly threadId: string;
 }
@@ -52,6 +60,7 @@ export interface AgentTransportClient {
 
 export interface WorkbenchAgentRunResult extends RunAgentResult {
   readonly eventTypes: readonly string[];
+  readonly interrupts?: readonly Interrupt[];
   readonly state: unknown;
 }
 
@@ -140,6 +149,9 @@ export function createBusinessAgentClient(
   const threadAgents = new Map<string, CopilotKitAgent>();
   let boundCore: CopilotKitCore | undefined;
   let activeAbort: (() => void) | undefined;
+  let activeObservation:
+    | { observe: ObservationSink; runId: string; threadId: string }
+    | undefined;
   let coreSubscription: { unsubscribe(): void } | undefined;
   let reconnectTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
 
@@ -162,7 +174,29 @@ export function createBusinessAgentClient(
     );
     coreSubscription = core.subscribe({
       onRuntimeConnectionStatusChanged: ({ status }) => {
-        options.onConnectionStateChange?.(connectionStateForRuntime(status));
+        const connectionState = connectionStateForRuntime(status);
+        options.onConnectionStateChange?.(connectionState);
+        // Issue #205：连接状态变化是 Workbench 可真实观察的 Runtime 事实
+        // （如 reconnect / unavailable），仅观察，不实现 Recovery Platform。
+        const active = activeObservation;
+        if (active !== undefined) {
+          const failed =
+            connectionState === "unavailable" ||
+            connectionState === "disconnected";
+          active.observe({
+            hasArtifact: false,
+            payload: { connectionState },
+            runId: active.runId,
+            source: "copilotkit-runtime",
+            ...(failed
+              ? { status: "failed" as const }
+              : connectionState === "reconnecting"
+                ? { status: "reconnecting" as const }
+                : {}),
+            threadId: active.threadId,
+            type: "RUNTIME_CONNECTION_STATE",
+          });
+        }
         if (status === CopilotKitCoreRuntimeConnectionStatus.Error) {
           globalThis.clearTimeout(reconnectTimer);
           reconnectTimer = globalThis.setTimeout(
@@ -220,12 +254,40 @@ export function createBusinessAgentClient(
       if (boundCore !== core) observeRuntimeConnection(core);
       const baseAgent = await resolveAgent(core, agentId, timeoutMs);
       const agent = agentForThread(core, baseAgent, input.threadId);
-      agent.addMessage(input.message);
+      if (input.message !== undefined) agent.addMessage(input.message);
+      const observe = input.observe;
+      activeObservation =
+        observe === undefined
+          ? undefined
+          : { observe, runId: input.runId, threadId: input.threadId };
+      observe?.({
+        hasArtifact: true,
+        ...(input.resume?.[0]?.interruptId === undefined
+          ? {}
+          : { interruptId: input.resume[0].interruptId }),
+        payload: {
+          ...(input.message === undefined ? {} : { message: input.message }),
+          ...(input.resume === undefined ? {} : { resume: input.resume }),
+          runId: input.runId,
+          threadId: input.threadId,
+        },
+        runId: input.runId,
+        source: "workbench",
+        threadId: input.threadId,
+        type: input.resume === undefined ? "RUN_INPUT" : "RESUME_INPUT",
+      });
+      const startedAt = globalThis.performance.now();
       const eventTypes: string[] = [];
       let runError: { code?: string; message: string } | undefined;
       const eventSubscription = agent.subscribe({
         onEvent: ({ event }) => {
           eventTypes.push(event.type);
+          observe?.(
+            observationInputFromAgUiEvent(event, {
+              runId: input.runId,
+              threadId: input.threadId,
+            }),
+          );
           if (event.type === "RUN_ERROR") {
             runError = {
               ...(typeof event.code === "string" ? { code: event.code } : {}),
@@ -240,17 +302,33 @@ export function createBusinessAgentClient(
 
       return new Promise<WorkbenchAgentRunResult>((resolve, reject) => {
         let settled = false;
+        const settleObservation = (
+          type: string,
+          status: "cancelled" | "failed" | "ok",
+        ) => {
+          observe?.({
+            durationMs: Math.round(globalThis.performance.now() - startedAt),
+            hasArtifact: false,
+            runId: input.runId,
+            source: "workbench",
+            status,
+            threadId: input.threadId,
+            type,
+          });
+        };
         const finish = (callback: () => void) => {
           if (settled) return;
           settled = true;
           globalThis.clearTimeout(timeout);
           callerSignal?.removeEventListener("abort", cancel);
           activeAbort = undefined;
+          activeObservation = undefined;
           eventSubscription.unsubscribe();
           callback();
         };
         const cancel = () => {
           core.stopAgent({ agent });
+          settleObservation("RUN_CANCELLED", "cancelled");
           finish(() =>
             reject(
               new WorkbenchAgentError(
@@ -263,6 +341,7 @@ export function createBusinessAgentClient(
         };
         const timeout = globalThis.setTimeout(() => {
           core.stopAgent({ agent });
+          settleObservation("RUN_TIMEOUT", "failed");
           finish(() =>
             reject(
               new WorkbenchAgentError(
@@ -277,7 +356,13 @@ export function createBusinessAgentClient(
         callerSignal?.addEventListener("abort", cancel, { once: true });
         activeAbort = cancel;
         void core
-          .runAgent({ agent, runId: input.runId })
+          .runAgent({
+            agent,
+            runId: input.runId,
+            ...(input.resume === undefined
+              ? {}
+              : { resume: [...input.resume] }),
+          })
           .then((result) => {
             finish(() => {
               if (runError !== undefined) {
@@ -286,6 +371,7 @@ export function createBusinessAgentClient(
                   RETRYABLE_RUN_ERROR_CODES.has(runError.code);
                 if (unavailable)
                   options.onConnectionStateChange?.("unavailable");
+                settleObservation("RUN_SETTLED", "failed");
                 reject(
                   new WorkbenchAgentError(
                     unavailable
@@ -299,6 +385,7 @@ export function createBusinessAgentClient(
                 );
                 return;
               }
+              const pendingInterrupts = agent.pendingInterrupts ?? [];
               const hasAssistantResponse = result.newMessages.some(
                 (message) =>
                   message.role === "assistant" &&
@@ -317,8 +404,10 @@ export function createBusinessAgentClient(
               if (
                 !hasAssistantResponse &&
                 !hasStructuredResult &&
-                !hasNativeObservation
+                !hasNativeObservation &&
+                pendingInterrupts.length === 0
               ) {
+                settleObservation("RUN_SETTLED", "failed");
                 reject(
                   new WorkbenchAgentError(
                     "WORKBENCH_RESPONSE_INVALID",
@@ -329,7 +418,15 @@ export function createBusinessAgentClient(
                 return;
               }
               options.onConnectionStateChange?.("connected");
-              resolve({ ...result, eventTypes, state: agent.state });
+              settleObservation("RUN_SETTLED", "ok");
+              resolve({
+                ...result,
+                eventTypes,
+                ...(pendingInterrupts.length === 0
+                  ? {}
+                  : { interrupts: [...pendingInterrupts] }),
+                state: agent.state,
+              });
             });
           })
           .catch(() => {
@@ -338,6 +435,7 @@ export function createBusinessAgentClient(
               RETRYABLE_RUN_ERROR_CODES.has(runError.code);
             if (runError === undefined || retryableRunError)
               options.onConnectionStateChange?.("unavailable");
+            settleObservation("RUN_SETTLED", "failed");
             finish(() =>
               reject(
                 runError === undefined || retryableRunError

@@ -45,7 +45,7 @@ test("Conversation-first Shell sends a real message and renders safe Markdown in
   ).toHaveCount(0);
 });
 
-test("Conversation-first Shell opens a per-turn Inspect overlay", async ({
+test("Conversation-first Shell opens a per-turn Inspect overlay with swimlane timeline", async ({
   page,
 }) => {
   await page.goto("/");
@@ -64,11 +64,42 @@ test("Conversation-first Shell opens a per-turn Inspect overlay", async ({
   ).toHaveText("Agent online");
 
   await page.locator("[data-testid^='inspect-turn-']").first().click();
-  await expect(page.getByTestId("inspect-panel")).toBeVisible();
-  await expect(page.getByTestId("inspect-panel")).toContainText("turn-");
-  await expect(page.getByTestId("agent-message-viewer")).toContainText(
-    "assistant",
+  const panel = page.getByTestId("inspect-panel");
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText("turn-");
+
+  // 泳道只来自真实观察到的 participant
+  await expect(page.getByTestId("timeline-lane-workbench")).toBeVisible();
+  await expect(page.getByTestId("timeline-lane-agent")).toBeVisible();
+  await expect(
+    page.getByTestId("timeline-lane-copilotkit-runtime"),
+  ).toHaveCount(0);
+
+  // 事件按 observed order 展示
+  const types = await page
+    .locator("[data-testid^='timeline-node-']")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("data-type")),
+    );
+  expect(types[0]).toBe("RUN_INPUT");
+  expect(types).toContain("RUN_STARTED");
+  expect(types).toContain("TEXT_MESSAGE_CONTENT");
+  expect(types).toContain("RUN_FINISHED");
+
+  // 点击节点查看 Raw JSON Detail
+  await page
+    .locator(
+      "[data-testid^='timeline-node-'][data-type='TEXT_MESSAGE_CONTENT']",
+    )
+    .first()
+    .click();
+  const detail = page.getByTestId("inspect-detail");
+  await expect(detail).toContainText("Agent online");
+  // 纯过程事件显式表达无契约边界 Artifact
+  await expect(page.getByTestId("inspect-no-artifact")).toContainText(
+    "不产生契约边界 Artifact",
   );
+
   await page.getByTestId("inspect-close").click();
   await expect(page.getByTestId("inspect-panel")).toHaveCount(0);
 });
@@ -243,12 +274,34 @@ test("SACS Source streams text, state, activity, and artifact without Frontend T
     "artifact report-42",
   );
   await page.locator("[data-testid^='inspect-turn-']").first().click();
-  const observation = page.getByTestId("agent-message-viewer");
-  await expect(observation).toContainText("STATE_SNAPSHOT");
-  await expect(observation).toContainText("STATE_DELTA");
-  await expect(observation).toContainText("ACTIVITY_SNAPSHOT");
-  await expect(observation).toContainText("ACTIVITY_DELTA");
-  await expect(observation).toContainText("report-42");
+  const timeline = page.getByTestId("swimlane-timeline");
+  for (const type of [
+    "STATE_SNAPSHOT",
+    "STATE_DELTA",
+    "ACTIVITY_SNAPSHOT",
+    "ACTIVITY_DELTA",
+  ]) {
+    await expect(
+      timeline.locator(`[data-type='${type}']`).first(),
+    ).toBeVisible();
+  }
+
+  await timeline.locator("[data-type='STATE_SNAPSHOT']").first().click();
+  await page
+    .getByTestId("inspect-detail")
+    .getByTestId("json-node-snapshot")
+    .click();
+  await page
+    .getByTestId("inspect-detail")
+    .getByTestId("json-node-task")
+    .click();
+  await expect(page.getByTestId("inspect-detail")).toContainText("progress");
+
+  await timeline.locator("[data-type='RUN_FINISHED']").first().click();
+  const finishedDetail = page.getByTestId("inspect-detail");
+  await finishedDetail.getByTestId("json-node-result").click();
+  await finishedDetail.getByTestId("json-node-artifact").click();
+  await expect(finishedDetail).toContainText("report-42");
 
   const received = await (await request.get("/__control__/sacs")).json();
   expect(received.at(-1).authorization).toBe("Bearer e2e-sacs-key");
@@ -281,9 +334,15 @@ test("a structured SACS result without assistant text still enters Inspect", asy
   await conversationSend(page).click();
 
   await page.locator("[data-testid^='inspect-turn-']").first().click();
-  await expect(page.getByTestId("agent-message-viewer")).toContainText(
-    "report-42",
-  );
+  await page
+    .getByTestId("swimlane-timeline")
+    .locator("[data-type='RUN_FINISHED']")
+    .first()
+    .click();
+  const structuredDetail = page.getByTestId("inspect-detail");
+  await structuredDetail.getByTestId("json-node-result").click();
+  await structuredDetail.getByTestId("json-node-artifact").click();
+  await expect(structuredDetail).toContainText("report-42");
   await expect(page.getByTestId("turn-failure")).toHaveCount(0);
 });
 
@@ -328,4 +387,196 @@ test("SACS RUN_ERROR enters the bounded failed state", async ({ page }) => {
   await expect(page.getByTestId("turn-failure")).not.toContainText(
     "bounded fixture failure",
   );
+});
+
+test("Inspect shows the AGUIMock Frontend Tool loop with real correlation", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "已连接",
+  );
+
+  await conversationInput(page).fill("定位无人机 01");
+  await conversationSend(page).click();
+  await expect(page.getByTestId("markdown-result")).toContainText(
+    "已定位无人机 01",
+  );
+
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  const timeline = page.getByTestId("swimlane-timeline");
+
+  // Frontend Tool 泳道只在真实发生时出现
+  await expect(page.getByTestId("timeline-lane-frontend-tool")).toBeVisible();
+  await expect(
+    timeline.locator("[data-type='TOOL_CALL_START']").first(),
+  ).toBeVisible();
+  await expect(
+    timeline.locator("[data-type='TOOL_CALL_END']").first(),
+  ).toBeVisible();
+  await expect(
+    timeline.locator("[data-type='FRONTEND_TOOL_INVOCATION']").first(),
+  ).toBeVisible();
+
+  const result = timeline.locator("[data-type='FRONTEND_TOOL_RESULT']").first();
+  await expect(result).toBeVisible();
+  await expect(result).toHaveAttribute("data-status", "ok");
+  await expect(result).toContainText("ms");
+
+  await result.click();
+  const detail = page.getByTestId("inspect-detail");
+  // 请求 / 返回配对：invocation args 与 result 真实成对呈现
+  await expect(page.getByTestId("inspect-exchange-request")).toContainText(
+    "locateDevice",
+  );
+  await expect(page.getByTestId("inspect-exchange-response")).toContainText(
+    "located",
+  );
+  await expect(detail).toContainText("toolCall");
+
+  // Tool Call / Tool Result 之间的真实关联被高亮
+  const correlatedCount = await timeline
+    .locator("[data-correlated='true']")
+    .count();
+  expect(correlatedCount).toBeGreaterThanOrEqual(2);
+  await expect(
+    timeline.locator("[data-type='TOOL_CALL_END']").first(),
+  ).toHaveAttribute("data-correlated", "true");
+});
+
+test("AGUIMock bounded RUN_ERROR is located in Inspect with its public payload", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await conversationInput(page).fill("mock failure");
+  await conversationSend(page).click();
+  await expect(page.getByTestId("turn-failure")).toContainText(
+    "WORKBENCH_RUN_ERROR",
+  );
+
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  const errorNode = page
+    .getByTestId("swimlane-timeline")
+    .locator("[data-type='RUN_ERROR']")
+    .first();
+  await expect(errorNode).toHaveAttribute("data-status", "failed");
+
+  await errorNode.click();
+  const detail = page.getByTestId("inspect-detail");
+  await expect(detail).toContainText("MOCK_FIXTURE_ERROR");
+  await expect(detail).toContainText("bounded mock fixture failure");
+});
+
+test("SACS Interrupt is answered in the turn and resumed with real correlation", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await page
+    .getByTestId("agent-source-select")
+    .selectOption("single-agent-chat-server");
+
+  await conversationInput(page).fill("confirm task");
+  await conversationSend(page).click();
+
+  const interrupt = page.getByTestId("turn-interrupt");
+  await expect(interrupt).toBeVisible();
+  await expect(page.getByTestId("interrupt-reason")).toContainText(
+    "请确认是否继续执行任务",
+  );
+
+  await page
+    .locator("[data-testid^='interrupt-input-']")
+    .first()
+    .fill("继续执行");
+  await page.locator("[data-testid^='interrupt-submit-']").first().click();
+
+  await expect(page.getByTestId("markdown-result").last()).toContainText(
+    "Task resumed after confirmation: 继续执行.",
+  );
+  await expect(page.getByTestId("turn-interrupt")).toHaveCount(0);
+
+  // SACS 侧真实收到 AG-UI resume 数组
+  const received = await (await request.get("/__control__/sacs")).json();
+  const resumeRun = received.find(
+    (entry) => Array.isArray(entry.body.resume) && entry.body.resume.length > 0,
+  );
+  expect(resumeRun.body.resume[0].status).toBe("resolved");
+  expect(resumeRun.body.resume[0].payload).toBe("继续执行");
+
+  // Inspect：interrupt outcome → resume input → continuation 可关联
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  const timeline = page.getByTestId("swimlane-timeline");
+  const interrupted = timeline.locator("[data-status='interrupted']").first();
+  await expect(interrupted).toBeVisible();
+  await interrupted.click();
+  const interruptDetail = page.getByTestId("inspect-detail");
+  await interruptDetail.getByTestId("json-node-outcome").click();
+  await interruptDetail.getByTestId("json-node-interrupts").click();
+  await interruptDetail.getByTestId("json-node-0").click();
+  await expect(interruptDetail).toContainText("need_confirmation");
+  await expect(timeline.locator("[data-correlated='true']")).toHaveCount(2);
+
+  await timeline.locator("[data-type='RESUME_INPUT']").first().click();
+  await page
+    .getByTestId("inspect-detail")
+    .getByTestId("json-node-resume")
+    .click();
+  await page.getByTestId("inspect-detail").getByTestId("json-node-0").click();
+  await expect(page.getByTestId("inspect-detail")).toContainText("继续执行");
+});
+
+test("SACS durable run conflict is observable as a bounded public error", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByTestId("agent-source-select")
+    .selectOption("single-agent-chat-server");
+  await conversationInput(page).fill("durable conflict");
+  await conversationSend(page).click();
+  await expect(page.getByTestId("turn-failure")).toContainText(
+    "WORKBENCH_RUN_ERROR",
+  );
+
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  await page
+    .getByTestId("swimlane-timeline")
+    .locator("[data-type='RUN_ERROR']")
+    .first()
+    .click();
+  await expect(page.getByTestId("inspect-detail")).toContainText(
+    "run_id_conflict",
+  );
+});
+
+test("a large SACS payload stays folded and lazily rendered in Inspect", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByTestId("agent-source-select")
+    .selectOption("single-agent-chat-server");
+  await conversationInput(page).fill("large payload");
+  await conversationSend(page).click();
+  await expect(page.getByTestId("markdown-result")).toContainText(
+    "artifact report-42",
+  );
+
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  await page
+    .getByTestId("swimlane-timeline")
+    .locator("[data-type='STATE_SNAPSHOT']")
+    .first()
+    .click();
+
+  const detail = page.getByTestId("inspect-detail");
+  await expect(detail).toBeVisible();
+  // 大对象分页渲染（每页 50 项），页面保持可用
+  await detail.getByTestId("json-node-snapshot").click();
+  await detail.getByTestId("json-node-items").click();
+  const showMore = detail.getByTestId("json-show-more");
+  await expect(showMore).toContainText("70");
+  await showMore.click();
+  await expect(detail.getByTestId("json-show-more")).toContainText("20");
 });

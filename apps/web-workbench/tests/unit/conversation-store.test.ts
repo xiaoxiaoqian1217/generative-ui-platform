@@ -3,9 +3,20 @@ import {
   createConversationState,
   failOperation,
   resolveRun,
+  resumeInterrupt,
   retryTurn,
   startRun,
 } from "../../src/conversation/conversation-store.js";
+import type { TurnObservation } from "../../src/inspect/turn-inspection.js";
+
+const observation = (observedIndex: number, type: string): TurnObservation => ({
+  hasArtifact: false,
+  id: `observation-${observedIndex}`,
+  observedAt: "2026-08-13T10:00:00.000Z",
+  observedIndex,
+  source: "agent",
+  type,
+});
 
 const userMessage = {
   id: "message-1",
@@ -120,5 +131,120 @@ describe("Conversation Store", () => {
         threadId: "thread-1",
       }),
     ).toBe(cancelled);
+  });
+
+  it("attaches observations to completed and failed turns", () => {
+    const running = startRun(createConversationState(), {
+      message: userMessage,
+      requestId: "request-1",
+      turnId: "turn-1",
+    });
+    const completed = resolveRun(running, "turn-1", {
+      messages: [{ id: "assistant-1", role: "assistant", content: "完成。" }],
+      observations: [
+        observation(0, "RUN_STARTED"),
+        observation(1, "RUN_FINISHED"),
+      ],
+      runId: "run-1",
+      threadId: "thread-1",
+    });
+
+    expect(completed.turns[0]?.observations?.map((item) => item.type)).toEqual([
+      "RUN_STARTED",
+      "RUN_FINISHED",
+    ]);
+
+    const failed = failOperation(
+      startRun(createConversationState(), {
+        message: userMessage,
+        requestId: "request-2",
+        turnId: "turn-2",
+      }),
+      "turn-2",
+      { code: "WORKBENCH_RUN_ERROR", message: "失败", retryable: false },
+      "failed",
+      [observation(0, "RUN_STARTED"), observation(1, "RUN_ERROR")],
+    );
+
+    expect(failed.turns[0]?.observations?.map((item) => item.type)).toEqual([
+      "RUN_STARTED",
+      "RUN_ERROR",
+    ]);
+  });
+
+  it("marks a run with pending interrupts as interrupted and resumes the same turn", () => {
+    const running = startRun(createConversationState(), {
+      message: userMessage,
+      requestId: "request-1",
+      turnId: "turn-1",
+    });
+    const interrupted = resolveRun(running, "turn-1", {
+      interrupts: [{ id: "interrupt-1", reason: "need_confirmation" }],
+      messages: [
+        { id: "assistant-1", role: "assistant", content: "请确认是否继续。" },
+      ],
+      observations: [observation(0, "RUN_STARTED")],
+      runId: "run-1",
+      threadId: "thread-1",
+    });
+
+    expect(interrupted.turns[0]).toMatchObject({
+      pendingInterrupts: [{ id: "interrupt-1", reason: "need_confirmation" }],
+      status: "interrupted",
+    });
+    expect(interrupted.activeOperation).toBeUndefined();
+
+    const resumed = resumeInterrupt(interrupted, "turn-1", {
+      requestId: "request-2",
+    });
+    expect(resumed.activeOperation).toMatchObject({
+      requestId: "request-2",
+      turnId: "turn-1",
+    });
+    expect(resumed.turns[0]?.status).toBe("pending");
+
+    const continued = resolveRun(resumed, "turn-1", {
+      messages: [{ id: "assistant-2", role: "assistant", content: "已继续。" }],
+      observations: [observation(0, "RUN_FINISHED")],
+      runId: "run-2",
+      threadId: "thread-1",
+    });
+
+    expect(continued.turns[0]).toMatchObject({
+      runId: "run-2",
+      status: "completed",
+    });
+    expect(continued.turns[0]?.pendingInterrupts).toBeUndefined();
+    expect(
+      continued.turns[0]?.responseMessages.map((message) => message.id),
+    ).toEqual(["assistant-1", "assistant-2"]);
+    // 跨 run 片段合并后 observedIndex 重新对齐为整个 Turn 的观察顺序
+    expect(continued.turns[0]?.observations?.map((item) => item.type)).toEqual([
+      "RUN_STARTED",
+      "RUN_FINISHED",
+    ]);
+    expect(
+      continued.turns[0]?.observations?.map((item) => item.observedIndex),
+    ).toEqual([0, 1]);
+  });
+
+  it("rejects resume for turns that are not interrupted", () => {
+    const completed = resolveRun(
+      startRun(createConversationState(), {
+        message: userMessage,
+        requestId: "request-1",
+        turnId: "turn-1",
+      }),
+      "turn-1",
+      {
+        messages: [{ id: "assistant-1", role: "assistant", content: "完成。" }],
+        runId: "run-1",
+        threadId: "thread-1",
+      },
+    );
+
+    expect(
+      resumeInterrupt(completed, "turn-1", { requestId: "request-2" }),
+    ).toBe(completed);
   });
 });
