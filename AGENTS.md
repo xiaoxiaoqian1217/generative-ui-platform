@@ -152,7 +152,6 @@ Dynamic A2UI
 以下 Workbench 能力继续保留：
 
 - Playground / Inspect / Cases / Catalog / Scenarios / Settings 路由；
-- 本地 A2UI reducer、受控 renderer、raw viewer 与 component registry；
 - 已接受的 Workbench shell 与 inspection 原型基线；
 - case-library 与 inspection 支持。
 

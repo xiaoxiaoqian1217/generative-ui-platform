@@ -4,6 +4,9 @@ import packageJson from "./package.json";
 
 export default defineConfig({
   plugins: [vue()],
+  optimizeDeps: {
+    exclude: ["maplibre-gl"],
+  },
   define: {
     __WORKBENCH_VERSION__: JSON.stringify(packageJson.version),
   },

@@ -45,9 +45,6 @@ Workbench never executes model-generated arbitrary HTML or JavaScript.
 The following capabilities remain in the repository for later evaluation:
 
 - Playground, Inspect, Cases, Catalog, Scenarios, and Settings routes;
-- the local A2UI reducer and controlled renderer;
-- A2UI raw inspection;
-- the controlled component registry;
 - the accepted Conversation-first shell and inspection prototype baselines;
 - semantic case-library support.
 

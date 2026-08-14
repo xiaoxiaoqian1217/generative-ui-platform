@@ -614,123 +614,6 @@ textarea:focus-visible {
   color: var(--accent);
 }
 
-/* A2UI */
-
-.a2ui-renderer,
-.a2ui-fallback {
-  min-height: 120px;
-}
-
-.a2ui-fallback {
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  color: var(--muted);
-  border: 1px dashed var(--line);
-  font-size: 0.9rem;
-}
-
-.a2ui-card,
-.a2ui-list,
-.a2ui-timeline {
-  display: grid;
-  gap: 10px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  background: var(--paper);
-}
-
-.a2ui-card h3,
-.a2ui-list h3,
-.a2ui-timeline h3,
-.a2ui-card p {
-  margin: 0;
-}
-
-.a2ui-column {
-  display: grid;
-  gap: 12px;
-}
-
-.a2ui-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.a2ui-badge {
-  display: inline-block;
-  padding: 3px 7px;
-  color: #1a7f37;
-  border: 1px solid currentcolor;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.a2ui-button {
-  min-height: 36px;
-  padding: 0 13px;
-  color: #fff;
-  border: 0;
-  background: var(--accent);
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.a2ui-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.a2ui-table th,
-.a2ui-table td {
-  padding: 8px;
-  text-align: left;
-  border: 1px solid var(--line);
-}
-
-/* Raw viewer */
-
-.viewer-card pre {
-  overflow: auto;
-  max-height: 360px;
-  margin: 0;
-  padding: 15px;
-  color: #d8e4de;
-  border: 1px solid #364542;
-  background: #1d2927;
-  font-size: 0.8rem;
-  line-height: 1.55;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.reveal-control {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--ink);
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.raw-placeholder {
-  display: grid;
-  min-height: 92px;
-  place-items: center;
-  padding: 15px;
-  border: 1px dashed var(--line);
-  color: var(--muted);
-}
-
-.security-note {
-  margin: -4px 0 13px;
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
 /* GIS business surface */
 
 .map-workspace {
@@ -1084,7 +967,13 @@ textarea:focus-visible {
   border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
   color: var(--muted);
   font-family: ui-monospace, monospace;
-  font-size: 10px;
+  font-size: 11px;
+}
+
+.seq-cell code {
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .lane-cell {
@@ -1100,13 +989,12 @@ textarea:focus-visible {
   align-items: flex-start;
   gap: 3px;
   width: 100%;
-  padding: 5px 8px;
+  padding: 7px 10px;
   border: 1px solid var(--line);
-  border-left: 4px solid #9fb3c8;
   border-radius: 6px;
   background: #fafbfc;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   text-align: left;
 }
 
@@ -1124,34 +1012,35 @@ textarea:focus-visible {
   background: #fff8ec;
 }
 
-.event-chip[data-status="ok"] {
-  border-left-color: #1a7f37;
-}
-
 .event-chip[data-status="failed"],
 .event-chip[data-status="cancelled"] {
-  border-left-color: var(--danger);
+  border-color: #e7b6b6;
   background: #fdf3f3;
 }
 
 .event-chip[data-status="interrupted"],
 .event-chip[data-status="reconnecting"] {
-  border-left-color: var(--degraded);
+  border-color: #ead09b;
   background: #fffaee;
 }
 
 .event-kind {
+  color: var(--ink);
   font-family: ui-monospace, monospace;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.45;
   word-break: break-all;
 }
 
 .event-meta {
   display: flex;
   gap: 6px;
-  color: var(--muted);
-  font-size: 10px;
+  color: #57606a;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
 }
 
 .event-detail {

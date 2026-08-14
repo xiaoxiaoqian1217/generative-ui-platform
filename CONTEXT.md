@@ -200,7 +200,8 @@ Controlled UI 和 A2UI 应尽量复用同一套真实 UI Implementation 与 Them
 ## Frozen / reactivated Workbench capabilities
 
 Playground、Inspect、Cases、Catalog、Scenarios 与 Settings 路由继续保留。
-本地 A2UI reducer、受控 renderer、raw viewer、component registry、已接受的 shell 原型、case library 与 inspection 支持也继续保留。
+已接受的 shell 原型、case library 与 inspection 支持也继续保留。
+原 Compiler 时代的本地 A2UI reducer、受控 renderer、raw viewer 与 component registry 已删除，不再保留为 frozen 能力。
 
 其中与 A2UI Renderer / Catalog / Theme 直接相关的能力，在 ADR-0029 之后可以为下一阶段进行 focused implementation。
 这不代表恢复旧 Presentation Pipeline / UI Compiler / Runtime Platform。
