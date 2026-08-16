@@ -17,6 +17,12 @@ export const quickScenarios: QuickScenario[] = [
     message: "展示巡检摘要 A2UI",
   },
   {
+    id: "inspection-summary-platform-a2ui",
+    label: "巡检摘要 (Platform Catalog)",
+    description: "验证 Metric / StatusBadge / InfoRow 平台语义组件",
+    message: "展示平台 Catalog 巡检摘要 A2UI",
+  },
+  {
     id: "markdown",
     label: "http://localhost:5173/conversation",
     description: "验证安全 Markdown 展示",

@@ -1,8 +1,7 @@
 import type { AGUIMock } from "@copilotkit/aimock";
 import { buildActivityResponse } from "@copilotkit/aimock/agui";
+import { PLATFORM_A2UI_CATALOG_ID } from "@generative-ui/shared-types";
 
-const BASIC_CATALOG_ID =
-  "https://a2ui.org/specification/v0_9/basic_catalog.json";
 const INSPECTION_SURFACE_ID = "inspection-summary";
 
 export const INSPECTION_SUMMARY_A2UI_MESSAGE_ID = "inspection-summary-a2ui";
@@ -12,7 +11,10 @@ export const inspectionSummaryOperations = [
     version: "v0.9",
     createSurface: {
       surfaceId: INSPECTION_SURFACE_ID,
-      catalogId: BASIC_CATALOG_ID,
+      // The Workbench registers one merged catalog (Basic + Platform) under
+      // PLATFORM_A2UI_CATALOG_ID; createSurface.catalogId must match it
+      // literally. This fixture intentionally uses Basic components only.
+      catalogId: PLATFORM_A2UI_CATALOG_ID,
     },
   },
   {
@@ -110,13 +112,9 @@ export function registerInspectionSummaryA2uiScenario(mock: AGUIMock): void {
   mock.onPredicate(
     (input) =>
       /展示巡检摘要 A2UI/i.test(String(input.messages?.at(-1)?.content)),
-    buildActivityResponse(
-      INSPECTION_SUMMARY_A2UI_MESSAGE_ID,
-      "a2ui-surface",
-      {
-        a2ui_operations: inspectionSummaryOperations,
-      },
-    ),
+    buildActivityResponse(INSPECTION_SUMMARY_A2UI_MESSAGE_ID, "a2ui-surface", {
+      a2ui_operations: inspectionSummaryOperations,
+    }),
   );
   mock.onPredicate(
     (input) => /展示损坏的 A2UI/i.test(String(input.messages?.at(-1)?.content)),

@@ -188,6 +188,54 @@ test("an invalid A2UI surface is isolated and the conversation remains usable", 
   );
 });
 
+test("the Platform Catalog scenario renders Metric, StatusBadge, and InfoRow through the merged catalog", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "已连接",
+  );
+
+  await page
+    .getByRole("button", { name: /巡检摘要 \(Platform Catalog\)/ })
+    .click();
+
+  const surface = page.locator(
+    "[data-surface-id='inspection-summary-platform']",
+  );
+  await expect(surface).toBeVisible();
+  await expect(surface).toContainText("巡检结果");
+
+  const badge = surface.getByTestId("ui-status-badge");
+  await expect(badge).toHaveText("已完成");
+  await expect(badge).toHaveAttribute("data-variant", "success");
+
+  const metrics = surface.getByTestId("ui-metric");
+  await expect(metrics).toHaveCount(3);
+  await expect(metrics.nth(0)).toContainText("设备数量");
+  await expect(metrics.nth(0)).toContainText("5");
+  await expect(metrics.nth(1)).toContainText("异常数量");
+  await expect(metrics.nth(1)).toContainText("1");
+  await expect(metrics.nth(2)).toContainText("完成率");
+  await expect(metrics.nth(2)).toContainText("100%");
+
+  const infoRows = surface.getByTestId("ui-info-row");
+  await expect(infoRows).toHaveCount(3);
+  await expect(infoRows.nth(0)).toContainText("开始时间");
+  await expect(infoRows.nth(0)).toContainText("14:20");
+  await expect(infoRows.nth(1)).toContainText("执行耗时");
+  await expect(infoRows.nth(1)).toContainText("12 min");
+  await expect(infoRows.nth(2)).toContainText("执行区域");
+  await expect(infoRows.nth(2)).toContainText("A 区");
+
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  await expect(
+    page
+      .getByTestId("swimlane-timeline")
+      .locator("[data-type='ACTIVITY_SNAPSHOT']"),
+  ).toBeVisible();
+});
+
 test("Frontend Tool is advertised, executed in the browser, and continued through AG-UI", async ({
   page,
   request,

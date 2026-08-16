@@ -12,6 +12,7 @@
     "test:e2e": "pnpm --filter @generative-ui/ag-ui-mock build && pnpm --filter @generative-ui/copilot-runtime build && pnpm build && playwright test"
   },
   "dependencies": {
+    "@a2ui/web_core": "0.9.0",
     "@ag-ui/core": "0.0.57",
     "@copilotkit/core": "1.64.1",
     "@copilotkit/vue": "1.64.1",

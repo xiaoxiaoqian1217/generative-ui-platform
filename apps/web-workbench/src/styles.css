@@ -16,6 +16,9 @@
   --danger: #c03232;
   --degraded: #9a6200;
   --running: #1a56db;
+  --success: #1a7f37;
+  /* CopilotKit Basic Catalog theme hook: aligns Button primary with the Workbench accent. */
+  --a2ui-primary-color: var(--accent);
 }
 
 * {
@@ -830,6 +833,112 @@ textarea:focus-visible {
   margin: 2px 0 0;
   color: #29434d;
   font-size: 12px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A2UI platform catalog components (UiMetric / UiStatusBadge / UiInfoRow) */
+
+.ui-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin: 8px;
+}
+
+.ui-metric-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ui-metric-value {
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.ui-metric[data-emphasis="strong"] .ui-metric-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.ui-metric-trend {
+  margin-left: 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ui-metric-trend[data-trend="up"] {
+  color: var(--success);
+}
+
+.ui-metric-trend[data-trend="down"] {
+  color: var(--danger);
+}
+
+.ui-metric-trend[data-trend="flat"] {
+  color: var(--muted);
+}
+
+.ui-status-badge {
+  display: inline-flex;
+  align-items: center;
+  margin: 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ui-status-badge[data-variant="neutral"] {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 12%, #fff);
+}
+
+.ui-status-badge[data-variant="info"] {
+  color: var(--running);
+  background: color-mix(in srgb, var(--running) 10%, #fff);
+}
+
+.ui-status-badge[data-variant="success"] {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, #fff);
+}
+
+.ui-status-badge[data-variant="warning"] {
+  color: var(--degraded);
+  background: color-mix(in srgb, var(--degraded) 12%, #fff);
+}
+
+.ui-status-badge[data-variant="danger"] {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, #fff);
+}
+
+.ui-info-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 8px;
+}
+
+.ui-info-row + .ui-info-row {
+  border-top: 1px solid var(--line);
+}
+
+.ui-info-row-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ui-info-row-value {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;

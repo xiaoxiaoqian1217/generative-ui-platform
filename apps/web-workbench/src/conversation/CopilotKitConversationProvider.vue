@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { CopilotKitProvider, vueBasicCatalog } from "@copilotkit/vue/v2";
+import { CopilotKitProvider } from "@copilotkit/vue/v2";
 import { computed } from "vue";
 import type { ObservationSink } from "../agent/business-agent-client.js";
+import { platformCatalog } from "../features/a2ui/catalog/platform-catalog.js";
 import CopilotKitFrontendToolsBridge from "./CopilotKitFrontendToolsBridge.vue";
 
 const props = defineProps<{
@@ -13,7 +14,7 @@ const props = defineProps<{
   runtimeUrl: string;
 }>();
 
-const a2ui = { catalog: vueBasicCatalog };
+const a2ui = { catalog: platformCatalog };
 const providerProps = computed(() =>
   props.a2uiEnabled
     ? { a2ui, runtimeUrl: props.runtimeUrl }

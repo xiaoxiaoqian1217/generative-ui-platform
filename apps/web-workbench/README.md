@@ -23,8 +23,8 @@ It does not wrap the run in `RuntimeRunResult`, `PresentationResult`, or another
 The active Conversation route supports:
 
 - native AG-UI user and assistant messages;
-- fixed A2UI activity rendering through CopilotKit's Vue Basic Catalog;
-- deterministic A2UI inspection-summary and invalid-catalog fixtures from AGUIMock;
+- fixed A2UI activity rendering through the merged platform catalog (CopilotKit Vue Basic Catalog plus the `Metric` / `StatusBadge` / `InfoRow` platform components);
+- deterministic A2UI inspection-summary, platform-catalog, and invalid-catalog fixtures from AGUIMock;
 - safe Markdown rendering for assistant text;
 - CopilotKit `useFrontendTool` registration;
 - the `locateDevice` browser tool;

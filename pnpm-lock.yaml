@@ -90,6 +90,9 @@ importers:
 
   apps/web-workbench:
     dependencies:
+      '@a2ui/web_core':
+        specifier: 0.9.0
+        version: 0.9.0
       '@ag-ui/core':
         specifier: 0.0.57
         version: 0.0.57
@@ -176,6 +179,9 @@ importers:
       '@copilotkit/aimock':
         specifier: 1.38.0
         version: 1.38.0(vitest@3.2.6(@types/debug@4.1.13)(@types/node@24.0.15)(jiti@2.6.1)(jsdom@26.1.0)(tsx@4.20.3)(yaml@2.9.0))
+      '@generative-ui/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
     devDependencies:
       tsup:
         specifier: 8.5.0

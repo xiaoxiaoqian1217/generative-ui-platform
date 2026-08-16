@@ -10,6 +10,8 @@
 
 - `echo` 提供 `hello`、`echo` 和 `连接测试` 三个基础 AG-UI 连接探针。
 - `inspection-summary-a2ui` 为 `展示巡检摘要 A2UI` 返回固定 `a2ui-surface` Activity Snapshot，并为 `展示损坏的 A2UI` 返回缺失 Catalog 的隔离测试数据。
+- `inspection-summary-platform-a2ui` 为 `展示平台 Catalog 巡检摘要 A2UI` 返回使用 Platform Catalog（Metric / StatusBadge / InfoRow）的固定 `a2ui-surface` Activity Snapshot。
+- 两个 A2UI fixture 的 `createSurface.catalogId` 都引用 `@generative-ui/shared-types` 导出的 `PLATFORM_A2UI_CATALOG_ID`，与 Workbench 注册的合并 Catalog 保持一致。
 - `locate-device` 先请求浏览器执行 `locateDevice({ deviceId: "01" })`，再消费工具结果并返回最终 AG-UI 文本消息。
 - `run-error` 对包含 `mock failure` 的输入返回 bounded `RUN_ERROR`（`MOCK_FIXTURE_ERROR`），用于失败定位与 Inspect 回归。
 

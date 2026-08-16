@@ -1,3 +1,4 @@
+import { PLATFORM_A2UI_CATALOG_ID } from "@generative-ui/shared-types";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createAguiMockServer,
@@ -7,6 +8,10 @@ import {
   INSPECTION_SUMMARY_A2UI_MESSAGE_ID,
   inspectionSummaryOperations,
 } from "../src/scenarios/inspection-summary-a2ui.js";
+import {
+  INSPECTION_SUMMARY_PLATFORM_A2UI_MESSAGE_ID,
+  inspectionSummaryPlatformOperations,
+} from "../src/scenarios/inspection-summary-platform-a2ui.js";
 
 interface AguiEvent {
   readonly type: string;
@@ -114,6 +119,51 @@ describe("createAguiMockServer", () => {
     );
     expect(secondActivity?.content).toEqual(firstActivity?.content);
     expect(secondActivity?.messageId).toBe(firstActivity?.messageId);
+  });
+
+  it("references the shared platform catalog id from every A2UI fixture", () => {
+    for (const operations of [
+      inspectionSummaryOperations,
+      inspectionSummaryPlatformOperations,
+    ]) {
+      const createSurface = operations.find(
+        (operation) => "createSurface" in operation,
+      );
+      expect(createSurface).toMatchObject({
+        createSurface: { catalogId: PLATFORM_A2UI_CATALOG_ID },
+      });
+    }
+  });
+
+  it("replays the platform catalog scenario as a deterministic A2UI activity", async () => {
+    const events = await runMessage("展示平台 Catalog 巡检摘要 A2UI");
+
+    expect(events.map((event) => event.type)).toEqual([
+      "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
+      "RUN_FINISHED",
+    ]);
+    const activity = events.find((event) => event.type === "ACTIVITY_SNAPSHOT");
+    expect(activity).toMatchObject({
+      activityType: "a2ui-surface",
+      messageId: INSPECTION_SUMMARY_PLATFORM_A2UI_MESSAGE_ID,
+      replace: true,
+    });
+    expect(activity?.content).toEqual({
+      a2ui_operations: inspectionSummaryPlatformOperations,
+    });
+
+    const componentTypes = inspectionSummaryPlatformOperations.flatMap(
+      (operation) =>
+        "updateComponents" in operation
+          ? operation.updateComponents.components.map(
+              (component) => component.component,
+            )
+          : [],
+    );
+    expect(componentTypes).toContain("Metric");
+    expect(componentTypes).toContain("StatusBadge");
+    expect(componentTypes).toContain("InfoRow");
   });
 
   it("serves the connection probe and business scenarios from one server", async () => {

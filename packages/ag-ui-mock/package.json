@@ -23,7 +23,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@copilotkit/aimock": "1.38.0"
+    "@copilotkit/aimock": "1.38.0",
+    "@generative-ui/shared-types": "workspace:*"
   },
   "devDependencies": {
     "tsup": "8.5.0",

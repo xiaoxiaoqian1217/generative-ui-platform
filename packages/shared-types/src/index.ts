@@ -1,5 +1,16 @@
 import { type Static, Type } from "@sinclair/typebox";
 
+/**
+ * Catalog id of the merged Workbench A2UI catalog
+ * (CopilotKit Basic Catalog + platform semantic components).
+ *
+ * The id is shared by the AGUIMock A2UI fixtures (`createSurface.catalogId`)
+ * and the Web Workbench catalog registration, and intentionally does not
+ * reuse the Basic Catalog id `https://a2ui.org/specification/v0_9/basic_catalog.json`.
+ */
+export const PLATFORM_A2UI_CATALOG_ID =
+  "https://generative-ui.dev/a2ui/v0_9/platform_catalog.json";
+
 export const jsonValueSchema = Type.Recursive(
   (jsonValue) =>
     Type.Union([
