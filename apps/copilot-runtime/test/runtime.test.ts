@@ -1,9 +1,40 @@
+import { createHmac } from "node:crypto";
 import { createServer, type RequestListener, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 import { createRuntimeHandler, loadRuntimeConfig } from "../src/index.js";
 
 const servers: Server[] = [];
+const sacsServiceKey = "server-only-key-with-at-least-32-characters";
+const sacsJwtSecret = "server-only-jwt-secret-with-at-least-32-characters";
+const sacsPrincipalId = "workbench-test-user";
+
+function verifyUserJwt(token: string, nowSeconds: number) {
+  const parts = token.split(".");
+  expect(parts).toHaveLength(3);
+  const [header, payload, signature] = parts as [string, string, string];
+  const expectedSignature = createHmac("sha256", sacsJwtSecret)
+    .update(`${header}.${payload}`, "ascii")
+    .digest("base64url");
+  expect(signature).toBe(expectedSignature);
+  expect(JSON.parse(Buffer.from(header, "base64url").toString("utf8"))).toEqual(
+    {
+      alg: "HS256",
+      typ: "JWT",
+    },
+  );
+  const claims = JSON.parse(
+    Buffer.from(payload, "base64url").toString("utf8"),
+  ) as Record<string, unknown>;
+  expect(claims).toEqual({
+    exp: nowSeconds + 300,
+    iat: nowSeconds,
+    iss: "open-webui",
+    role: "user",
+    sub: sacsPrincipalId,
+  });
+  return claims;
+}
 
 async function readEventStream(response: Response): Promise<string> {
   const reader = response.body?.getReader();
@@ -52,8 +83,17 @@ describe("thin CopilotKit Runtime", () => {
   it("uses local development endpoints without exposing SACS credentials", () => {
     expect(loadRuntimeConfig({})).toEqual({
       agUiMockUrl: "http://127.0.0.1:4800/",
-      sacsAgUiUrl: "http://127.0.0.1:8000/ag-ui",
+      sacsAgUiUrl: "http://127.0.0.1:3000/ag-ui",
     });
+  });
+
+  it("rejects static or incomplete SACS identity configuration", () => {
+    expect(() =>
+      loadRuntimeConfig({ SACS_OPENWEBUI_USER_JWT: "static-token" }),
+    ).toThrow("SACS_STATIC_USER_JWT_UNSUPPORTED");
+    expect(() =>
+      loadRuntimeConfig({ SACS_AG_UI_SERVICE_KEY: sacsServiceKey }),
+    ).toThrow("SACS_CREDENTIALS_INCOMPLETE");
   });
 
   it("registers both Agent sources and keeps their capability difference explicit", async () => {
@@ -80,6 +120,7 @@ describe("thin CopilotKit Runtime", () => {
   });
 
   it("discovers the SACS capability profile with server-side credentials", async () => {
+    const nowSeconds = 1_800_000_000;
     const received: Array<{
       authorization?: string;
       path: string;
@@ -107,12 +148,17 @@ describe("thin CopilotKit Runtime", () => {
         }),
       );
     });
-    const handler = createRuntimeHandler({
-      agUiMockUrl: "http://mock.example.test",
-      sacsAgUiUrl: `${sacsUrl}/ag-ui`,
-      sacsServiceKey: "server-only-key",
-      sacsUserJwt: "server-only-jwt",
-    });
+    const handler = createRuntimeHandler(
+      {
+        agUiMockUrl: "http://mock.example.test",
+        sacsAgUiUrl: `${sacsUrl}/ag-ui`,
+        sacsJwtSecret,
+        sacsPrincipalId,
+        sacsPrincipalRole: "user",
+        sacsServiceKey,
+      },
+      { now: () => nowSeconds * 1000 },
+    );
 
     const response = await handler(
       new Request("http://runtime.example.test/api/copilotkit/info"),
@@ -126,18 +172,18 @@ describe("thin CopilotKit Runtime", () => {
         version: "0.2",
       },
     });
-    expect(received).toEqual([
-      {
-        authorization: "Bearer server-only-key",
-        path: "/ag-ui/capabilities",
-        userJwt: "server-only-jwt",
-      },
-    ]);
-    expect(JSON.stringify(body)).not.toContain("server-only-key");
-    expect(JSON.stringify(body)).not.toContain("server-only-jwt");
+    expect(received).toHaveLength(1);
+    expect(received[0]).toMatchObject({
+      authorization: `Bearer ${sacsServiceKey}`,
+      path: "/ag-ui/capabilities",
+    });
+    verifyUserJwt(received[0]?.userJwt ?? "", nowSeconds);
+    expect(JSON.stringify(body)).not.toContain(sacsServiceKey);
+    expect(JSON.stringify(body)).not.toContain(sacsJwtSecret);
   });
 
   it("routes runs to the selected upstream and keeps SACS credentials server-side", async () => {
+    const nowSeconds = 1_800_000_100;
     // 合成透传探针:只验证 ACTIVITY_SNAPSHOT 经 Runtime 原样透传,
     // 不复制 AGUIMock 的具体 fixture 内容。
     const mockActivitySnapshot = {
@@ -196,12 +242,17 @@ describe("thin CopilotKit Runtime", () => {
           'data: {"type":"RUN_FINISHED","threadId":"thread-1","runId":"run-1"}\n\n',
       );
     });
-    const handler = createRuntimeHandler({
-      agUiMockUrl: mockUrl,
-      sacsAgUiUrl: `${sacsUrl}/ag-ui`,
-      sacsServiceKey: "server-only-key",
-      sacsUserJwt: "server-only-jwt",
-    });
+    const handler = createRuntimeHandler(
+      {
+        agUiMockUrl: mockUrl,
+        sacsAgUiUrl: `${sacsUrl}/ag-ui`,
+        sacsJwtSecret,
+        sacsPrincipalId,
+        sacsPrincipalRole: "user",
+        sacsServiceKey,
+      },
+      { now: () => nowSeconds * 1000 },
+    );
     const run = {
       context: [],
       forwardedProps: {},
@@ -248,14 +299,66 @@ describe("thin CopilotKit Runtime", () => {
       parsedMockEvents.find((event) => event.type === "ACTIVITY_SNAPSHOT"),
     ).toEqual(mockActivitySnapshot);
     expect(sacsEvents).toContain('"type":"RUN_FINISHED"');
-    expect(received).toEqual([
-      { body: run, path: "/" },
+    expect(received).toHaveLength(2);
+    expect(received[0]).toEqual({ body: run, path: "/" });
+    expect(received[1]).toMatchObject({
+      authorization: `Bearer ${sacsServiceKey}`,
+      body: sacsRun,
+      path: "/ag-ui",
+    });
+    verifyUserJwt(received[1]?.userJwt ?? "", nowSeconds);
+  });
+
+  it("issues a fresh SACS user JWT for every upstream request", async () => {
+    let nowSeconds = 1_800_001_000;
+    const receivedTokens: string[] = [];
+    const sacsUrl = await upstream(async (request, response) => {
+      const chunks: Buffer[] = [];
+      for await (const chunk of request) chunks.push(Buffer.from(chunk));
+      const userJwt = request.headers["x-openwebui-user-jwt"];
+      if (typeof userJwt === "string") receivedTokens.push(userJwt);
+      response.writeHead(200, { "content-type": "text/event-stream" });
+      response.end(
+        'data: {"type":"RUN_STARTED","threadId":"thread-1","runId":"run-1"}\n\n' +
+          'data: {"type":"RUN_FINISHED","threadId":"thread-1","runId":"run-1"}\n\n',
+      );
+    });
+    const handler = createRuntimeHandler(
       {
-        authorization: "Bearer server-only-key",
-        body: sacsRun,
-        path: "/ag-ui",
-        userJwt: "server-only-jwt",
+        agUiMockUrl: "http://mock.example.test",
+        sacsAgUiUrl: `${sacsUrl}/ag-ui`,
+        sacsJwtSecret,
+        sacsPrincipalId,
+        sacsPrincipalRole: "user",
+        sacsServiceKey,
       },
-    ]);
+      { now: () => nowSeconds * 1000 },
+    );
+    const request = (runId: string) =>
+      handler(
+        new Request(
+          "http://runtime.example.test/api/copilotkit/agent/single-agent-chat-server/run",
+          {
+            body: JSON.stringify({
+              context: [],
+              forwardedProps: {},
+              messages: [],
+              runId,
+              state: {},
+              threadId: "thread-1",
+              tools: [],
+            }),
+            headers: { "content-type": "application/json" },
+            method: "POST",
+          },
+        ),
+      );
+
+    await readEventStream(await request("run-1"));
+    verifyUserJwt(receivedTokens[0] ?? "", nowSeconds);
+    nowSeconds += 60;
+    await readEventStream(await request("run-2"));
+    verifyUserJwt(receivedTokens[1] ?? "", nowSeconds);
+    expect(receivedTokens[1]).not.toBe(receivedTokens[0]);
   });
 });

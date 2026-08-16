@@ -11,8 +11,8 @@
   },
   "scripts": {
     "build": "tsup src/index.ts src/server.ts --format esm --dts --clean --out-dir dist",
-    "dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js",
+    "dev": "node --env-file-if-exists=.env --import tsx --watch src/server.ts",
+    "start": "node --env-file-if-exists=.env dist/server.js",
     "smoke:sacs": "node scripts/smoke-sacs.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

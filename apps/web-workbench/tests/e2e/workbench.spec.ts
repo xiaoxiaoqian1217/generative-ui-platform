@@ -414,8 +414,14 @@ test("SACS Source streams text, state, activity, and artifact without Frontend T
   await expect(finishedDetail).toContainText("report-42");
 
   const received = await (await request.get("/__control__/sacs")).json();
-  expect(received.at(-1).authorization).toBe("Bearer e2e-sacs-key");
-  expect(received.at(-1).userJwt).toBe("e2e-signed-user");
+  expect(received.at(-1).authorization).toBe(
+    "Bearer e2e-sacs-service-key-with-at-least-32-characters",
+  );
+  expect(received.at(-1).userJwtClaims).toMatchObject({
+    iss: "open-webui",
+    role: "user",
+    sub: "e2e-workbench-user",
+  });
   expect(received.at(-1).body.tools).toEqual([]);
 });
 

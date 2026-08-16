@@ -18,13 +18,20 @@ The SACS profile does not support client-provided Frontend Tools, and the Runtim
 ## Configuration
 
 Copy `.env.example` values into the process environment as needed.
-The local defaults are AGUIMock at `http://127.0.0.1:4800`, SACS at `http://127.0.0.1:8000/ag-ui`, and the Runtime at `http://127.0.0.1:4801/api/copilotkit`.
+The local `dev` and `start` commands load `apps/copilot-runtime/.env` when it exists, while already exported deployment variables retain precedence.
+The local defaults are AGUIMock at `http://127.0.0.1:4800`, SACS at `http://127.0.0.1:3000/ag-ui`, and the Runtime at `http://127.0.0.1:4801/api/copilotkit`.
 
 `SACS_AG_UI_SERVICE_KEY` becomes the server-side `Authorization: Bearer` credential.
-`SACS_OPENWEBUI_USER_JWT` becomes the server-side `X-OpenWebUI-User-Jwt` credential.
-Neither value is returned by the Runtime `/info` response or sent to the browser.
+`SACS_OPENWEBUI_USER_JWT_SECRET` must equal the SACS `OPENWEBUI_USER_JWT_SECRET` value.
+`SACS_PRINCIPAL_ID` is the stable identity for this single-user Workbench deployment, and `SACS_PRINCIPAL_ROLE` defaults to `user`.
+The Runtime signs a new five-minute `X-OpenWebUI-User-Jwt` for every SACS request.
+The static `SACS_OPENWEBUI_USER_JWT` configuration is rejected because it necessarily expires while the application is running.
+No credential or signed JWT is returned by the Runtime `/info` response or sent to the browser.
 The standalone Runtime does not emit permissive CORS headers.
 Deploy it behind the Workbench same-origin reverse proxy or another authenticated server boundary.
+
+This configured principal is appropriate only for a single-user or trusted shared Workbench deployment.
+Before exposing Workbench to multiple users, authenticate requests at the Runtime boundary and derive the JWT subject from that verified server-side identity.
 
 ## Local development
 

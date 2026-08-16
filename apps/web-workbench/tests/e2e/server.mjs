@@ -12,6 +12,9 @@ const host = "127.0.0.1";
 const appRoot = fileURLToPath(new URL("../..", import.meta.url));
 const distRoot = join(appRoot, "dist");
 const port = Number(process.env.WEB_WORKBENCH_E2E_PORT ?? "4173");
+const sacsJwtSecret = "e2e-sacs-jwt-secret-with-at-least-32-characters";
+const sacsPrincipalId = "e2e-workbench-user";
+const sacsServiceKey = "e2e-sacs-service-key-with-at-least-32-characters";
 const mock = createAguiMockServer({ host, port: 0 });
 await mock.start();
 const mockProxy = await createMockUpstreamProxy({
@@ -19,12 +22,20 @@ const mockProxy = await createMockUpstreamProxy({
   port: 0,
   upstreamUrl: mock.url,
 });
-const sacs = await createSacsProfileFixture({ host, port: 0 });
+const sacs = await createSacsProfileFixture({
+  host,
+  jwtSecret: sacsJwtSecret,
+  port: 0,
+  principalId: sacsPrincipalId,
+  serviceKey: sacsServiceKey,
+});
 const runtimeHandler = createRuntimeHandler({
   agUiMockUrl: mockProxy.url,
   sacsAgUiUrl: sacs.url,
-  sacsServiceKey: "e2e-sacs-key",
-  sacsUserJwt: "e2e-signed-user",
+  sacsJwtSecret,
+  sacsPrincipalId,
+  sacsPrincipalRole: "user",
+  sacsServiceKey,
 });
 let runtimeAvailable = true;
 

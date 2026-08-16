@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { createServer } from "node:http";
 
 function json(response, status, value) {
@@ -15,13 +16,65 @@ async function readJson(request) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-export async function createSacsProfileFixture({ host, port }) {
+function verifyUserJwt(token, secret, principalId) {
+  if (typeof token !== "string") return undefined;
+  const parts = token.split(".");
+  if (parts.length !== 3) return undefined;
+  const [header, payload, signature] = parts;
+  const expected = createHmac("sha256", secret)
+    .update(`${header}.${payload}`, "ascii")
+    .digest();
+  const provided = Buffer.from(signature, "base64url");
+  if (
+    expected.length !== provided.length ||
+    !timingSafeEqual(expected, provided)
+  ) {
+    return undefined;
+  }
+  try {
+    const parsedHeader = JSON.parse(
+      Buffer.from(header, "base64url").toString("utf8"),
+    );
+    const claims = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8"),
+    );
+    const now = Math.floor(Date.now() / 1000);
+    if (
+      parsedHeader.alg !== "HS256" ||
+      claims.iss !== "open-webui" ||
+      claims.sub !== principalId ||
+      claims.role !== "user" ||
+      !Number.isInteger(claims.iat) ||
+      !Number.isInteger(claims.exp) ||
+      claims.exp <= now ||
+      claims.exp - claims.iat !== 300
+    ) {
+      return undefined;
+    }
+    return claims;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function createSacsProfileFixture({
+  host,
+  jwtSecret,
+  port,
+  principalId,
+  serviceKey,
+}) {
   const observations = [];
   let available = true;
   const server = createServer(async (request, response) => {
+    const userJwtClaims = verifyUserJwt(
+      request.headers["x-openwebui-user-jwt"],
+      jwtSecret,
+      principalId,
+    );
     if (
-      request.headers.authorization !== "Bearer e2e-sacs-key" ||
-      request.headers["x-openwebui-user-jwt"] !== "e2e-signed-user"
+      request.headers.authorization !== `Bearer ${serviceKey}` ||
+      userJwtClaims === undefined
     ) {
       json(response, 401, { error: "unauthorized" });
       return;
@@ -49,7 +102,7 @@ export async function createSacsProfileFixture({ host, port }) {
     observations.push({
       authorization: request.headers.authorization,
       body,
-      userJwt: request.headers["x-openwebui-user-jwt"],
+      userJwtClaims,
     });
     response.writeHead(200, {
       "cache-control": "no-store",
