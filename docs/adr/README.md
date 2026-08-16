@@ -23,6 +23,12 @@ A2UI Renderer / Catalog / Theme
 
 ADR-0029 同时明确：在第一个 Controlled UI 纵向场景已经证明 AG-UI + Frontend Tool + MapLibre 可行后，A2UI 可以重新进入聚焦实现阶段。
 
+[ADR-0030](./0030-prioritize-dynamic-a2ui-over-theme-and-extend-runtime-presentation-scope.md) 部分修订 ADR-0029：
+
+- 将 Dynamic A2UI（受控内容，Issue #210）提前到 Theme Tokens 之前；
+- 在 Runtime 职责白名单中增加薄 Presentation Policy、Secondary Presentation LLM 接线与 A2UI 生成结果的事件流缝合；
+- 允许 Platform Catalog definitions 下沉到独立最小 package。
+
 [ADR-0028](./0028-use-native-ag-ui-and-retire-compatibility-contracts.md) 被 ADR-0029 部分取代，但在以下范围继续有效：
 
 - 使用原生 AG-UI contract，而不是已删除的 compatibility contracts；
@@ -96,12 +102,13 @@ ADR-0001 中以下约束继续有效：
 | ADR | 当前主题 |
 |---|---|
 | [0029](./0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md) | 薄 CopilotKit Runtime 接入边界与 A2UI 下一阶段 |
+| [0030](./0030-prioritize-dynamic-a2ui-over-theme-and-extend-runtime-presentation-scope.md) | Dynamic A2UI 提前到 Theme 之前，并扩展 Runtime Presentation 职责 |
 
 ## 编号与状态规则
 
 ADR 文件名采用 `NNNN-short-decision-title.md`。
 编号唯一且不复用。
-下一个 ADR 编号为 `0030`。
+下一个 ADR 编号为 `0031`。
 
 允许的生命周期状态包括：
 
@@ -123,5 +130,5 @@ Active、Frozen、Removed、Historical 描述的是“当前适用性”，不�
 
 ## 冲突规则
 
-不得使用旧 ADR 静默覆盖 ADR-0029 或当前仓库指令。
-如果未来工作需要重新激活超出 ADR-0029 范围的 Historical / Frozen 能力，必须先记录新的明确阶段决策。
+不得使用旧 ADR 静默覆盖 ADR-0029 / ADR-0030 或当前仓库指令。
+如果未来工作需要重新激活超出 ADR-0029 / ADR-0030 范围的 Historical / Frozen 能力，必须先记录新的明确阶段决策。

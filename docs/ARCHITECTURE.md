@@ -182,7 +182,7 @@ Renderer
 Catalog + Theme
 ```
 
-推荐演进顺序：
+推荐演进顺序（ADR-0030 调整后）：
 
 ```text
 固定 A2UI Fixture
@@ -193,11 +193,12 @@ Basic Catalog
   ↓
 小规模 Custom Catalog
   ↓
-Theme Tokens
+Dynamic A2UI（受控内容）
   ↓
-Dynamic A2UI
+真实 AgentContent → Dynamic A2UI
 ```
 
+Theme Tokens 经 ADR-0030 后置，不再是 Dynamic A2UI 的前置条件。
 第一阶段先验证 Renderer，不要求 Secondary LLM。
 
 ## 7. 共享 UI 原则
@@ -217,7 +218,8 @@ A2UI Catalog 描述 AI 可以声明哪些 UI；它不是第二套真实组件库
 
 ## 8. Post-Agent Presentation 方向
 
-当 A2UI Renderer、Catalog 与 Theme 稳定后，再验证真实业务结果到 Dynamic A2UI：
+受控内容下的 Dynamic A2UI 由 Issue #210 验证。
+该链路稳定后，再验证真实业务结果到 Dynamic A2UI：
 
 ```text
 single-agent-chat-server
@@ -258,20 +260,19 @@ SACS 不需要为了该方向理解 A2UI。
 ```text
 已完成
 #202 Controlled UI 纵向场景
+#207 Thin CopilotKit Runtime
+#206 A2UI Renderer MVP
+#209 Platform Catalog MVP
 
 当前
-#207 Thin CopilotKit Runtime
-  ↓
 #200 Real SACS Interoperability
+Issue #210 Dynamic A2UI MVP（受控内容）
 
 下一阶段
-A2UI Renderer MVP
-  ↓
-Basic / Custom Catalog
-  ↓
-Theme
-  ↓
 SACS AgentContent → Dynamic A2UI
+
+经 ADR-0030 后置
+Theme Tokens（不再是 Dynamic A2UI 的前置条件）
 
 以后按真实需求再考虑
 Runtime Platform / Controlled-generation Compiler

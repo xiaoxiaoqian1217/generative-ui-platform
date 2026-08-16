@@ -74,7 +74,7 @@ AGUIMock        single-agent-chat-server
 
 ## A2UI 下一阶段
 
-完成薄 Runtime 与真实 Agent 联调后，Workbench 主线进入：
+完成薄 Runtime 与真实 Agent 联调后，Workbench 主线进入（ADR-0030 调整后的顺序）：
 
 ```text
 固定 A2UI Fixture
@@ -85,11 +85,12 @@ Basic Catalog
   ↓
 小规模 Custom Catalog
   ↓
-Theme Tokens
+Dynamic A2UI（受控内容，Issue #210）
   ↓
-Dynamic A2UI
+真实 SACS AgentContent → Dynamic A2UI
 ```
 
+Theme Tokens 经 ADR-0030 后置，不再是 Dynamic A2UI 的前置条件。
 第一阶段只证明 A2UI Renderer 能稳定工作，不先引入 Secondary LLM。
 
 Controlled UI 与 A2UI 应尽量复用同一套真实 UI primitives、domain UI 和 Theme。
@@ -135,18 +136,19 @@ CopilotKit Runtime 只作为支撑性的集成层，不改变上述边界。
 ```text
 已完成
 #202 Controlled UI 纵向场景
+#207 Thin CopilotKit Runtime
+#206 A2UI Renderer MVP
+#209 Platform Catalog MVP
 
 当前
-#207 Thin CopilotKit Runtime
-  ↓
 #200 Real SACS Interoperability
+Issue #210 Dynamic A2UI MVP（受控内容）
 
 下一阶段
-A2UI Renderer
-  ↓
-Catalog + Theme
-  ↓
 SACS AgentContent → Dynamic A2UI
+
+经 ADR-0030 后置
+Theme Tokens
 ```
 
 ## 相关文档

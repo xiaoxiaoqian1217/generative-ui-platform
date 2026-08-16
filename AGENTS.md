@@ -56,6 +56,12 @@ CopilotKit Runtime 只允许承担 Supporting Infrastructure 职责：
 - Workbench 的统一 Agent integration endpoint；
 - CopilotKit / AG-UI / A2UI 所需的最小 middleware integration。
 
+ADR-0030 在此清单上为 Dynamic A2UI 额外允许：
+
+- 薄、确定性的 Presentation Policy；
+- Secondary Presentation LLM 调用接线（基于 `@ag-ui/a2ui-toolkit`）；
+- A2UI 生成结果向 AG-UI 事件流的缝合。
+
 不得在 #207 中把它扩展为自研 Runtime Platform。
 
 ## Agent source roles
@@ -122,25 +128,28 @@ AG-UI Adapter 只使用 `@ag-ui/core` 原生契约。
 
 ## A2UI phase admission
 
-ADR-0029 已经明确允许 A2UI 重新进入 focused implementation，但必须按以下顺序：
+ADR-0029 已经明确允许 A2UI 重新进入 focused implementation。
+ADR-0030 将 Dynamic A2UI（受控内容）提前到 Theme Tokens 之前，当前顺序为：
 
 ```text
-A2UI Renderer MVP
+A2UI Renderer MVP（已完成）
   ↓
-Fixed Fixtures
+Fixed Fixtures（已完成）
   ↓
-Basic Catalog
+Basic Catalog（已完成）
   ↓
-Small Custom Catalog
+Platform Catalog MVP（已完成）
   ↓
-Theme Tokens
+Dynamic A2UI MVP（受控内容，Issue #210）
   ↓
-Dynamic A2UI
+真实 SACS AgentContent → Dynamic A2UI
 ```
+
+Theme Tokens 不再是 Dynamic A2UI 的前置条件，按真实需要后置。
 
 约束：
 
-- 第一阶段先证明 Renderer，不先接 Secondary LLM；
+- Renderer 已先于 Secondary LLM 证明；Secondary LLM 只在 ADR-0030 / Issue #210 的受控边界内接入（受控内容源 + 确定性 Presentation Policy），不先接 SACS；
 - 优先复用 CopilotKit Basic Catalog / 现成 Renderer 能力；
 - Custom Catalog 优先增加 Metric / StatusBadge / InfoRow 等高复用展示语义；
 - DeviceCard / AlarmCard / TaskCard 只有出现真实复用后再抽成公共能力；
@@ -224,17 +233,19 @@ c33504db91614420c2ccdf26a8c707f61d659065
 Completed
 #202 Controlled UI Vertical Slice
 #207 Thin CopilotKit Runtime
+#206 A2UI Renderer MVP
+#209 Platform Catalog MVP
 
 Current
   ↓
 #200 Real SACS Interoperability
+#210 Dynamic A2UI MVP (controlled content)
 
 Next
-A2UI Renderer MVP
-  ↓
-Catalog + Theme
-  ↓
 SACS AgentContent → Dynamic A2UI
+
+Postponed per ADR-0030
+Theme Tokens (no longer a prerequisite for Dynamic A2UI)
 
 Later
 Runtime Platform / controlled-generation Compiler
@@ -245,7 +256,7 @@ Runtime Platform / controlled-generation Compiler
 - 默认目标分支为 `dev_1.0`。
 - 修改前检查当前范围，不因为历史文档存在就恢复已删除架构。
 - 大范围架构变更需要用户明确授权。
-- 当前阶段决策以 ADR-0029 为主；ADR-0028 继续约束 native AG-UI、Removed/Historical 边界与已删除 contracts。
+- 当前阶段决策以 ADR-0029 为主；ADR-0030 调整 A2UI 阶段顺序并扩展 Runtime 的 Presentation 职责白名单；ADR-0028 继续约束 native AG-UI、Removed/Historical 边界与已删除 contracts。
 - Historical 文档不是当前实现规范。
 
 ## Markdown 文档规范
