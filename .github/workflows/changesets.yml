@@ -19,7 +19,7 @@ jobs:
           package-manager-cache: false
       - run: corepack enable && corepack prepare pnpm@10.13.1 --activate
       - run: pnpm install --frozen-lockfile
-      - uses: changesets/action@v1
+      - uses: changesets/action@v2
         with:
           version: pnpm version-packages
           commit: "chore: version packages"
