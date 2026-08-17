@@ -46,23 +46,23 @@ describe("ConversationSidebar", () => {
     expect(wrapper.emitted("newConversation")).toEqual([[]]);
   });
 
-  it("emits the selected quick scenario message", async () => {
+  it("emits the selected quick scenario", async () => {
+    const scenario = {
+      agentSource: "ag-ui-mock",
+      id: "inspection-summary-a2ui",
+      label: "巡检摘要 (A2UI)",
+      description: "验证固定渲染",
+      message: "展示巡检摘要 A2UI",
+    } as const;
     const wrapper = mount(ConversationSidebar, {
       props: {
         conversations: [],
         notice: "",
-        quickScenarios: [
-          {
-            id: "inspection-summary-a2ui",
-            label: "巡检摘要 (A2UI)",
-            description: "验证固定渲染",
-            message: "展示巡检摘要 A2UI",
-          },
-        ],
+        quickScenarios: [scenario],
       },
     });
 
     await wrapper.find(".shell-scenario-item").trigger("click");
-    expect(wrapper.emitted("runScenario")).toEqual([["展示巡检摘要 A2UI"]]);
+    expect(wrapper.emitted("runScenario")).toEqual([[scenario]]);
   });
 });

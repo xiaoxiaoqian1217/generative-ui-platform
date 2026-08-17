@@ -142,6 +142,27 @@ AGUIMock 不承载生产 Runtime 职责。
 
 这些属于当前真实 Agent 的互操作缺口，不应限制 Workbench 自身能力模型，也不能由 Runtime 伪造。
 
+### 5.3 来源与呈现决策分离
+
+Agent Source 回答业务内容从哪里来；呈现路径由 Runtime 的确定性 Presentation Policy 按内容决定。
+用户只有自然语言一个入口，可以切换的只有 Agent Source；呈现路径不是用户开关。
+
+```text
+Agent Source
+├─ AGUIMock
+└─ single-agent-chat-server
+
+Presentation paths(按内容单元决策,非全局模式)
+1. Native A2UI Passthrough(已是 A2UI,如固定 fixture)
+2. 显式 requestedMode(仅 scenario / 测试经 forwardedProps 注入)
+3. Plain Content Fallback(原文保留 + 明确错误)
+```
+
+固定 A2UI fixture 是 AGUIMock 的原生输出，经 Passthrough 渲染，不受任何 requestedMode 影响。
+受控 Dynamic A2UI 由挂在 `ag-ui-mock` 上的薄 Presentation Policy middleware 在同一 run 内完成：scenario 经 forwardedProps 携带 `requestedMode: "dynamic"`，稳定检查点触发 Secondary LLM，生成的 a2ui-surface 缝合进当前事件流。
+Frontend Tool 是执行路径而非呈现路径，与呈现决策正交。
+在真实 SACS AgentContent 接入 Dynamic A2UI 之前，SACS 链路没有任何 dynamic 入口。
+
 ## 6. UI 能力模型
 
 Workbench 后续保留两条互补 UI 路线。
@@ -218,8 +239,8 @@ A2UI Catalog 描述 AI 可以声明哪些 UI；它不是第二套真实组件库
 
 ## 8. Post-Agent Presentation 方向
 
-受控内容下的 Dynamic A2UI 由 Issue #210 验证。
-该链路稳定后，再验证真实业务结果到 Dynamic A2UI：
+受控内容下的 Dynamic A2UI 已由 Issue #210 跑通。
+当前下一步是验证真实业务结果到 Dynamic A2UI：
 
 ```text
 single-agent-chat-server
@@ -263,10 +284,10 @@ SACS 不需要为了该方向理解 A2UI。
 #207 Thin CopilotKit Runtime
 #206 A2UI Renderer MVP
 #209 Platform Catalog MVP
+#210 Dynamic A2UI MVP（受控内容）
 
 当前
 #200 Real SACS Interoperability
-Issue #210 Dynamic A2UI MVP（受控内容）
 
 下一阶段
 SACS AgentContent → Dynamic A2UI

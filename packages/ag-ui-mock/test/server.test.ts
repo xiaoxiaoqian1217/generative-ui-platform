@@ -12,6 +12,7 @@ import {
   INSPECTION_SUMMARY_PLATFORM_A2UI_MESSAGE_ID,
   inspectionSummaryPlatformOperations,
 } from "../src/scenarios/inspection-summary-platform-a2ui.js";
+import { inspectionSummaryStructuredResult } from "../src/scenarios/inspection-summary-structured.js";
 
 interface AguiEvent {
   readonly type: string;
@@ -164,6 +165,26 @@ describe("createAguiMockServer", () => {
     expect(componentTypes).toContain("Metric");
     expect(componentTypes).toContain("StatusBadge");
     expect(componentTypes).toContain("InfoRow");
+  });
+
+  it("replays the structured inspection summary as plain business content", async () => {
+    const events = await runMessage("展示巡检摘要结构化结果");
+
+    expect(events.map((event) => event.type)).toEqual([
+      "RUN_STARTED",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "RUN_FINISHED",
+    ]);
+    const content = events
+      .filter((event) => event.type === "TEXT_MESSAGE_CONTENT")
+      .map((event) => String(event.delta))
+      .join("");
+    expect(JSON.parse(content)).toEqual(inspectionSummaryStructuredResult);
+    expect(events.some((event) => event.type === "ACTIVITY_SNAPSHOT")).toBe(
+      false,
+    );
   });
 
   it("serves the connection probe and business scenarios from one server", async () => {

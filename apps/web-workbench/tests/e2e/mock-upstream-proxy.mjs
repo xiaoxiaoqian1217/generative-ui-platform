@@ -12,7 +12,7 @@ function wait(milliseconds) {
 }
 
 export async function createMockUpstreamProxy({ host, port, upstreamUrl }) {
-  const probe = { advertised: false, continuations: 0, result: "" };
+  const probe = { advertised: false, continuations: 0, result: "", runs: 0 };
   let timeoutAttempts = 0;
 
   const server = createServer(async (request, response) => {
@@ -21,6 +21,7 @@ export async function createMockUpstreamProxy({ host, port, upstreamUrl }) {
       return;
     }
 
+    probe.runs += 1;
     const body = await readJson(request);
     const messages = body.messages ?? [];
     const lastUserMessage = [...messages]
@@ -65,6 +66,7 @@ export async function createMockUpstreamProxy({ host, port, upstreamUrl }) {
       probe.advertised = false;
       probe.continuations = 0;
       probe.result = "";
+      probe.runs = 0;
       timeoutAttempts = 0;
     },
     stop: () => new Promise((resolve) => server.close(resolve)),

@@ -1,6 +1,6 @@
+import { infoRowApi } from "@generative-ui/a2ui-catalog";
 import { h } from "vue";
 import UiInfoRow from "../../../../components/ui/UiInfoRow.vue";
-import { infoRowApi } from "../definitions/info-row.js";
 import { createVueComponent } from "./vue-component.js";
 
 export const infoRowImplementation = createVueComponent(

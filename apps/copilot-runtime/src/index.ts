@@ -6,6 +6,13 @@ import {
   CopilotSseRuntime,
   createCopilotRuntimeHandler,
 } from "@copilotkit/runtime/v2";
+import { DynamicA2uiPresentationPolicy } from "./presentation-policy.js";
+import {
+  createSecondaryLlmInvokeSubagent,
+  DEFAULT_SECONDARY_LLM_BASE_URL,
+  DEFAULT_SECONDARY_LLM_MODEL,
+  type InvokeSubagent,
+} from "./secondary-llm.js";
 
 export const AG_UI_MOCK_AGENT_ID = "ag-ui-mock";
 export const SACS_AGENT_ID = "single-agent-chat-server";
@@ -18,9 +25,18 @@ export interface RuntimeConfig {
   readonly sacsPrincipalId?: string;
   readonly sacsPrincipalRole?: "admin" | "user";
   readonly sacsServiceKey?: string;
+  readonly secondaryLlmApiKey?: string;
+  readonly secondaryLlmBaseUrl?: string;
+  readonly secondaryLlmModel?: string;
 }
 
 export interface RuntimeHandlerOptions {
+  /**
+   * Test injection point for the deterministic Secondary LLM double
+   * (Issue #210 CI strategy); when omitted, the OpenAI-compatible client
+   * is wired from `A2UI_SECONDARY_LLM_*` configuration.
+   */
+  readonly invokeSubagent?: InvokeSubagent;
   readonly now?: () => number;
 }
 
@@ -164,14 +180,31 @@ export function createRuntimeHandler(
   options: RuntimeHandlerOptions = {},
 ) {
   const now = options.now ?? Date.now;
+  const invokeSubagent =
+    options.invokeSubagent ??
+    (config.secondaryLlmApiKey === undefined
+      ? undefined
+      : createSecondaryLlmInvokeSubagent({
+          apiKey: config.secondaryLlmApiKey,
+          baseUrl: config.secondaryLlmBaseUrl ?? DEFAULT_SECONDARY_LLM_BASE_URL,
+          model: config.secondaryLlmModel ?? DEFAULT_SECONDARY_LLM_MODEL,
+        }));
   const runtime = new CopilotSseRuntime({
-    agents: {
-      [AG_UI_MOCK_AGENT_ID]: httpAgent(config.agUiMockUrl, mockCapabilities),
-      [SACS_AGENT_ID]: sacsAgent(
-        config.sacsAgUiUrl,
-        sacsCredentials(config),
-        now,
-      ),
+    agents: () => {
+      const mockAgent = httpAgent(config.agUiMockUrl, mockCapabilities);
+      mockAgent.use(
+        new DynamicA2uiPresentationPolicy(
+          invokeSubagent === undefined ? {} : { invokeSubagent },
+        ),
+      );
+      return {
+        [AG_UI_MOCK_AGENT_ID]: mockAgent,
+        [SACS_AGENT_ID]: sacsAgent(
+          config.sacsAgUiUrl,
+          sacsCredentials(config),
+          now,
+        ),
+      };
     },
   });
 
@@ -211,13 +244,41 @@ export function loadRuntimeConfig(
       "SACS_AG_UI_URL",
       environment.SACS_AG_UI_URL ?? "http://127.0.0.1:3000/ag-ui",
     ),
+    secondaryLlmBaseUrl:
+      environment.A2UI_SECONDARY_LLM_BASE_URL?.trim() ||
+      DEFAULT_SECONDARY_LLM_BASE_URL,
+    secondaryLlmModel:
+      environment.A2UI_SECONDARY_LLM_MODEL?.trim() ||
+      DEFAULT_SECONDARY_LLM_MODEL,
     ...(sacsJwtSecret ? { sacsJwtSecret } : {}),
     ...(sacsPrincipalId ? { sacsPrincipalId } : {}),
     ...(sacsPrincipalId || sacsJwtSecret || sacsServiceKey
       ? { sacsPrincipalRole }
       : {}),
     ...(sacsServiceKey ? { sacsServiceKey } : {}),
+    ...(environment.A2UI_SECONDARY_LLM_API_KEY?.trim()
+      ? {
+          secondaryLlmApiKey: environment.A2UI_SECONDARY_LLM_API_KEY.trim(),
+        }
+      : {}),
   };
   sacsCredentials(config);
   return config;
 }
+
+export {
+  DYNAMIC_A2UI_COMPONENT_NAMES,
+  dynamicA2uiCatalogSchema,
+  dynamicA2uiValidationCatalog,
+} from "./dynamic-a2ui.js";
+export {
+  A2UI_GENERATION_ERROR_ACTIVITY_TYPE,
+  type A2uiGenerationErrorContent,
+  DynamicA2uiPresentationPolicy,
+  type PresentationForwardedProps,
+} from "./presentation-policy.js";
+export {
+  DEFAULT_SECONDARY_LLM_BASE_URL,
+  DEFAULT_SECONDARY_LLM_MODEL,
+  type InvokeSubagent,
+} from "./secondary-llm.js";

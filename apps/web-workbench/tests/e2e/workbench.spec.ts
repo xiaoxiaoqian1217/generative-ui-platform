@@ -1,3 +1,4 @@
+import { DYNAMIC_A2UI_COMPONENT_NAMES } from "@generative-ui/copilot-runtime";
 import { expect, type Page, test } from "@playwright/test";
 
 const conversationInput = (page: Page) =>
@@ -16,6 +17,10 @@ test("Conversation-first Shell is the default product interface", async ({
   await expect(page.getByTestId("conversation-shell")).toBeVisible();
   await expect(page.getByTestId("conversation-sidebar")).toBeVisible();
   await expect(page.getByTestId("composer")).toBeVisible();
+  await expect(
+    page.getByTestId("agent-source-select").locator("option"),
+  ).toHaveText(["AGUIMock", "single-agent-chat-server"]);
+  await expect(page.getByTestId("presentation-mode-select")).toHaveCount(0);
   await expect(page.getByTestId("agent-connection-status")).toContainText(
     "已连接",
   );
@@ -234,6 +239,205 @@ test("the Platform Catalog scenario renders Metric, StatusBadge, and InfoRow thr
       .getByTestId("swimlane-timeline")
       .locator("[data-type='ACTIVITY_SNAPSHOT']"),
   ).toBeVisible();
+});
+
+test("Dynamic A2UI renders the controlled business content through the final catalog", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "已连接",
+  );
+  const scenario = page.getByRole("button", {
+    name: /巡检摘要 \(Dynamic A2UI\)/,
+  });
+  await expect(scenario).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /巡检摘要 \(Platform Catalog\)/ }),
+  ).toBeVisible();
+
+  await scenario.click();
+
+  const turns = page.getByTestId("conversation-turns");
+  await expect(turns).toContainText("inspection-summary");
+  await expect(turns).toContainText("totalDevices");
+
+  const firstSurface = page.locator(
+    "[data-surface-id='inspection-summary-dynamic']",
+  );
+  await expect(firstSurface).toBeVisible();
+  await expect(firstSurface.getByTestId("ui-status-badge")).toHaveText(
+    "已完成",
+  );
+  const firstMetrics = firstSurface.getByTestId("ui-metric");
+  await expect(firstMetrics).toHaveCount(4);
+  for (const fact of [
+    "设备总数",
+    "5",
+    "正常数量",
+    "4",
+    "异常数量",
+    "1",
+    "完成率",
+    "100%",
+  ])
+    await expect(firstSurface).toContainText(fact);
+  const firstInfoRows = firstSurface.getByTestId("ui-info-row");
+  await expect(firstInfoRows).toHaveCount(3);
+  for (const fact of ["14:20", "12 分钟", "A 区"])
+    await expect(firstSurface).toContainText(fact);
+
+  await page.getByTestId("new-conversation").click();
+  await scenario.click();
+  const secondSurface = page.locator(
+    "[data-surface-id='inspection-summary-dynamic']",
+  );
+  await expect(secondSurface).toBeVisible();
+  for (const fact of ["5", "4", "1", "100%", "14:20", "12 分钟", "A 区"])
+    await expect(secondSurface).toContainText(fact);
+
+  const generations = await (
+    await request.get("/__control__/secondary-llm")
+  ).json();
+  expect(generations).toHaveLength(2);
+  const catalogComponents = new Set(DYNAMIC_A2UI_COMPONENT_NAMES);
+  for (const generation of generations) {
+    const componentTypes = generation.args.components.map(
+      (component: { component: string }) => component.component,
+    );
+    expect(
+      componentTypes.every((type: string) => catalogComponents.has(type)),
+    ).toBe(true);
+    expect(componentTypes).toEqual(
+      expect.arrayContaining(["Metric", "StatusBadge", "InfoRow"]),
+    );
+    expect(generation.prompt).toContain("inspection-summary");
+    expect(generation.prompt).toContain("totalDevices");
+    expect(generation.prompt).toContain(
+      "https://generative-ui.dev/a2ui/v0_9/platform_catalog.json",
+    );
+    expect(generation.prompt).not.toContain("DeviceCard");
+  }
+});
+
+test("Dynamic A2UI catalog violation falls back to content with an explicit error", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "已连接",
+  );
+  await request.post("/__control__/secondary-llm-mode", {
+    data: { mode: "invalid" },
+  });
+
+  await page.getByRole("button", { name: /巡检摘要 \(Dynamic A2UI\)/ }).click();
+
+  const error = page.getByTestId("a2ui-generation-error");
+  await expect(error).toContainText("A2UI_GENERATION_FAILED");
+  await expect(error).toContainText("DeviceCard");
+  await expect(page.getByTestId("conversation-turns")).toContainText(
+    "totalDevices",
+  );
+  await expect(
+    page.locator("[data-surface-id='inspection-summary-dynamic']"),
+  ).toHaveCount(0);
+  await expect(conversationInput(page)).toBeEnabled();
+
+  await page
+    .getByRole("button", { name: /巡检摘要 \(Platform Catalog\)/ })
+    .click();
+  await expect(
+    page.locator("[data-surface-id='inspection-summary-platform']"),
+  ).toBeVisible();
+});
+
+test("Dynamic A2UI Secondary LLM failure is bounded and does not break fixed A2UI", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "已连接",
+  );
+  await request.post("/__control__/secondary-llm-mode", {
+    data: { mode: "down" },
+  });
+
+  await page.getByRole("button", { name: /巡检摘要 \(Dynamic A2UI\)/ }).click();
+
+  const error = page.getByTestId("a2ui-generation-error");
+  await expect(error).toContainText("A2UI_GENERATION_FAILED");
+  await expect(error).toContainText("A2UI_SECONDARY_LLM_UNAVAILABLE");
+  await expect(page.getByTestId("conversation-turns")).toContainText(
+    "totalDevices",
+  );
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "已连接",
+  );
+  await expect(conversationInput(page)).toBeEnabled();
+
+  await request.post("/__control__/restore");
+  await page.getByRole("button", { name: /巡检摘要 \(A2UI\)/ }).click();
+  await expect(
+    page.locator("[data-surface-id='inspection-summary']"),
+  ).toBeVisible();
+});
+
+test("Dynamic A2UI generated actions are recorded in Inspect only and never sent back", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  await expect(page.getByTestId("agent-connection-status")).toContainText(
+    "已连接",
+  );
+  await request.post("/__control__/secondary-llm-mode", {
+    data: { mode: "action" },
+  });
+
+  await page.getByRole("button", { name: /巡检摘要 \(Dynamic A2UI\)/ }).click();
+
+  const surface = page.locator(
+    "[data-surface-id='inspection-summary-dynamic']",
+  );
+  await expect(surface).toBeVisible();
+  const actionButton = surface.getByRole("button", { name: "重试巡检" });
+  await expect(actionButton).toBeVisible();
+  await expect(page.locator("[data-testid^='conversation-turn-']")).toHaveCount(
+    1,
+  );
+
+  const probe = async () =>
+    (await (await request.get("/__control__/frontend-tool-probe")).json())
+      .runs as number;
+  const runsBefore = await probe();
+  await actionButton.click();
+  await page.waitForTimeout(600);
+
+  expect(await probe()).toBe(runsBefore);
+  await expect(page.locator("[data-testid^='conversation-turn-']")).toHaveCount(
+    1,
+  );
+  await expect(conversationInput(page)).toBeEnabled();
+
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  await page
+    .locator("[data-testid^='timeline-node-'][data-type='ACTIVITY_SNAPSHOT']")
+    .first()
+    .click();
+  const detail = page.getByTestId("inspect-detail");
+  await detail.getByTestId("json-node-content").first().click();
+  await detail.getByTestId("json-node-a2ui_operations").first().click();
+  await detail.getByTestId("json-node-1").first().click();
+  await detail.getByTestId("json-node-updateComponents").first().click();
+  await detail.getByTestId("json-node-components").first().click();
+  await detail.getByTestId("json-node-3").first().click();
+  await detail.getByTestId("json-node-action").first().click();
+  await detail.getByTestId("json-node-event").first().click();
+  await expect(detail).toContainText("retry_inspection");
 });
 
 test("Frontend Tool is advertised, executed in the browser, and continued through AG-UI", async ({

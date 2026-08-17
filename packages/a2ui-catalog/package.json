@@ -1,0 +1,29 @@
+{
+  "name": "@generative-ui/a2ui-catalog",
+  "version": "0.1.0",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean --out-dir dist",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@a2ui/web_core": "0.9.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "tsup": "8.5.0",
+    "typescript": "5.8.3",
+    "vitest": "3.2.6"
+  }
+}

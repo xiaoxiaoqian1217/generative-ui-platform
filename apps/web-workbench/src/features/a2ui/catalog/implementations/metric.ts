@@ -1,6 +1,6 @@
+import { metricApi } from "@generative-ui/a2ui-catalog";
 import { h } from "vue";
 import UiMetric from "../../../../components/ui/UiMetric.vue";
-import { metricApi } from "../definitions/metric.js";
 import { createVueComponent } from "./vue-component.js";
 
 export const metricImplementation = createVueComponent(metricApi, ({ props }) =>

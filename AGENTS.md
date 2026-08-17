@@ -98,6 +98,7 @@ apps/
 └─ web-workbench/
 
 packages/
+├─ a2ui-catalog/
 ├─ ag-ui-mock/
 ├─ ag-ui-adapter/
 └─ shared-types/
@@ -106,6 +107,7 @@ packages/
 职责：
 
 - `apps/web-workbench`：当前产品主体与交互 / Generative UI 实验场。
+- `packages/a2ui-catalog`：框架无关的 Platform Catalog definitions（Metric / StatusBadge / InfoRow），仅依赖 zod 与 `@a2ui/web_core`，Workbench 与 Runtime 引用同一来源；只承载 definitions，不演变为通用 Catalog Platform。
 - `packages/ag-ui-mock`：可复用 AG-UI 测试服务。
 - `packages/ag-ui-adapter`：仅允许承载 AG-UI 协议边界辅助能力。
 - `packages/shared-types`：最小跨模块共享类型。

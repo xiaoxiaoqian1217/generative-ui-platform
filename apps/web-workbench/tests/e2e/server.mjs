@@ -7,6 +7,7 @@ import { createAguiMockServer } from "@generative-ui/ag-ui-mock";
 import { createRuntimeHandler } from "@generative-ui/copilot-runtime";
 import { createMockUpstreamProxy } from "./mock-upstream-proxy.mjs";
 import { createSacsProfileFixture } from "./sacs-profile-fixture.mjs";
+import { createSecondaryLlmFake } from "./secondary-llm-fake.mjs";
 
 const host = "127.0.0.1";
 const appRoot = fileURLToPath(new URL("../..", import.meta.url));
@@ -29,14 +30,18 @@ const sacs = await createSacsProfileFixture({
   principalId: sacsPrincipalId,
   serviceKey: sacsServiceKey,
 });
-const runtimeHandler = createRuntimeHandler({
-  agUiMockUrl: mockProxy.url,
-  sacsAgUiUrl: sacs.url,
-  sacsJwtSecret,
-  sacsPrincipalId,
-  sacsPrincipalRole: "user",
-  sacsServiceKey,
-});
+const secondaryLlm = createSecondaryLlmFake();
+const runtimeHandler = createRuntimeHandler(
+  {
+    agUiMockUrl: mockProxy.url,
+    sacsAgUiUrl: sacs.url,
+    sacsJwtSecret,
+    sacsPrincipalId,
+    sacsPrincipalRole: "user",
+    sacsServiceKey,
+  },
+  { invokeSubagent: secondaryLlm.invokeSubagent },
+);
 let runtimeAvailable = true;
 
 const contentTypes = {
@@ -112,6 +117,13 @@ const server = createServer(async (request, response) => {
   }
   if (
     request.method === "GET" &&
+    url.pathname === "/__control__/secondary-llm"
+  ) {
+    json(response, 200, secondaryLlm.observations);
+    return;
+  }
+  if (
+    request.method === "GET" &&
     url.pathname === "/__control__/frontend-tool-probe"
   ) {
     json(response, 200, mockProxy.probe);
@@ -122,6 +134,18 @@ const server = createServer(async (request, response) => {
     sacs.setAvailable(true);
     mockProxy.reset();
     sacs.observations.length = 0;
+    secondaryLlm.reset();
+    response.writeHead(204).end();
+    return;
+  }
+  if (
+    request.method === "POST" &&
+    url.pathname === "/__control__/secondary-llm-mode"
+  ) {
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    const mode = JSON.parse(Buffer.concat(chunks).toString("utf8"))?.mode;
+    secondaryLlm.setMode(mode);
     response.writeHead(204).end();
     return;
   }

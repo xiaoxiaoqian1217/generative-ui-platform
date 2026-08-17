@@ -1,14 +1,12 @@
 // @vitest-environment jsdom
 
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { PLATFORM_A2UI_CATALOG_ID } from "@generative-ui/shared-types";
-import { describe, expect, it } from "vitest";
 import {
   infoRowApi,
   metricApi,
   statusBadgeApi,
-} from "../../src/features/a2ui/catalog/definitions/index.js";
+} from "@generative-ui/a2ui-catalog";
+import { PLATFORM_A2UI_CATALOG_ID } from "@generative-ui/shared-types";
+import { describe, expect, it } from "vitest";
 import { platformCatalog } from "../../src/features/a2ui/catalog/platform-catalog.js";
 
 const BASIC_COMPONENT_NAMES = [
@@ -120,33 +118,5 @@ describe("platform catalog definitions", () => {
       statusBadgeApi.schema.safeParse({ label: "x", variant: "success" })
         .success,
     ).toBe(true);
-  });
-});
-
-describe("platform catalog definition import boundary", () => {
-  it("definitions only import zod, @a2ui/web_core, and intra-directory modules", () => {
-    const definitionsDir = join(
-      process.cwd(),
-      "src/features/a2ui/catalog/definitions",
-    );
-    const files = readdirSync(definitionsDir).filter((file) =>
-      file.endsWith(".ts"),
-    );
-    expect(files.length).toBeGreaterThan(0);
-
-    const importPattern = /(?:import|export)\s[^"']*?from\s+["']([^"']+)["']/g;
-    for (const file of files) {
-      const source = readFileSync(join(definitionsDir, file), "utf8");
-      const specifiers = [...source.matchAll(importPattern)].map(
-        (match) => match[1] ?? "",
-      );
-      for (const specifier of specifiers) {
-        if (specifier.startsWith(".")) continue;
-        expect(
-          specifier === "zod" || specifier.startsWith("@a2ui/web_core"),
-          `${file} must not import ${specifier}`,
-        ).toBe(true);
-      }
-    }
   });
 });

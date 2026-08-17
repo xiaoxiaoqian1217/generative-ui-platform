@@ -3,8 +3,9 @@
 ## Responsibility
 
 `apps/copilot-runtime` is the Workbench Agent integration boundary accepted by ADR-0029.
-It registers AGUIMock and `single-agent-chat-server` under stable Agent identities and proxies native AG-UI streams.
-It does not own product runtime state, presentation decisions, orchestration, or durable history.
+It registers the AGUIMock and `single-agent-chat-server` Business Agent sources under stable Agent identities and proxies native AG-UI streams.
+For controlled Dynamic A2UI it additionally hosts the narrow presentation wiring accepted by ADR-0030: a thin deterministic Presentation Policy, the Secondary Presentation LLM wiring based on `@ag-ui/a2ui-toolkit`, and the stitching of generation results into the AG-UI event stream.
+It does not own product runtime state, general presentation routing, orchestration, or durable history.
 
 ## Agent identities
 
@@ -14,6 +15,18 @@ It does not own product runtime state, presentation decisions, orchestration, or
 Both Agents are registered concurrently.
 The Workbench chooses one identity for a conversation.
 The SACS profile does not support client-provided Frontend Tools, and the Runtime does not emulate them.
+
+## Dynamic A2UI presentation policy
+
+The `ag-ui-mock` Agent runs behind a thin AG-UI middleware (`DynamicA2uiPresentationPolicy`) that implements the Issue #210 minimal policy subset:
+
+1. a run that already emits an `a2ui-surface` activity passes through untouched (Native A2UI Passthrough);
+2. an explicit `requestedMode: "dynamic"` arriving through AG-UI `forwardedProps` triggers one Secondary LLM generation at the stable checkpoint (RUN_FINISHED), driven by `runA2UIGenerationWithRecovery` and validated against the shared Final Catalog schema from `@generative-ui/a2ui-catalog`;
+3. the validated operations are stitched into the current run as an `a2ui-surface` ACTIVITY_SNAPSHOT before RUN_FINISHED;
+4. when the explicit mode is not executable (missing client A2UI capability, missing Secondary LLM configuration, non-structured content, or generation failure), the original content is preserved and an explicit `a2ui-generation-error` activity is emitted instead (Plain Content Fallback).
+
+The policy never inspects natural language, never lets the Secondary LLM decide whether to run, and only applies to `ag-ui-mock`; the SACS Agent has no Dynamic A2UI path while its content is not yet integrated.
+Tests inject a deterministic fake through the `invokeSubagent` option of `createRuntimeHandler`; no real model call happens in CI.
 
 ## Configuration
 
@@ -29,6 +42,13 @@ The static `SACS_OPENWEBUI_USER_JWT` configuration is rejected because it necess
 No credential or signed JWT is returned by the Runtime `/info` response or sent to the browser.
 The standalone Runtime does not emit permissive CORS headers.
 Deploy it behind the Workbench same-origin reverse proxy or another authenticated server boundary.
+
+`A2UI_SECONDARY_LLM_BASE_URL` selects the OpenAI-compatible provider endpoint and defaults to `https://openrouter.ai/api/v1`.
+`A2UI_SECONDARY_LLM_MODEL` selects the provider-qualified presentation model and defaults to `openai/gpt-4.1-mini`.
+`A2UI_SECONDARY_LLM_API_KEY` supplies its server-only provider key; the Runtime never falls back to other provider environment variables.
+When the key is omitted, Dynamic Eligibility does not hold: an explicit dynamic request receives an explicit `A2UI_GENERATION_UNAVAILABLE` error and the original content is preserved.
+The model only answers through the catalog-constrained `render_a2ui` structured output; generated components outside the Final Catalog are rejected before painting.
+The Secondary LLM credential stays in the Runtime process and never reaches the browser bundle.
 
 This configured principal is appropriate only for a single-user or trusted shared Workbench deployment.
 Before exposing Workbench to multiple users, authenticate requests at the Runtime boundary and derive the JWT subject from that verified server-side identity.
@@ -59,3 +79,10 @@ Set `SACS_SMOKE_ERROR_PROMPT` to a safe, domain-specific input that the deployed
 The smoke test verifies discovery through Runtime `/info`, then requires streaming text, successful run lifecycle, state snapshot/delta, activity snapshot/delta, and a structured `RUN_FINISHED.result` through the real service.
 It also performs the configured negative run and requires `RUN_ERROR` without `RUN_FINISHED`.
 The deterministic browser E2E profile verifies the same Workbench mapping plus bounded `RUN_ERROR` handling without depending on external credentials.
+
+## Real model validation (manual, non-CI)
+
+Dynamic A2UI uses a deterministic fake in CI.
+To validate a real provider, set `A2UI_SECONDARY_LLM_*` and run the `巡检摘要 (Dynamic A2UI)` Workbench scenario at least five times against the same controlled input.
+Every run must stay inside the Final Catalog, render completely, and preserve the key business facts (5 devices / 1 error / 100%).
+Record the provider, model, parameters, and outcomes alongside the run; do not promote a model configuration that misses any run.

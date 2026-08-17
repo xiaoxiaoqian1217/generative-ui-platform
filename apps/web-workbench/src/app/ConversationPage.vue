@@ -15,7 +15,7 @@ import {
 } from "../agent/business-agent-client.js";
 import type { ResumeEntry } from "@ag-ui/core";
 import CopilotKitConversationProvider from "../conversation/CopilotKitConversationProvider.vue";
-import { quickScenarios } from "./scenarios.js";
+import { quickScenarios, type QuickScenario } from "./scenarios.js";
 import {
   type ConversationState,
   createConversationState,
@@ -46,6 +46,7 @@ import {
   agentSourceProfile,
   type AgentSource,
 } from "../settings/agent-source.js";
+import { presentationForwardedProps } from "../settings/presentation-request.js";
 import ConversationComposer from "../shell/ConversationComposer.vue";
 import ConversationMainArea from "../shell/ConversationMainArea.vue";
 import ConversationSidebar from "../shell/ConversationSidebar.vue";
@@ -95,6 +96,11 @@ const selectedAgentProfile = computed(() =>
 const currentConversation = computed<LocalConversation | undefined>(() =>
   conversations.value.find(
     (item) => item.conversationId === selectedConversationId.value,
+  ),
+);
+const availableQuickScenarios = computed(() =>
+  quickScenarios.filter(
+    (scenario) => scenario.agentSource === selectedAgentSource.value,
   ),
 );
 const conversation = computed({
@@ -221,6 +227,7 @@ async function executeRun(
   turnId: string,
   threadId: string,
   request: {
+    forwardedProps?: Record<string, unknown>;
     message?: WorkbenchUserMessage;
     requestId: string;
     resume?: readonly ResumeEntry[];
@@ -238,6 +245,9 @@ async function executeRun(
   try {
     const result = await active.run(
       {
+        ...(request.forwardedProps === undefined
+          ? {}
+          : { forwardedProps: request.forwardedProps }),
         ...(request.message === undefined ? {} : { message: request.message }),
         observe: forwardObservation,
         ...(request.resume === undefined ? {} : { resume: request.resume }),
@@ -285,7 +295,10 @@ async function executeRun(
 
 async function sendMessage(
   message = input.value,
-  options: { allowUnavailable?: boolean } = {},
+  options: {
+    allowUnavailable?: boolean;
+    forwardedProps?: Record<string, unknown>;
+  } = {},
 ): Promise<void> {
   const normalized = message.trim();
   const current = currentConversation.value;
@@ -318,8 +331,25 @@ async function sendMessage(
   conversation.value = nextConversation;
 
   await executeRun(turnId, current.threadId, {
+    ...(options.forwardedProps === undefined
+      ? {}
+      : { forwardedProps: options.forwardedProps }),
     message: userMessage,
     requestId,
+  });
+}
+
+/**
+ * Quick scenarios are the controlled-input injection points of the Workbench
+ * (Issue #210): a scenario may carry an explicit presentation request that is
+ * forwarded to the Runtime presentation policy via AG-UI forwardedProps.
+ */
+async function runScenario(scenario: QuickScenario): Promise<void> {
+  const forwardedProps = presentationForwardedProps(scenario.requestedMode);
+  await sendMessage(scenario.message, {
+    ...(forwardedProps === undefined
+      ? {}
+      : { forwardedProps: { ...forwardedProps } }),
   });
 }
 
@@ -425,10 +455,10 @@ onBeforeUnmount(() => {
       <ConversationSidebar
         :conversations="conversations"
         notice=""
-        :quick-scenarios="quickScenarios"
+        :quick-scenarios="availableQuickScenarios"
         :selected-conversation-id="selectedConversationId"
         @new-conversation="newConversation"
-        @run-scenario="sendMessage"
+        @run-scenario="runScenario"
         @select-conversation="selectConversation"
       />
 

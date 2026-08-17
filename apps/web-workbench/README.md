@@ -12,6 +12,9 @@ Web Workbench
 -> AGUIMock or single-agent-chat-server
 ```
 
+Agent Source is the only session-level choice; everyday natural language input always runs in auto presentation.
+The `巡检摘要 (Dynamic A2UI)` quick scenario carries an explicit `requestedMode: "dynamic"` through AG-UI forwardedProps, asking the Runtime presentation policy to generate the surface from the controlled AGUIMock structured result.
+
 Only the AGUIMock source advertises the browser `locateDevice` Frontend Tool and drives MapLibre plus `DeviceCard`.
 The SACS source streams Business Agent text, state, activity, and structured results without client-provided Frontend Tools.
 
@@ -25,6 +28,8 @@ The active Conversation route supports:
 - native AG-UI user and assistant messages;
 - fixed A2UI activity rendering through the merged platform catalog (CopilotKit Vue Basic Catalog plus the `Metric` / `StatusBadge` / `InfoRow` platform components);
 - deterministic A2UI inspection-summary, platform-catalog, and invalid-catalog fixtures from AGUIMock;
+- controlled Dynamic A2UI generation through a Secondary LLM and the merged Catalog boundary;
+- explicit Dynamic A2UI generation and schema-rejection states without crashing the conversation;
 - safe Markdown rendering for assistant text;
 - CopilotKit `useFrontendTool` registration;
 - the `locateDevice` browser tool;
@@ -32,7 +37,8 @@ The active Conversation route supports:
 - per-turn Turn Inspect: a swimlane timeline of the observations the Workbench really saw (Workbench / CopilotKit Runtime / Agent / Frontend Tool lanes appear only when they actually occurred) plus on-demand raw JSON detail;
 - SACS interrupt / resume: an interrupted run renders an in-turn confirmation card, and the user's answer is sent back as a native AG-UI `resume` entry;
 - cancellation, retryable timeout handling, agent outage handling, and recovery;
-- explicit selection between AGUIMock and `single-agent-chat-server`.
+- explicit Agent Source selection between AGUIMock and `single-agent-chat-server`;
+- the Dynamic A2UI quick scenario, which injects the controlled structured input and requests dynamic generation through forwardedProps.
 
 Turn Inspect records only observable public facts in observed order; it does not infer server-side sequences, and it does not create a Runtime Repository, Recovery Platform, or a private diagnostic protocol.
 
@@ -52,7 +58,8 @@ The following capabilities remain in the repository for later evaluation:
 
 These capabilities are frozen rather than removed.
 They may receive compatibility maintenance, but they are not part of the current release gate.
-The focused A2UI Renderer MVP is active under ADR-0029, while custom catalogs, theme work, dynamic A2UI, and any Runtime, Presentation, or Compiler platform remain outside this slice.
+The focused A2UI Renderer, Platform Catalog, and controlled Dynamic A2UI MVPs are active under ADR-0029 and ADR-0030.
+Theme work, real SACS content presentation, and any general Runtime, Presentation, or Compiler platform remain outside this slice.
 
 ## Removed dependencies
 
@@ -85,7 +92,7 @@ window.__GEN_UI_WORKBENCH_CONFIG__ = {
 `agentUrl` must be an `http` or `https` origin without embedded credentials.
 Workbench gives deployment-time configuration priority over build-time configuration, then falls back to the page origin.
 
-Local Settings can override the Agent URL, request timeout, and debug-detail preference in the browser.
+Local Settings persist Agent Source, Agent URL, request timeout, and debug-detail preference in the browser.
 
 ## Local development
 
@@ -114,7 +121,7 @@ pnpm dev:web-workbench
 ```
 
 The default same-origin configuration uses the Vite proxy to reach the Runtime.
-The Runtime registers AGUIMock and SACS at the same time; the Workbench selector chooses one Agent identity for each conversation.
+The Runtime registers AGUIMock and SACS at the same time; the Workbench Source selector chooses one of them for each conversation.
 SACS credentials remain in the Runtime process and are never browser configuration.
 See [`apps/copilot-runtime/README.md`](../copilot-runtime/README.md) for its environment variables and real-service smoke test.
 Enter `定位无人机 01` in Conversation.

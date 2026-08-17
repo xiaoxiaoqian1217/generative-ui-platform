@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
+import { STATUS_BADGE_VARIANTS } from "@generative-ui/a2ui-catalog";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import UiStatusBadge from "../../src/components/ui/UiStatusBadge.vue";
-import { STATUS_BADGE_VARIANTS } from "../../src/features/a2ui/catalog/definitions/status-badge.js";
 
 describe("UiStatusBadge", () => {
   it("renders every semantic variant", () => {

@@ -72,7 +72,18 @@ AGUIMock        single-agent-chat-server
 
 当前 SACS 不支持 client-provided Frontend Tools；该差异作为兼容性状态保留。
 
-## A2UI 下一阶段
+## Agent Source 与呈现请求
+
+Workbench 只有一个自然语言入口，会话级开关只有 Agent Source。
+
+- Agent Source 只有 AGUIMock 与 `single-agent-chat-server`；
+- 日常输入恒为 auto：已是 A2UI 的内容（如 AGUIMock 固定 fixture）经 Native Passthrough 渲染，其余保留原文；
+- `requestedMode: "dynamic"` 只由 quick scenario / 测试经 `forwardedProps` 显式注入，请求 Runtime 的薄 Presentation Policy 在同一 run 内触发 Secondary LLM 生成并缝合 a2ui-surface；
+- 当前 Dynamic A2UI 仅允许用于 AGUIMock 受控内容，不接入真实 SACS AgentContent。
+
+呈现路径由 Runtime 的确定性 policy 决定，不是用户可选的会话模式。
+
+## A2UI 当前链路
 
 完成薄 Runtime 与真实 Agent 联调后，Workbench 主线进入（ADR-0030 调整后的顺序）：
 
@@ -85,13 +96,13 @@ Basic Catalog
   ↓
 小规模 Custom Catalog
   ↓
-Dynamic A2UI（受控内容，Issue #210）
+Dynamic A2UI（受控内容，Issue #210，已完成）
   ↓
 真实 SACS AgentContent → Dynamic A2UI
 ```
 
 Theme Tokens 经 ADR-0030 后置，不再是 Dynamic A2UI 的前置条件。
-第一阶段只证明 A2UI Renderer 能稳定工作，不先引入 Secondary LLM。
+当前受控链路已证明 A2UI Renderer、Platform Catalog 与 Secondary LLM 可以协同工作。
 
 Controlled UI 与 A2UI 应尽量复用同一套真实 UI primitives、domain UI 和 Theme。
 
@@ -139,10 +150,10 @@ CopilotKit Runtime 只作为支撑性的集成层，不改变上述边界。
 #207 Thin CopilotKit Runtime
 #206 A2UI Renderer MVP
 #209 Platform Catalog MVP
+#210 Dynamic A2UI MVP（受控内容）
 
 当前
 #200 Real SACS Interoperability
-Issue #210 Dynamic A2UI MVP（受控内容）
 
 下一阶段
 SACS AgentContent → Dynamic A2UI

@@ -16,7 +16,7 @@ defineProps<{
 
 const emit = defineEmits<{
   newConversation: [];
-  runScenario: [message: string];
+  runScenario: [scenario: QuickScenario];
   selectConversation: [conversationId: string];
 }>();
 
@@ -78,7 +78,7 @@ function formatUpdatedAt(value: string): string {
         :key="scenario.id"
         class="shell-scenario-item"
         type="button"
-        @click="emit('runScenario', scenario.message)"
+        @click="emit('runScenario', scenario)"
       >
         <strong>{{ scenario.label }}</strong>
         <span>{{ scenario.description }}</span>

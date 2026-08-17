@@ -42,6 +42,7 @@ export class WorkbenchAgentError extends Error {
 }
 
 export interface AgentRunInput {
+  readonly forwardedProps?: Record<string, unknown>;
   readonly message?: UserMessage & { readonly content: string };
   readonly observe?: ObservationSink;
   readonly resume?: readonly ResumeEntry[];
@@ -358,6 +359,9 @@ export function createBusinessAgentClient(
         void core
           .runAgent({
             agent,
+            ...(input.forwardedProps === undefined
+              ? {}
+              : { forwardedProps: input.forwardedProps }),
             runId: input.runId,
             ...(input.resume === undefined
               ? {}

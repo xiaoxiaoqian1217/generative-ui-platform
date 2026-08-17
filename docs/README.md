@@ -27,12 +27,6 @@ AGUIMock / single-agent-chat-server
 #200 Real SACS Interoperability
 
 下一阶段
-A2UI Renderer
-  ↓
-Basic / Custom Catalog
-  ↓
-Theme
-  ↓
 SACS AgentContent → Dynamic A2UI
 ```
 
@@ -100,12 +94,14 @@ Research：
 ## 当前实现与目标架构必须区分
 
 Issue #207 已经落地 thin CopilotKit Runtime。
-当前可执行链路通过统一 `/api/copilotkit` endpoint 注册 `ag-ui-mock` 与 `single-agent-chat-server`，Workbench 按会话切换 Agent Source。
+当前可执行链路通过统一 `/api/copilotkit` endpoint 接入 `ag-ui-mock` 与 `single-agent-chat-server` 两个 Agent Source。
+受控 Dynamic A2UI 不作为独立身份存在：Dynamic scenario 经 `forwardedProps` 携带 `requestedMode`，由挂在 `ag-ui-mock` 上的薄 Presentation Policy middleware 在同一 run 内完成生成与缝合。
 
 AGUIMock 路线继续验证 Frontend Tool 与浏览器设备定位。
 SACS 路线消费 streaming text、Run lifecycle、State、Activity、Artifact 和 bounded `RUN_ERROR`，但不伪造其尚未支持的 client-provided Frontend Tools。
 
-A2UI Renderer / Catalog / Theme 仍是下一阶段路线，不应在实现前被描述为已完成能力。
+A2UI Renderer、Platform Catalog 与受控 Dynamic A2UI 已完成。
+Theme 与真实 SACS AgentContent 到 Dynamic A2UI 仍是后续路线，不应描述为已实现能力。
 
 ## 明确延期
 

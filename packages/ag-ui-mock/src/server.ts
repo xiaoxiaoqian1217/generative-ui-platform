@@ -7,6 +7,7 @@ import { AGUIMock } from "@copilotkit/aimock";
 import { registerEchoScenario } from "./scenarios/echo.js";
 import { registerInspectionSummaryA2uiScenario } from "./scenarios/inspection-summary-a2ui.js";
 import { registerInspectionSummaryPlatformA2uiScenario } from "./scenarios/inspection-summary-platform-a2ui.js";
+import { registerInspectionSummaryStructuredScenario } from "./scenarios/inspection-summary-structured.js";
 import { registerLocateDeviceScenario } from "./scenarios/locate-device.js";
 import { registerRunErrorScenario } from "./scenarios/run-error.js";
 
@@ -54,6 +55,7 @@ export function createAguiMockServer(
 
   registerInspectionSummaryA2uiScenario(mock);
   registerInspectionSummaryPlatformA2uiScenario(mock);
+  registerInspectionSummaryStructuredScenario(mock);
   registerEchoScenario(mock);
   registerLocateDeviceScenario(mock);
   registerRunErrorScenario(mock);

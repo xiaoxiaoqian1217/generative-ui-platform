@@ -1,13 +1,37 @@
 import { createHmac } from "node:crypto";
 import { createServer, type RequestListener, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import { validateA2UIComponents } from "@ag-ui/a2ui-toolkit";
 import { afterEach, describe, expect, it } from "vitest";
-import { createRuntimeHandler, loadRuntimeConfig } from "../src/index.js";
+import {
+  A2UI_GENERATION_ERROR_ACTIVITY_TYPE,
+  createRuntimeHandler,
+  DYNAMIC_A2UI_COMPONENT_NAMES,
+  dynamicA2uiCatalogSchema,
+  dynamicA2uiValidationCatalog,
+  type InvokeSubagent,
+  loadRuntimeConfig,
+} from "../src/index.js";
 
 const servers: Server[] = [];
 const sacsServiceKey = "server-only-key-with-at-least-32-characters";
 const sacsJwtSecret = "server-only-jwt-secret-with-at-least-32-characters";
 const sacsPrincipalId = "workbench-test-user";
+
+const INSPECTION_CONTENT = JSON.stringify({
+  contentType: "inspection-summary",
+  schemaVersion: "1",
+  payload: {
+    status: "completed",
+    totalDevices: 5,
+    okDevices: 4,
+    errorDevices: 1,
+    completionRate: 1.0,
+    startedAt: "14:20",
+    durationMinutes: 12,
+    area: "A 区",
+  },
+});
 
 function verifyUserJwt(token: string, nowSeconds: number) {
   const parts = token.split(".");
@@ -48,13 +72,20 @@ async function readEventStream(response: Response): Promise<string> {
   }
 }
 
-function parseEventStream(stream: string): unknown[] {
+interface RuntimeEvent {
+  readonly activityType?: string;
+  readonly content?: unknown;
+  readonly messageId?: string;
+  readonly type?: string;
+}
+
+function parseEventStream(stream: string): RuntimeEvent[] {
   return stream.split("\n\n").flatMap((block) => {
     const data = block
       .split("\n")
       .find((line) => line.startsWith("data: "))
       ?.slice(6);
-    return data === undefined ? [] : [JSON.parse(data)];
+    return data === undefined ? [] : [JSON.parse(data) as RuntimeEvent];
   });
 }
 
@@ -65,6 +96,95 @@ async function upstream(handle: RequestListener): Promise<string> {
   const address = server.address() as AddressInfo;
   return `http://127.0.0.1:${address.port}`;
 }
+
+function sseEvents(events: readonly unknown[]): string {
+  return events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join("");
+}
+
+function textMessageEvents(content: string): unknown[] {
+  return [
+    { type: "RUN_STARTED", threadId: "thread-1", runId: "run-1" },
+    { type: "TEXT_MESSAGE_START", messageId: "upstream-message-1" },
+    {
+      type: "TEXT_MESSAGE_CONTENT",
+      messageId: "upstream-message-1",
+      delta: content,
+    },
+    { type: "TEXT_MESSAGE_END", messageId: "upstream-message-1" },
+    { type: "RUN_FINISHED", threadId: "thread-1", runId: "run-1" },
+  ];
+}
+
+function mockUpstreamReturning(events: readonly unknown[]) {
+  const received: { body?: unknown } = {};
+  return upstream(async (request, response) => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of request) chunks.push(Buffer.from(chunk));
+    received.body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+    response.writeHead(200, { "content-type": "text/event-stream" });
+    response.end(sseEvents(events));
+  }).then((url) => ({ received, url }));
+}
+
+function runRequestBody(forwardedProps: Record<string, unknown>) {
+  return {
+    context: [],
+    forwardedProps,
+    messages: [],
+    runId: "run-1",
+    state: {},
+    threadId: "thread-1",
+    tools: [],
+  };
+}
+
+async function runAgainstMock(
+  handler: (request: Request) => Promise<Response> | Response,
+  body: Record<string, unknown>,
+): Promise<RuntimeEvent[]> {
+  const response = await handler(
+    new Request(
+      "http://runtime.example.test/api/copilotkit/agent/ag-ui-mock/run",
+      {
+        body: JSON.stringify(body),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      },
+    ),
+  );
+  return parseEventStream(await readEventStream(response));
+}
+
+const legalSubagentArgs = {
+  surfaceId: "inspection-summary-dynamic",
+  components: [
+    { id: "root", component: "Card", child: "summary" },
+    {
+      id: "summary",
+      component: "Column",
+      children: ["badge", "metric", "info"],
+    },
+    {
+      id: "badge",
+      component: "StatusBadge",
+      label: "已完成",
+      variant: "success",
+    },
+    {
+      id: "metric",
+      component: "Metric",
+      label: "设备总数",
+      value: { path: "/total" },
+    },
+    {
+      id: "info",
+      component: "InfoRow",
+      label: "执行区域",
+      value: { path: "/area" },
+    },
+  ],
+  data: { area: "A 区", total: 5 },
+};
 
 afterEach(async () => {
   await Promise.all(
@@ -84,6 +204,8 @@ describe("thin CopilotKit Runtime", () => {
     expect(loadRuntimeConfig({})).toEqual({
       agUiMockUrl: "http://127.0.0.1:4800/",
       sacsAgUiUrl: "http://127.0.0.1:3000/ag-ui",
+      secondaryLlmBaseUrl: "https://openrouter.ai/api/v1",
+      secondaryLlmModel: "openai/gpt-4.1-mini",
     });
   });
 
@@ -96,7 +218,7 @@ describe("thin CopilotKit Runtime", () => {
     ).toThrow("SACS_CREDENTIALS_INCOMPLETE");
   });
 
-  it("registers both Agent sources and keeps their capability difference explicit", async () => {
+  it("registers exactly the two Business Agent sources", async () => {
     const handler = createRuntimeHandler({
       agUiMockUrl: "http://mock.example.test",
       sacsAgUiUrl: "http://sacs.example.test/ag-ui",
@@ -109,6 +231,10 @@ describe("thin CopilotKit Runtime", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    expect(Object.keys(body.agents).sort()).toEqual([
+      "ag-ui-mock",
+      "single-agent-chat-server",
+    ]);
     expect(body.agents).toMatchObject({
       "ag-ui-mock": {
         capabilities: { tools: { clientProvided: true, supported: true } },
@@ -117,6 +243,68 @@ describe("thin CopilotKit Runtime", () => {
         capabilities: { tools: { clientProvided: false, supported: false } },
       },
     });
+    expect(body.a2ui).toBeUndefined();
+  });
+
+  it("builds the dynamic generation boundary from Basic and Platform Catalog components", () => {
+    expect(dynamicA2uiCatalogSchema.catalogId).toBe(
+      "https://generative-ui.dev/a2ui/v0_9/platform_catalog.json",
+    );
+    expect(DYNAMIC_A2UI_COMPONENT_NAMES).toHaveLength(21);
+    expect(DYNAMIC_A2UI_COMPONENT_NAMES).toEqual(
+      expect.arrayContaining([
+        "Card",
+        "Column",
+        "InfoRow",
+        "Metric",
+        "Row",
+        "StatusBadge",
+        "Text",
+      ]),
+    );
+    expect(DYNAMIC_A2UI_COMPONENT_NAMES).not.toContain("DeviceCard");
+
+    const result = validateA2UIComponents({
+      catalog: dynamicA2uiValidationCatalog,
+      components: [
+        {
+          id: "root",
+          component: "Column",
+          children: ["metric", "status", "info"],
+        },
+        {
+          id: "metric",
+          component: "Metric",
+          label: "设备总数",
+          value: { path: "/summary/total" },
+        },
+        {
+          id: "status",
+          component: "StatusBadge",
+          label: "已完成",
+          variant: "success",
+        },
+        {
+          id: "info",
+          component: "InfoRow",
+          label: "执行区域",
+          value: { path: "/summary/area" },
+        },
+      ],
+      data: { summary: { area: "A 区", total: 5 } },
+    });
+    expect(result).toEqual({ errors: [], valid: true });
+
+    const outsideCatalog = validateA2UIComponents({
+      catalog: dynamicA2uiValidationCatalog,
+      components: [{ id: "root", component: "DeviceCard" }],
+    });
+    expect(outsideCatalog.valid).toBe(false);
+    expect(outsideCatalog.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "unknown_component" }),
+      ]),
+    );
   });
 
   it("discovers the SACS capability profile with server-side credentials", async () => {
@@ -287,9 +475,7 @@ describe("thin CopilotKit Runtime", () => {
     );
     const sacsEvents = await readEventStream(sacsResponse);
 
-    const parsedMockEvents = parseEventStream(mockEvents) as Array<{
-      type?: string;
-    }>;
+    const parsedMockEvents = parseEventStream(mockEvents);
     expect(parsedMockEvents.map((event) => event.type)).toEqual([
       "RUN_STARTED",
       "ACTIVITY_SNAPSHOT",
@@ -360,5 +546,184 @@ describe("thin CopilotKit Runtime", () => {
     await readEventStream(await request("run-2"));
     verifyUserJwt(receivedTokens[1] ?? "", nowSeconds);
     expect(receivedTokens[1]).not.toBe(receivedTokens[0]);
+  });
+});
+
+describe("Dynamic A2UI presentation policy", () => {
+  const dynamicProps = {
+    clientCapabilities: { a2ui: true },
+    requestedMode: "dynamic",
+  };
+
+  it("stitches a catalog-valid a2ui-surface into the run at the stable checkpoint", async () => {
+    const { received, url } = await mockUpstreamReturning(
+      textMessageEvents(INSPECTION_CONTENT),
+    );
+    const prompts: string[] = [];
+    const invokeSubagent: InvokeSubagent = async (prompt) => {
+      prompts.push(prompt);
+      return legalSubagentArgs;
+    };
+    const handler = createRuntimeHandler(
+      { agUiMockUrl: url, sacsAgUiUrl: "http://sacs.example.test/ag-ui" },
+      { invokeSubagent },
+    );
+
+    const events = await runAgainstMock(handler, runRequestBody(dynamicProps));
+
+    expect(events.map((event) => event.type)).toEqual([
+      "RUN_STARTED",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "ACTIVITY_SNAPSHOT",
+      "RUN_FINISHED",
+    ]);
+    const activity = events.find((event) => event.type === "ACTIVITY_SNAPSHOT");
+    expect(activity).toMatchObject({
+      activityType: "a2ui-surface",
+      messageId: "dynamic-a2ui-run-1",
+      replace: true,
+    });
+    const content = activity?.content as {
+      a2ui_operations: Array<Record<string, unknown>>;
+    };
+    const createSurface = content.a2ui_operations.find(
+      (operation) => "createSurface" in operation,
+    );
+    expect(createSurface).toMatchObject({
+      createSurface: {
+        catalogId: "https://generative-ui.dev/a2ui/v0_9/platform_catalog.json",
+      },
+    });
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain(INSPECTION_CONTENT);
+    expect(received.body).toMatchObject({ forwardedProps: dynamicProps });
+  });
+
+  it("keeps the original content and reports an explicit error when generation violates the catalog", async () => {
+    const { url } = await mockUpstreamReturning(
+      textMessageEvents(INSPECTION_CONTENT),
+    );
+    const invokeSubagent: InvokeSubagent = async () => ({
+      components: [{ id: "root", component: "DeviceCard" }],
+      data: {},
+    });
+    const handler = createRuntimeHandler(
+      { agUiMockUrl: url, sacsAgUiUrl: "http://sacs.example.test/ag-ui" },
+      { invokeSubagent },
+    );
+
+    const events = await runAgainstMock(handler, runRequestBody(dynamicProps));
+
+    expect(events.map((event) => event.type)).toEqual([
+      "RUN_STARTED",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "ACTIVITY_SNAPSHOT",
+      "RUN_FINISHED",
+    ]);
+    const activity = events.find((event) => event.type === "ACTIVITY_SNAPSHOT");
+    expect(activity?.activityType).toBe(A2UI_GENERATION_ERROR_ACTIVITY_TYPE);
+    expect(activity?.content).toMatchObject({
+      code: "A2UI_GENERATION_FAILED",
+    });
+    expect(events.some((event) => event.activityType === "a2ui-surface")).toBe(
+      false,
+    );
+    const text = events.find((event) => event.type === "TEXT_MESSAGE_CONTENT");
+    expect(JSON.stringify(text)).toContain("inspection-summary");
+  });
+
+  it("reports an explicit error when the Secondary LLM is not configured", async () => {
+    const { url } = await mockUpstreamReturning(
+      textMessageEvents(INSPECTION_CONTENT),
+    );
+    const handler = createRuntimeHandler({
+      agUiMockUrl: url,
+      sacsAgUiUrl: "http://sacs.example.test/ag-ui",
+    });
+
+    const events = await runAgainstMock(handler, runRequestBody(dynamicProps));
+
+    const activity = events.find((event) => event.type === "ACTIVITY_SNAPSHOT");
+    expect(activity?.activityType).toBe(A2UI_GENERATION_ERROR_ACTIVITY_TYPE);
+    expect(activity?.content).toMatchObject({
+      code: "A2UI_GENERATION_UNAVAILABLE",
+    });
+    expect(events.at(-1)?.type).toBe("RUN_FINISHED");
+  });
+
+  it("passes through native A2UI output untouched even under requestedMode dynamic", async () => {
+    const nativeSurface = {
+      type: "ACTIVITY_SNAPSHOT",
+      messageId: "upstream-surface-1",
+      activityType: "a2ui-surface",
+      content: {
+        a2ui_operations: [
+          {
+            version: "v0.9",
+            createSurface: {
+              surfaceId: "native-fixture",
+              catalogId:
+                "https://generative-ui.dev/a2ui/v0_9/platform_catalog.json",
+            },
+          },
+        ],
+      },
+      replace: true,
+    };
+    const { url } = await mockUpstreamReturning([
+      { type: "RUN_STARTED", threadId: "thread-1", runId: "run-1" },
+      nativeSurface,
+      { type: "RUN_FINISHED", threadId: "thread-1", runId: "run-1" },
+    ]);
+    let invoked = 0;
+    const invokeSubagent: InvokeSubagent = async () => {
+      invoked += 1;
+      return legalSubagentArgs;
+    };
+    const handler = createRuntimeHandler(
+      { agUiMockUrl: url, sacsAgUiUrl: "http://sacs.example.test/ag-ui" },
+      { invokeSubagent },
+    );
+
+    const events = await runAgainstMock(handler, runRequestBody(dynamicProps));
+
+    expect(events.map((event) => event.type)).toEqual([
+      "RUN_STARTED",
+      "ACTIVITY_SNAPSHOT",
+      "RUN_FINISHED",
+    ]);
+    const activity = events.find((event) => event.type === "ACTIVITY_SNAPSHOT");
+    expect(activity).toMatchObject(nativeSurface);
+    expect(invoked).toBe(0);
+  });
+
+  it("does not intercept runs without an explicit dynamic requestedMode", async () => {
+    const { url } = await mockUpstreamReturning(
+      textMessageEvents(INSPECTION_CONTENT),
+    );
+    let invoked = 0;
+    const invokeSubagent: InvokeSubagent = async () => {
+      invoked += 1;
+      return legalSubagentArgs;
+    };
+    const handler = createRuntimeHandler(
+      { agUiMockUrl: url, sacsAgUiUrl: "http://sacs.example.test/ag-ui" },
+      { invokeSubagent },
+    );
+
+    const events = await runAgainstMock(handler, runRequestBody({}));
+
+    expect(events.map((event) => event.type)).toEqual([
+      "RUN_STARTED",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "RUN_FINISHED",
+    ]);
+    expect(invoked).toBe(0);
   });
 });
