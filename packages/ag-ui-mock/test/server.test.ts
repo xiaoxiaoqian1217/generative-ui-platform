@@ -167,24 +167,20 @@ describe("createAguiMockServer", () => {
     expect(componentTypes).toContain("InfoRow");
   });
 
-  it("replays the structured inspection summary as plain business content", async () => {
+  it("replays the structured inspection summary as an activity", async () => {
     const events = await runMessage("展示巡检摘要结构化结果");
 
     expect(events.map((event) => event.type)).toEqual([
       "RUN_STARTED",
-      "TEXT_MESSAGE_START",
-      "TEXT_MESSAGE_CONTENT",
-      "TEXT_MESSAGE_END",
+      "ACTIVITY_SNAPSHOT",
       "RUN_FINISHED",
     ]);
-    const content = events
-      .filter((event) => event.type === "TEXT_MESSAGE_CONTENT")
-      .map((event) => String(event.delta))
-      .join("");
-    expect(JSON.parse(content)).toEqual(inspectionSummaryStructuredResult);
-    expect(events.some((event) => event.type === "ACTIVITY_SNAPSHOT")).toBe(
-      false,
-    );
+    expect(events.at(1)).toMatchObject({
+      activityType: "inspection-summary",
+      content: inspectionSummaryStructuredResult,
+      replace: true,
+    });
+    expect(events.at(-1)).not.toHaveProperty("result");
   });
 
   it("serves the connection probe and business scenarios from one server", async () => {

@@ -20,8 +20,8 @@ The SACS profile does not support client-provided Frontend Tools, and the Runtim
 
 The `ag-ui-mock` Agent runs behind a thin AG-UI middleware (`DynamicA2uiPresentationPolicy`) that implements the Issue #210 minimal policy subset:
 
-1. a run that already emits an `a2ui-surface` activity passes through untouched (Native A2UI Passthrough);
-2. an explicit `requestedMode: "dynamic"` arriving through AG-UI `forwardedProps` triggers one Secondary LLM generation at the stable checkpoint (RUN_FINISHED), driven by `runA2UIGenerationWithRecovery` and validated against the shared Final Catalog schema from `@generative-ui/a2ui-catalog`;
+1. a run that already emits a valid `a2ui-surface` activity passes through untouched after its operations and Catalog boundary are validated (Native A2UI Passthrough);
+2. an explicit `requestedMode: "dynamic"` arriving through AG-UI `forwardedProps` selects a valid `inspection-summary` `ACTIVITY_SNAPSHOT.content` and triggers one Secondary LLM generation at the successful `RUN_FINISHED` lifecycle checkpoint, driven by `runA2UIGenerationWithRecovery` and validated against the shared Final Catalog schema from `@generative-ui/a2ui-catalog`;
 3. the validated operations are stitched into the current run as an `a2ui-surface` ACTIVITY_SNAPSHOT before RUN_FINISHED;
 4. when the explicit mode is not executable (missing client A2UI capability, missing Secondary LLM configuration, non-structured content, or generation failure), the original content is preserved and an explicit `a2ui-generation-error` activity is emitted instead (Plain Content Fallback).
 

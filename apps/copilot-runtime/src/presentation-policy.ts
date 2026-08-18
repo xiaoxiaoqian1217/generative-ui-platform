@@ -16,6 +16,7 @@ import { Observable } from "rxjs";
 import {
   dynamicA2uiCatalogSchema,
   dynamicA2uiValidationCatalog,
+  isValidNativeA2uiSurface,
 } from "./dynamic-a2ui.js";
 import type { InvokeSubagent } from "./secondary-llm.js";
 
@@ -67,16 +68,39 @@ function readForwardedProps(
   };
 }
 
-function isControlledBusinessContent(content: string): boolean {
+const CONTROLLED_BUSINESS_ACTIVITY_TYPE = "inspection-summary";
+
+function serializeControlledBusinessActivity(
+  content: unknown,
+): string | undefined {
+  if (typeof content !== "object" || content === null || Array.isArray(content))
+    return undefined;
+  const record = content as Record<string, unknown>;
+  if (
+    typeof record.contentType !== "string" ||
+    record.contentType.length === 0 ||
+    typeof record.schemaVersion !== "string" ||
+    record.schemaVersion.length === 0 ||
+    typeof record.payload !== "object" ||
+    record.payload === null
+  )
+    return undefined;
   try {
-    const parsed = JSON.parse(content) as unknown;
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
-      return false;
-    const contentType = (parsed as Record<string, unknown>).contentType;
-    return typeof contentType === "string" && contentType.length > 0;
+    return JSON.stringify(content);
   } catch {
-    return false;
+    return undefined;
   }
+}
+
+function isSuccessfulRunFinished(event: BaseEvent): boolean {
+  if (event.type !== EventType.RUN_FINISHED) return false;
+  const outcome = (event as { outcome?: unknown }).outcome;
+  if (outcome === undefined) return true;
+  return (
+    typeof outcome === "object" &&
+    outcome !== null &&
+    (outcome as { type?: unknown }).type === "success"
+  );
 }
 
 /**
@@ -85,9 +109,9 @@ function isControlledBusinessContent(content: string): boolean {
  *
  * 1. Native A2UI Passthrough - a run that already produced an `a2ui-surface`
  *    activity is forwarded untouched, even under `requestedMode: "dynamic"`.
- * 2. Explicit `requestedMode: "dynamic"` (via forwardedProps) - at the stable
- *    checkpoint (RUN_FINISHED) the controlled business content is validated
- *    and handed to the Secondary LLM through
+ * 2. Explicit `requestedMode: "dynamic"` (via forwardedProps) - a controlled
+ *    business ACTIVITY_SNAPSHOT is validated and, at the successful
+ *    RUN_FINISHED checkpoint, handed to the Secondary LLM through
  *    `runA2UIGenerationWithRecovery`; the resulting operations are stitched
  *    into the current run as an `a2ui-surface` ACTIVITY_SNAPSHOT.
  * 3. Plain Content Fallback - when the explicit mode is not executable
@@ -118,9 +142,10 @@ export class DynamicA2uiPresentationPolicy extends Middleware {
     const activityMessageId = `dynamic-a2ui-${input.runId}`;
 
     return new Observable<BaseEvent>((subscriber) => {
-      const textChunks: string[] = [];
       let hasNativeA2uiSurface = false;
+      let hasRunError = false;
       let heldFinished: BaseEvent | undefined;
+      let controlledBusinessContent: string | undefined;
 
       const emitGenerationError = (content: A2uiGenerationErrorContent) => {
         const event: ActivitySnapshotEvent = {
@@ -195,7 +220,7 @@ export class DynamicA2uiPresentationPolicy extends Middleware {
         subscriber.next(event);
       };
 
-      const settle = async () => {
+      const presentControlledActivity = async () => {
         try {
           if (hasNativeA2uiSurface) return;
           if (props.clientCapabilities?.a2ui !== true) {
@@ -214,16 +239,15 @@ export class DynamicA2uiPresentationPolicy extends Middleware {
             });
             return;
           }
-          const businessContent = textChunks.join("");
-          if (!isControlledBusinessContent(businessContent)) {
+          if (controlledBusinessContent === undefined) {
             emitGenerationError({
               code: "A2UI_GENERATION_FAILED",
               message:
-                "The run did not produce serializable structured business content for dynamic presentation.",
+                "The run did not produce a valid inspection-summary ACTIVITY_SNAPSHOT with contentType, schemaVersion, and payload.",
             });
             return;
           }
-          await generateAndStitch(invokeSubagent, businessContent);
+          await generateAndStitch(invokeSubagent, controlledBusinessContent);
         } catch (error) {
           emitGenerationError({
             code: "A2UI_GENERATION_FAILED",
@@ -237,8 +261,18 @@ export class DynamicA2uiPresentationPolicy extends Middleware {
 
       const subscription = this.runNext(input, next).subscribe({
         complete: () => {
-          void settle().finally(() => {
-            if (heldFinished !== undefined) subscriber.next(heldFinished);
+          const finished = heldFinished;
+          if (
+            finished === undefined ||
+            hasRunError ||
+            !isSuccessfulRunFinished(finished)
+          ) {
+            if (finished !== undefined) subscriber.next(finished);
+            subscriber.complete();
+            return;
+          }
+          void presentControlledActivity().finally(() => {
+            subscriber.next(finished);
             subscriber.complete();
           });
         },
@@ -248,14 +282,29 @@ export class DynamicA2uiPresentationPolicy extends Middleware {
             heldFinished = event;
             return;
           }
-          if (event.type === EventType.TEXT_MESSAGE_CONTENT) {
-            textChunks.push(String((event as { delta?: unknown }).delta ?? ""));
+          if (event.type === EventType.RUN_ERROR) hasRunError = true;
+          if (
+            event.type === EventType.ACTIVITY_SNAPSHOT &&
+            event.activityType === CONTROLLED_BUSINESS_ACTIVITY_TYPE
+          ) {
+            controlledBusinessContent = serializeControlledBusinessActivity(
+              event.content,
+            );
           }
           if (
             event.type === EventType.ACTIVITY_SNAPSHOT &&
             event.activityType === "a2ui-surface"
           ) {
-            hasNativeA2uiSurface = true;
+            if (isValidNativeA2uiSurface(event.content)) {
+              hasNativeA2uiSurface = true;
+            } else {
+              emitGenerationError({
+                code: "A2UI_GENERATION_FAILED",
+                message:
+                  "Native A2UI operations did not satisfy the registered Catalog boundary.",
+              });
+              return;
+            }
           }
           subscriber.next(event);
         },

@@ -19,7 +19,10 @@ import {
   TextFieldApi,
   VideoApi,
 } from "@a2ui/web_core/v0_9/basic_catalog";
-import type { A2UIValidationCatalog } from "@ag-ui/a2ui-toolkit";
+import {
+  type A2UIValidationCatalog,
+  validateA2UIComponents,
+} from "@ag-ui/a2ui-toolkit";
 import {
   infoRowApi,
   metricApi,
@@ -100,3 +103,88 @@ export const dynamicA2uiValidationCatalog = {
 export const DYNAMIC_A2UI_COMPONENT_NAMES = Object.freeze(
   Object.keys(dynamicA2uiCatalogSchema.components),
 );
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Admit Native A2UI only when the complete snapshot is structurally valid,
+ * targets the Catalog registered by Workbench, and contains a component tree
+ * accepted by the same validation boundary used for Dynamic A2UI.
+ */
+export function isValidNativeA2uiSurface(content: unknown): boolean {
+  if (!isRecord(content)) return false;
+  const operations = content.a2ui_operations;
+  if (!Array.isArray(operations) || operations.length === 0) return false;
+
+  let surfaceId: string | undefined;
+  let hasCreateSurface = false;
+  let components: Array<Record<string, unknown>> | undefined;
+  let data: Record<string, unknown> | undefined;
+
+  const readSurfaceId = (operation: Record<string, unknown>) => {
+    const candidate = operation.surfaceId;
+    if (typeof candidate !== "string" || candidate.length === 0) return false;
+    if (surfaceId !== undefined && surfaceId !== candidate) return false;
+    surfaceId = candidate;
+    return true;
+  };
+
+  for (const operation of operations) {
+    if (!isRecord(operation) || operation.version !== "v0.9") return false;
+    const operationKeys = [
+      "createSurface",
+      "updateComponents",
+      "updateDataModel",
+    ].filter((key) => key in operation);
+    if (operationKeys.length !== 1) return false;
+
+    if ("createSurface" in operation) {
+      if (hasCreateSurface || !isRecord(operation.createSurface)) return false;
+      if (!readSurfaceId(operation.createSurface)) return false;
+      if (operation.createSurface.catalogId !== PLATFORM_A2UI_CATALOG_ID)
+        return false;
+      hasCreateSurface = true;
+      continue;
+    }
+
+    if ("updateComponents" in operation) {
+      if (components !== undefined || !isRecord(operation.updateComponents))
+        return false;
+      if (!readSurfaceId(operation.updateComponents)) return false;
+      const candidateComponents = operation.updateComponents.components;
+      if (
+        !Array.isArray(candidateComponents) ||
+        !candidateComponents.every(isRecord)
+      )
+        return false;
+      components = candidateComponents;
+      continue;
+    }
+
+    if (!isRecord(operation.updateDataModel)) return false;
+    if (!readSurfaceId(operation.updateDataModel)) return false;
+    if (
+      operation.updateDataModel.path !== undefined &&
+      typeof operation.updateDataModel.path !== "string"
+    )
+      return false;
+    if (!("value" in operation.updateDataModel)) return false;
+    if (
+      (operation.updateDataModel.path === undefined ||
+        operation.updateDataModel.path === "/") &&
+      isRecord(operation.updateDataModel.value)
+    ) {
+      data = operation.updateDataModel.value;
+    }
+  }
+
+  if (!hasCreateSurface || components === undefined) return false;
+  return validateA2UIComponents({
+    catalog: dynamicA2uiValidationCatalog,
+    components,
+    ...(data === undefined ? {} : { data }),
+    validateBindings: true,
+  }).valid;
+}

@@ -6,6 +6,24 @@ const conversationInput = (page: Page) =>
 
 const conversationSend = (page: Page) => page.getByTestId("composer-send");
 
+async function expectLatestStructuredActivity(
+  page: Page,
+  expectedTexts: readonly string[],
+) {
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  await page
+    .getByTestId("swimlane-timeline")
+    .locator("[data-type='ACTIVITY_SNAPSHOT']")
+    .first()
+    .click();
+  const structuredDetail = page.getByTestId("inspect-detail");
+  await structuredDetail.getByTestId("json-node-content").click();
+  await structuredDetail.getByTestId("json-node-payload").click();
+  for (const expectedText of expectedTexts)
+    await expect(structuredDetail).toContainText(expectedText);
+  await page.getByTestId("inspect-close").click();
+}
+
 test.beforeEach(async ({ request }) => {
   await request.post("/__control__/restore");
 });
@@ -260,8 +278,8 @@ test("Dynamic A2UI renders the controlled business content through the final cat
   await scenario.click();
 
   const turns = page.getByTestId("conversation-turns");
-  await expect(turns).toContainText("inspection-summary");
-  await expect(turns).toContainText("totalDevices");
+  await expect(turns).not.toContainText("contentType");
+  await expect(turns).not.toContainText("totalDevices");
 
   const firstSurface = page.locator(
     "[data-surface-id='inspection-summary-dynamic']",
@@ -287,6 +305,11 @@ test("Dynamic A2UI renders the controlled business content through the final cat
   await expect(firstInfoRows).toHaveCount(3);
   for (const fact of ["14:20", "12 分钟", "A 区"])
     await expect(firstSurface).toContainText(fact);
+
+  await expectLatestStructuredActivity(page, [
+    "inspection-summary",
+    "totalDevices",
+  ]);
 
   await page.getByTestId("new-conversation").click();
   await scenario.click();
@@ -338,13 +361,15 @@ test("Dynamic A2UI catalog violation falls back to content with an explicit erro
   const error = page.getByTestId("a2ui-generation-error");
   await expect(error).toContainText("A2UI_GENERATION_FAILED");
   await expect(error).toContainText("DeviceCard");
-  await expect(page.getByTestId("conversation-turns")).toContainText(
+  await expect(page.getByTestId("conversation-turns")).not.toContainText(
     "totalDevices",
   );
   await expect(
     page.locator("[data-surface-id='inspection-summary-dynamic']"),
   ).toHaveCount(0);
   await expect(conversationInput(page)).toBeEnabled();
+
+  await expectLatestStructuredActivity(page, ["totalDevices"]);
 
   await page
     .getByRole("button", { name: /巡检摘要 \(Platform Catalog\)/ })
@@ -371,13 +396,15 @@ test("Dynamic A2UI Secondary LLM failure is bounded and does not break fixed A2U
   const error = page.getByTestId("a2ui-generation-error");
   await expect(error).toContainText("A2UI_GENERATION_FAILED");
   await expect(error).toContainText("A2UI_SECONDARY_LLM_UNAVAILABLE");
-  await expect(page.getByTestId("conversation-turns")).toContainText(
+  await expect(page.getByTestId("conversation-turns")).not.toContainText(
     "totalDevices",
   );
   await expect(page.getByTestId("agent-connection-status")).toContainText(
     "已连接",
   );
   await expect(conversationInput(page)).toBeEnabled();
+
+  await expectLatestStructuredActivity(page, ["totalDevices"]);
 
   await request.post("/__control__/restore");
   await page.getByRole("button", { name: /巡检摘要 \(A2UI\)/ }).click();
@@ -426,7 +453,7 @@ test("Dynamic A2UI generated actions are recorded in Inspect only and never sent
   await page.locator("[data-testid^='inspect-turn-']").first().click();
   await page
     .locator("[data-testid^='timeline-node-'][data-type='ACTIVITY_SNAPSHOT']")
-    .first()
+    .nth(1)
     .click();
   const detail = page.getByTestId("inspect-detail");
   await detail.getByTestId("json-node-content").first().click();

@@ -1,13 +1,12 @@
-import type { AGUIMock } from "@copilotkit/aimock";
-import { buildTextResponse } from "@copilotkit/aimock/agui";
+import type { AGUIEvent, AGUIMock } from "@copilotkit/aimock";
 
 export const INSPECTION_SUMMARY_STRUCTURED_MESSAGE_ID =
   "inspection-summary-structured";
 
 /**
  * Controlled business content for Dynamic A2UI (Issue #210): a structured
- * inspection result with no UI attached. The Runtime presentation policy
- * intercepts this content at the stable checkpoint when the Workbench
+ * inspection activity with no A2UI attached. The Runtime presentation policy
+ * reads this activity at the stable checkpoint when the Workbench
  * scenario requests `requestedMode: "dynamic"` via forwardedProps.
  */
 export const inspectionSummaryStructuredResult = {
@@ -25,6 +24,26 @@ export const inspectionSummaryStructuredResult = {
   },
 } as const;
 
+const inspectionSummaryStructuredResponse: AGUIEvent[] = [
+  {
+    type: "RUN_STARTED",
+    threadId: "inspection-summary-structured-thread",
+    runId: "inspection-summary-structured-run",
+  },
+  {
+    type: "ACTIVITY_SNAPSHOT",
+    messageId: "inspection-summary-structured-activity",
+    activityType: "inspection-summary",
+    content: inspectionSummaryStructuredResult,
+    replace: true,
+  },
+  {
+    type: "RUN_FINISHED",
+    threadId: "inspection-summary-structured-thread",
+    runId: "inspection-summary-structured-run",
+  },
+];
+
 export function registerInspectionSummaryStructuredScenario(
   mock: AGUIMock,
 ): void {
@@ -33,8 +52,6 @@ export function registerInspectionSummaryStructuredScenario(
       /巡检摘要结构化结果|inspection summary structured/i.test(
         String(input.messages?.at(-1)?.content),
       ),
-    buildTextResponse(
-      JSON.stringify(inspectionSummaryStructuredResult, null, 2),
-    ),
+    inspectionSummaryStructuredResponse,
   );
 }
