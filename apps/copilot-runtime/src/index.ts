@@ -273,7 +273,21 @@ export {
 } from "./dynamic-a2ui.js";
 export {
   A2UI_GENERATION_ERROR_ACTIVITY_TYPE,
+  type A2uiGenerationErrorCode,
   type A2uiGenerationErrorContent,
+  type A2uiSurfaceGeneration,
+  generateA2uiSurfaceFromContent,
+} from "./a2ui-generation.js";
+export {
+  type JsonValue,
+  parsePresentationInput,
+  type PresentationContent,
+  type PresentationInput,
+  type PresentationLifecycle,
+  type PresentationProvenance,
+  serializePresentationInputContent,
+} from "./presentation-input.js";
+export {
   DynamicA2uiPresentationPolicy,
   type PresentationForwardedProps,
 } from "./presentation-policy.js";

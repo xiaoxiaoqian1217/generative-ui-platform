@@ -1,9 +1,3 @@
-import {
-  buildA2UIEnvelope,
-  DEFAULT_SURFACE_ID,
-  prepareA2UIRequest,
-  runA2UIGenerationWithRecovery,
-} from "@ag-ui/a2ui-toolkit";
 import { type AbstractAgent, Middleware } from "@ag-ui/client";
 import {
   type ActivitySnapshotEvent,
@@ -11,26 +5,20 @@ import {
   EventType,
   type RunAgentInput,
 } from "@ag-ui/core";
-import { PLATFORM_A2UI_CATALOG_ID } from "@generative-ui/shared-types";
 import { Observable } from "rxjs";
 import {
-  dynamicA2uiCatalogSchema,
-  dynamicA2uiValidationCatalog,
-  isValidNativeA2uiSurface,
-} from "./dynamic-a2ui.js";
+  A2UI_GENERATION_ERROR_ACTIVITY_TYPE,
+  type A2uiGenerationErrorContent,
+  generateA2uiSurfaceFromContent,
+} from "./a2ui-generation.js";
+import { isValidNativeA2uiSurface } from "./dynamic-a2ui.js";
 import type { InvokeSubagent } from "./secondary-llm.js";
 
-export const A2UI_GENERATION_ERROR_ACTIVITY_TYPE = "a2ui-generation-error";
-
-export type A2uiGenerationErrorCode =
-  | "A2UI_GENERATION_FAILED"
-  | "A2UI_GENERATION_UNAVAILABLE";
-
-export interface A2uiGenerationErrorContent {
-  readonly code: A2uiGenerationErrorCode;
-  readonly errors?: readonly string[];
-  readonly message: string;
-}
+export {
+  A2UI_GENERATION_ERROR_ACTIVITY_TYPE,
+  type A2uiGenerationErrorCode,
+  type A2uiGenerationErrorContent,
+} from "./a2ui-generation.js";
 
 /**
  * The Workbench -> Runtime presentation request channel (Issue #210):
@@ -162,57 +150,17 @@ export class DynamicA2uiPresentationPolicy extends Middleware {
         invoke: InvokeSubagent,
         businessContent: string,
       ) => {
-        const prepared = prepareA2UIRequest({
-          messages: [],
-          state: {
-            "ag-ui": {
-              a2ui_schema: JSON.stringify(dynamicA2uiCatalogSchema),
-              context: [
-                {
-                  description:
-                    "Business content to present as one A2UI surface. Preserve every business fact exactly; do not invent, alter, or drop values.",
-                  value: businessContent,
-                },
-              ],
-            },
-          },
-        });
-        if (prepared.error !== undefined) {
-          emitGenerationError({
-            code: "A2UI_GENERATION_FAILED",
-            message: prepared.error,
-          });
-          return;
-        }
-        const result = await runA2UIGenerationWithRecovery({
-          basePrompt: prepared.prompt,
-          buildEnvelope: (args) =>
-            buildA2UIEnvelope({
-              args,
-              defaultCatalogId: PLATFORM_A2UI_CATALOG_ID,
-              defaultSurfaceId: DEFAULT_SURFACE_ID,
-              isUpdate: prepared.isUpdate,
-            }),
-          catalog: dynamicA2uiValidationCatalog,
-          config: { maxAttempts: 2 },
-          invokeSubagent: invoke,
-        });
-        if (!result.ok) {
-          emitGenerationError({
-            code: "A2UI_GENERATION_FAILED",
-            errors: result.attempts.flatMap((attempt) =>
-              attempt.errors.map(
-                (error) => `[${error.code}] ${error.path}: ${error.message}`,
-              ),
-            ),
-            message:
-              "Dynamic A2UI generation did not satisfy the catalog boundary.",
-          });
+        const generation = await generateA2uiSurfaceFromContent(
+          businessContent,
+          invoke,
+        );
+        if (!generation.ok) {
+          emitGenerationError(generation.error);
           return;
         }
         const event: ActivitySnapshotEvent = {
           activityType: "a2ui-surface",
-          content: JSON.parse(result.envelope) as Record<string, unknown>,
+          content: JSON.parse(generation.envelope) as Record<string, unknown>,
           messageId: activityMessageId,
           replace: true,
           type: EventType.ACTIVITY_SNAPSHOT,

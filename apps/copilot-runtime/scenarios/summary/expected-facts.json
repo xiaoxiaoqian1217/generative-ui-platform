@@ -1,0 +1,9 @@
+{
+  "facts": [
+    { "pointer": "/status", "value": "partial_success" },
+    { "pointer": "/total", "value": 128 },
+    { "pointer": "/success", "value": 120 },
+    { "pointer": "/failed", "value": 8 },
+    { "pointer": "/successRate", "value": 0.938 }
+  ]
+}

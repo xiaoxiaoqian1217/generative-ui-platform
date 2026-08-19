@@ -1,0 +1,18 @@
+{
+  "content": {
+    "kind": "structured",
+    "mediaType": "application/json",
+    "value": {
+      "status": "partial_success",
+      "success": 120,
+      "failed": 8,
+      "total": 128,
+      "successRate": 0.938
+    }
+  },
+  "context": {
+    "allowedActions": []
+  },
+  "lifecycle": "stable",
+  "provenance": []
+}
