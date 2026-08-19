@@ -79,22 +79,52 @@ Felt 的定位是 agent-as-cartographer：Agent 从零产出一张地图作为�
 "验证"必须先定义假设，否则会退化成 demo 堆砌。
 覆盖判据沿用五类交互模式：场景库把五类模式在地图域全部实例化，即视为覆盖"所有与 Agent 的交互"；设计层面用矩阵保证完备，实现层面按优先级增量进场。
 
+场景设计分成两层：
+
+- **核心交互场景**回答"人与 Agent 如何共同完成任务"；
+- **横切验证维度**回答"任一核心场景发生异常、留下状态或需要解释时，系统是否仍然可理解、可恢复"。
+
+### 核心交互场景
+
 | 场景（交互模式） | 验证假设 | 工具需求 | 现状 |
 | --- | --- | --- | --- |
 | 单轮问答："东区现在有多少离线设备？" | - | 无，只读 | 已有能力覆盖 |
-| 委托执行："生成这片区的设备健康报告" | - | 执行中可选高亮进度 | Issue #200 验证中 |
+| 委托执行："生成这片区的设备健康报告" | - | 执行中可选高亮进度 | Issue #200 已完成 |
 | 工具中介（单步）：locateDevice | Agent 发起前端工具调用并观察结果是可理解、可信赖的交互 | focusOn（重构自 locateDevice） | 已证明 |
-| 工具中介（多步）A："分析告警最集中的区域"，focusOn 总览 -> highlight 簇 -> focusOn 最密处 -> 汇报 | Agent 连续操作相机 / 图层 / 选区时，用户能跟上并理解整体意图 | focusOn、highlight | 待做 |
+| 工具中介（多步）A："分析告警最集中的区域"，focusOn 总览 -> highlight 簇 -> focusOn 最密处 -> 汇报 | Agent 连续操作相机 / 图层 /选区时，用户能跟上并理解整体意图 | focusOn、highlight | 待做 |
 | 征询等待 B："定位离线设备"，序列中发现两组候选，征询"先看哪组"，用户选择后继续 | Agent 停下征询、用户答复、恢复序列的闭环对用户可理解、可预期 | 复用 A + 征询机制 | 待做 |
-| 打断纠偏 C："定位所有离线设备"，慢速序列进行中用户喊停"只看东区的" | 用户中断序列时，挂起调用处置与地图残余状态有明确语义 | 复用 A + 打断语义 | 待做 |
-| 混合主导 D：用户手动圈选时 Agent 序列并发 | 并发操作的控制权让渡规则可定义且可预期 | 探索后定义 | 待做 |
-| 失败路径 E：序列中途 RUN_ERROR | 错误后地图残余状态与恢复边界清晰 | 复用 A + 错误语义 | run-error fixture 已有模式 |
-| 意图可见性（横切） | 地图发生变化时，用户能归因到 Agent 的哪个操作与理由 | 横切，随各场景累积 | 未验证 |
+| 打断纠偏 C："逐组查看所有离线设备分组"，Agent 依次 focusOn / highlight 各组；已查看若干组后用户说"停一下，只看东区" | 用户在多步 Run 的语义步骤之间修改目标时，未执行调用、已产生地图状态与新指令之间有明确衔接语义 | 复用 A + 打断 / 重规划语义 | 待做 |
+| 混合主导 D：Agent 正在分析全区告警热点并自动切换视口；用户此时手动圈选或聚焦东区，表达"只关注这里" | 用户直接操作共享地图与 Agent 当前计划发生意图冲突时，控制权让渡与 Agent 后续行为可定义且可预期 | 探索后定义；优先复用地图本地交互 | 待做 |
+
+### 横切验证维度
+
+| 横切维度 | 验证假设 | 注入位置 | 现状 |
+| --- | --- | --- | --- |
+| 失败路径 E：多步序列中途 RUN_ERROR | 错误后地图残余状态与恢复边界清晰 | A-D 任一多步场景 | run-error fixture 已有模式 |
+| 意图可见性 F | 地图发生变化时，用户能归因到 Agent 的哪个操作与理由 | 从场景 A 开始持续记录 | 未验证 |
+| 状态残余 G | Agent 已完成部分操作后停止、失败或被纠偏，地图保留哪些状态有明确规则 | C / D / E | 未验证 |
+| 恢复与接续 H | 新指令或新 Run 到来时，能够明确继续、替换还是清理旧状态 | C / D / E | 未验证 |
+
+### 关于场景 C 的打断边界
+
+场景 C 不应依赖一个本来会瞬间完成的操作。若"定位所有离线设备"最终只是一次 `focusOn(features)`，它没有真实可观察的打断窗口，不适合作为第一阶段的打断验证载体。
+
+第一阶段验证的是 **Run 级 / 语义步骤级打断**：任务本身天然需要多个用户可感知的 Tool Call，例如逐组 `focusOn -> highlight -> focusOn -> highlight`。用户在两个语义步骤之间改变目标，系统需要决定：
+
+- 尚未执行的 Tool Call 是否取消；
+- 已经完成的 focus / highlight 是否保留；
+- 当前 Run 如何结束；
+- 新指令是续接旧 Run 还是启动新 Run；
+- Agent 是否需要基于新目标重新规划。
+
+AGUIMock 可以在语义步骤之间加入短暂、确定性的可观察间隔，便于回归和人工观察；但**间隔只是验证手段，不是场景成立的原因**。不能通过把一个原本瞬时完成的 Tool Call 人为拉长来证明"支持打断"。
+
+如果未来出现路径规划、轨迹播放、批量编辑等真正长时间运行的单个 Frontend Tool，再单独研究 Tool 内部取消（in-tool cancellation）；它与当前的 Run 级纠偏是不同问题。
 
 三个观察：
 
-1. 九行中三行已有着落（单轮问答已有、单步已证明、委托执行在 Issue #200 推进），新增工作是 A-E 五个场景加横切的意图可见性。
-2. 工具面收敛。覆盖全矩阵推导出的地图工具仍然只有 focusOn 与 highlight 两个，加上征询机制；交互模式之间共享工具，覆盖性要求的是场景数量，不是工具数量。
+1. 单轮问答、委托执行与单步工具调用构成基线；新增核心研究工作是 A-D 四个场景，失败、意图可见性、状态残余、恢复接续作为横切维度注入，而不是继续堆独立 demo。
+2. 工具面仍然收敛。覆盖当前矩阵推导出的 Agent-facing 地图工具只有 focusOn 与 highlight 两个，加上征询机制；D 中的用户直接操作优先作为地图本地交互存在，不因为混合主导就提前增加 Agent Tool。
 3. 矩阵直接构成报告的能力矩阵骨架，每个格子填入证据（fixture 回归 + 体验记录）。
 
 工具准入规则：工具随场景入场，工具面与被验证的交互维度同步增长，不长成平台。
@@ -105,7 +135,7 @@ Felt 的定位是 agent-as-cartographer：Agent 从零产出一张地图作为�
 3. 业务无关测试：工具结构与命名不含业务名词（设备、告警），业务语义只进参数值，与 Catalog 的 business-agnostic 纪律同源。工具词汇表是地图语义（viewport / layer / feature / annotation）；业务实体到地图要素的翻译由数据管线约定承担（业务数据以业务可寻址的 ID 作为 featureId 落图）。
 
 业务无关是报告结论可泛化的前提：工具面绑死业务场景，验证结论就只对该场景成立，与交互模式不绑业务是同一条纪律在两层的应用。
-现有 locateDevice 是纵向切片的务实产物（focus 与 select 打包、deviceId 入参），在步骤 1 扩展工具面时重构为 focusOn 与 select，deviceId 降级为参数值。
+现有 locateDevice 是纵向切片的务实产物（focus 与 select 打包、deviceId 入参），在步骤 1 扩展工具面时重构为 focusOn 与 highlight，deviceId 降级为参数值；`select` 暂时保留为地图本地状态，不在缺少混合主导证据前提升为 Agent Tool。
 
 完备性警告：五类模式是完备性假设，不是定理。
 运营域可能长出第六类（如 Agent 主动把新告警标注到地图上的 map push，用户未发起）。
@@ -128,7 +158,7 @@ Felt 的定位是 agent-as-cartographer：Agent 从零产出一张地图作为�
 ## 实施载体
 
 1. 工具实现位于 `apps/web-workbench/src/features/frontend-tools/`，沿用 locateDevice 与 `useFrontendTool` 的既有模式。
-2. 确定性 fixture 位于 `packages/ag-ui-mock/src/scenarios/`，为每个验证维度提供可回归的场景（含失败场景，参照 run-error.ts 模式）。打断纠偏同样由 AGUIMock 驱动：mock 只需提供可被打断的慢速多步序列。
+2. 确定性 fixture 位于 `packages/ag-ui-mock/src/scenarios/`，为每个验证维度提供可回归的场景（含失败场景，参照 run-error.ts 模式）。打断纠偏同样由 AGUIMock 驱动：mock 提供天然需要多个 Tool Call 的可中断序列，并可在语义步骤间加入短暂、确定性的观察间隔；不靠把一个原本瞬时的操作人为拉长来证明打断。
 3. 薄验证 Agent：LangGraph + CopilotKit 官方集成路径，挂接到现有 copilot-runtime 的 Agent 注册，定位为 dev-only 验证仪器（类比 Issue #213 Scenario Lab 的先例），不承载业务逻辑，只挂地图操作工具，由 LLM 决策交互动作（何时征询、被打断后如何反应）。它与 AGUIMock 按证据类型分工，两类证据不可互换：fixture 产工程证据（闭环语义，可回归），验证 Agent 产体验证据（征询时机、重规划质量、新模式发现），后者不可复现，探索会话通过 Scenario Lab / Inspect 录制留证。它将成为 AGUIMock / SACS 之外的第三个 Agent source，按仓库 Feature admission gate 走 Issue 立项；AGUIMock 保持确定性，LLM 不进入 mock。
 4. 评估载体复用 Issue #213 Scenario Lab 的 scenarios JSON 与运行记录，不新建评估平台。
 5. 验证证据通过 Playground / Inspect 的既有观测能力采集。
@@ -137,10 +167,10 @@ Felt 的定位是 agent-as-cartographer：Agent 从零产出一张地图作为�
 
 每步带 e2e 回归：
 
-1. 地图操作工具面 MVP：将 locateDevice 重构为业务无关的 focusOn（deviceId 降级为参数值）并扩展 highlight，AGUIMock 增加带节奏的多步序列场景。覆盖场景 A。
+1. 地图操作工具面 MVP：将 locateDevice 重构为业务无关的 focusOn（deviceId 降级为参数值）并扩展 highlight，AGUIMock 增加带节奏的多步序列场景。覆盖场景 A；从这一步开始记录意图可见性证据，而不是等到后续再补 UX。
 2. 征询等待工具级闭环：`renderAndWaitForResponse` 征询工具与征询 UI，AGUIMock 增加 consult-during-sequence 场景。机制 CopilotKit 现成，工作量最小，为后续两步提供参照实现。覆盖场景 B。
 3. 薄验证 Agent：按 admission gate 立 Issue 后实现，做体验探索，产出交互模式发现，为第 4 步语义设计提供输入。工作量约 1 周：接线 2 天（agent 骨架、runtime 注册、模型配置），prompt 迭代 2-5 天（真正的研究工作，即报告素材本身），新探索场景边际成本接近零；Issue 中写入时间盒，prompt 迭代限定 5 天内出第一版探索结论。
-4. 打断纠偏与混合主导语义：探索中观察用户何时、为何介入，Workbench 侧定义并实现挂起 TOOL_CALL 处置、地图残余状态、新旧 Run 衔接与控制权让渡语义，用 AGUIMock interruptible fixture 固化。覆盖场景 C / D / E；意图可见性从第 2 步起持续累积。
+4. 打断纠偏与混合主导语义：探索中观察用户何时、为何介入，Workbench 侧定义并实现未执行 Tool Call 处置、地图残余状态、新旧 Run 衔接与控制权让渡语义，用 AGUIMock 的天然多步 interruptible fixture 固化。覆盖场景 C / D；失败路径 E、状态残余 G、恢复接续 H 作为横切维度注入，意图可见性 F 继续累计。
 5. 评估与报告：Scenario Lab 采集证据，产出 taxonomy、能力矩阵、失败模式清单、UX 准则与 Felt 对比分析。
 
 核心逻辑：先建资产（工具面、闭环），再用仪器取证据（验证 Agent），最后固化语义出报告。
