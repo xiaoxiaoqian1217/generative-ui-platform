@@ -36,6 +36,9 @@ import type { AgentSource } from "../settings/agent-source.js";
 const ConversationPage = defineAsyncComponent(
   () => import("./ConversationPage.vue"),
 );
+const ScenarioLabPage = defineAsyncComponent(
+  () => import("../features/scenario-lab/ScenarioLabPage.vue"),
+);
 
 const configResolution:
   | { config: WorkbenchConfig; error?: never }
@@ -228,8 +231,11 @@ onMounted(() => {
           <p v-if="caseNotice" data-testid="case-notice">{{ caseNotice }}</p>
           <p v-if="latestCaseFailure" data-testid="case-failure-diagnosis">{{ latestCaseFailure.caseId }} · {{ latestCaseFailure.failures.join(' ') }}</p>
         </template>
-        <template v-else-if="route === '/catalog' || route === '/scenarios'">
-          <p>此页当前不可用。Catalog / Scenarios 元数据由 Business Agent 通过 AG-UI 提供，暂未实现。</p>
+        <template v-else-if="route === '/scenarios'">
+          <ScenarioLabPage :runtime-url="endpoints.agUi" />
+        </template>
+        <template v-else-if="route === '/catalog'">
+          <p>此页当前不可用。Catalog 元数据由 Business Agent 通过 AG-UI 提供，暂未实现。</p>
         </template>
         <form v-else class="settings-form" @submit.prevent="saveSettings">
           <p>本地设置仅保存 Agent Source、Agent 地址、超时和调试显示；不保存模型、密钥或任何凭证。</p>

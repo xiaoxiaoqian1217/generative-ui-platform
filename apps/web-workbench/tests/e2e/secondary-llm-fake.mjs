@@ -32,7 +32,7 @@ const ACTION_ARGS = {
   data: { title: "巡检结果" },
 };
 
-function extractBusinessPayload(prompt) {
+function extractBusinessContent(prompt) {
   const marker = "## Business content";
   const markerIndex = prompt.indexOf(marker);
   if (markerIndex === -1) return undefined;
@@ -44,12 +44,38 @@ function extractBusinessPayload(prompt) {
   if (start === -1 || end === -1 || end <= start) return undefined;
   try {
     const parsed = JSON.parse(section.slice(start, end + 1));
-    return parsed?.payload && typeof parsed.payload === "object"
-      ? parsed.payload
-      : undefined;
+    return parsed && typeof parsed === "object" ? parsed : undefined;
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Generic surface for Scenario Lab content (Issue #213): unlike the
+ * conversation fixtures, scenario content is a raw business JSON value with
+ * no `payload` envelope. Bind every top-level key so the fact check can
+ * verify each value really travels through the generation chain.
+ */
+function buildGenericArgs(content) {
+  const keys = Object.keys(content);
+  const children = keys.map((key) => `row-${key}`);
+  const components = [
+    { id: "root", component: "Card", child: "list" },
+    { id: "list", component: "Column", children },
+  ];
+  for (const key of keys) {
+    components.push({
+      id: `row-${key}`,
+      component: typeof content[key] === "number" ? "Metric" : "InfoRow",
+      label: key,
+      value: { path: `/value/${key}` },
+    });
+  }
+  return {
+    surfaceId: "scenario-lab-generic",
+    components,
+    data: { value: content },
+  };
 }
 
 function buildValidArgs(payload) {
@@ -164,9 +190,12 @@ export function createSecondaryLlmFake() {
         state.observations.push({ args: ACTION_ARGS, attempt, prompt });
         return ACTION_ARGS;
       }
-      const payload = extractBusinessPayload(prompt);
-      if (payload === undefined) return null;
-      const args = buildValidArgs(payload);
+      const content = extractBusinessContent(prompt);
+      if (content === undefined) return null;
+      const args =
+        content.payload && typeof content.payload === "object"
+          ? buildValidArgs(content.payload)
+          : buildGenericArgs(content);
       state.observations.push({ args, attempt, prompt });
       return args;
     },

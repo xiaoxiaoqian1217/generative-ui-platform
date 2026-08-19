@@ -1,10 +1,12 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import type { Dirent } from "node:fs";
 import {
   type A2uiGenerationErrorContent,
   generateA2uiSurfaceFromContent,
 } from "./a2ui-generation.js";
 import {
   parsePresentationInput,
+  type PresentationInput,
   serializePresentationInputContent,
 } from "./presentation-input.js";
 import type { InvokeSubagent } from "./secondary-llm.js";
@@ -126,7 +128,7 @@ async function readScenario(
 const SCENARIO_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 
 async function listScenarios(scenariosDir: URL): Promise<ScenarioDocument[]> {
-  let entries;
+  let entries: Dirent[];
   try {
     entries = await readdir(scenariosDir, { withFileTypes: true });
   } catch {
@@ -168,7 +170,7 @@ async function runScenario(
   body: unknown,
 ): Promise<Response> {
   if (!isRecord(body)) return json({ error: "SCENARIO_RUN_BODY_INVALID" }, 400);
-  let input;
+  let input: PresentationInput;
   try {
     input = parsePresentationInput(body.presentationInput);
   } catch (error) {
@@ -202,7 +204,14 @@ async function runScenario(
   const generation = await generateA2uiSurfaceFromContent(
     serializePresentationInputContent(input),
     invokeSubagent,
-  );
+  ).catch((error: unknown): { ok: false; error: A2uiGenerationErrorContent } => ({
+    error: {
+      code: "A2UI_GENERATION_FAILED",
+      message:
+        error instanceof Error ? error.message : "Dynamic A2UI generation failed.",
+    },
+    ok: false,
+  }));
   if (!generation.ok) return json({ error: generation.error, ok: false });
   const surface = JSON.parse(generation.envelope) as unknown;
   const factCheck: FactCheckEntry[] = expectedFacts.facts.map((fact) => ({

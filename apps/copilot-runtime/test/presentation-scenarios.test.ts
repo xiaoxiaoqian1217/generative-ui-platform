@@ -61,10 +61,10 @@ function readSurfaceEnvelope(envelope: string): {
 describe("presentation evaluation scenarios", () => {
   describe("summary", () => {
     const input = parsePresentationInput(
-      readScenarioJson("./scenarios/summary/presentation-input.json"),
+      readScenarioJson("../scenarios/summary/presentation-input.json"),
     );
     const { facts } = readScenarioJson(
-      "./scenarios/summary/expected-facts.json",
+      "../scenarios/summary/expected-facts.json",
     ) as { facts: ExpectedFact[] };
 
     /**

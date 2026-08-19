@@ -62,6 +62,11 @@ ADR-0030 在此清单上为 Dynamic A2UI 额外允许：
 - Secondary Presentation LLM 调用接线（基于 `@ag-ui/a2ui-toolkit`）；
 - A2UI 生成结果向 AG-UI 事件流的缝合。
 
+Issue #213 在此之上追加允许：
+
+- source-neutral `PresentationInput` 契约与薄 AgentContent Projection（就近声明于 Runtime presentation 边界，不新建 package）；
+- dev-only Scenario Lab 端点（`scenarios/` 场景 JSON 的 list/save 与真实生成运行），仅服务本地实验与评估，不承载产品运行时职责。
+
 不得在 #207 中把它扩展为自研 Runtime Platform。
 
 ## Agent source roles
@@ -237,11 +242,12 @@ Completed
 #207 Thin CopilotKit Runtime
 #206 A2UI Renderer MVP
 #209 Platform Catalog MVP
+#210 Dynamic A2UI MVP (controlled content)
 
 Current
   ↓
 #200 Real SACS Interoperability
-#210 Dynamic A2UI MVP (controlled content)
+#213 Generative UI Scenario & Evaluation MVP
 
 Next
 SACS AgentContent → Dynamic A2UI

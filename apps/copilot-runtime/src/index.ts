@@ -7,6 +7,7 @@ import {
   createCopilotRuntimeHandler,
 } from "@copilotkit/runtime/v2";
 import { DynamicA2uiPresentationPolicy } from "./presentation-policy.js";
+import { createScenarioLabHandler } from "./scenario-lab.js";
 import {
   createSecondaryLlmInvokeSubagent,
   DEFAULT_SECONDARY_LLM_BASE_URL,
@@ -28,6 +29,7 @@ export interface RuntimeConfig {
   readonly secondaryLlmApiKey?: string;
   readonly secondaryLlmBaseUrl?: string;
   readonly secondaryLlmModel?: string;
+  readonly secondaryLlmTimeoutMs?: number;
 }
 
 export interface RuntimeHandlerOptions {
@@ -38,6 +40,11 @@ export interface RuntimeHandlerOptions {
    */
   readonly invokeSubagent?: InvokeSubagent;
   readonly now?: () => number;
+  /**
+   * Scenario Lab file location (Issue #213 dev-only endpoints). Defaults to
+   * the repository `scenarios/` directory of this app.
+   */
+  readonly scenariosDir?: URL;
 }
 
 interface SacsCredentials {
@@ -188,6 +195,9 @@ export function createRuntimeHandler(
           apiKey: config.secondaryLlmApiKey,
           baseUrl: config.secondaryLlmBaseUrl ?? DEFAULT_SECONDARY_LLM_BASE_URL,
           model: config.secondaryLlmModel ?? DEFAULT_SECONDARY_LLM_MODEL,
+          ...(config.secondaryLlmTimeoutMs === undefined
+            ? {}
+            : { timeoutMs: config.secondaryLlmTimeoutMs }),
         }));
   const runtime = new CopilotSseRuntime({
     agents: () => {
@@ -208,10 +218,20 @@ export function createRuntimeHandler(
     },
   });
 
-  return createCopilotRuntimeHandler({
+  const copilotHandler = createCopilotRuntimeHandler({
     basePath: COPILOT_RUNTIME_PATH,
     runtime,
   });
+  const scenarioLabHandler = createScenarioLabHandler({
+    scenariosDir:
+      options.scenariosDir ?? new URL("../scenarios/", import.meta.url),
+    ...(invokeSubagent === undefined ? {} : { invokeSubagent }),
+  });
+
+  return async (request: Request): Promise<Response> => {
+    const labResponse = await scenarioLabHandler(request);
+    return labResponse ?? copilotHandler(request);
+  };
 }
 
 function validUrl(name: string, value: string): string {
@@ -250,6 +270,22 @@ export function loadRuntimeConfig(
     secondaryLlmModel:
       environment.A2UI_SECONDARY_LLM_MODEL?.trim() ||
       DEFAULT_SECONDARY_LLM_MODEL,
+    ...(environment.A2UI_SECONDARY_LLM_TIMEOUT_MS?.trim()
+      ? {
+          secondaryLlmTimeoutMs: (() => {
+            const parsed = Number(
+              environment.A2UI_SECONDARY_LLM_TIMEOUT_MS?.trim(),
+            );
+            if (
+              !Number.isSafeInteger(parsed) ||
+              parsed < 1_000 ||
+              parsed > 600_000
+            )
+              throw new Error("A2UI_SECONDARY_LLM_TIMEOUT_MS_INVALID");
+            return parsed;
+          })(),
+        }
+      : {}),
     ...(sacsJwtSecret ? { sacsJwtSecret } : {}),
     ...(sacsPrincipalId ? { sacsPrincipalId } : {}),
     ...(sacsPrincipalId || sacsJwtSecret || sacsServiceKey
@@ -291,6 +327,10 @@ export {
   DynamicA2uiPresentationPolicy,
   type PresentationForwardedProps,
 } from "./presentation-policy.js";
+export {
+  createScenarioLabHandler,
+  SCENARIO_LAB_BASE_PATH,
+} from "./scenario-lab.js";
 export {
   DEFAULT_SECONDARY_LLM_BASE_URL,
   DEFAULT_SECONDARY_LLM_MODEL,

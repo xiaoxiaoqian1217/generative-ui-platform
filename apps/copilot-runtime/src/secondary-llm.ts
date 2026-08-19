@@ -2,11 +2,13 @@ import { RENDER_A2UI_TOOL_DEF } from "@ag-ui/a2ui-toolkit";
 
 export const DEFAULT_SECONDARY_LLM_BASE_URL = "https://openrouter.ai/api/v1";
 export const DEFAULT_SECONDARY_LLM_MODEL = "openai/gpt-4.1-mini";
+export const DEFAULT_SECONDARY_LLM_TIMEOUT_MS = 90_000;
 
 export interface SecondaryLlmConfig {
   readonly apiKey: string;
   readonly baseUrl: string;
   readonly model: string;
+  readonly timeoutMs?: number;
 }
 
 /**
@@ -43,18 +45,15 @@ export function createSecondaryLlmInvokeSubagent(
   config: SecondaryLlmConfig,
   options: { readonly timeoutMs?: number } = {},
 ): InvokeSubagent {
-  const timeoutMs = options.timeoutMs ?? 30_000;
+  const timeoutMs = options.timeoutMs ?? config.timeoutMs ?? DEFAULT_SECONDARY_LLM_TIMEOUT_MS;
   const endpoint = `${config.baseUrl.replace(/\/+$/, "")}/chat/completions`;
-  return async (prompt) => {
-    const response = await fetch(endpoint, {
+  const send = (prompt: string, toolChoice: unknown) =>
+    fetch(endpoint, {
       body: JSON.stringify({
         messages: [{ content: prompt, role: "user" }],
         model: config.model,
         temperature: 0.2,
-        tool_choice: {
-          function: { name: RENDER_A2UI_TOOL_DEF.function.name },
-          type: "function",
-        },
+        ...(toolChoice === undefined ? {} : { tool_choice: toolChoice }),
         tools: [RENDER_A2UI_TOOL_DEF],
       }),
       headers: {
@@ -64,6 +63,23 @@ export function createSecondaryLlmInvokeSubagent(
       method: "POST",
       signal: AbortSignal.timeout(timeoutMs),
     });
+  return async (prompt) => {
+    let response = await send(prompt, {
+      function: { name: RENDER_A2UI_TOOL_DEF.function.name },
+      type: "function",
+    });
+    if (response.status === 400) {
+      // Some OpenAI-compatible providers (e.g. reasoning-mode endpoints)
+      // reject a forced `tool_choice` object; degrade to "auto" only when
+      // the provider error explicitly names tool_choice.
+      const detail = await response.text();
+      if (!detail.includes("tool_choice")) {
+        throw new Error(
+          `A2UI_SECONDARY_LLM_HTTP_400 ${detail.slice(0, 200)}`,
+        );
+      }
+      response = await send(prompt, "auto");
+    }
     if (!response.ok) {
       throw new Error(`A2UI_SECONDARY_LLM_HTTP_${response.status}`);
     }
