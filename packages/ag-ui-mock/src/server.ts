@@ -9,6 +9,7 @@ import { registerInspectionSummaryA2uiScenario } from "./scenarios/inspection-su
 import { registerInspectionSummaryPlatformA2uiScenario } from "./scenarios/inspection-summary-platform-a2ui.js";
 import { registerInspectionSummaryStructuredScenario } from "./scenarios/inspection-summary-structured.js";
 import { registerLocateDeviceScenario } from "./scenarios/locate-device.js";
+import { registerMapPatrolRouteReviewScenario } from "./scenarios/map-patrol-route-review.js";
 import { registerRunErrorScenario } from "./scenarios/run-error.js";
 
 export interface CreateAguiMockServerOptions {
@@ -57,6 +58,7 @@ export function createAguiMockServer(
   registerInspectionSummaryPlatformA2uiScenario(mock);
   registerInspectionSummaryStructuredScenario(mock);
   registerEchoScenario(mock);
+  registerMapPatrolRouteReviewScenario(mock);
   registerLocateDeviceScenario(mock);
   registerRunErrorScenario(mock);
 

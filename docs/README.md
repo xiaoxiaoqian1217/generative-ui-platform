@@ -97,7 +97,7 @@ Issue #207 已经落地 thin CopilotKit Runtime。
 当前可执行链路通过统一 `/api/copilotkit` endpoint 接入 `ag-ui-mock` 与 `single-agent-chat-server` 两个 Agent Source。
 受控 Dynamic A2UI 不作为独立身份存在：Dynamic scenario 经 `forwardedProps` 携带 `requestedMode`，由挂在 `ag-ui-mock` 上的薄 Presentation Policy middleware 在同一 run 内完成生成与缝合。
 
-AGUIMock 路线继续验证 Frontend Tool 与浏览器设备定位。
+AGUIMock 路线继续验证业务无关 `setLayerVisibility` / `focusOn` / `highlight` / `previewPath` Frontend Tools、浏览器地图操作与确定性多步场景。
 SACS 路线消费 streaming text、Run lifecycle、State、Activity、Artifact 和 bounded `RUN_ERROR`，但不伪造其尚未支持的 client-provided Frontend Tools。
 
 A2UI Renderer、Platform Catalog 与受控 Dynamic A2UI 已完成。

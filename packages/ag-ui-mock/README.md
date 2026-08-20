@@ -13,7 +13,9 @@
 - `inspection-summary-platform-a2ui` 为 `展示平台 Catalog 巡检摘要 A2UI` 返回使用 Platform Catalog（Metric / StatusBadge / InfoRow）的固定 `a2ui-surface` Activity Snapshot。
 - `inspection-summary-structured` 为 `展示巡检摘要结构化结果` 通过 `activityType: inspection-summary` 的标准 `ACTIVITY_SNAPSHOT.content` 返回不含 A2UI 的受控结构化业务内容，作为 Dynamic A2UI 的受控输入（Issue #210）。
 - 两个 A2UI fixture 的 `createSurface.catalogId` 都引用 `@generative-ui/shared-types` 导出的 `PLATFORM_A2UI_CATALOG_ID`，与 Workbench 注册的合并 Catalog 保持一致。
-- `locate-device` 先请求浏览器执行 `locateDevice({ deviceId: "01" })`，再消费工具结果并返回最终 AG-UI 文本消息。
+- `locate-device` 将原有定位意图迁移为 `focusOn` 后接 `highlight`，每次续跑先返回对应的标准 `TOOL_CALL_RESULT`，再继续或返回最终 AG-UI 文本消息。
+- `map-patrol-route-review` 为“北侧通道巡逻方案研判与调整”确定性执行 `setLayerVisibility`、`focusOn`、`highlight`、`previewPath` 四步地图意图，并在每步之间保留短暂观察间隔。
+- `previewPath` 仅预览 fixture 中已有的候选路线，不计算、优化或提交路线。
 - `run-error` 对包含 `mock failure` 的输入返回 bounded `RUN_ERROR`（`MOCK_FIXTURE_ERROR`），用于失败定位与 Inspect 回归。
 
 服务器启动时会注册全部场景，不需要也不支持逐个启用场景。

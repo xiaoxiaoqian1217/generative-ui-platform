@@ -3,13 +3,23 @@ import { CopilotKitProvider } from "@copilotkit/vue/v2";
 import { computed } from "vue";
 import type { ObservationSink } from "../agent/business-agent-client.js";
 import { platformCatalog } from "../features/a2ui/catalog/platform-catalog.js";
+import type {
+  MapLayerRef,
+  MapTargetRef,
+} from "../features/map/map-operation.js";
 import CopilotKitFrontendToolsBridge from "./CopilotKitFrontendToolsBridge.vue";
 
 const props = defineProps<{
   agentId: string;
   a2uiEnabled: boolean;
   frontendToolsEnabled: boolean;
-  locateDevice?: (deviceId: string) => string;
+  focusOn?: (target: MapTargetRef) => string;
+  highlight?: (targets: readonly MapTargetRef[]) => string;
+  previewPath?: (target: MapTargetRef) => Promise<string> | string;
+  setLayerVisibility?: (
+    layer: MapLayerRef,
+    visible: boolean,
+  ) => Promise<string> | string;
   observe?: ObservationSink | undefined;
   runtimeUrl: string;
 }>();
@@ -27,7 +37,10 @@ const providerProps = computed(() =>
     <CopilotKitFrontendToolsBridge
       :agent-id="agentId"
       :enabled="frontendToolsEnabled"
-      :locate-device="locateDevice"
+      :focus-on="focusOn"
+      :highlight="highlight"
+      :preview-path="previewPath"
+      :set-layer-visibility="setLayerVisibility"
       :observe="observe"
     />
     <slot />

@@ -244,7 +244,11 @@ export function exchangeForObservation(
   observations: readonly TurnObservation[],
   selected: TurnObservation,
 ): ObservationExchange | undefined {
-  if (selected.toolCallId !== undefined) {
+  if (
+    selected.toolCallId !== undefined &&
+    (selected.type === "FRONTEND_TOOL_INVOCATION" ||
+      selected.type === "FRONTEND_TOOL_RESULT")
+  ) {
     const request = observations.find(
       (item) =>
         item.type === "FRONTEND_TOOL_INVOCATION" &&

@@ -26,9 +26,9 @@ AGUIMock
   ↓ AG-UI
 CopilotKit Frontend
   ↓
-Frontend Tool: locateDevice
+Frontend Tools: setLayerVisibility / focusOn / highlight / previewPath
   ↓
-MapLibre + DeviceCard
+MapLibre persistent surface
 ```
 
 该纵向场景用于证明 Agent 可以通过 AG-UI 驱动真实浏览器能力。

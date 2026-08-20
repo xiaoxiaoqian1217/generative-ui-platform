@@ -43,6 +43,7 @@ export class WorkbenchAgentError extends Error {
 
 export interface AgentRunInput {
   readonly forwardedProps?: Record<string, unknown>;
+  readonly isFrontendToolCall?: (toolCallId: string) => boolean;
   readonly message?: UserMessage & { readonly content: string };
   readonly observe?: ObservationSink;
   readonly resume?: readonly ResumeEntry[];
@@ -71,6 +72,19 @@ export interface BusinessAgentClientOptions {
   readonly agentId?: string;
   readonly onConnectionStateChange?: (state: ConnectionState) => void;
   readonly timeoutMs?: number;
+}
+
+export function shouldObserveFrontendToolResult(
+  message: { readonly id: string; readonly toolCallId: string },
+  preRunMessageIds: ReadonlySet<string>,
+  observedToolResultCallIds: ReadonlySet<string>,
+  isFrontendToolCall: ((toolCallId: string) => boolean) | undefined,
+): boolean {
+  return (
+    !preRunMessageIds.has(message.id) &&
+    isFrontendToolCall?.(message.toolCallId) === true &&
+    !observedToolResultCallIds.has(message.toolCallId)
+  );
 }
 
 const RETRYABLE_RUN_ERROR_CODES = new Set([
@@ -255,6 +269,9 @@ export function createBusinessAgentClient(
       if (boundCore !== core) observeRuntimeConnection(core);
       const baseAgent = await resolveAgent(core, agentId, timeoutMs);
       const agent = agentForThread(core, baseAgent, input.threadId);
+      const preRunMessageIds = new Set(
+        agent.messages.map((message) => message.id),
+      );
       if (input.message !== undefined) agent.addMessage(input.message);
       const observe = input.observe;
       activeObservation =
@@ -279,10 +296,23 @@ export function createBusinessAgentClient(
       });
       const startedAt = globalThis.performance.now();
       const eventTypes: string[] = [];
+      const observedToolResultCallIds = new Set<string>();
       let runError: { code?: string; message: string } | undefined;
       const eventSubscription = agent.subscribe({
         onEvent: ({ event }) => {
           eventTypes.push(event.type);
+          const eventToolCallId =
+            event.type === "TOOL_CALL_RESULT" &&
+            typeof event.toolCallId === "string"
+              ? event.toolCallId
+              : undefined;
+          if (
+            eventToolCallId !== undefined &&
+            observedToolResultCallIds.has(eventToolCallId)
+          )
+            return;
+          if (eventToolCallId !== undefined)
+            observedToolResultCallIds.add(eventToolCallId);
           observe?.(
             observationInputFromAgUiEvent(event, {
               runId: input.runId,
@@ -297,6 +327,35 @@ export function createBusinessAgentClient(
                   ? event.message
                   : "The Business Agent could not complete this run.",
             };
+          }
+        },
+        onMessagesChanged: ({ messages }) => {
+          for (const message of messages) {
+            if (message.role !== "tool") continue;
+            if (
+              !shouldObserveFrontendToolResult(
+                message,
+                preRunMessageIds,
+                observedToolResultCallIds,
+                input.isFrontendToolCall,
+              )
+            )
+              continue;
+            observedToolResultCallIds.add(message.toolCallId);
+            // CopilotKit materializes a browser Frontend Tool result as a
+            // native tool message before its follow-up run. Observe that real
+            // message as the equivalent standard AG-UI TOOL_CALL_RESULT fact;
+            // the framework does not currently re-emit it through onEvent.
+            observe?.({
+              hasArtifact: true,
+              messageId: message.id,
+              payload: message,
+              runId: input.runId,
+              source: "frontend-tool",
+              threadId: input.threadId,
+              toolCallId: message.toolCallId,
+              type: "TOOL_CALL_RESULT",
+            });
           }
         },
       });

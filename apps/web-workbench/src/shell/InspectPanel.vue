@@ -99,8 +99,14 @@ async function copyJson(payload: unknown): Promise<void> {
     </header>
 
     <dl class="inspect-ids">
-      <div><dt>threadId</dt><dd>{{ turn.threadId ?? '-' }}</dd></div>
-      <div><dt>runId</dt><dd>{{ turn.runId ?? '-' }}</dd></div>
+      <div>
+        <dt>threadId</dt>
+        <dd data-testid="inspect-turn-thread-id">{{ turn.threadId ?? '-' }}</dd>
+      </div>
+      <div>
+        <dt>runId</dt>
+        <dd data-testid="inspect-turn-run-id">{{ turn.runId ?? '-' }}</dd>
+      </div>
       <div><dt>status</dt><dd>{{ turn.status }}</dd></div>
     </dl>
 
@@ -139,7 +145,15 @@ async function copyJson(payload: unknown): Promise<void> {
           </div>
           <div v-if="selected.toolCallId">
             <dt>toolCall</dt>
-            <dd>{{ selected.toolCallId }}</dd>
+            <dd data-testid="inspect-tool-call-id">{{ selected.toolCallId }}</dd>
+          </div>
+          <div v-if="selected.runId">
+            <dt>run</dt>
+            <dd data-testid="inspect-run-id">{{ selected.runId }}</dd>
+          </div>
+          <div v-if="selected.threadId">
+            <dt>thread</dt>
+            <dd data-testid="inspect-thread-id">{{ selected.threadId }}</dd>
           </div>
           <div v-if="selected.interruptId">
             <dt>interrupt</dt>

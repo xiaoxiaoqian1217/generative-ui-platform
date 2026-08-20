@@ -39,6 +39,13 @@ const ConversationPage = defineAsyncComponent(
 const ScenarioLabPage = defineAsyncComponent(
   () => import("../features/scenario-lab/ScenarioLabPage.vue"),
 );
+// PROTOTYPE - throwaway: Scenario Lab UI variants, dev-only via ?variant=A|B|C.
+const ScenarioLabPrototype = defineAsyncComponent(
+  () => import("../features/scenario-lab/prototype/ScenarioLabPrototype.vue"),
+);
+const showScenarioLabPrototype =
+  import.meta.env.DEV &&
+  new URLSearchParams(window.location.search).has("variant");
 
 const configResolution:
   | { config: WorkbenchConfig; error?: never }
@@ -208,6 +215,13 @@ onMounted(() => {
       />
     </main>
 
+    <main
+      v-else-if="route === '/scenarios' && showScenarioLabPrototype"
+      class="shell-prototype-page"
+    >
+      <ScenarioLabPrototype />
+    </main>
+
     <main v-else class="shell-static-page">
       <section class="shell-static-card">
         <h2>{{ workbenchRouteLabel(route) }}</h2>
@@ -249,3 +263,13 @@ onMounted(() => {
     </main>
   </div>
 </template>
+
+<style scoped>
+/* PROTOTYPE - throwaway: full-height host for the Scenario Lab UI variants. */
+.shell-prototype-page {
+  flex: 1;
+  min-height: 0;
+  padding: 20px 24px 72px;
+  overflow: hidden;
+}
+</style>

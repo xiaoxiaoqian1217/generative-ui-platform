@@ -6,11 +6,20 @@ import {
   bindCopilotKitProviderCore,
   type ObservationSink,
 } from "../agent/business-agent-client.js";
+import type {
+  MapLayerRef,
+  MapTargetRef,
+} from "../features/map/map-operation.js";
 
 const props = defineProps<{
   agentId: string;
   enabled: boolean;
-  locateDevice: ((deviceId: string) => string) | undefined;
+  focusOn: ((target: MapTargetRef) => string) | undefined;
+  highlight: ((targets: readonly MapTargetRef[]) => string) | undefined;
+  previewPath: ((target: MapTargetRef) => Promise<string> | string) | undefined;
+  setLayerVisibility:
+    | ((layer: MapLayerRef, visible: boolean) => Promise<string> | string)
+    | undefined;
   observe?: ObservationSink | undefined;
 }>();
 
@@ -24,6 +33,16 @@ watchEffect((onCleanup) => {
 interface FrontendToolHandlerContextLike {
   toolCall: { id: string };
   signal?: AbortSignal;
+}
+
+function toMapTargetRef(target: {
+  featureId: string;
+  layerId?: string | undefined;
+}): MapTargetRef {
+  return {
+    featureId: target.featureId,
+    ...(target.layerId === undefined ? {} : { layerId: target.layerId }),
+  };
 }
 
 // Issue #205：Frontend Tool 的浏览器侧 invocation / result 是 Workbench
@@ -90,24 +109,111 @@ useFrontendTool({
   },
 });
 
+const mapTargetRefSchema = z
+  .object({
+    featureId: z.string().min(1),
+    layerId: z.string().min(1).optional(),
+  })
+  .strict();
+
 useFrontendTool({
-  name: "locateDevice",
+  name: "focusOn",
   description:
-    "Locate a business device on the GIS workspace by its device ID. The browser owns the map implementation.",
-  parameters: z.object({ deviceId: z.string().min(1) }).strict(),
+    "Focus the persistent map viewport on one addressable map feature. Use map feature references only.",
+  parameters: z.object({ target: mapTargetRefSchema }).strict(),
   agentId: props.agentId,
   available: props.enabled,
-  handler: async ({ deviceId }, context) => {
+  handler: async ({ target }, context) => {
     context.signal?.throwIfAborted();
     return observeHandler(
-      "locateDevice",
-      { deviceId },
+      "focusOn",
+      { target },
       context,
       () =>
-        props.locateDevice?.(deviceId) ??
+        props.focusOn?.(toMapTargetRef(target)) ??
         JSON.stringify({
-          code: "LOCATE_DEVICE_UNAVAILABLE",
-          status: "unavailable",
+          affectedFeatureIds: [],
+          reason: "Map focus capability is unavailable.",
+          status: "failed",
+        }),
+    );
+  },
+});
+
+useFrontendTool({
+  name: "highlight",
+  description:
+    "Highlight one or more addressable features on the persistent map surface. Use map feature references only.",
+  parameters: z
+    .object({ targets: z.array(mapTargetRefSchema).min(1) })
+    .strict(),
+  agentId: props.agentId,
+  available: props.enabled,
+  handler: async ({ targets }, context) => {
+    context.signal?.throwIfAborted();
+    return observeHandler(
+      "highlight",
+      { targets },
+      context,
+      () =>
+        props.highlight?.(targets.map(toMapTargetRef)) ??
+        JSON.stringify({
+          affectedFeatureIds: [],
+          reason: "Map highlight capability is unavailable.",
+          status: "failed",
+        }),
+    );
+  },
+});
+
+useFrontendTool({
+  name: "setLayerVisibility",
+  description:
+    "Show or hide one existing map layer by its stable map layer reference. This does not create or style layers.",
+  parameters: z
+    .object({
+      layer: z.object({ layerId: z.string().min(1) }).strict(),
+      visible: z.boolean(),
+    })
+    .strict(),
+  agentId: props.agentId,
+  available: props.enabled,
+  handler: async ({ layer, visible }, context) => {
+    context.signal?.throwIfAborted();
+    return observeHandler(
+      "setLayerVisibility",
+      { layer, visible },
+      context,
+      () =>
+        props.setLayerVisibility?.({ layerId: layer.layerId }, visible) ??
+        JSON.stringify({
+          affectedLayerIds: [],
+          reason: "Map layer visibility capability is unavailable.",
+          status: "failed",
+        }),
+    );
+  },
+});
+
+useFrontendTool({
+  name: "previewPath",
+  description:
+    "Preview one existing path feature on the persistent map. A new preview replaces the previous Agent path preview and does not calculate or commit a route.",
+  parameters: z.object({ target: mapTargetRefSchema }).strict(),
+  agentId: props.agentId,
+  available: props.enabled,
+  handler: async ({ target }, context) => {
+    context.signal?.throwIfAborted();
+    return observeHandler(
+      "previewPath",
+      { target },
+      context,
+      () =>
+        props.previewPath?.(toMapTargetRef(target)) ??
+        JSON.stringify({
+          affectedFeatureIds: [],
+          reason: "Map path preview capability is unavailable.",
+          status: "failed",
         }),
     );
   },

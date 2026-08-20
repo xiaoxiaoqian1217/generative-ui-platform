@@ -15,7 +15,8 @@ Web Workbench
 Agent Source is the only session-level choice; everyday natural language input always runs in auto presentation.
 The `巡检摘要 (Dynamic A2UI)` quick scenario carries an explicit `requestedMode: "dynamic"` through AG-UI forwardedProps, asking the Runtime presentation policy to generate the surface from the controlled AGUIMock structured result.
 
-Only the AGUIMock source advertises the browser `locateDevice` Frontend Tool and drives MapLibre plus `DeviceCard`.
+Only the AGUIMock source advertises the business-independent browser `setLayerVisibility`, `focusOn`, `highlight`, and `previewPath` Frontend Tools.
+The browser resolves `MapTargetRef` values and applies the operations to the persistent MapLibre surface.
 The SACS source streams Business Agent text, state, activity, and structured results without client-provided Frontend Tools.
 
 Workbench consumes native AG-UI messages through CopilotKit.
@@ -32,8 +33,9 @@ The active Conversation route supports:
 - explicit Dynamic A2UI generation and schema-rejection states without crashing the conversation;
 - safe Markdown rendering for assistant text;
 - CopilotKit `useFrontendTool` registration;
-- the `locateDevice` browser tool;
-- MapLibre device selection, map movement, marker highlighting, and a controlled `DeviceCard`;
+- the `setLayerVisibility`, `focusOn`, `highlight`, and `previewPath` browser tools with stable map references and `MapOperationResult` outputs;
+- deterministic multi-step map analysis on one persistent MapLibre surface;
+- local device selection, map movement, marker highlighting, and a controlled `DeviceCard`;
 - per-turn Turn Inspect: a swimlane timeline of the observations the Workbench really saw (Workbench / CopilotKit Runtime / Agent / Frontend Tool lanes appear only when they actually occurred) plus on-demand raw JSON detail;
 - SACS interrupt / resume: an interrupted run renders an in-turn confirmation card, and the user's answer is sent back as a native AG-UI `resume` entry;
 - cancellation, retryable timeout handling, agent outage handling, and recovery;
@@ -42,9 +44,9 @@ The active Conversation route supports:
 
 Turn Inspect records only observable public facts in observed order; it does not infer server-side sequences, and it does not create a Runtime Repository, Recovery Platform, or a private diagnostic protocol.
 
-AGUIMock sees the stable `locateDevice` tool capability.
+AGUIMock sees the stable `setLayerVisibility`, `focusOn`, `highlight`, and `previewPath` map intent capabilities.
 SACS receives no client-provided tools because its current profile does not support them.
-MapLibre and device-selection state remain browser-side implementation details.
+MapLibre mechanisms and device-selection state remain browser-side implementation details.
 
 Workbench never executes model-generated arbitrary HTML or JavaScript.
 
@@ -126,8 +128,10 @@ SACS credentials remain in the Runtime process and are never browser configurati
 See [`apps/copilot-runtime/README.md`](../copilot-runtime/README.md) for its environment variables and real-service smoke test.
 Enter `定位无人机 01` in Conversation.
 
-The mock requests `locateDevice({ deviceId: "01" })`.
-Workbench updates the GIS workspace and returns the Frontend Tool result to the Agent through the same AG-UI run.
+The mock composes map-domain tools without exposing an intelligent-advisor-specific contract.
+Use the `北侧通道巡逻方案` quick scenario to run `setLayerVisibility -> focusOn -> highlight -> previewPath -> Assistant result` on the same map surface.
+`previewPath` only displays an existing route candidate; it does not calculate, optimize, or commit a patrol route.
+Workbench updates the GIS workspace and returns each Frontend Tool result to the Agent through the same Workbench run.
 
 ## Routes
 
@@ -142,7 +146,7 @@ The stable routes are:
 - `/settings`.
 
 Unknown paths safely fall back to `/conversation`.
-Only Conversation and its `locateDevice` flow are in the current release gate.
+Only Conversation and its focused map-operation flows are in the current release gate.
 
 ## Verification
 
@@ -159,7 +163,7 @@ pnpm build
 pnpm docs:check
 ```
 
-The browser E2E suite covers native AG-UI Markdown, the Turn Inspect swimlane timeline and raw JSON detail, Frontend Tool continuation, the real `locateDevice` map flow, SACS profile interoperability (state, activity, artifact, bounded `RUN_ERROR`, interrupt / resume, durable-run conflict facts), large-payload lazy rendering, cancellation, retry, outage, and recovery.
+The browser E2E suite covers native AG-UI Markdown, the Turn Inspect swimlane timeline and raw JSON detail, Frontend Tool continuation, migrated locate behavior, the multi-step map scenario, SACS profile interoperability (state, activity, artifact, bounded `RUN_ERROR`, interrupt / resume, durable-run conflict facts), large-payload lazy rendering, cancellation, retry, outage, and recovery.
 
 ## Documentation status
 

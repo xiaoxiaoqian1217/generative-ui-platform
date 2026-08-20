@@ -31,7 +31,9 @@ const observations: readonly TurnObservation[] = [
     observedAt: "2026-08-13T10:00:00.040Z",
     observedIndex: 2,
     payload: { snapshot: { progress: 25 } },
+    runId: "run-1",
     source: "agent",
+    threadId: "thread-1",
     type: "STATE_SNAPSHOT",
   },
 ];
@@ -55,6 +57,12 @@ describe("InspectPanel", () => {
       true,
     );
     expect(wrapper.find('[data-testid="inspect-detail"]').exists()).toBe(false);
+    expect(wrapper.get('[data-testid="inspect-turn-run-id"]').text()).toBe(
+      "run-1",
+    );
+    expect(wrapper.get('[data-testid="inspect-turn-thread-id"]').text()).toBe(
+      "thread-1",
+    );
 
     await wrapper
       .get('[data-testid="timeline-node-observation-3"]')
@@ -62,6 +70,10 @@ describe("InspectPanel", () => {
 
     const detail = wrapper.get('[data-testid="inspect-detail"]');
     expect(detail.text()).toContain("STATE_SNAPSHOT");
+    expect(wrapper.get('[data-testid="inspect-run-id"]').text()).toBe("run-1");
+    expect(wrapper.get('[data-testid="inspect-thread-id"]').text()).toBe(
+      "thread-1",
+    );
     // 嵌套对象默认折叠，按需展开
     expect(detail.text()).not.toContain("progress");
     await wrapper.get('[data-testid="json-node-snapshot"]').trigger("click");

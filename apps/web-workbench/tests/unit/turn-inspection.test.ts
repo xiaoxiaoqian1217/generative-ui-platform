@@ -221,6 +221,39 @@ describe("exchangeForObservation", () => {
     });
   });
 
+  it("keeps a standard tool result inspectable as its own protocol fact", () => {
+    const invocation = fixture({
+      hasArtifact: true,
+      source: "frontend-tool",
+      toolCallId: "tool-call-1",
+      type: "FRONTEND_TOOL_INVOCATION",
+    });
+    const frontendResult = fixture({
+      hasArtifact: true,
+      source: "frontend-tool",
+      toolCallId: "tool-call-1",
+      type: "FRONTEND_TOOL_RESULT",
+    });
+    const standardResult = fixture({
+      hasArtifact: true,
+      payload: {
+        content: '{"affectedFeatureIds":["01"],"status":"completed"}',
+        role: "tool",
+        toolCallId: "tool-call-1",
+      },
+      source: "frontend-tool",
+      toolCallId: "tool-call-1",
+      type: "TOOL_CALL_RESULT",
+    });
+
+    expect(
+      exchangeForObservation(
+        [invocation, frontendResult, standardResult],
+        standardResult,
+      ),
+    ).toBeUndefined();
+  });
+
   it("pairs an interrupt outcome with its resume input by interruptId", () => {
     const interrupt = fixture({
       hasArtifact: true,

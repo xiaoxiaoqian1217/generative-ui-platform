@@ -48,6 +48,7 @@ Deploy it behind the Workbench same-origin reverse proxy or another authenticate
 `A2UI_SECONDARY_LLM_API_KEY` supplies its server-only provider key; the Runtime never falls back to other provider environment variables.
 When the key is omitted, Dynamic Eligibility does not hold: an explicit dynamic request receives an explicit `A2UI_GENERATION_UNAVAILABLE` error and the original content is preserved.
 The model only answers through the catalog-constrained `render_a2ui` structured output; generated components outside the Final Catalog are rejected before painting.
+The adapter sends a fixed trust-boundary policy as the system message and keeps the toolkit-composed prompt, including untrusted business content, in the user message.
 The Secondary LLM credential stays in the Runtime process and never reaches the browser bundle.
 
 ## Dev-only Scenario Lab

@@ -202,6 +202,7 @@ textarea:focus-visible {
   display: grid;
   gap: 4px;
   max-height: 44%;
+  overflow-x: hidden;
   overflow-y: auto;
   padding: 8px;
   border-top: 1px solid #eef0f3;
@@ -219,6 +220,8 @@ textarea:focus-visible {
 
 .shell-scenario-item {
   display: flex;
+  min-width: 0;
+  width: 100%;
   flex-direction: column;
   gap: 2px;
   padding: 8px 10px;
@@ -234,6 +237,12 @@ textarea:focus-visible {
 .shell-scenario-item:focus-visible {
   border-color: #c7d2fe;
   background: #eef2ff;
+}
+
+.shell-scenario-item strong,
+.shell-scenario-item span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .shell-scenario-item span {
@@ -758,6 +767,85 @@ textarea:focus-visible {
   transform: scale(1.2);
 }
 
+.device-marker[data-highlighted="true"] {
+  z-index: 2;
+  background: #d97a19;
+  box-shadow:
+    0 0 0 7px rgb(217 122 25 / 22%),
+    0 5px 18px rgb(18 38 51 / 38%);
+  transform: scale(1.14);
+}
+
+.device-marker[data-selected="true"][data-highlighted="true"] {
+  z-index: 3;
+  background: #e25b2f;
+  transform: scale(1.2);
+}
+
+.map-observation-marker {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px 4px 5px;
+  border: 1px solid rgb(36 67 78 / 24%);
+  border-radius: 999px;
+  color: #28424c;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 3px 10px rgb(18 38 51 / 20%);
+  font-size: 10px;
+  white-space: nowrap;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.map-observation-marker span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #28678b;
+}
+
+.map-observation-marker[data-highlighted="true"] {
+  z-index: 3;
+  color: #fff;
+  background: #d36a1f;
+  box-shadow:
+    0 0 0 5px rgb(240 138 36 / 20%),
+    0 5px 16px rgb(18 38 51 / 28%);
+  transform: scale(1.08);
+}
+
+.map-observation-marker[data-highlighted="true"] span {
+  background: #fff;
+}
+
+.map-effect-summary {
+  position: absolute;
+  z-index: 4;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: calc(100% - 86px);
+  pointer-events: none;
+}
+
+.map-effect-summary span {
+  padding: 5px 9px;
+  border: 1px solid rgb(29 60 73 / 14%);
+  border-radius: 999px;
+  color: #29434d;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 4px 14px rgb(18 38 51 / 16%);
+  backdrop-filter: blur(8px);
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .device-card {
   position: absolute;
   z-index: 4;
@@ -1205,11 +1293,11 @@ textarea:focus-visible {
 .event-kind {
   color: var(--ink);
   font-family: ui-monospace, monospace;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   line-height: 1.45;
-  word-break: break-all;
+  white-space: nowrap;
 }
 
 .event-meta {

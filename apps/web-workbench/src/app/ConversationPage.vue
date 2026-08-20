@@ -29,7 +29,19 @@ import {
   type WorkbenchUserMessage,
 } from "../conversation/conversation-store.js";
 import { locateDevice } from "../features/frontend-tools/locate-device.js";
+import { focusOn } from "../features/frontend-tools/focus-on.js";
+import { highlight } from "../features/frontend-tools/highlight.js";
+import { previewPath } from "../features/frontend-tools/preview-path.js";
+import { setLayerVisibility } from "../features/frontend-tools/set-layer-visibility.js";
 import type { Device } from "../features/map/devices.js";
+import type {
+  MapLayerRef,
+  MapTargetRef,
+} from "../features/map/map-operation.js";
+import {
+  mapTargetRefForDevice,
+  type MapTarget,
+} from "../features/map/map-targets.js";
 import MapWorkspace from "../features/map/MapWorkspace.vue";
 import { saveInspectionSnapshot } from "../inspect/inspection-snapshot.js";
 import {
@@ -84,10 +96,21 @@ const emit = defineEmits<{
 const connectionState = ref<ConnectionState>("connecting");
 const runState = ref<RunState>("idle");
 const conversations = shallowRef<LocalConversation[]>([]);
+const mapWorkspace = ref<{
+  focusOn(target: MapTarget): void;
+  highlight(targets: readonly MapTarget[]): void;
+  previewPath(target: MapTarget): Promise<void>;
+  selectDevice(device: Device | undefined): void;
+  setLayerVisibility(layerId: string, visible: boolean): Promise<void>;
+}>();
 const selectedConversationId = ref<string>();
 const inspectedTurnId = ref<string>();
 const activeController = ref<AbortController>();
+const focusedMapTarget = ref<MapTarget>();
+const highlightedMapTargets = shallowRef<readonly MapTarget[]>([]);
+const previewedMapPath = ref<MapTarget>();
 const selectedDevice = ref<Device>();
+const visibleMapLayerIds = shallowRef<readonly string[]>([]);
 const selectedAgentSource = ref(props.agentSource);
 const selectedAgentProfile = computed(() =>
   agentSourceProfile(selectedAgentSource.value),
@@ -142,12 +165,29 @@ const isInputDisabled = computed(
 
 let client: AgentTransportClient | undefined;
 let clientGeneration = 0;
+let activeFrontendToolCallIds: Set<string> | undefined;
 let activeRecorder: ObservationRecorder | undefined;
+let activeRunCorrelation:
+  | { readonly runId: string; readonly threadId: string }
+  | undefined;
 
 // Issue #205：Frontend Tool handler 在 run 进行中异步触发，
 // 通过该稳定委托把观察事实写入当前 active run 的 recorder。
 function forwardObservation(input: TurnObservationInput): void {
-  activeRecorder?.record(input);
+  if (
+    input.type === "FRONTEND_TOOL_INVOCATION" &&
+    input.toolCallId !== undefined
+  )
+    activeFrontendToolCallIds?.add(input.toolCallId);
+  activeRecorder?.record({
+    ...input,
+    ...(input.runId !== undefined || activeRunCorrelation === undefined
+      ? {}
+      : { runId: activeRunCorrelation.runId }),
+    ...(input.threadId !== undefined || activeRunCorrelation === undefined
+      ? {}
+      : { threadId: activeRunCorrelation.threadId }),
+  });
 }
 
 function applyConnectionState(next: ConnectionState): void {
@@ -184,7 +224,11 @@ async function selectAgentSource(event: Event): Promise<void> {
   conversations.value = [];
   selectedConversationId.value = undefined;
   runState.value = "idle";
+  focusedMapTarget.value = undefined;
+  highlightedMapTargets.value = [];
+  previewedMapPath.value = undefined;
   selectedDevice.value = undefined;
+  visibleMapLayerIds.value = [];
   await nextTick();
   configureRuntime();
   newConversation();
@@ -240,7 +284,10 @@ async function executeRun(
   activeController.value = controller;
   runState.value = "running";
   const recorder = createObservationRecorder();
+  const frontendToolCallIds = new Set<string>();
+  activeFrontendToolCallIds = frontendToolCallIds;
   activeRecorder = recorder;
+  activeRunCorrelation = { runId, threadId };
 
   try {
     const result = await active.run(
@@ -248,6 +295,7 @@ async function executeRun(
         ...(request.forwardedProps === undefined
           ? {}
           : { forwardedProps: request.forwardedProps }),
+        isFrontendToolCall: (toolCallId) => frontendToolCallIds.has(toolCallId),
         ...(request.message === undefined ? {} : { message: request.message }),
         observe: forwardObservation,
         ...(request.resume === undefined ? {} : { resume: request.resume }),
@@ -287,7 +335,11 @@ async function executeRun(
     );
     runState.value = cancelled ? "cancelled" : "failed";
   } finally {
-    if (activeRecorder === recorder) activeRecorder = undefined;
+    if (activeRecorder === recorder) {
+      activeFrontendToolCallIds = undefined;
+      activeRecorder = undefined;
+      activeRunCorrelation = undefined;
+    }
     if (activeController.value === controller)
       activeController.value = undefined;
   }
@@ -424,8 +476,66 @@ function selectConversation(conversationId: string): void {
 function handleLocateDevice(deviceId: string): string {
   return JSON.stringify(
     locateDevice({ deviceId }, (device) => {
+      mapWorkspace.value?.selectDevice(device);
       selectedDevice.value = device;
+      const target = mapTargetRefForDevice(device);
+      handleFocusOn(target);
+      handleHighlight([target]);
     }),
+  );
+}
+
+function handleFocusOn(target: MapTargetRef): string {
+  return JSON.stringify(
+    focusOn({ target }, (resolvedTarget) => {
+      if (mapWorkspace.value === undefined)
+        throw new Error("Map surface is not ready.");
+      mapWorkspace.value.focusOn(resolvedTarget);
+      focusedMapTarget.value = resolvedTarget;
+    }),
+  );
+}
+
+function handleHighlight(targets: readonly MapTargetRef[]): string {
+  return JSON.stringify(
+    highlight({ targets }, (resolvedTargets) => {
+      if (mapWorkspace.value === undefined)
+        throw new Error("Map surface is not ready.");
+      mapWorkspace.value.highlight(resolvedTargets);
+      highlightedMapTargets.value = resolvedTargets;
+    }),
+  );
+}
+
+async function handlePreviewPath(target: MapTargetRef): Promise<string> {
+  return JSON.stringify(
+    await previewPath({ target }, async (resolvedTarget) => {
+      if (mapWorkspace.value === undefined)
+        throw new Error("Map surface is not ready.");
+      await mapWorkspace.value.previewPath(resolvedTarget);
+      previewedMapPath.value = resolvedTarget;
+    }),
+  );
+}
+
+async function handleSetLayerVisibility(
+  layer: MapLayerRef,
+  visible: boolean,
+): Promise<string> {
+  return JSON.stringify(
+    await setLayerVisibility(
+      { layer, visible },
+      async (layerId, nextVisible) => {
+        if (mapWorkspace.value === undefined)
+          throw new Error("Map surface is not ready.");
+        await mapWorkspace.value.setLayerVisibility(layerId, nextVisible);
+        visibleMapLayerIds.value = nextVisible
+          ? [...new Set([...visibleMapLayerIds.value, layerId])]
+          : visibleMapLayerIds.value.filter(
+              (candidate) => candidate !== layerId,
+            );
+      },
+    ),
   );
 }
 
@@ -447,7 +557,10 @@ onBeforeUnmount(() => {
     :a2ui-enabled="selectedAgentProfile.a2uiCatalogEnabled"
     :agent-id="selectedAgentProfile.agentId"
     :frontend-tools-enabled="selectedAgentProfile.frontendTools"
-    :locate-device="handleLocateDevice"
+    :focus-on="handleFocusOn"
+    :highlight="handleHighlight"
+    :preview-path="handlePreviewPath"
+    :set-layer-visibility="handleSetLayerVisibility"
     :observe="forwardObservation"
     :runtime-url="endpoints.agUi"
   >
@@ -512,7 +625,12 @@ onBeforeUnmount(() => {
       </main>
 
       <MapWorkspace
+        ref="mapWorkspace"
+        :focused-target="focusedMapTarget"
+        :highlighted-targets="highlightedMapTargets"
+        :previewed-path="previewedMapPath"
         :selected-device="selectedDevice"
+        :visible-layer-ids="visibleMapLayerIds"
         @locate-device="handleLocateDevice"
       />
 

@@ -13,6 +13,11 @@ import {
   inspectionSummaryPlatformOperations,
 } from "../src/scenarios/inspection-summary-platform-a2ui.js";
 import { inspectionSummaryStructuredResult } from "../src/scenarios/inspection-summary-structured.js";
+import {
+  MAP_PATROL_ROUTE_REVIEW_MESSAGE,
+  MAP_PATROL_ROUTE_REVIEW_RESULT,
+  MAP_PATROL_ROUTE_REVIEW_STEPS,
+} from "../src/scenarios/map-patrol-route-review.js";
 
 interface AguiEvent {
   readonly type: string;
@@ -25,14 +30,17 @@ afterEach(async () => {
   await Promise.all(runningServers.splice(0).map((server) => server.stop()));
 });
 
-async function postMessage(url: string, message: string): Promise<AguiEvent[]> {
+async function postMessages(
+  url: string,
+  messages: readonly Record<string, unknown>[],
+): Promise<AguiEvent[]> {
   const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       threadId: "thread-test",
       runId: "run-test",
-      messages: [{ id: "message-test", role: "user", content: message }],
+      messages,
       state: {},
       tools: [],
       context: [],
@@ -48,6 +56,49 @@ async function postMessage(url: string, message: string): Promise<AguiEvent[]> {
     .split("\n")
     .filter((line) => line.startsWith("data: "))
     .map((line) => JSON.parse(line.slice("data: ".length)) as AguiEvent);
+}
+
+async function postMessage(url: string, message: string): Promise<AguiEvent[]> {
+  return postMessages(url, [
+    { id: "message-test", role: "user", content: message },
+  ]);
+}
+
+function appendCompletedToolCall(
+  messages: Record<string, unknown>[],
+  events: readonly AguiEvent[],
+  result: Record<string, unknown>,
+): string {
+  const start = events.find((event) => event.type === "TOOL_CALL_START");
+  const args = events.find((event) => event.type === "TOOL_CALL_ARGS");
+  expect(start?.toolCallId).toEqual(expect.any(String));
+  expect(start?.toolCallName).toEqual(expect.any(String));
+  expect(args?.delta).toEqual(expect.any(String));
+  if (typeof start?.toolCallId !== "string")
+    throw new Error("TOOL_CALL_START did not include a toolCallId");
+  messages.push(
+    {
+      id: `assistant-${messages.length}`,
+      role: "assistant",
+      toolCalls: [
+        {
+          function: {
+            arguments: args?.delta,
+            name: start?.toolCallName,
+          },
+          id: start?.toolCallId,
+          type: "function",
+        },
+      ],
+    },
+    {
+      content: JSON.stringify(result),
+      id: `tool-${messages.length}`,
+      role: "tool",
+      toolCallId: start?.toolCallId,
+    },
+  );
+  return start.toolCallId;
 }
 
 async function runMessage(message: string): Promise<AguiEvent[]> {
@@ -199,11 +250,11 @@ describe("createAguiMockServer", () => {
     expect(
       locateEvents.find((event) => event.type === "TOOL_CALL_START"),
     ).toMatchObject({
-      toolCallName: "locateDevice",
+      toolCallName: "focusOn",
     });
   });
 
-  it("replays locate-device with the official AG-UI tool-call sequence", async () => {
+  it("migrates the locate intent to the official map tool-call sequence", async () => {
     const events = await runMessage("定位无人机 01");
 
     expect(events.map((event) => event.type)).toEqual([
@@ -216,63 +267,133 @@ describe("createAguiMockServer", () => {
     expect(
       events.find((event) => event.type === "TOOL_CALL_START"),
     ).toMatchObject({
-      toolCallName: "locateDevice",
+      toolCallName: "focusOn",
     });
     expect(
       events.find((event) => event.type === "TOOL_CALL_ARGS"),
     ).toMatchObject({
-      delta: '{"deviceId":"01"}',
+      delta: '{"target":{"featureId":"01","layerId":"devices"}}',
     });
   });
 
-  it("finishes locate-device after the browser returns the frontend tool result", async () => {
+  it("preserves locate behavior through focusOn and highlight results", async () => {
     const server = createAguiMockServer({ port: 0 });
     runningServers.push(server);
     const url = await server.start();
-    const firstResponse = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        threadId: "thread-test",
-        runId: "run-first",
-        messages: [{ id: "user-1", role: "user", content: "定位无人机 01" }],
-      }),
-    });
-    const firstEvents = (await firstResponse.text())
-      .split("\n")
-      .filter((line) => line.startsWith("data: "))
-      .map((line) => JSON.parse(line.slice("data: ".length)) as AguiEvent);
-    const toolCallId = firstEvents.find(
-      (event) => event.type === "TOOL_CALL_START",
-    )?.toolCallId;
-    expect(typeof toolCallId).toBe("string");
+    const messages: Record<string, unknown>[] = [
+      { id: "user-1", role: "user", content: "定位无人机 01" },
+    ];
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        threadId: "thread-test",
-        runId: "run-follow-up",
-        messages: [
-          { id: "user-1", role: "user", content: "定位无人机 01" },
-          {
-            id: "tool-1",
-            role: "tool",
-            toolCallId,
-            content: '{"status":"located","device":{"deviceId":"01"}}',
-          },
-        ],
-      }),
+    const focusEvents = await postMessages(url, messages);
+    appendCompletedToolCall(messages, focusEvents, {
+      affectedFeatureIds: ["01"],
+      status: "completed",
     });
-    const events = (await response.text())
-      .split("\n")
-      .filter((line) => line.startsWith("data: "))
-      .map((line) => JSON.parse(line.slice("data: ".length)) as AguiEvent);
+    const highlightEvents = await postMessages(url, messages);
+    expect(highlightEvents.map((event) => event.type)).toEqual([
+      "RUN_STARTED",
+      "TOOL_CALL_RESULT",
+      "TOOL_CALL_START",
+      "TOOL_CALL_ARGS",
+      "TOOL_CALL_END",
+      "RUN_FINISHED",
+    ]);
+    expect(
+      highlightEvents.find((event) => event.type === "TOOL_CALL_START"),
+    ).toMatchObject({ toolCallName: "highlight" });
 
-    expect(events.map((event) => event.type)).toContain("TEXT_MESSAGE_CONTENT");
-    expect(events.some((event) => event.type === "CUSTOM")).toBe(false);
-    expect(events.some((event) => event.type === "TOOL_CALL_START")).toBe(
+    appendCompletedToolCall(messages, highlightEvents, {
+      affectedFeatureIds: ["01"],
+      status: "completed",
+    });
+    const finalEvents = await postMessages(url, messages);
+    expect(finalEvents.map((event) => event.type)).toContain(
+      "TEXT_MESSAGE_CONTENT",
+    );
+    expect(finalEvents.some((event) => event.type === "CUSTOM")).toBe(false);
+    expect(finalEvents.some((event) => event.type === "TOOL_CALL_START")).toBe(
       false,
     );
+  });
+
+  it("runs patrol scenario A through four map intents, then assistant text", async () => {
+    const server = createAguiMockServer({ port: 0 });
+    runningServers.push(server);
+    const url = await server.start();
+    const messages: Record<string, unknown>[] = [
+      {
+        id: "user-map-analysis",
+        role: "user",
+        content: MAP_PATROL_ROUTE_REVIEW_MESSAGE,
+      },
+    ];
+    let previousResult:
+      | { readonly content: string; readonly toolCallId: string }
+      | undefined;
+
+    for (const [index, step] of MAP_PATROL_ROUTE_REVIEW_STEPS.entries()) {
+      const events = await postMessages(url, messages);
+      expect(events.map((event) => event.type)).toEqual(
+        index === 0
+          ? [
+              "RUN_STARTED",
+              "TOOL_CALL_START",
+              "TOOL_CALL_ARGS",
+              "TOOL_CALL_END",
+              "RUN_FINISHED",
+            ]
+          : [
+              "RUN_STARTED",
+              "TOOL_CALL_RESULT",
+              "TOOL_CALL_START",
+              "TOOL_CALL_ARGS",
+              "TOOL_CALL_END",
+              "RUN_FINISHED",
+            ],
+      );
+      if (previousResult !== undefined) {
+        expect(
+          events.find((event) => event.type === "TOOL_CALL_RESULT"),
+        ).toMatchObject({
+          content: previousResult.content,
+          role: "tool",
+          toolCallId: previousResult.toolCallId,
+        });
+      }
+      expect(
+        events.find((event) => event.type === "TOOL_CALL_START"),
+      ).toMatchObject({ toolCallName: step.toolName });
+      expect(
+        events.find((event) => event.type === "TOOL_CALL_ARGS"),
+      ).toMatchObject({ delta: JSON.stringify(step.args) });
+      const completedResult = {
+        ...step.expected,
+        status: "completed",
+      };
+      previousResult = {
+        content: JSON.stringify(completedResult),
+        toolCallId: appendCompletedToolCall(messages, events, completedResult),
+      };
+    }
+
+    const finalEvents = await postMessages(url, messages);
+    expect(finalEvents.map((event) => event.type)).toEqual([
+      "RUN_STARTED",
+      "TOOL_CALL_RESULT",
+      "TEXT_MESSAGE_START",
+      "TEXT_MESSAGE_CONTENT",
+      "TEXT_MESSAGE_END",
+      "RUN_FINISHED",
+    ]);
+    expect(
+      finalEvents.find((event) => event.type === "TOOL_CALL_RESULT"),
+    ).toMatchObject({
+      content: previousResult?.content,
+      role: "tool",
+      toolCallId: previousResult?.toolCallId,
+    });
+    expect(
+      finalEvents.find((event) => event.type === "TEXT_MESSAGE_CONTENT"),
+    ).toMatchObject({ delta: MAP_PATROL_ROUTE_REVIEW_RESULT });
   });
 });

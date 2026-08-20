@@ -12,7 +12,13 @@ function wait(milliseconds) {
 }
 
 export async function createMockUpstreamProxy({ host, port, upstreamUrl }) {
-  const probe = { advertised: false, continuations: 0, result: "", runs: 0 };
+  const probe = {
+    advertised: false,
+    advertisedToolNames: [],
+    continuations: 0,
+    result: "",
+    runs: 0,
+  };
   let timeoutAttempts = 0;
 
   const server = createServer(async (request, response) => {
@@ -31,6 +37,9 @@ export async function createMockUpstreamProxy({ host, port, upstreamUrl }) {
     probe.advertised ||= (body.tools ?? []).some(
       (tool) => tool.name === "show_workbench_status",
     );
+    probe.advertisedToolNames = [
+      ...new Set((body.tools ?? []).map((tool) => tool.name)),
+    ];
     if (
       lastMessage?.role === "tool" &&
       String(lastMessage.content).includes('"capability":"frontend-tool"')
@@ -64,6 +73,7 @@ export async function createMockUpstreamProxy({ host, port, upstreamUrl }) {
     probe,
     reset() {
       probe.advertised = false;
+      probe.advertisedToolNames = [];
       probe.continuations = 0;
       probe.result = "";
       probe.runs = 0;

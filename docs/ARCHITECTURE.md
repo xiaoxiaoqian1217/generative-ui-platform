@@ -31,9 +31,9 @@ CopilotKit Frontend
   ↓ AG-UI
 AGUIMock
   ↓
-Frontend Tool: locateDevice
+Frontend Tools: setLayerVisibility / focusOn / highlight / previewPath
   ↓
-MapLibre + DeviceCard
+MapLibre persistent surface
 ```
 
 该场景已经证明：

@@ -490,12 +490,22 @@ test("Frontend Tool is advertised, executed in the browser, and continued throug
   const response = await request.get("/__control__/frontend-tool-probe");
   const probe = await response.json();
   expect(probe.advertised).toBe(true);
+  expect(probe.advertisedToolNames).toEqual(
+    expect.arrayContaining([
+      "focusOn",
+      "highlight",
+      "previewPath",
+      "setLayerVisibility",
+      "show_workbench_status",
+    ]),
+  );
+  expect(probe.advertisedToolNames).not.toContain("locateDevice");
   expect(probe.result).toContain('"capability":"frontend-tool"');
   expect(probe.result).toContain('"surface":"web-workbench"');
   expect(probe.result).toContain('"status":"connected"');
 });
 
-test("AGUIMock locateDevice drives the independent GIS business surface", async ({
+test("the migrated locate intent composes map-domain tools on the GIS surface", async ({
   page,
 }) => {
   await page.goto("/");
@@ -509,14 +519,225 @@ test("AGUIMock locateDevice drives the independent GIS business surface", async 
   await conversationSend(page).click();
 
   await expect(page.getByTestId("device-marker-01")).toHaveAttribute(
-    "data-selected",
+    "data-highlighted",
     "true",
   );
-  await expect(page.getByTestId("device-card")).toContainText("无人机 01");
-  await expect(page.getByTestId("device-card")).toContainText("82%");
+  await expect(page.getByTestId("map-view")).toHaveAttribute(
+    "data-focused-feature-id",
+    "01",
+  );
+  await expect(page.getByTestId("map-view")).toHaveAttribute(
+    "data-center",
+    "116.3974,39.9093",
+  );
+  await expect(page.getByTestId("map-view")).toHaveAttribute("data-zoom", "14");
+  await expect(page.getByTestId("device-card")).toHaveCount(0);
   await expect(page.getByTestId("markdown-result")).toContainText(
     "已定位无人机 01",
   );
+});
+
+test("scenario A applies the patrol map intents to one persistent surface", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const mapView = page.getByTestId("map-view");
+  await expect(mapView).toBeVisible();
+
+  await page.getByRole("button", { name: /北侧通道巡逻方案/ }).click();
+
+  await expect(page.getByTestId("markdown-result")).toContainText(
+    "限制图层已显示",
+  );
+  expect(
+    await page
+      .getByTestId("quick-scenarios")
+      .evaluate((element) => element.scrollWidth - element.clientWidth),
+  ).toBe(0);
+  await expect(mapView).toHaveCount(1);
+  await expect(mapView).toHaveAttribute(
+    "data-focused-feature-id",
+    "north-corridor",
+  );
+  await expect(mapView).toHaveAttribute(
+    "data-highlighted-feature-ids",
+    "east-ridge,under-bridge,checkpoint-b,north-restricted-zone",
+  );
+  await expect(mapView).toHaveAttribute("data-center", "116.452,39.923");
+  await expect(mapView).toHaveAttribute("data-zoom", "12.8");
+  await expect(mapView).toHaveAttribute(
+    "data-visible-layer-ids",
+    "operational-constraints",
+  );
+  await expect(mapView).toHaveAttribute(
+    "data-previewed-path-feature-id",
+    "patrol-path-a",
+  );
+  await expect(page.getByTestId("device-marker-01")).toHaveAttribute(
+    "data-highlighted",
+    "false",
+  );
+  for (const featureId of ["east-ridge", "under-bridge", "checkpoint-b"])
+    await expect(page.getByTestId(`map-feature-${featureId}`)).toHaveAttribute(
+      "data-highlighted",
+      "true",
+    );
+  await expect(page.getByTestId("map-effect-summary")).toContainText(
+    "4 处高亮",
+  );
+  await expect(page.getByTestId("map-effect-summary")).toContainText(
+    "路线预览",
+  );
+
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  const timeline = page.getByTestId("swimlane-timeline");
+  const inspectedRunId =
+    (await page.getByTestId("inspect-turn-run-id").textContent()) ?? "";
+  const inspectedThreadId =
+    (await page.getByTestId("inspect-turn-thread-id").textContent()) ?? "";
+  expect(inspectedRunId).not.toBe("");
+  expect(inspectedThreadId).not.toBe("");
+  await expect(timeline.locator("[data-type='TOOL_CALL_START']")).toHaveCount(
+    4,
+  );
+  await expect(timeline.locator("[data-type='TOOL_CALL_RESULT']")).toHaveCount(
+    4,
+  );
+  await expect(
+    timeline.locator("[data-type='FRONTEND_TOOL_INVOCATION']"),
+  ).toHaveCount(4);
+  const frontendResults = timeline.locator(
+    "[data-type='FRONTEND_TOOL_RESULT']",
+  );
+  await expect(frontendResults).toHaveCount(4);
+
+  const protocolNodes = timeline.locator(
+    "[data-type='TOOL_CALL_START'], [data-type='TOOL_CALL_RESULT']",
+  );
+  await expect(protocolNodes).toHaveCount(8);
+  expect(
+    await protocolNodes.evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("data-type")),
+    ),
+  ).toEqual([
+    "TOOL_CALL_START",
+    "TOOL_CALL_RESULT",
+    "TOOL_CALL_START",
+    "TOOL_CALL_RESULT",
+    "TOOL_CALL_START",
+    "TOOL_CALL_RESULT",
+    "TOOL_CALL_START",
+    "TOOL_CALL_RESULT",
+  ]);
+
+  const expectedSteps = [
+    {
+      affectedIds: ["operational-constraints"],
+      argumentIds: ["operational-constraints"],
+      name: "setLayerVisibility",
+    },
+    {
+      affectedIds: ["north-corridor"],
+      argumentIds: ["north-corridor"],
+      name: "focusOn",
+    },
+    {
+      affectedIds: [
+        "east-ridge",
+        "under-bridge",
+        "checkpoint-b",
+        "north-restricted-zone",
+      ],
+      argumentIds: [
+        "east-ridge",
+        "under-bridge",
+        "checkpoint-b",
+        "north-restricted-zone",
+      ],
+      name: "highlight",
+    },
+    {
+      affectedIds: ["patrol-path-a"],
+      argumentIds: ["patrol-path-a"],
+      name: "previewPath",
+    },
+  ] as const;
+  const toolCallStarts = timeline.locator("[data-type='TOOL_CALL_START']");
+  const toolCallArgs = timeline.locator("[data-type='TOOL_CALL_ARGS']");
+  const standardResults = timeline.locator("[data-type='TOOL_CALL_RESULT']");
+  const protocolToolCallIds: string[] = [];
+  for (const [index, expectedStep] of expectedSteps.entries()) {
+    await toolCallStarts.nth(index).click();
+    const detail = page.getByTestId("inspect-detail");
+    const startToolCallId =
+      (await detail.getByTestId("inspect-tool-call-id").textContent()) ?? "";
+    expect(startToolCallId).not.toBe("");
+    protocolToolCallIds.push(startToolCallId);
+    await expect(detail.getByTestId("inspect-run-id")).toHaveText(
+      inspectedRunId,
+    );
+    await expect(detail.getByTestId("inspect-thread-id")).toHaveText(
+      inspectedThreadId,
+    );
+    await expect(detail).toContainText(expectedStep.name);
+
+    await toolCallArgs.nth(index).click();
+    await expect(detail.getByTestId("inspect-tool-call-id")).toHaveText(
+      startToolCallId,
+    );
+    for (const id of expectedStep.argumentIds)
+      await expect(detail).toContainText(id);
+
+    await standardResults.nth(index).click();
+    await expect(detail.getByTestId("inspect-tool-call-id")).toHaveText(
+      startToolCallId,
+    );
+    await expect(detail.getByTestId("inspect-run-id")).toHaveText(
+      inspectedRunId,
+    );
+    await expect(detail.getByTestId("inspect-thread-id")).toHaveText(
+      inspectedThreadId,
+    );
+    await expect(page.getByTestId("inspect-payload")).toContainText(
+      "completed",
+    );
+    for (const id of expectedStep.affectedIds)
+      await expect(page.getByTestId("inspect-payload")).toContainText(id);
+  }
+
+  const observedToolNames: string[] = [];
+  const observedToolCallIds = new Set<string>();
+  for (let index = 0; index < expectedSteps.length; index += 1) {
+    await frontendResults.nth(index).click();
+    const detail = page.getByTestId("inspect-detail");
+    await expect(detail.getByTestId("inspect-run-id")).toHaveText(
+      inspectedRunId,
+    );
+    await expect(detail.getByTestId("inspect-thread-id")).toHaveText(
+      inspectedThreadId,
+    );
+    const toolCallId = await detail
+      .getByTestId("inspect-tool-call-id")
+      .textContent();
+    expect(toolCallId).toBeTruthy();
+    observedToolCallIds.add(toolCallId ?? "");
+    const requestText =
+      (await page.getByTestId("inspect-exchange-request").textContent()) ?? "";
+    const observedName = expectedSteps
+      .map((step) => step.name)
+      .find((name) => requestText.includes(name));
+    expect(observedName).toBeDefined();
+    observedToolNames.push(observedName ?? "");
+    await expect(page.getByTestId("inspect-exchange-response")).toContainText(
+      "completed",
+    );
+    expect(
+      await timeline.locator("[data-correlated='true']").count(),
+    ).toBeGreaterThanOrEqual(5);
+  }
+  expect(observedToolNames).toEqual(expectedSteps.map((step) => step.name));
+  expect(observedToolCallIds.size).toBe(4);
+  expect([...observedToolCallIds]).toEqual(protocolToolCallIds);
 });
 
 test("AGUIMock serves the connection probe from the unified scenario server", async ({
@@ -535,7 +756,7 @@ test("AGUIMock serves the connection probe from the unified scenario server", as
   );
 });
 
-test("the GIS workspace can locate its test device manually", async ({
+test("legacy locateDevice compatibility preserves its full observable terminal state", async ({
   page,
 }) => {
   await page.goto("/");
@@ -547,7 +768,21 @@ test("the GIS workspace can locate its test device manually", async ({
     "data-selected",
     "true",
   );
+  await expect(page.getByTestId("device-marker-01")).toHaveAttribute(
+    "data-highlighted",
+    "true",
+  );
+  await expect(page.getByTestId("map-view")).toHaveAttribute(
+    "data-focused-feature-id",
+    "01",
+  );
+  await expect(page.getByTestId("map-view")).toHaveAttribute(
+    "data-center",
+    "116.3974,39.9093",
+  );
+  await expect(page.getByTestId("map-view")).toHaveAttribute("data-zoom", "14");
   await expect(page.getByTestId("device-card")).toContainText("无人机 01");
+  await expect(page.getByTestId("device-card")).toContainText("82%");
 });
 
 test("stop cancels a turn", async ({ page }) => {
@@ -736,7 +971,7 @@ test("SACS RUN_ERROR enters the bounded failed state", async ({ page }) => {
   );
 });
 
-test("Inspect shows the AGUIMock Frontend Tool loop with real correlation", async ({
+test("Inspect shows the migrated locate loop with real correlation", async ({
   page,
 }) => {
   await page.goto("/");
@@ -765,19 +1000,19 @@ test("Inspect shows the AGUIMock Frontend Tool loop with real correlation", asyn
     timeline.locator("[data-type='FRONTEND_TOOL_INVOCATION']").first(),
   ).toBeVisible();
 
-  const result = timeline.locator("[data-type='FRONTEND_TOOL_RESULT']").first();
-  await expect(result).toBeVisible();
+  const results = timeline.locator("[data-type='FRONTEND_TOOL_RESULT']");
+  await expect(results).toHaveCount(2);
+  const result = results.last();
   await expect(result).toHaveAttribute("data-status", "ok");
-  await expect(result).toContainText("ms");
 
   await result.click();
   const detail = page.getByTestId("inspect-detail");
   // 请求 / 返回配对：invocation args 与 result 真实成对呈现
   await expect(page.getByTestId("inspect-exchange-request")).toContainText(
-    "locateDevice",
+    "highlight",
   );
   await expect(page.getByTestId("inspect-exchange-response")).toContainText(
-    "located",
+    "completed",
   );
   await expect(detail).toContainText("toolCall");
 
@@ -787,7 +1022,7 @@ test("Inspect shows the AGUIMock Frontend Tool loop with real correlation", asyn
     .count();
   expect(correlatedCount).toBeGreaterThanOrEqual(2);
   await expect(
-    timeline.locator("[data-type='TOOL_CALL_END']").first(),
+    timeline.locator("[data-type='TOOL_CALL_END']").last(),
   ).toHaveAttribute("data-correlated", "true");
 });
 
