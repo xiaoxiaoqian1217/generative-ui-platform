@@ -40,6 +40,7 @@
     "README",
     "Runtime",
     "Schema",
+    "SDAR",
     "Surface",
     "tsup",
     "Turborepo",

@@ -248,6 +248,9 @@ describe("thin CopilotKit Runtime", () => {
     expect(loadRuntimeConfig({})).toEqual({
       agUiMockUrl: "http://127.0.0.1:4800/",
       sacsAgUiUrl: "http://127.0.0.1:3000/ag-ui",
+      scenarioDraftLlmBaseUrl: "https://openrouter.ai/api/v1",
+      scenarioDraftLlmModel: "openai/gpt-4.1-mini",
+      scenarioLabEnabled: false,
       secondaryLlmBaseUrl: "https://openrouter.ai/api/v1",
       secondaryLlmModel: "openai/gpt-4.1-mini",
     });
@@ -260,6 +263,50 @@ describe("thin CopilotKit Runtime", () => {
     expect(() =>
       loadRuntimeConfig({ SACS_AG_UI_SERVICE_KEY: sacsServiceKey }),
     ).toThrow("SACS_CREDENTIALS_INCOMPLETE");
+  });
+
+  it("requires explicit Scenario Lab enablement and separate authoring config", () => {
+    expect(
+      loadRuntimeConfig({
+        SCENARIO_DRAFT_LLM_API_KEY: "authoring-key",
+        SCENARIO_DRAFT_LLM_BASE_URL: "https://authoring.example.test/v1",
+        SCENARIO_DRAFT_LLM_MODEL: "fixture-author",
+        SCENARIO_LAB_ENABLED: "true",
+      }),
+    ).toMatchObject({
+      scenarioDraftLlmApiKey: "authoring-key",
+      scenarioDraftLlmBaseUrl: "https://authoring.example.test/v1",
+      scenarioDraftLlmModel: "fixture-author",
+      scenarioLabEnabled: true,
+    });
+    expect(() =>
+      loadRuntimeConfig({ SCENARIO_LAB_ENABLED: "sometimes" }),
+    ).toThrow("SCENARIO_LAB_ENABLED_INVALID");
+  });
+
+  it("does not mount Scenario Lab unless explicitly enabled", async () => {
+    const baseConfig = {
+      agUiMockUrl: "http://mock.example.test",
+      sacsAgUiUrl: "http://sacs.example.test/ag-ui",
+    };
+    const disabled = createRuntimeHandler(baseConfig);
+    const disabledResponse = await disabled(
+      new Request("http://runtime.example.test/api/copilotkit/dev/scenarios"),
+    );
+    expect(disabledResponse.status).toBe(404);
+
+    const enabled = createRuntimeHandler({
+      ...baseConfig,
+      scenarioLabEnabled: true,
+    });
+    const enabledResponse = await enabled(
+      new Request("http://runtime.example.test/api/copilotkit/dev/scenarios"),
+    );
+    expect(enabledResponse.status).toBe(200);
+    expect(await enabledResponse.json()).toMatchObject({
+      capabilities: { drafting: false },
+      scenarios: expect.any(Array),
+    });
   });
 
   it("registers exactly the two Business Agent sources", async () => {

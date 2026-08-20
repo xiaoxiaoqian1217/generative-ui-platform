@@ -55,9 +55,7 @@ function labRequest(path: string, init: RequestInit = {}): Request {
 
 afterEach(async () => {
   await Promise.all(
-    tempDirs
-      .splice(0)
-      .map((dir) => rm(dir, { force: true, recursive: true })),
+    tempDirs.splice(0).map((dir) => rm(dir, { force: true, recursive: true })),
   );
 });
 
@@ -119,6 +117,20 @@ describe("Scenario Lab endpoints", () => {
       }),
     );
     expect(invalidInput?.status).toBe(400);
+
+    const missingFacts = await handler(
+      labRequest(`${SCENARIO_LAB_BASE_PATH}/summary`, {
+        body: JSON.stringify({
+          expectedFacts: { facts: [] },
+          presentationInput: summaryInput,
+        }),
+        method: "PUT",
+      }),
+    );
+    expect(missingFacts?.status).toBe(400);
+    expect(await missingFacts?.json()).toEqual({
+      error: "EXPECTED_FACTS_REQUIRED",
+    });
 
     const invalidName = await handler(
       labRequest(`${SCENARIO_LAB_BASE_PATH}/Summary_Bad`, {
@@ -216,5 +228,89 @@ describe("Scenario Lab endpoints", () => {
       }),
     );
     expect(response?.status).toBe(400);
+  });
+
+  it("drafts scenario content from a natural language description", async () => {
+    const handler = createScenarioLabHandler({
+      draftScenarioFixture: async (description) => ({
+        description,
+        failed: 1,
+        total: 3,
+      }),
+      scenariosDir: await tempScenariosDir(),
+    });
+
+    const response = await handler(
+      labRequest(`${SCENARIO_LAB_BASE_PATH}/draft`, {
+        body: JSON.stringify({ description: "三台设备的巡检结果" }),
+        method: "POST",
+      }),
+    );
+    const body = (await response?.json()) as {
+      content: Record<string, unknown>;
+      ok: boolean;
+    };
+
+    expect(body.ok).toBe(true);
+    expect(body.content).toMatchObject({ failed: 1, total: 3 });
+  });
+
+  it("rejects drafting without a description or without a configured LLM", async () => {
+    const scenariosDir = await tempScenariosDir();
+    const withDrafter = createScenarioLabHandler({
+      draftScenarioFixture: async () => ({ failed: 1, ok: 2, total: 3 }),
+      scenariosDir,
+    });
+    const missingDescription = await withDrafter(
+      labRequest(`${SCENARIO_LAB_BASE_PATH}/draft`, {
+        body: JSON.stringify({ description: "   " }),
+        method: "POST",
+      }),
+    );
+    expect(missingDescription?.status).toBe(400);
+
+    const withoutDrafter = createScenarioLabHandler({ scenariosDir });
+    const unavailable = await withoutDrafter(
+      labRequest(`${SCENARIO_LAB_BASE_PATH}/draft`, {
+        body: JSON.stringify({ description: "巡检结果" }),
+        method: "POST",
+      }),
+    );
+    const body = (await unavailable?.json()) as {
+      error: { code: string };
+      ok: boolean;
+    };
+    expect(unavailable?.status).toBe(503);
+    expect(body.ok).toBe(false);
+    expect(body.error.code).toBe("SCENARIO_DRAFT_UNAVAILABLE");
+  });
+
+  it("maps fixture authoring failures without using A2UI error semantics", async () => {
+    const handler = createScenarioLabHandler({
+      draftScenarioFixture: async () => {
+        throw new Error("SCENARIO_DRAFT_LLM_OUTPUT_NOT_JSON");
+      },
+      scenariosDir: await tempScenariosDir(),
+    });
+
+    const response = await handler(
+      labRequest(`${SCENARIO_LAB_BASE_PATH}/draft`, {
+        body: JSON.stringify({ description: "巡检结果" }),
+        method: "POST",
+      }),
+    );
+    const body = (await response?.json()) as {
+      error: { code: string; message: string };
+      ok: boolean;
+    };
+
+    expect(response?.status).toBe(502);
+    expect(body).toEqual({
+      error: {
+        code: "SCENARIO_DRAFT_FAILED",
+        message: "SCENARIO_DRAFT_LLM_OUTPUT_NOT_JSON",
+      },
+      ok: false,
+    });
   });
 });

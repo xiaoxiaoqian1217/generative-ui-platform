@@ -70,11 +70,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isJsonValue(value: unknown): value is JsonValue {
-  if (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "boolean"
-  )
+  if (value === null || typeof value === "string" || typeof value === "boolean")
     return true;
   if (typeof value === "number") return Number.isFinite(value);
   if (Array.isArray(value)) return value.every(isJsonValue);

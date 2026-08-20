@@ -50,6 +50,21 @@ When the key is omitted, Dynamic Eligibility does not hold: an explicit dynamic 
 The model only answers through the catalog-constrained `render_a2ui` structured output; generated components outside the Final Catalog are rejected before painting.
 The Secondary LLM credential stays in the Runtime process and never reaches the browser bundle.
 
+## Dev-only Scenario Lab
+
+Scenario Lab is disabled by default and is mounted only when `SCENARIO_LAB_ENABLED=true`.
+Do not enable it on an unauthenticated or Internet-facing Runtime.
+The endpoint can read and write repository Scenario files and can invoke configured models, so the `/dev` path name is not itself an access-control mechanism.
+
+Scenario fixture authoring is separate from the Secondary Presentation LLM.
+Configure it with `SCENARIO_DRAFT_LLM_BASE_URL`, `SCENARIO_DRAFT_LLM_MODEL`, `SCENARIO_DRAFT_LLM_API_KEY`, and optionally `SCENARIO_DRAFT_LLM_TIMEOUT_MS`.
+The same provider or model may be selected explicitly, but the authoring adapter never reads `A2UI_SECONDARY_LLM_*` as a fallback.
+It returns schema-constrained synthetic fixture content for human review and never claims that the content came from a Business Agent.
+
+An AI-authored draft remains an unsaved editor buffer.
+Saving requires at least one manually written expected fact, and the Workbench requires an explicit review acknowledgement for AI-authored content.
+The server also rejects Scenario files with an empty expected-facts list.
+
 This configured principal is appropriate only for a single-user or trusted shared Workbench deployment.
 Before exposing Workbench to multiple users, authenticate requests at the Runtime boundary and derive the JWT subject from that verified server-side identity.
 

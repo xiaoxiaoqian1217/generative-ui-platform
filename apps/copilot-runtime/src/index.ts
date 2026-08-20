@@ -7,6 +7,12 @@ import {
   createCopilotRuntimeHandler,
 } from "@copilotkit/runtime/v2";
 import { DynamicA2uiPresentationPolicy } from "./presentation-policy.js";
+import {
+  createScenarioFixtureDrafter,
+  DEFAULT_SCENARIO_DRAFT_BASE_URL,
+  DEFAULT_SCENARIO_DRAFT_MODEL,
+  type DraftScenarioFixture,
+} from "./scenario-fixture-drafter.js";
 import { createScenarioLabHandler } from "./scenario-lab.js";
 import {
   createSecondaryLlmInvokeSubagent,
@@ -26,6 +32,11 @@ export interface RuntimeConfig {
   readonly sacsPrincipalId?: string;
   readonly sacsPrincipalRole?: "admin" | "user";
   readonly sacsServiceKey?: string;
+  readonly scenarioDraftLlmApiKey?: string;
+  readonly scenarioDraftLlmBaseUrl?: string;
+  readonly scenarioDraftLlmModel?: string;
+  readonly scenarioDraftLlmTimeoutMs?: number;
+  readonly scenarioLabEnabled?: boolean;
   readonly secondaryLlmApiKey?: string;
   readonly secondaryLlmBaseUrl?: string;
   readonly secondaryLlmModel?: string;
@@ -33,6 +44,11 @@ export interface RuntimeConfig {
 }
 
 export interface RuntimeHandlerOptions {
+  /**
+   * Test injection point for the dev-only Scenario fixture authoring adapter.
+   * Production wiring uses the independent `SCENARIO_DRAFT_LLM_*` config.
+   */
+  readonly draftScenarioFixture?: DraftScenarioFixture;
   /**
    * Test injection point for the deterministic Secondary LLM double
    * (Issue #210 CI strategy); when omitted, the OpenAI-compatible client
@@ -187,18 +203,39 @@ export function createRuntimeHandler(
   options: RuntimeHandlerOptions = {},
 ) {
   const now = options.now ?? Date.now;
-  const invokeSubagent =
-    options.invokeSubagent ??
-    (config.secondaryLlmApiKey === undefined
+  const secondaryLlmConfig =
+    config.secondaryLlmApiKey === undefined
       ? undefined
-      : createSecondaryLlmInvokeSubagent({
+      : {
           apiKey: config.secondaryLlmApiKey,
           baseUrl: config.secondaryLlmBaseUrl ?? DEFAULT_SECONDARY_LLM_BASE_URL,
           model: config.secondaryLlmModel ?? DEFAULT_SECONDARY_LLM_MODEL,
           ...(config.secondaryLlmTimeoutMs === undefined
             ? {}
             : { timeoutMs: config.secondaryLlmTimeoutMs }),
-        }));
+        };
+  const invokeSubagent =
+    options.invokeSubagent ??
+    (secondaryLlmConfig === undefined
+      ? undefined
+      : createSecondaryLlmInvokeSubagent(secondaryLlmConfig));
+  const scenarioDraftLlmConfig =
+    config.scenarioDraftLlmApiKey === undefined
+      ? undefined
+      : {
+          apiKey: config.scenarioDraftLlmApiKey,
+          baseUrl:
+            config.scenarioDraftLlmBaseUrl ?? DEFAULT_SCENARIO_DRAFT_BASE_URL,
+          model: config.scenarioDraftLlmModel ?? DEFAULT_SCENARIO_DRAFT_MODEL,
+          ...(config.scenarioDraftLlmTimeoutMs === undefined
+            ? {}
+            : { timeoutMs: config.scenarioDraftLlmTimeoutMs }),
+        };
+  const draftScenarioFixture =
+    options.draftScenarioFixture ??
+    (scenarioDraftLlmConfig === undefined
+      ? undefined
+      : createScenarioFixtureDrafter(scenarioDraftLlmConfig));
   const runtime = new CopilotSseRuntime({
     agents: () => {
       const mockAgent = httpAgent(config.agUiMockUrl, mockCapabilities);
@@ -222,14 +259,20 @@ export function createRuntimeHandler(
     basePath: COPILOT_RUNTIME_PATH,
     runtime,
   });
-  const scenarioLabHandler = createScenarioLabHandler({
-    scenariosDir:
-      options.scenariosDir ?? new URL("../scenarios/", import.meta.url),
-    ...(invokeSubagent === undefined ? {} : { invokeSubagent }),
-  });
+  const scenarioLabHandler =
+    config.scenarioLabEnabled === true
+      ? createScenarioLabHandler({
+          scenariosDir:
+            options.scenariosDir ?? new URL("../scenarios/", import.meta.url),
+          ...(draftScenarioFixture === undefined
+            ? {}
+            : { draftScenarioFixture }),
+          ...(invokeSubagent === undefined ? {} : { invokeSubagent }),
+        })
+      : undefined;
 
   return async (request: Request): Promise<Response> => {
-    const labResponse = await scenarioLabHandler(request);
+    const labResponse = await scenarioLabHandler?.(request);
     return labResponse ?? copilotHandler(request);
   };
 }
@@ -240,6 +283,25 @@ function validUrl(name: string, value: string): string {
     throw new Error(`${name}_INVALID`);
   }
   return url.toString();
+}
+
+function booleanEnvironment(name: string, value: string | undefined): boolean {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === undefined || normalized === "" || normalized === "false")
+    return false;
+  if (normalized === "true") return true;
+  throw new Error(`${name}_INVALID`);
+}
+
+function timeoutEnvironment(
+  name: string,
+  value: string | undefined,
+): number | undefined {
+  if (!value?.trim()) return undefined;
+  const parsed = Number(value.trim());
+  if (!Number.isSafeInteger(parsed) || parsed < 1_000 || parsed > 600_000)
+    throw new Error(`${name}_INVALID`);
+  return parsed;
 }
 
 export function loadRuntimeConfig(
@@ -255,6 +317,14 @@ export function loadRuntimeConfig(
   if (sacsPrincipalRole !== "user" && sacsPrincipalRole !== "admin") {
     throw new Error("SACS_PRINCIPAL_ROLE_INVALID");
   }
+  const scenarioDraftLlmTimeoutMs = timeoutEnvironment(
+    "SCENARIO_DRAFT_LLM_TIMEOUT_MS",
+    environment.SCENARIO_DRAFT_LLM_TIMEOUT_MS,
+  );
+  const secondaryLlmTimeoutMs = timeoutEnvironment(
+    "A2UI_SECONDARY_LLM_TIMEOUT_MS",
+    environment.A2UI_SECONDARY_LLM_TIMEOUT_MS,
+  );
   const config: RuntimeConfig = {
     agUiMockUrl: validUrl(
       "AG_UI_MOCK_URL",
@@ -264,28 +334,28 @@ export function loadRuntimeConfig(
       "SACS_AG_UI_URL",
       environment.SACS_AG_UI_URL ?? "http://127.0.0.1:3000/ag-ui",
     ),
+    scenarioDraftLlmBaseUrl: validUrl(
+      "SCENARIO_DRAFT_LLM_BASE_URL",
+      environment.SCENARIO_DRAFT_LLM_BASE_URL?.trim() ||
+        DEFAULT_SCENARIO_DRAFT_BASE_URL,
+    ),
+    scenarioDraftLlmModel:
+      environment.SCENARIO_DRAFT_LLM_MODEL?.trim() ||
+      DEFAULT_SCENARIO_DRAFT_MODEL,
+    scenarioLabEnabled: booleanEnvironment(
+      "SCENARIO_LAB_ENABLED",
+      environment.SCENARIO_LAB_ENABLED,
+    ),
     secondaryLlmBaseUrl:
       environment.A2UI_SECONDARY_LLM_BASE_URL?.trim() ||
       DEFAULT_SECONDARY_LLM_BASE_URL,
     secondaryLlmModel:
       environment.A2UI_SECONDARY_LLM_MODEL?.trim() ||
       DEFAULT_SECONDARY_LLM_MODEL,
-    ...(environment.A2UI_SECONDARY_LLM_TIMEOUT_MS?.trim()
-      ? {
-          secondaryLlmTimeoutMs: (() => {
-            const parsed = Number(
-              environment.A2UI_SECONDARY_LLM_TIMEOUT_MS?.trim(),
-            );
-            if (
-              !Number.isSafeInteger(parsed) ||
-              parsed < 1_000 ||
-              parsed > 600_000
-            )
-              throw new Error("A2UI_SECONDARY_LLM_TIMEOUT_MS_INVALID");
-            return parsed;
-          })(),
-        }
-      : {}),
+    ...(secondaryLlmTimeoutMs === undefined ? {} : { secondaryLlmTimeoutMs }),
+    ...(scenarioDraftLlmTimeoutMs === undefined
+      ? {}
+      : { scenarioDraftLlmTimeoutMs }),
     ...(sacsJwtSecret ? { sacsJwtSecret } : {}),
     ...(sacsPrincipalId ? { sacsPrincipalId } : {}),
     ...(sacsPrincipalId || sacsJwtSecret || sacsServiceKey
@@ -295,6 +365,11 @@ export function loadRuntimeConfig(
     ...(environment.A2UI_SECONDARY_LLM_API_KEY?.trim()
       ? {
           secondaryLlmApiKey: environment.A2UI_SECONDARY_LLM_API_KEY.trim(),
+        }
+      : {}),
+    ...(environment.SCENARIO_DRAFT_LLM_API_KEY?.trim()
+      ? {
+          scenarioDraftLlmApiKey: environment.SCENARIO_DRAFT_LLM_API_KEY.trim(),
         }
       : {}),
   };
@@ -327,6 +402,15 @@ export {
   DynamicA2uiPresentationPolicy,
   type PresentationForwardedProps,
 } from "./presentation-policy.js";
+export {
+  createScenarioFixtureDrafter,
+  DEFAULT_SCENARIO_DRAFT_BASE_URL,
+  DEFAULT_SCENARIO_DRAFT_MODEL,
+  type DraftScenarioFixture,
+  MAX_SCENARIO_DRAFT_DESCRIPTION_LENGTH,
+  parseScenarioFixtureContent,
+  type ScenarioFixtureContent,
+} from "./scenario-fixture-drafter.js";
 export {
   createScenarioLabHandler,
   SCENARIO_LAB_BASE_PATH,

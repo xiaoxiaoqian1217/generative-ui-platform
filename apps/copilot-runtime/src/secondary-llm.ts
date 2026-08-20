@@ -45,7 +45,8 @@ export function createSecondaryLlmInvokeSubagent(
   config: SecondaryLlmConfig,
   options: { readonly timeoutMs?: number } = {},
 ): InvokeSubagent {
-  const timeoutMs = options.timeoutMs ?? config.timeoutMs ?? DEFAULT_SECONDARY_LLM_TIMEOUT_MS;
+  const timeoutMs =
+    options.timeoutMs ?? config.timeoutMs ?? DEFAULT_SECONDARY_LLM_TIMEOUT_MS;
   const endpoint = `${config.baseUrl.replace(/\/+$/, "")}/chat/completions`;
   const send = (prompt: string, toolChoice: unknown) =>
     fetch(endpoint, {
@@ -74,9 +75,7 @@ export function createSecondaryLlmInvokeSubagent(
       // the provider error explicitly names tool_choice.
       const detail = await response.text();
       if (!detail.includes("tool_choice")) {
-        throw new Error(
-          `A2UI_SECONDARY_LLM_HTTP_400 ${detail.slice(0, 200)}`,
-        );
+        throw new Error(`A2UI_SECONDARY_LLM_HTTP_400 ${detail.slice(0, 200)}`);
       }
       response = await send(prompt, "auto");
     }

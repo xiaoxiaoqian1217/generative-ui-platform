@@ -7,6 +7,7 @@ import { createAguiMockServer } from "@generative-ui/ag-ui-mock";
 import { createRuntimeHandler } from "@generative-ui/copilot-runtime";
 import { createMockUpstreamProxy } from "./mock-upstream-proxy.mjs";
 import { createSacsProfileFixture } from "./sacs-profile-fixture.mjs";
+import { draftScenarioFixture } from "./scenario-fixture-drafter-fake.mjs";
 import { createSecondaryLlmFake } from "./secondary-llm-fake.mjs";
 
 const host = "127.0.0.1";
@@ -39,8 +40,12 @@ const runtimeHandler = createRuntimeHandler(
     sacsPrincipalId,
     sacsPrincipalRole: "user",
     sacsServiceKey,
+    scenarioLabEnabled: true,
   },
-  { invokeSubagent: secondaryLlm.invokeSubagent },
+  {
+    draftScenarioFixture,
+    invokeSubagent: secondaryLlm.invokeSubagent,
+  },
 );
 let runtimeAvailable = true;
 

@@ -9,6 +9,10 @@ import {
   type PresentationInput,
   serializePresentationInputContent,
 } from "./presentation-input.js";
+import {
+  type DraftScenarioFixture,
+  MAX_SCENARIO_DRAFT_DESCRIPTION_LENGTH,
+} from "./scenario-fixture-drafter.js";
 import type { InvokeSubagent } from "./secondary-llm.js";
 
 /**
@@ -25,6 +29,7 @@ import type { InvokeSubagent } from "./secondary-llm.js";
 export const SCENARIO_LAB_BASE_PATH = "/api/copilotkit/dev/scenarios";
 
 export interface ScenarioLabOptions {
+  readonly draftScenarioFixture?: DraftScenarioFixture;
   readonly invokeSubagent?: InvokeSubagent;
   readonly scenariosDir: URL;
 }
@@ -61,7 +66,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseExpectedFacts(value: unknown): ExpectedFacts {
+function parseExpectedFacts(
+  value: unknown,
+  options: { readonly allowEmpty?: boolean } = {},
+): ExpectedFacts {
   if (!isRecord(value) || !Array.isArray(value.facts)) {
     throw new Error("EXPECTED_FACTS_INVALID");
   }
@@ -71,6 +79,8 @@ function parseExpectedFacts(value: unknown): ExpectedFacts {
     }
     return { pointer: fact.pointer, value: fact.value };
   });
+  if (facts.length === 0 && options.allowEmpty !== true)
+    throw new Error("EXPECTED_FACTS_REQUIRED");
   return { facts };
 }
 
@@ -188,7 +198,9 @@ async function runScenario(
   let expectedFacts: ExpectedFacts = { facts: [] };
   if (body.expectedFacts !== undefined) {
     try {
-      expectedFacts = parseExpectedFacts(body.expectedFacts);
+      expectedFacts = parseExpectedFacts(body.expectedFacts, {
+        allowEmpty: true,
+      });
     } catch {
       return json({ error: "EXPECTED_FACTS_INVALID" }, 400);
     }
@@ -204,14 +216,18 @@ async function runScenario(
   const generation = await generateA2uiSurfaceFromContent(
     serializePresentationInputContent(input),
     invokeSubagent,
-  ).catch((error: unknown): { ok: false; error: A2uiGenerationErrorContent } => ({
-    error: {
-      code: "A2UI_GENERATION_FAILED",
-      message:
-        error instanceof Error ? error.message : "Dynamic A2UI generation failed.",
-    },
-    ok: false,
-  }));
+  ).catch(
+    (error: unknown): { ok: false; error: A2uiGenerationErrorContent } => ({
+      error: {
+        code: "A2UI_GENERATION_FAILED",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Dynamic A2UI generation failed.",
+      },
+      ok: false,
+    }),
+  );
   if (!generation.ok) return json({ error: generation.error, ok: false });
   const surface = JSON.parse(generation.envelope) as unknown;
   const factCheck: FactCheckEntry[] = expectedFacts.facts.map((fact) => ({
@@ -219,6 +235,57 @@ async function runScenario(
     status: deepContains(surface, fact.value) ? "found" : "review",
   }));
   return json({ factCheck, ok: true, surface });
+}
+
+async function draftScenario(
+  draftScenarioFixture: DraftScenarioFixture | undefined,
+  body: unknown,
+  signal: AbortSignal,
+): Promise<Response> {
+  if (
+    !isRecord(body) ||
+    typeof body.description !== "string" ||
+    body.description.trim().length === 0
+  )
+    return json({ error: "SCENARIO_DRAFT_DESCRIPTION_REQUIRED" }, 400);
+  if (body.description.length > MAX_SCENARIO_DRAFT_DESCRIPTION_LENGTH)
+    return json({ error: "SCENARIO_DRAFT_DESCRIPTION_TOO_LONG" }, 400);
+  if (draftScenarioFixture === undefined) {
+    const error = {
+      code: "SCENARIO_DRAFT_UNAVAILABLE",
+      message:
+        "Scenario fixture drafting is not configured (SCENARIO_DRAFT_LLM_API_KEY).",
+    };
+    return json({ error, ok: false }, 503);
+  }
+  try {
+    const content = await draftScenarioFixture(body.description.trim(), {
+      signal,
+    });
+    return json({ content, ok: true });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError")
+      return json(
+        {
+          error: { code: "SCENARIO_DRAFT_CANCELLED" },
+          ok: false,
+        },
+        499,
+      );
+    return json(
+      {
+        error: {
+          code: "SCENARIO_DRAFT_FAILED",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Scenario draft generation failed.",
+        },
+        ok: false,
+      },
+      502,
+    );
+  }
 }
 
 /**
@@ -234,11 +301,24 @@ export function createScenarioLabHandler(options: ScenarioLabOptions) {
     if (!pathname.startsWith(basePath)) return undefined;
 
     if (pathname === basePath && request.method === "GET") {
-      return json({ scenarios: await listScenarios(options.scenariosDir) });
+      return json({
+        capabilities: {
+          drafting: options.draftScenarioFixture !== undefined,
+        },
+        scenarios: await listScenarios(options.scenariosDir),
+      });
     }
 
     if (pathname === `${basePath}/run` && request.method === "POST") {
       return runScenario(options.invokeSubagent, await request.json());
+    }
+
+    if (pathname === `${basePath}/draft` && request.method === "POST") {
+      return draftScenario(
+        options.draftScenarioFixture,
+        await request.json(),
+        request.signal,
+      );
     }
 
     const saveMatch = pathname.slice(basePath.length + 1);

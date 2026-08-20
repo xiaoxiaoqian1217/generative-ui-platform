@@ -29,6 +29,12 @@ ADR-0029 同时明确：在第一个 Controlled UI 纵向场景已经证明 AG-U
 - 在 Runtime 职责白名单中增加薄 Presentation Policy、Secondary Presentation LLM 接线与 A2UI 生成结果的事件流缝合；
 - 允许 Platform Catalog definitions 下沉到独立最小 package。
 
+[ADR-0031](./0031-separate-scenario-fixture-authoring-from-presentation-llm.md) 明确 Scenario Lab authoring seam：
+
+- Scenario Fixture Authoring 与 Secondary Presentation LLM 分离；
+- Scenario Lab 默认关闭并通过显式环境变量启用；
+- AI 草稿必须经过结构化约束、人工审定和非空 expected facts 才能保存。
+
 [ADR-0028](./0028-use-native-ag-ui-and-retire-compatibility-contracts.md) 被 ADR-0029 部分取代，但在以下范围继续有效：
 
 - 使用原生 AG-UI contract，而不是已删除的 compatibility contracts；
@@ -103,12 +109,13 @@ ADR-0001 中以下约束继续有效：
 |---|---|
 | [0029](./0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md) | 薄 CopilotKit Runtime 接入边界与 A2UI 下一阶段 |
 | [0030](./0030-prioritize-dynamic-a2ui-over-theme-and-extend-runtime-presentation-scope.md) | Dynamic A2UI 提前到 Theme 之前，并扩展 Runtime Presentation 职责 |
+| [0031](./0031-separate-scenario-fixture-authoring-from-presentation-llm.md) | Scenario Fixture Authoring 与 Secondary Presentation LLM 分离 |
 
 ## 编号与状态规则
 
 ADR 文件名采用 `NNNN-short-decision-title.md`。
 编号唯一且不复用。
-下一个 ADR 编号为 `0031`。
+下一个 ADR 编号为 `0032`。
 
 允许的生命周期状态包括：
 

@@ -2,7 +2,7 @@
  * Client for the dev-only Scenario Lab endpoints on the CopilotKit Runtime
  * (Issue #213). Scenario documents are JSON files in the repository; the
  * Runtime reads/writes them and runs unsaved buffers through the real
- * Secondary LLM generation chain.
+ * presentation generation chain.
  */
 
 export interface ScenarioLabFact {
@@ -18,6 +18,11 @@ export interface ScenarioLabDocument {
   readonly expectedFacts: ScenarioLabExpectedFacts;
   readonly name: string;
   readonly presentationInput: unknown;
+}
+
+export interface ScenarioLabIndex {
+  readonly documents: readonly ScenarioLabDocument[];
+  readonly draftingAvailable: boolean;
 }
 
 export interface ScenarioLabFactCheckEntry extends ScenarioLabFact {
@@ -50,13 +55,21 @@ async function readJson(response: Response): Promise<unknown> {
   return body;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export async function listScenarioLabDocuments(
   labBaseUrl: string,
-): Promise<readonly ScenarioLabDocument[]> {
+): Promise<ScenarioLabIndex> {
   const body = (await readJson(await fetch(labBaseUrl))) as {
+    capabilities?: { drafting?: boolean };
     scenarios: ScenarioLabDocument[];
   };
-  return body.scenarios;
+  return {
+    documents: body.scenarios,
+    draftingAvailable: body.capabilities?.drafting === true,
+  };
 }
 
 export async function saveScenarioLabDocument(
@@ -87,4 +100,30 @@ export async function runScenarioLabDocument(
     method: "POST",
   });
   return (await readJson(response)) as ScenarioRunResult;
+}
+
+export type ScenarioDraftResult =
+  | { readonly ok: true; readonly content: Record<string, unknown> }
+  | { readonly ok: false; readonly error: ScenarioLabError };
+
+/**
+ * Ask the Scenario fixture authoring adapter for a synthetic content draft.
+ * It remains an unsaved buffer until a human reviews it and writes facts.
+ */
+export async function requestScenarioDraft(
+  labBaseUrl: string,
+  description: string,
+  signal?: AbortSignal,
+): Promise<ScenarioDraftResult> {
+  const response = await fetch(`${labBaseUrl}/draft`, {
+    body: JSON.stringify({ description }),
+    headers: { "content-type": "application/json" },
+    method: "POST",
+    ...(signal === undefined ? {} : { signal }),
+  });
+  const body = (await response.json()) as unknown;
+  if (isRecord(body) && typeof body.ok === "boolean")
+    return body as ScenarioDraftResult;
+  if (!response.ok) throw new Error(`HTTP_${response.status}`);
+  throw new Error("SCENARIO_DRAFT_RESPONSE_INVALID");
 }
