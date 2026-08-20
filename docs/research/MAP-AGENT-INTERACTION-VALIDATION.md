@@ -2,6 +2,7 @@
 
 - **性质：** 非规范性讨论记录（research）
 - **日期：** 2026-08-19
+- **更新：** 2026-08-20
 - **背景：** 与领导沟通确定的新验证方向：验证人与 Agent 的交互方式，结合地图场景，让 Agent 可以操作地图，成果可沉淀为关键技术方向或报告输出
 
 ## 起点观点
@@ -15,6 +16,26 @@
 
 本文记录对该方向的论证、业界参照、验证矩阵与实施顺序，作为后续实现与报告的输入。
 
+## 验证问题与最终交付
+
+本方向首先要回答三个验证问题：
+
+1. 当 Agent 连续操作地图时，用户能否理解变化、归因意图并保持控制感。
+2. 当用户征询、纠偏、取消或直接操作地图时，Agent 与 Workbench 能否给出明确、可预期的让渡和恢复语义。
+3. 地图域意图工具是否足以承载这些场景，而不把业务实体或 MapLibre 机制泄漏给 Agent。
+
+最终主交付是一份可决策的《地图共享表面中的人机协作交互验证报告》。
+关键技术不是与报告二选一的交付形态，而是报告根据证据识别出的技术结论与可复用资产。
+
+最终交付分为四层：
+
+1. 主报告：验证结论、证据、适用边界、失败模式与 Go / Pivot / Stop 建议。
+2. 证据包：场景定义、AG-UI 事件、Frontend Tool 轨迹、录屏或截图、评分与模型配置。
+3. 技术资产：地图域工具契约、中断与控制权语义、UX 准则、fixture 与 e2e 回归。
+4. 后续决策：需要进入主线的 Issue、ADR 或终止投入的理由。
+
+如果验证不成立，报告应当明确给出否定或收缩结论，不为了形成“关键技术”而预设成功。
+
 ## 与既有研究的关系
 
 本方向是 [Agent 交互泛化方向讨论记录](./AGENT-INTERACTION-GENERALIZATION.md) 中"工具中介行动"模式的深化验证载体。
@@ -25,15 +46,20 @@
 
 ## 为什么地图是合适的验证载体
 
-1. 已有基线可直接延伸。locateDevice 已经跑通 Agent -> Frontend Tool -> MapLibre 链路，扩展工具面是增量而非新架构。
-2. 验证的是交互模型空白，不是重复验证能力。业界大多在验证"Agent 能否生成或驱动 UI"，但人与 Agent 如何共享一个有状态表面（相机、图层、选区）很少被系统验证。
-3. 地图交互性质理想。视觉即时可评估、有真实状态同步问题、天然支持多步操作（可验证 Agent 规划），且贴合设备 / 告警业务场景。
-4. 基础设施现成。AGUIMock 支持确定性 Frontend Tool fixture，Issue #213 Scenario Lab 可作评估载体。
-5. 与 A2UI 线互补。A2UI 验证"Agent 生成内容"，本方向验证"Agent 操作既有表面"，两者合并构成人机交互的完整图景。
+1. 已有基线可直接延伸。
+   locateDevice 已经跑通 Agent -> Frontend Tool -> MapLibre 链路，扩展工具面是增量而非新架构。
+2. 验证的是交互模型空白，不是重复验证能力。
+   业界大多在验证"Agent 能否生成或驱动 UI"，但人与 Agent 如何共享一个有状态表面（相机、图层、选区）很少被系统验证。
+3. 地图交互性质理想。
+   视觉即时可评估、有真实状态同步问题、天然支持多步操作（可验证 Agent 规划），且贴合设备 / 告警业务场景。
+4. 基础设施可延伸。
+   AGUIMock 支持确定性 Frontend Tool fixture，Playground / Inspect 已能采集可观察事实，Issue #213 Scenario Lab 的场景文件与 expected facts 经验可作为设计参考。
+5. 与 A2UI 线互补。
+   A2UI 验证"Agent 生成内容"，本方向验证"Agent 操作既有表面"，两者合并构成人机交互的完整图景。
 
 ## 业界参照：Felt
 
-Felt 是目前把"Agent 操作地图"产品化程度最高的参照。
+在本次已调研的公开材料中，Felt 是"Agent 操作地图"的主要产品化参照。
 
 ### 产品事实
 
@@ -42,26 +68,32 @@ Felt 是目前把"Agent 操作地图"产品化程度最高的参照。
 
 ### 值得借鉴的设计与原则
 
-1. 工具分类学。30 工具 / 6 类是 Felt 自身场景（从数据建图）的工具总和，词汇表全部是 GIS 域对象（map / layer / feature / pin / style），零业务名词，业务概念只出现在 prompt 与参数值中。对本平台不是需求清单，而是归类、粒度、命名的校验器。
-2. "The output is a living map, not an API response"。Agent 的每次操作落在用户可继续编辑的同一表面上，操作产物不是一次性响应。
-3. "Humans stay in the loop because the map is right there"。可见、可编辑本身就是信任机制，是意图可见性设计的北极星。
-4. 权限继承："It can only see what they can see, only edit what they can edit"。Agent 以用户身份行事，对应本平台的能力契约纪律（capability gap 显式呈现，不伪造能力）。
-5. "Maps at the scale of your data, not your model"。数据留在 warehouse，Agent 写 SQL，只渲染结果。与仓库 GIS 边界同构：Agent 只看稳定的能力契约，不看地图内部实现。
+1. 工具分类学。
+   Felt 官方公开了 30 工具 / 6 类的 GIS 能力结构，可作为归类、粒度与命名的校验器，但具体工具名与参数是否完全业务无关仍需逐项清点。
+2. "The output is a living map, not an API response"。
+   Agent 的每次操作落在用户可继续编辑的同一表面上，操作产物不是一次性响应。
+3. "Humans stay in the loop because the map is right there"。
+   可见、可编辑本身就是信任机制，是意图可见性设计的北极星。
+4. 权限继承："It can only see what they can see, only edit what they can edit"。
+   Agent 以用户身份行事，对应本平台的能力契约纪律（capability gap 显式呈现，不伪造能力）。
+5. "Maps at the scale of your data, not your model"。
+   数据留在 warehouse，Agent 写 SQL，只渲染结果。
+   这与仓库 GIS 边界同构：Agent 只看稳定的能力契约，不看地图内部实现。
 
 ### 分阶段参考价值
 
 Felt 的定位是 agent-as-cartographer：Agent 从零产出一张地图作为交付物。
 本平台的场景是 Agent 在实时运行的运营地图上与人共驾（定位设备、查看告警）。
-混合主导、中断 / 撤销、并发冲突、意图可见性这些最难的问题 Felt 公开叙事基本未触及，这正是本方向的差异化空间，也是报告对比分析的主轴。
+本次已调研的 Felt 官方公开材料基本未触及混合主导、中断 / 撤销、并发冲突和意图可见性，这些问题是本方向的差异化空间，也是报告对比分析的主轴。
 按"实施顺序"的五个步骤看，Felt 的参考价值递减：越靠近工具面参考价值越高，越靠近交互语义层越是对比对象而非参照对象。
 
-| 实施顺序步骤 | Felt 可参考的 | 参考方式 |
-| --- | --- | --- |
-| 1. 工具面 | viewport control 被列为 Felt AI 一等能力，确认 focus 类意图工具的地位；"No hand-authored JSON" 的样式意图化设计；Collaborate 的 pins / routes / polygons / notes 标注设计 | 直接借鉴分类学与命名，过滤掉取数 / SQL / warehouse 三类（超出运营场景） |
-| 2. 征询等待 | Understand 层的 conversational refinement，渐进 refine 话术给出征询时机的自然样例：澄清模糊目标、提出备选、解释结果 | 借鉴征询时机的类型学，不抄话术本身 |
-| 3. 薄验证 Agent | "The agent decides which capabilities to invoke, in what order"，Agent 职责定义为能力选择与排序；wildfire 风险四步 walkthrough 是现成的探索脚本模板 | 借鉴决策空间结构，不抄规模（他们几十个能力，本平台 4-6 个工具） |
-| 4. 打断 / 混合主导 | 公开材料基本未触及中止语义与并发控制权 | 对比对象，非参照 |
-| 5. 评估与报告 | "Agent 操作地图已产品化"的行业证据 | 作为对比基线 |
+| 实施顺序步骤       | Felt 可参考的                                                                                                                                | 参考方式                                          |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| 1. 工具面       | viewport control 被列为 Felt AI 一等能力，确认 focus 类意图工具的地位；"No hand-authored JSON" 的样式意图化设计；Collaborate 的 pins / routes / polygons / notes 标注设计 | 直接借鉴分类学与命名，过滤掉取数 / SQL / warehouse 三类（超出运营场景） |
+| 2. 征询等待      | Understand 层的 conversational refinement，渐进 refine 话术给出征询时机的自然样例：澄清模糊目标、提出备选、解释结果                                                         | 借鉴征询时机的类型学，不抄话术本身                             |
+| 3. 薄验证 Agent | "The agent decides which capabilities to invoke, in what order"，Agent 职责定义为能力选择与排序；wildfire 风险四步 walkthrough 是现成的探索脚本模板                  | 借鉴决策空间结构，不抄规模（他们几十个能力，本平台 4-6 个工具）            |
+| 4. 打断 / 混合主导 | 公开材料基本未触及中止语义与并发控制权                                                                                                                      | 对比对象，非参照                                      |
+| 5. 评估与报告     | "Agent 操作地图已产品化"的行业证据                                                                                                                    | 作为对比基线                                        |
 
 一手研究动作：
 
@@ -74,76 +106,125 @@ Felt 的定位是 agent-as-cartographer：Agent 从零产出一张地图作为�
 - [Felt AI 发布](https://www.felt.com/blog/a-brand-new-era-of-gis)
 - [Felt AI 产品页](https://felt.com/platform/felt-ai)
 
-## 验证矩阵
+## 验证契约
 
-"验证"必须先定义假设，否则会退化成 demo 堆砌。
-覆盖判据沿用五类交互模式：场景库把五类模式在地图域全部实例化，即视为覆盖"所有与 Agent 的交互"；设计层面用矩阵保证完备，实现层面按优先级增量进场。
+"验证"必须先定义可证伪的假设和通过判据，否则会退化成 demo 堆砌。
+本矩阵覆盖当前选定的地图交互模式，用于验证既有 taxonomy 在运营地图域的解释力，不声称覆盖所有人与 Agent 交互。
 
-| 场景（交互模式） | 验证假设 | 工具需求 | 现状 |
-| --- | --- | --- | --- |
-| 单轮问答："东区现在有多少离线设备？" | - | 无，只读 | 已有能力覆盖 |
-| 委托执行："生成这片区的设备健康报告" | - | 执行中可选高亮进度 | Issue #200 验证中 |
-| 工具中介（单步）：locateDevice | Agent 发起前端工具调用并观察结果是可理解、可信赖的交互 | focusOn（重构自 locateDevice） | 已证明 |
-| 工具中介（多步）A："分析告警最集中的区域"，focusOn 总览 -> highlight 簇 -> focusOn 最密处 -> 汇报 | Agent 连续操作相机 / 图层 / 选区时，用户能跟上并理解整体意图 | focusOn、highlight | 待做 |
-| 征询等待 B："定位离线设备"，序列中发现两组候选，征询"先看哪组"，用户选择后继续 | Agent 停下征询、用户答复、恢复序列的闭环对用户可理解、可预期 | 复用 A + 征询机制 | 待做 |
-| 打断纠偏 C："定位所有离线设备"，慢速序列进行中用户喊停"只看东区的" | 用户中断序列时，挂起调用处置与地图残余状态有明确语义 | 复用 A + 打断语义 | 待做 |
-| 混合主导 D：用户手动圈选时 Agent 序列并发 | 并发操作的控制权让渡规则可定义且可预期 | 探索后定义 | 待做 |
-| 失败路径 E：序列中途 RUN_ERROR | 错误后地图残余状态与恢复边界清晰 | 复用 A + 错误语义 | run-error fixture 已有模式 |
-| 意图可见性（横切） | 地图发生变化时，用户能归因到 Agent 的哪个操作与理由 | 横切，随各场景累积 | 未验证 |
+### 证据分层
 
-三个观察：
+1. 工程证据验证协议闭环、事件关联、地图终态、取消与失败语义，由确定性 fixture 和 e2e 回归产生。
+2. Agent 行为证据验证征询时机、工具选择、重规划质量与新模式发现，由薄验证 Agent 在固定配置下重复运行产生。
+3. 体验证据验证用户能否理解意图、完成任务、预测后续行为并在需要时接管，由形成性用户评估产生。
 
-1. 九行中三行已有着落（单轮问答已有、单步已证明、委托执行在 Issue #200 推进），新增工作是 A-E 五个场景加横切的意图可见性。
-2. 工具面收敛。覆盖全矩阵推导出的地图工具仍然只有 focusOn 与 highlight 两个，加上征询机制；交互模式之间共享工具，覆盖性要求的是场景数量，不是工具数量。
-3. 矩阵直接构成报告的能力矩阵骨架，每个格子填入证据（fixture 回归 + 体验记录）。
+三类证据不可互换。
+fixture 通过不等于用户理解，单次模型成功也不等于 Agent 行为稳定。
 
-工具准入规则：工具随场景入场，工具面与被验证的交互维度同步增长，不长成平台。
-新工具入场时过三道校验：
+### 首轮评估协议
 
-1. 归类与命名：参照 Felt 分类学，命名落在地图域意图上（focusOn、highlight、setLayerVisibility），不落在渲染机制（setCenter、setPaintProperty）或业务对象（focusDevice）上。
-2. 粒度：一次调用等于一个用户可感知的结果；参数值用业务标识或语义意图，不出现坐标、样式 JSON 等机制参数；一个意图工具内部编排多个 MapLibre 调用。
-3. 业务无关测试：工具结构与命名不含业务名词（设备、告警），业务语义只进参数值，与 Catalog 的 business-agnostic 纪律同源。工具词汇表是地图语义（viewport / layer / feature / annotation）；业务实体到地图要素的翻译由数据管线约定承担（业务数据以业务可寻址的 ID 作为 featureId 落图）。
+1. 每个确定性场景的必须通过项需要 100% 通过 e2e 回归，并核对调用参数、toolCallId、结果状态与地图终态。
+2. 薄验证 Agent 对每个场景至少重复 10 次，固定模型、prompt、工具 schema 和推理参数，预期行为达成率不低于 80%。
+3. 形成性体验评估至少覆盖 5 名目标角色内部参与者，任务完成率和意图归因正确率不低于 80%，可预期性与控制感评分中位数不低于 4 / 5。
+4. 所有场景都不允许出现无法恢复的地图残余状态、用户接管后 Agent 继续覆盖操作，或将未发生的操作呈现为已完成。
+5. 每次运行记录场景版本、模型与 prompt 版本、用户输入、公开事件、工具结果、操作前后地图状态与人工观察。
 
-业务无关是报告结论可泛化的前提：工具面绑死业务场景，验证结论就只对该场景成立，与交互模式不绑业务是同一条纪律在两层的应用。
-现有 locateDevice 是纵向切片的务实产物（focus 与 select 打包、deviceId 入参），在步骤 1 扩展工具面时重构为 focusOn 与 select，deviceId 降级为参数值。
+以上阈值是首轮形成性验证的决策线，不用于声称统计泛化。
+未达阈值但问题可定位且可修正时给出 Pivot，出现重复的控制权失效或不可恢复状态时给出 Stop。
 
-完备性警告：五类模式是完备性假设，不是定理。
-运营域可能长出第六类（如 Agent 主动把新告警标注到地图上的 map push，用户未发起）。
-探索阶段必须回头校验模式词汇表，发现新模式即新增矩阵行。
+### 验证矩阵
+
+| 场景 | 可证伪假设 | 必须通过项 | 工具 / 机制 | 现状 |
+| --- | --- | --- | --- | --- |
+| 单步基线：从 locateDevice 迁移 | 地图域意图工具可替代业务工具而不损失已有闭环 | 目标、高亮、视口和返回结果与基线一致 | focusOn、highlight | 机制已证明，待迁移 |
+| A 多步工具中介 | 用户能跟上连续变化并理解整体意图 | 序列终态正确，意图归因正确率达标 | focusOn、highlight | 待做 |
+| B 征询等待 | Agent 能在歧义处停止并在用户答复后继续 | 答复前无后续副作用，答复后目标正确 | useHumanInTheLoop | 待做 |
+| C1 传输取消 | 用户停止 Run 后不再产生新地图副作用 | 返回 cancelled，残余状态可见且可恢复 | AbortSignal 与工具结果 | 待做 |
+| C2 对话纠偏 | 新意图能够明确取代旧序列 | 旧操作返回 superseded，不会在新 Run 后恢复 | 新旧 Run 关联 | 待做 |
+| D 混合主导 | 用户直接操作地图时控制权让渡可预期 | 用户操作优先或冲突被明确呈现，不出现拉扯振荡 | 用户手势与操作所有权 | 待做 |
+| E 序列失败 | 错误后地图终态和恢复边界清晰 | 错误归因正确，残余状态可见且可恢复 | RUN_ERROR fixture | 已有失败 fixture 模式 |
+| X 意图可见性 | 用户能归因每次地图变化的发起者和理由 | 所有地图变化都有可观察来源，归因正确率达标 | 横切反馈 | 未验证 |
+
+单轮问答和委托执行继续作为背景能力，本轮不对它们产生新的通过结论。
+本轮的核心新增工作是 A-E 场景和横切的意图可见性。
+
+### 地图域工具契约
+
+工具随场景入场，工具面与被验证的交互维度同步增长，不长成通用 GIS Agent SDK。
+
+首轮 Agent 可见地图工具收敛为 `focusOn` 和 `highlight`。
+它们使用地图域目标引用，不使用 `deviceId`、`alarmId` 等业务字段，也不接收坐标或样式 JSON。
+
+```text
+MapTargetRef
+  featureId: string
+  layerId?: string
+
+MapOperationResult
+  status: completed | cancelled | superseded | failed
+  affectedFeatureIds: string[]
+  reason?: string
+```
+
+业务实体到 `MapTargetRef` 的翻译由数据管线约定承担。
+业务可寻址 ID 可作为 `featureId` 的值落图，但 Agent 只看到地图域字段。
+
+新工具入场时过四道校验：
+
+1. 命名落在地图域意图上，不落在 MapLibre 机制或业务对象上。
+2. 一次调用对应一个用户可感知的结果，内部可编排多个 MapLibre 调用。
+3. 参数只表达地图目标与意图，业务语义由上游数据与 prompt 提供。
+4. 结果必须表达完成、取消、被替代和失败，使 Agent 能根据真实地图结果重规划。
+
+现有 `locateDevice` 是纵向切片的务实起点，但它暴露了业务语义，不符合本阶段的目标契约。
+步骤 1 将 Agent 可见的 `locateDevice` 迁移为 `focusOn` 与 `highlight`，并同步迁移 fixture 和 e2e 基线，不把业务工具保留为目标契约。
+
+交互模式 taxonomy 仍然是待验证假设，不是完备性定理。
+如果探索中发现 Agent 主动 map push 等新模式，应新增矩阵行并重新评估覆盖范围。
 
 ## 框架复用清点（CopilotKit / AG-UI）
 
 既有研究提出"泛化动作是清点"，下表是清点结果。
-轮子与缺口的边界很清楚：CopilotKit 提供的是挂起 / 回传这类机制件，打断语义与共享表面控制权从来不在任何框架的射程内，因为它们是应用语义，不是框架语义。
+轮子与缺口的边界很清楚：CopilotKit 提供工具、挂起、响应和传输机制，地图副作用、残余状态与共享表面控制权仍是 Workbench 应用语义。
 
-| 闭环需求 | 框架已提供，直接复用 | 必须自己做 |
+| 闭环需求 | 框架已提供 | Workbench 必须定义 |
 | --- | --- | --- |
 | 单轮问答 | 聊天 UI 与 streaming text 渲染 | - |
-| 工具中介行动（挂起 / 回传） | `useFrontendTool` 的调用、挂起、TOOL_CALL_RESULT 回传管道 | 工具实现本身（focusOn / highlight） |
-| 征询等待（工具级） | `renderAndWaitForResponse` 与 render prop 渲染等待组件 | 征询 UI 的具体设计 |
-| 事件词汇与路由 | AG-UI 事件协议、SSE、thin Runtime 的 Agent 注册 | - |
-| 打断纠偏 | 传输层断流（AbortController）有基础 | 全部语义层，详见"实施顺序"第 4 步 |
-| 意图可见性 / 混合主导 | 无 | 全部 |
+| 工具中介行动 | `useFrontendTool`、TOOL_CALL_RESULT 回传与 handler AbortSignal | `focusOn` / `highlight` 的地图副作用和结果契约 |
+| 征询等待 | Vue v2 `useHumanInTheLoop` 与 component renderer | 征询内容、超时、取消和回复 UI |
+| 事件词汇与路由 | AG-UI 事件协议、SSE 与 thin Runtime 的 Agent 注册 | 验证 source 的可见标识与开关 |
+| 传输取消 | AbortController / AbortSignal 基础 | 地图动画与副作用的实际终止和残余状态 |
+| 对话纠偏 | 新 Run 和消息传输机制 | 新旧 Run 取代关系和旧操作处置 |
+| 意图可见性 / 混合主导 | 可观察工具和 Run 事件 | 变化归因、用户接管和冲突规则 |
 
 ## 实施载体
 
-1. 工具实现位于 `apps/web-workbench/src/features/frontend-tools/`，沿用 locateDevice 与 `useFrontendTool` 的既有模式。
-2. 确定性 fixture 位于 `packages/ag-ui-mock/src/scenarios/`，为每个验证维度提供可回归的场景（含失败场景，参照 run-error.ts 模式）。打断纠偏同样由 AGUIMock 驱动：mock 只需提供可被打断的慢速多步序列。
-3. 薄验证 Agent：LangGraph + CopilotKit 官方集成路径，挂接到现有 copilot-runtime 的 Agent 注册，定位为 dev-only 验证仪器（类比 Issue #213 Scenario Lab 的先例），不承载业务逻辑，只挂地图操作工具，由 LLM 决策交互动作（何时征询、被打断后如何反应）。它与 AGUIMock 按证据类型分工，两类证据不可互换：fixture 产工程证据（闭环语义，可回归），验证 Agent 产体验证据（征询时机、重规划质量、新模式发现），后者不可复现，探索会话通过 Scenario Lab / Inspect 录制留证。它将成为 AGUIMock / SACS 之外的第三个 Agent source，按仓库 Feature admission gate 走 Issue 立项；AGUIMock 保持确定性，LLM 不进入 mock。
-4. 评估载体复用 Issue #213 Scenario Lab 的 scenarios JSON 与运行记录，不新建评估平台。
-5. 验证证据通过 Playground / Inspect 的既有观测能力采集。
+1. 地图域工具实现位于 `apps/web-workbench/src/features/frontend-tools/`，沿用已证明的 `useFrontendTool` 浏览器执行模式。
+2. 确定性 fixture 位于 `packages/ag-ui-mock/src/scenarios/`，为每个工程验证维度提供可回归的成功、取消、被替代与失败场景。
+3. 本验证方向明确准入一个 AGUIMock / SACS 之外的第三 Agent source，即 dev-only 薄验证 Agent。
+4. 薄验证 Agent 采用 LangGraph + CopilotKit 官方集成路径，挂接到现有 copilot-runtime 的 Agent 注册，只挂地图域工具与征询能力。
+5. 薄验证 Agent 不承载业务逻辑、持久化状态或产品 Runtime Truth，由 LLM 决定工具选择、顺序、征询时机与被纠偏后的重规划。
+6. 薄验证 Agent 默认关闭，使用独立配置与明确的验证 source 标识，不伪装为 SACS 也不进入产品默认 source 列表。
+7. AGUIMock 保持确定性，LLM 不进入 mock。
+8. 薄验证 Agent 的每次运行都记录模型、prompt、工具 schema 与推理参数，使得探索证据可重放、可比较，不将其定义为“不可复现”。
+
+当前 Issue #213 Scenario Lab 只服务 `PresentationInput -> Secondary Presentation LLM -> A2UI surface` 与 expected facts 检查。
+本方向只复用其场景文件、人工审定和 expected facts 经验，不声称它已经具备地图交互运行记录能力。
+
+地图交互证据由 Playground / Inspect 采集，并增加最小 JSON 导出或等价的可审查留证方式。
+这一能力只导出 Workbench 已观测的公开事实，不创建 Runtime Repository、私有诊断协议或通用评估平台。
 
 ## 实施顺序
 
 每步带 e2e 回归：
 
-1. 地图操作工具面 MVP：将 locateDevice 重构为业务无关的 focusOn（deviceId 降级为参数值）并扩展 highlight，AGUIMock 增加带节奏的多步序列场景。覆盖场景 A。
-2. 征询等待工具级闭环：`renderAndWaitForResponse` 征询工具与征询 UI，AGUIMock 增加 consult-during-sequence 场景。机制 CopilotKit 现成，工作量最小，为后续两步提供参照实现。覆盖场景 B。
-3. 薄验证 Agent：按 admission gate 立 Issue 后实现，做体验探索，产出交互模式发现，为第 4 步语义设计提供输入。工作量约 1 周：接线 2 天（agent 骨架、runtime 注册、模型配置），prompt 迭代 2-5 天（真正的研究工作，即报告素材本身），新探索场景边际成本接近零；Issue 中写入时间盒，prompt 迭代限定 5 天内出第一版探索结论。
-4. 打断纠偏与混合主导语义：探索中观察用户何时、为何介入，Workbench 侧定义并实现挂起 TOOL_CALL 处置、地图残余状态、新旧 Run 衔接与控制权让渡语义，用 AGUIMock interruptible fixture 固化。覆盖场景 C / D / E；意图可见性从第 2 步起持续累积。
-5. 评估与报告：Scenario Lab 采集证据，产出 taxonomy、能力矩阵、失败模式清单、UX 准则与 Felt 对比分析。
+1. 基线与工具迁移：固定当前 `locateDevice` e2e 基线，将 Agent 可见契约迁移为 `focusOn` 与 `highlight`，并用 `MapTargetRef` 和 `MapOperationResult` 验证行为等价。
+2. 多步工具场景：AGUIMock 增加带节奏的多步序列，完成场景 A 与意图可见性基线。
+3. 征询等待闭环：使用 Vue v2 `useHumanInTheLoop` 实现征询工具与等待 UI，AGUIMock 增加 consult-during-sequence 场景，完成场景 B。
+4. 薄验证 Agent：按 Feature admission gate 立 Issue，以约 1 周的时间盒完成接线和首轮 prompt 探索，并按首轮评估协议重复运行。
+5. 取消、纠偏、混合主导与失败：分别定义 C1、C2、D 和 E 的地图残余状态、新旧 Run 关系和控制权让渡语义，再用确定性 fixture 固化。
+6. 形成性评估与报告：导出 Inspect 可观察证据，完成参与者任务与评分，产出主报告、证据包、技术资产与后续决策。
 
-核心逻辑：先建资产（工具面、闭环），再用仪器取证据（验证 Agent），最后固化语义出报告。
+核心逻辑：先定义可证伪契约和工具基线，再用确定性 fixture 与薄验证 Agent 分别取工程证据和行为证据，最后用体验证据决定 Go / Pivot / Stop。
 
 ## 边界与纪律
 
@@ -151,18 +232,39 @@ Felt 的定位是 agent-as-cartographer：Agent 从零产出一张地图作为�
 - 本方向是 Frontend Tool 能力扩展 + 交互模式验证，不是 GIS Agent 平台化，也不是恢复已删除的 Runtime / Compiler / Presentation 架构。
 - 复用 AG-UI 协议与 CopilotKit `useFrontendTool` 既有机制，不自建交互框架，遵守既有研究对 Layer 2 的"薄"警告。
 - SACS 当前不支持 client-provided Frontend Tools，相关验证基于 AGUIMock 与薄验证 Agent，capability gap 显式呈现，不伪造协议能力。
-- 薄验证 Agent 是 dev-only 验证仪器，不演变为自研 Business Agent。
+- 本方向已准入薄验证 Agent 作为第三个 dev-only Agent source，无需再把“是否允许该 source”作为实施阻塞。
+- 该准入只覆盖受时间盒约束的本地验证仪器，不自动允许它进入产品默认拓扑或演变为自研 Business Agent。
 - 每个新增 Issue / PR 按仓库 Feature admission gate 答卷。
 
 ## 产出物定义
 
-验证成果的目标形态：
+主交付是《地图共享表面中的人机协作交互验证报告》，其他内容作为报告附件与后续资产。
 
-1. 地图场景实例化的交互模式 taxonomy（谁发起、如何编排、如何让渡控制权）。
-2. 能力矩阵（Agent 侧能力声明与 Workbench 侧实现的对应关系）。
-3. 失败模式清单（中断、冲突、超时、错误归因）。
-4. UX 准则（意图可见性、撤销边界、操作反馈）。
-5. Felt 对比分析（agent-as-cartographer 与 operational copilot 的模式差异）。
+### 主报告
+
+1. 执行摘要与 Go / Pivot / Stop 结论。
+2. 验证问题、范围、方法、参与者与局限。
+3. 按场景填写的假设、阈值、证据、失败样本与结论矩阵。
+4. 地图共享表面的交互模式 taxonomy，包括发起者、编排、征询、纠偏与控制权让渡。
+5. 失败模式和 UX 准则，包括意图可见性、撤销边界、残余状态和操作反馈。
+6. Felt agent-as-cartographer 与本平台 operational copilot 的对比分析。
+7. 关键技术方向、不成立的假设与下一阶段投入建议。
+
+### 证据包
+
+1. 版本化场景、输入、预期结果和评分表。
+2. Inspect 导出的公开事件、Frontend Tool 调用与地图操作前后状态。
+3. 薄验证 Agent 的模型、prompt、工具 schema、参数、重复运行结果和失败样本。
+4. 体验评估的任务完成结果、意图归因结果、评分和必要的录屏或截图。
+
+### 经证据支持的技术资产
+
+1. `MapTargetRef` 与 `MapOperationResult` 地图域契约。
+2. 取消、被替代、失败和用户接管语义。
+3. Agent source 能力声明与 Workbench 工具实现的对应矩阵。
+4. 可回归 fixture、e2e 测试和经体验证据支持的 UX 准则。
+
+只有当证据表明某项能力稳定、可复用且超越单一场景时，才将其提升为关键技术方向或长期架构约束。
 
 ## 进入主线前的重新验证
 
@@ -170,7 +272,8 @@ Felt 的定位是 agent-as-cartographer：Agent 从零产出一张地图作为�
 
 若此方向准备进入主线：
 
-1. 按"实施顺序"第 1 步在 web-workbench 内跑通场景 A。
-2. 与 Issue #213 Scenario Lab 的评估流程对齐，确定证据采集方式。
-3. 与 `docs/ARCHITECTURE.md` 对齐后再进入实现。
-4. 若涉及架构阶段变化（如交互模式词汇表成为正式契约），新增 ADR。
+1. 按"实施顺序"先完成 `locateDevice` 到地图域意图工具的基线迁移，再跑通场景 A。
+2. 复用 Issue #213 Scenario Lab 的场景文件和人工审定经验，但为地图交互单独定义 Inspect 证据导出、录屏和评分方式。
+3. 按本文准入 dev-only 薄验证 Agent source，并在实施 Issue 中固定开关、source 标识、配置留证与时间盒。
+4. 与 `docs/ARCHITECTURE.md` 对齐工具边界、Runtime 职责和 SACS capability gap 后再进入实现。
+5. 如果验证后决定把薄验证 Agent 留在产品默认拓扑，或把交互 taxonomy 提升为正式契约，再新增 ADR。
