@@ -56,4 +56,33 @@ describe("ConversationTurnPresentation", () => {
       false,
     );
   });
+
+  it("does not place frontend tool diagnostics in the chat transcript", () => {
+    const wrapper = mount(ConversationTurnPresentation, {
+      props: {
+        turn: {
+          ...markdownTurn,
+          observations: [
+            {
+              hasArtifact: true,
+              id: "observation-1",
+              observedAt: "2026-08-20T10:00:00.000Z",
+              observedIndex: 0,
+              payload: {
+                args: { target: { featureId: "patrol-path-a" } },
+                name: "previewPath",
+              },
+              source: "frontend-tool",
+              toolCallId: "tool-preview-a",
+              type: "FRONTEND_TOOL_INVOCATION",
+            },
+          ],
+        },
+      },
+    });
+
+    expect(wrapper.find('[data-testid="agent-map-operations"]').exists()).toBe(
+      false,
+    );
+  });
 });

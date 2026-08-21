@@ -169,7 +169,10 @@ const server = createServer(async (request, response) => {
     response.writeHead(204).end();
     return;
   }
-  if (url.pathname.startsWith("/api/copilotkit")) {
+  if (
+    url.pathname.startsWith("/api/copilotkit") ||
+    url.pathname.startsWith("/api/dev/scenario-lab")
+  ) {
     if (!runtimeAvailable) {
       json(response, 503, { error: "runtime_unavailable" });
       return;

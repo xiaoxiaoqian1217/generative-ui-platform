@@ -291,7 +291,7 @@ describe("thin CopilotKit Runtime", () => {
     };
     const disabled = createRuntimeHandler(baseConfig);
     const disabledResponse = await disabled(
-      new Request("http://runtime.example.test/api/copilotkit/dev/scenarios"),
+      new Request("http://runtime.example.test/api/dev/scenario-lab/scenarios"),
     );
     expect(disabledResponse.status).toBe(404);
 
@@ -300,7 +300,7 @@ describe("thin CopilotKit Runtime", () => {
       scenarioLabEnabled: true,
     });
     const enabledResponse = await enabled(
-      new Request("http://runtime.example.test/api/copilotkit/dev/scenarios"),
+      new Request("http://runtime.example.test/api/dev/scenario-lab/scenarios"),
     );
     expect(enabledResponse.status).toBe(200);
     expect(await enabledResponse.json()).toMatchObject({

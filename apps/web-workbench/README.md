@@ -41,6 +41,7 @@ The active Conversation route supports:
 - cancellation, retryable timeout handling, agent outage handling, and recovery;
 - explicit Agent Source selection between AGUIMock and `single-agent-chat-server`;
 - the Dynamic A2UI quick scenario, which injects the controlled structured input and requests dynamic generation through forwardedProps.
+- a dev-only Scenario Lab that freely generates Dynamic A2UI previews from `PresentationInput` and keeps repository fact assertions inside a separate advanced evaluation flow.
 
 Turn Inspect records only observable public facts in observed order; it does not infer server-side sequences, and it does not create a Runtime Repository, Recovery Platform, or a private diagnostic protocol.
 
@@ -54,12 +55,13 @@ Workbench never executes model-generated arbitrary HTML or JavaScript.
 
 The following capabilities remain in the repository for later evaluation:
 
-- Playground, Inspect, Cases, Catalog, Scenarios, and Settings routes;
+- Playground, Inspect, Cases, Catalog, and Settings routes;
 - the accepted Conversation-first shell and inspection prototype baselines;
 - semantic case-library support.
 
 These capabilities are frozen rather than removed.
 They may receive compatibility maintenance, but they are not part of the current release gate.
+Scenarios is active for the focused Issue #213 Scenario and Evaluation MVP.
 The focused A2UI Renderer, Platform Catalog, and controlled Dynamic A2UI MVPs are active under ADR-0029 and ADR-0030.
 Theme work, real SACS content presentation, and any general Runtime, Presentation, or Compiler platform remain outside this slice.
 
@@ -106,11 +108,12 @@ pnpm dev
 ```
 
 This starts Web Workbench, the reusable AG-UI Mock, and the thin CopilotKit Runtime together.
-The Vite development server proxies same-origin `/api/copilotkit` requests to `http://127.0.0.1:4801`.
+The Vite development server proxies same-origin `/api/copilotkit` and `/api/dev/scenario-lab` requests to `http://127.0.0.1:4801`.
 No Settings override is required for the default Mock flow.
 
 Production deployments should expose `/api/copilotkit` on the Workbench origin through a reverse proxy.
-The local Vite proxy already provides that same-origin path.
+The dev-only `/api/dev/scenario-lab` boundary must remain disabled unless the deployment is trusted and authenticated.
+The local Vite proxy already provides both same-origin paths.
 
 ## Run integration services separately
 

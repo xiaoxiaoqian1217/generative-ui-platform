@@ -5,6 +5,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { ConversationTurn } from "../../src/conversation/conversation-store.js";
 import type { TurnObservation } from "../../src/inspect/turn-inspection.js";
 import InspectPanel from "../../src/shell/InspectPanel.vue";
+import {
+  MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
+  MAP_PLAN_ACTIVITY_TYPE,
+} from "@generative-ui/shared-types";
 
 const observations: readonly TurnObservation[] = [
   {
@@ -50,6 +54,96 @@ const turn: ConversationTurn = {
 };
 
 describe("InspectPanel", () => {
+  it("links the user-visible map projection to its observed tool exchange", async () => {
+    const mapTurn: ConversationTurn = {
+      ...turn,
+      observations: [
+        {
+          hasArtifact: true,
+          id: "map-plan",
+          messageId: "map-plan-1",
+          observedAt: "2026-08-13T10:00:00.000Z",
+          observedIndex: 0,
+          payload: {
+            activityType: MAP_PLAN_ACTIVITY_TYPE,
+            content: {
+              goal: "检查北侧通道",
+              schemaVersion: MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
+              status: "completed",
+              steps: [
+                {
+                  detail: "展示已有候选路线。",
+                  id: "route",
+                  label: "预览候选路线",
+                  operationNames: ["previewPath"],
+                  status: "completed",
+                },
+              ],
+            },
+            messageId: "map-plan-1",
+            replace: true,
+            type: "ACTIVITY_SNAPSHOT",
+          },
+          source: "agent",
+          type: "ACTIVITY_SNAPSHOT",
+        },
+        {
+          hasArtifact: true,
+          id: "map-invocation",
+          observedAt: "2026-08-13T10:00:00.000Z",
+          observedIndex: 1,
+          payload: {
+            args: { target: { featureId: "patrol-path-a" } },
+            name: "previewPath",
+          },
+          runId: "run-1",
+          source: "frontend-tool",
+          threadId: "thread-1",
+          toolCallId: "tool-preview",
+          type: "FRONTEND_TOOL_INVOCATION",
+        },
+        {
+          hasArtifact: true,
+          id: "map-result",
+          observedAt: "2026-08-13T10:00:00.020Z",
+          observedIndex: 2,
+          payload: {
+            name: "previewPath",
+            result: JSON.stringify({ status: "completed" }),
+          },
+          runId: "run-1",
+          source: "frontend-tool",
+          status: "ok",
+          threadId: "thread-1",
+          toolCallId: "tool-preview",
+          type: "FRONTEND_TOOL_RESULT",
+        },
+      ],
+    };
+    const wrapper = mount(InspectPanel, { props: { turn: mapTurn } });
+
+    const projection = wrapper.get('[data-testid="inspect-map-operations"]');
+    expect(projection.text()).toContain("预览候选路线 A");
+    expect(projection.text()).toContain("公开计划来自真实 map-plan Activity");
+    expect(projection.text()).toContain("检查北侧通道");
+
+    await wrapper.get('[data-testid="inspect-map-plan"]').trigger("click");
+    expect(wrapper.get('[data-testid="inspect-detail"]').text()).toContain(
+      "ACTIVITY_SNAPSHOT",
+    );
+
+    await wrapper
+      .get('[data-testid="inspect-map-operation-tool-preview"]')
+      .trigger("click");
+
+    expect(wrapper.get('[data-testid="inspect-detail"]').text()).toContain(
+      "FRONTEND_TOOL_INVOCATION",
+    );
+    expect(
+      wrapper.get('[data-testid="inspect-exchange-response"]').text(),
+    ).toContain("completed");
+  });
+
   it("renders the swimlane timeline with raw JSON detail on demand", async () => {
     const wrapper = mount(InspectPanel, { props: { turn } });
 

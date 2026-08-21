@@ -55,16 +55,28 @@ The Secondary LLM credential stays in the Runtime process and never reaches the 
 
 Scenario Lab is disabled by default and is mounted only when `SCENARIO_LAB_ENABLED=true`.
 Do not enable it on an unauthenticated or Internet-facing Runtime.
-The endpoint can read and write repository Scenario files and can invoke configured models, so the `/dev` path name is not itself an access-control mechanism.
+Its source-neutral base path is `/api/dev/scenario-lab`; it is separate from the `/api/copilotkit` Agent integration endpoint even though both are hosted by the same local process.
+The endpoints can read and write repository Scenario files and can invoke configured models, so the `/dev` path name is not itself an access-control mechanism.
+
+The boundary separates four operations:
+
+- `GET /api/dev/scenario-lab/scenarios` and `PUT /api/dev/scenario-lab/scenarios/:name` list and save repository evaluation fixtures;
+- `POST /api/dev/scenario-lab/fixture-drafts` creates synthetic content drafts for human review;
+- `POST /api/dev/scenario-lab/generations` accepts only `presentationInput` and generates one Dynamic A2UI preview;
+- `POST /api/dev/scenario-lab/evaluations` accepts `presentationInput` plus an `evaluationOracle` and returns a post-generation fact check.
+
+The generation endpoint never accepts the evaluation oracle.
+The oracle cannot constrain component choice or layout and is not sent to the Secondary Presentation LLM.
 
 Scenario fixture authoring is separate from the Secondary Presentation LLM.
 Configure it with `SCENARIO_DRAFT_LLM_BASE_URL`, `SCENARIO_DRAFT_LLM_MODEL`, `SCENARIO_DRAFT_LLM_API_KEY`, and optionally `SCENARIO_DRAFT_LLM_TIMEOUT_MS`.
 The same provider or model may be selected explicitly, but the authoring adapter never reads `A2UI_SECONDARY_LLM_*` as a fallback.
 It returns schema-constrained synthetic fixture content for human review and never claims that the content came from a Business Agent.
 
-An AI-authored draft remains an unsaved editor buffer.
-Saving requires at least one manually written expected fact, and the Workbench requires an explicit review acknowledgement for AI-authored content.
-The server also rejects Scenario files with an empty expected-facts list.
+An AI-authored draft remains an unsaved editor buffer and can be freely previewed without an evaluation oracle.
+The Workbench exposes the oracle only under advanced evaluation controls.
+Saving as a reusable evaluation scenario requires at least one manually written oracle assertion, and the Workbench requires an explicit review acknowledgement for AI-authored content.
+The server also rejects evaluation scenario files with an empty `expected-facts.json` list.
 
 This configured principal is appropriate only for a single-user or trusted shared Workbench deployment.
 Before exposing Workbench to multiple users, authenticate requests at the Runtime boundary and derive the JWT subject from that verified server-side identity.

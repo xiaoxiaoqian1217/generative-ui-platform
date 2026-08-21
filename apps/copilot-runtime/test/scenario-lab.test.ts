@@ -10,6 +10,10 @@ import {
 } from "../src/index.js";
 
 const tempDirs: string[] = [];
+const SCENARIOS_PATH = `${SCENARIO_LAB_BASE_PATH}/scenarios`;
+const GENERATIONS_PATH = `${SCENARIO_LAB_BASE_PATH}/generations`;
+const EVALUATIONS_PATH = `${SCENARIO_LAB_BASE_PATH}/evaluations`;
+const FIXTURE_DRAFTS_PATH = `${SCENARIO_LAB_BASE_PATH}/fixture-drafts`;
 
 async function tempScenariosDir(): Promise<URL> {
   const dir = await mkdtemp(join(tmpdir(), "scenario-lab-"));
@@ -75,9 +79,9 @@ describe("Scenario Lab endpoints", () => {
     const handler = createScenarioLabHandler({ scenariosDir });
 
     const saveResponse = await handler(
-      labRequest(`${SCENARIO_LAB_BASE_PATH}/summary`, {
+      labRequest(`${SCENARIOS_PATH}/summary`, {
         body: JSON.stringify({
-          expectedFacts: summaryFacts,
+          evaluationOracle: summaryFacts,
           presentationInput: summaryInput,
         }),
         method: "PUT",
@@ -93,7 +97,7 @@ describe("Scenario Lab endpoints", () => {
     );
     expect(saved).toEqual(summaryInput);
 
-    const listResponse = await handler(labRequest(SCENARIO_LAB_BASE_PATH));
+    const listResponse = await handler(labRequest(SCENARIOS_PATH));
     const list = (await listResponse?.json()) as {
       scenarios: Array<{ name: string }>;
     };
@@ -108,9 +112,9 @@ describe("Scenario Lab endpoints", () => {
     });
 
     const invalidInput = await handler(
-      labRequest(`${SCENARIO_LAB_BASE_PATH}/summary`, {
+      labRequest(`${SCENARIOS_PATH}/summary`, {
         body: JSON.stringify({
-          expectedFacts: summaryFacts,
+          evaluationOracle: summaryFacts,
           presentationInput: { content: { kind: "mystery" } },
         }),
         method: "PUT",
@@ -119,9 +123,9 @@ describe("Scenario Lab endpoints", () => {
     expect(invalidInput?.status).toBe(400);
 
     const missingFacts = await handler(
-      labRequest(`${SCENARIO_LAB_BASE_PATH}/summary`, {
+      labRequest(`${SCENARIOS_PATH}/summary`, {
         body: JSON.stringify({
-          expectedFacts: { facts: [] },
+          evaluationOracle: { facts: [] },
           presentationInput: summaryInput,
         }),
         method: "PUT",
@@ -129,13 +133,13 @@ describe("Scenario Lab endpoints", () => {
     );
     expect(missingFacts?.status).toBe(400);
     expect(await missingFacts?.json()).toEqual({
-      error: "EXPECTED_FACTS_REQUIRED",
+      error: "EVALUATION_ORACLE_REQUIRED",
     });
 
     const invalidName = await handler(
-      labRequest(`${SCENARIO_LAB_BASE_PATH}/Summary_Bad`, {
+      labRequest(`${SCENARIOS_PATH}/Summary_Bad`, {
         body: JSON.stringify({
-          expectedFacts: summaryFacts,
+          evaluationOracle: summaryFacts,
           presentationInput: summaryInput,
         }),
         method: "PUT",
@@ -144,16 +148,38 @@ describe("Scenario Lab endpoints", () => {
     expect(invalidName?.status).toBe(404);
   });
 
-  it("runs a scenario through generation and checks facts in the surface", async () => {
+  it("generates a surface without accepting an evaluation oracle", async () => {
     const handler = createScenarioLabHandler({
       invokeSubagent: faithfulInvokeSubagent,
       scenariosDir: await tempScenariosDir(),
     });
 
     const response = await handler(
-      labRequest(`${SCENARIO_LAB_BASE_PATH}/run`, {
+      labRequest(GENERATIONS_PATH, {
+        body: JSON.stringify({ presentationInput: summaryInput }),
+        method: "POST",
+      }),
+    );
+    const body = (await response?.json()) as {
+      ok: boolean;
+      surface: { a2ui_operations: unknown[] };
+    };
+
+    expect(body.ok).toBe(true);
+    expect(body.surface.a2ui_operations.length).toBeGreaterThan(0);
+    expect(body).not.toHaveProperty("factCheck");
+  });
+
+  it("evaluates generated surface fidelity against a separate oracle", async () => {
+    const handler = createScenarioLabHandler({
+      invokeSubagent: faithfulInvokeSubagent,
+      scenariosDir: await tempScenariosDir(),
+    });
+
+    const response = await handler(
+      labRequest(EVALUATIONS_PATH, {
         body: JSON.stringify({
-          expectedFacts: summaryFacts,
+          evaluationOracle: summaryFacts,
           presentationInput: summaryInput,
         }),
         method: "POST",
@@ -166,7 +192,6 @@ describe("Scenario Lab endpoints", () => {
     };
 
     expect(body.ok).toBe(true);
-    expect(body.surface.a2ui_operations.length).toBeGreaterThan(0);
     expect(body.factCheck).toEqual([
       { pointer: "/total", status: "found", value: 128 },
       { pointer: "/failed", status: "found", value: 8 },
@@ -180,9 +205,11 @@ describe("Scenario Lab endpoints", () => {
     });
 
     const response = await handler(
-      labRequest(`${SCENARIO_LAB_BASE_PATH}/run`, {
+      labRequest(EVALUATIONS_PATH, {
         body: JSON.stringify({
-          expectedFacts: { facts: [{ pointer: "/successRate", value: 0.938 }] },
+          evaluationOracle: {
+            facts: [{ pointer: "/successRate", value: 0.938 }],
+          },
           presentationInput: summaryInput,
         }),
         method: "POST",
@@ -202,7 +229,7 @@ describe("Scenario Lab endpoints", () => {
     });
 
     const response = await handler(
-      labRequest(`${SCENARIO_LAB_BASE_PATH}/run`, {
+      labRequest(GENERATIONS_PATH, {
         body: JSON.stringify({ presentationInput: summaryInput }),
         method: "POST",
       }),
@@ -222,7 +249,7 @@ describe("Scenario Lab endpoints", () => {
     });
 
     const response = await handler(
-      labRequest(`${SCENARIO_LAB_BASE_PATH}/run`, {
+      labRequest(GENERATIONS_PATH, {
         body: JSON.stringify({ presentationInput: { content: null } }),
         method: "POST",
       }),
@@ -241,7 +268,7 @@ describe("Scenario Lab endpoints", () => {
     });
 
     const response = await handler(
-      labRequest(`${SCENARIO_LAB_BASE_PATH}/draft`, {
+      labRequest(FIXTURE_DRAFTS_PATH, {
         body: JSON.stringify({ description: "三台设备的巡检结果" }),
         method: "POST",
       }),
@@ -262,7 +289,7 @@ describe("Scenario Lab endpoints", () => {
       scenariosDir,
     });
     const missingDescription = await withDrafter(
-      labRequest(`${SCENARIO_LAB_BASE_PATH}/draft`, {
+      labRequest(FIXTURE_DRAFTS_PATH, {
         body: JSON.stringify({ description: "   " }),
         method: "POST",
       }),
@@ -271,7 +298,7 @@ describe("Scenario Lab endpoints", () => {
 
     const withoutDrafter = createScenarioLabHandler({ scenariosDir });
     const unavailable = await withoutDrafter(
-      labRequest(`${SCENARIO_LAB_BASE_PATH}/draft`, {
+      labRequest(FIXTURE_DRAFTS_PATH, {
         body: JSON.stringify({ description: "巡检结果" }),
         method: "POST",
       }),
@@ -294,7 +321,7 @@ describe("Scenario Lab endpoints", () => {
     });
 
     const response = await handler(
-      labRequest(`${SCENARIO_LAB_BASE_PATH}/draft`, {
+      labRequest(FIXTURE_DRAFTS_PATH, {
         body: JSON.stringify({ description: "巡检结果" }),
         method: "POST",
       }),

@@ -14,10 +14,13 @@ import {
 } from "../src/scenarios/inspection-summary-platform-a2ui.js";
 import { inspectionSummaryStructuredResult } from "../src/scenarios/inspection-summary-structured.js";
 import {
+  MAP_PATROL_ROUTE_REVIEW_PLAN_MESSAGE_ID,
   MAP_PATROL_ROUTE_REVIEW_MESSAGE,
   MAP_PATROL_ROUTE_REVIEW_RESULT,
   MAP_PATROL_ROUTE_REVIEW_STEPS,
+  mapPatrolRouteReviewPlan,
 } from "../src/scenarios/map-patrol-route-review.js";
+import { MAP_PLAN_ACTIVITY_TYPE } from "@generative-ui/shared-types";
 
 interface AguiEvent {
   readonly type: string;
@@ -337,6 +340,7 @@ describe("createAguiMockServer", () => {
         index === 0
           ? [
               "RUN_STARTED",
+              "ACTIVITY_SNAPSHOT",
               "TOOL_CALL_START",
               "TOOL_CALL_ARGS",
               "TOOL_CALL_END",
@@ -345,12 +349,21 @@ describe("createAguiMockServer", () => {
           : [
               "RUN_STARTED",
               "TOOL_CALL_RESULT",
+              "ACTIVITY_SNAPSHOT",
               "TOOL_CALL_START",
               "TOOL_CALL_ARGS",
               "TOOL_CALL_END",
               "RUN_FINISHED",
             ],
       );
+      expect(
+        events.find((event) => event.type === "ACTIVITY_SNAPSHOT"),
+      ).toMatchObject({
+        activityType: MAP_PLAN_ACTIVITY_TYPE,
+        content: mapPatrolRouteReviewPlan(index),
+        messageId: MAP_PATROL_ROUTE_REVIEW_PLAN_MESSAGE_ID,
+        replace: true,
+      });
       if (previousResult !== undefined) {
         expect(
           events.find((event) => event.type === "TOOL_CALL_RESULT"),
@@ -380,11 +393,20 @@ describe("createAguiMockServer", () => {
     expect(finalEvents.map((event) => event.type)).toEqual([
       "RUN_STARTED",
       "TOOL_CALL_RESULT",
+      "ACTIVITY_SNAPSHOT",
       "TEXT_MESSAGE_START",
       "TEXT_MESSAGE_CONTENT",
       "TEXT_MESSAGE_END",
       "RUN_FINISHED",
     ]);
+    expect(
+      finalEvents.find((event) => event.type === "ACTIVITY_SNAPSHOT"),
+    ).toMatchObject({
+      activityType: MAP_PLAN_ACTIVITY_TYPE,
+      content: mapPatrolRouteReviewPlan(MAP_PATROL_ROUTE_REVIEW_STEPS.length),
+      messageId: MAP_PATROL_ROUTE_REVIEW_PLAN_MESSAGE_ID,
+      replace: true,
+    });
     expect(
       finalEvents.find((event) => event.type === "TOOL_CALL_RESULT"),
     ).toMatchObject({

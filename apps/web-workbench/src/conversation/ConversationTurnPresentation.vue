@@ -3,6 +3,7 @@ import type { ActivityMessage } from "@ag-ui/core";
 import { computed, reactive } from "vue";
 import MarkdownRenderer from "../renderer/MarkdownRenderer.vue";
 import ActivityMessagePresentation from "./ActivityMessagePresentation.vue";
+import { isMapPlanActivityMessage } from "./map-plan-activity.js";
 import type {
   ConversationTurn,
   InterruptResponse,
@@ -22,6 +23,7 @@ const presentableMessages = computed<PresentableMessage[]>(() => {
   const messages: PresentableMessage[] = [];
   for (const message of props.turn.responseMessages) {
     if (message.role === "activity") {
+      if (isMapPlanActivityMessage(message)) continue;
       messages.push({ id: message.id, kind: "activity", activity: message });
     } else if (
       message.role === "assistant" &&

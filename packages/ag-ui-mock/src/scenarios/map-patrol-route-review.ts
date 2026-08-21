@@ -1,8 +1,16 @@
 import type { AGUIMock } from "@copilotkit/aimock";
 import {
+  buildActivityResponse,
+  buildCompositeResponse,
   buildTextResponse,
   buildToolCallResponse,
 } from "@copilotkit/aimock/agui";
+import {
+  MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
+  MAP_PLAN_ACTIVITY_TYPE,
+  type MapPlanActivityContent,
+  type MapPlanActivityStep,
+} from "@generative-ui/shared-types";
 import {
   acknowledgeToolResult,
   completedMapOperationResult,
@@ -13,6 +21,29 @@ import {
 export const MAP_PATROL_ROUTE_REVIEW_MESSAGE = "帮我想想怎么巡逻北侧通道";
 export const MAP_PATROL_ROUTE_REVIEW_RESULT =
   "已展开北侧通道巡逻方案：限制图层已显示，3 个观察点与北坡限制区已高亮，并预览候选路线 A。";
+export const MAP_PATROL_ROUTE_REVIEW_PLAN_MESSAGE_ID =
+  "map-patrol-route-review-plan";
+
+const MAP_PATROL_ROUTE_REVIEW_PLAN_STEPS = [
+  {
+    detail: "显示任务限制图层，并将地图聚焦到北侧通道。",
+    id: "establish-scope",
+    label: "确认任务范围与限制",
+    operationNames: ["setLayerVisibility", "focusOn"],
+  },
+  {
+    detail: "在地图上标出 3 个观察点和北坡限制区。",
+    id: "mark-observations",
+    label: "标记关键观察位置",
+    operationNames: ["highlight"],
+  },
+  {
+    detail: "展示已有候选路线 A，供后续检查和比较。",
+    id: "preview-candidate",
+    label: "预览候选路线",
+    operationNames: ["previewPath"],
+  },
+] as const;
 
 export const MAP_PATROL_ROUTE_REVIEW_STEPS = [
   {
@@ -70,18 +101,61 @@ export const MAP_PATROL_ROUTE_REVIEW_STEPS = [
 
 const OBSERVATION_DELAY_MS = 120;
 
+function planStepStatus(
+  step: (typeof MAP_PATROL_ROUTE_REVIEW_PLAN_STEPS)[number],
+  completedOperationCount: number,
+): MapPlanActivityStep["status"] {
+  const operationIndexes = step.operationNames.map((operationName) =>
+    MAP_PATROL_ROUTE_REVIEW_STEPS.findIndex(
+      (candidate) => candidate.toolName === operationName,
+    ),
+  );
+  if (operationIndexes.every((index) => index < completedOperationCount))
+    return "completed";
+  if (operationIndexes.some((index) => index === completedOperationCount))
+    return "running";
+  return "pending";
+}
+
+export function mapPatrolRouteReviewPlan(
+  completedOperationCount: number,
+): MapPlanActivityContent {
+  const steps = MAP_PATROL_ROUTE_REVIEW_PLAN_STEPS.map((step) => ({
+    ...step,
+    status: planStepStatus(step, completedOperationCount),
+  }));
+  return {
+    goal: "形成一条覆盖关键观察点并避开限制区的北侧通道巡逻候选方案。",
+    schemaVersion: MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
+    status:
+      completedOperationCount >= MAP_PATROL_ROUTE_REVIEW_STEPS.length
+        ? "completed"
+        : "running",
+    steps,
+  };
+}
+
+function planActivity(completedOperationCount: number) {
+  return buildActivityResponse(
+    MAP_PATROL_ROUTE_REVIEW_PLAN_MESSAGE_ID,
+    MAP_PLAN_ACTIVITY_TYPE,
+    { ...mapPatrolRouteReviewPlan(completedOperationCount) },
+  );
+}
+
 export function registerMapPatrolRouteReviewScenario(mock: AGUIMock): void {
   const toolCalls = MAP_PATROL_ROUTE_REVIEW_STEPS.map((step) =>
     buildToolCallResponse(step.toolName, JSON.stringify(step.args)),
   );
   const responses = toolCalls.map((toolCall, index) => {
-    if (index === 0) return toolCall;
+    const response = buildCompositeResponse([planActivity(index), toolCall]);
+    if (index === 0) return response;
     const previous = MAP_PATROL_ROUTE_REVIEW_STEPS[index - 1];
     const previousToolCall = toolCalls[index - 1];
     if (previous === undefined || previousToolCall === undefined)
       throw new Error("MAP_PATROL_SCENARIO_STEP_MISSING");
     return acknowledgeToolResult(
-      toolCall,
+      response,
       previousToolCall,
       completedMapOperationResult(previous.expected),
     );
@@ -91,7 +165,10 @@ export function registerMapPatrolRouteReviewScenario(mock: AGUIMock): void {
   if (finalStep === undefined || finalToolCall === undefined)
     throw new Error("MAP_PATROL_SCENARIO_FINAL_STEP_MISSING");
   const finalEvents = acknowledgeToolResult(
-    buildTextResponse(MAP_PATROL_ROUTE_REVIEW_RESULT),
+    buildCompositeResponse([
+      planActivity(MAP_PATROL_ROUTE_REVIEW_STEPS.length),
+      buildTextResponse(MAP_PATROL_ROUTE_REVIEW_RESULT),
+    ]),
     finalToolCall,
     completedMapOperationResult(finalStep.expected),
   );

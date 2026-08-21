@@ -1,8 +1,8 @@
 /**
- * Client for the dev-only Scenario Lab endpoints on the CopilotKit Runtime
- * (Issue #213). Scenario documents are JSON files in the repository; the
- * Runtime reads/writes them and runs unsaved buffers through the real
- * presentation generation chain.
+ * Client for the source-neutral, dev-only Scenario Lab boundary (Issue #213).
+ * Scenario documents are JSON files in the repository; the dev host
+ * reads/writes them and runs unsaved buffers through the real presentation
+ * generation chain.
  */
 
 export interface ScenarioLabFact {
@@ -10,12 +10,12 @@ export interface ScenarioLabFact {
   readonly value: unknown;
 }
 
-export interface ScenarioLabExpectedFacts {
+export interface ScenarioLabEvaluationOracle {
   readonly facts: readonly ScenarioLabFact[];
 }
 
 export interface ScenarioLabDocument {
-  readonly expectedFacts: ScenarioLabExpectedFacts;
+  readonly evaluationOracle: ScenarioLabEvaluationOracle;
   readonly name: string;
   readonly presentationInput: unknown;
 }
@@ -35,7 +35,14 @@ export interface ScenarioLabError {
   readonly message?: string;
 }
 
-export type ScenarioRunResult =
+export type ScenarioGenerationResult =
+  | {
+      readonly ok: true;
+      readonly surface: Record<string, unknown>;
+    }
+  | { readonly ok: false; readonly error: ScenarioLabError };
+
+export type ScenarioEvaluationResult =
   | {
       readonly ok: true;
       readonly factCheck: readonly ScenarioLabFactCheckEntry[];
@@ -62,7 +69,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export async function listScenarioLabDocuments(
   labBaseUrl: string,
 ): Promise<ScenarioLabIndex> {
-  const body = (await readJson(await fetch(labBaseUrl))) as {
+  const body = (await readJson(await fetch(`${labBaseUrl}/scenarios`))) as {
     capabilities?: { drafting?: boolean };
     scenarios: ScenarioLabDocument[];
   };
@@ -76,9 +83,9 @@ export async function saveScenarioLabDocument(
   labBaseUrl: string,
   document: ScenarioLabDocument,
 ): Promise<void> {
-  const response = await fetch(`${labBaseUrl}/${document.name}`, {
+  const response = await fetch(`${labBaseUrl}/scenarios/${document.name}`, {
     body: JSON.stringify({
-      expectedFacts: document.expectedFacts,
+      evaluationOracle: document.evaluationOracle,
       presentationInput: document.presentationInput,
     }),
     headers: { "content-type": "application/json" },
@@ -87,19 +94,33 @@ export async function saveScenarioLabDocument(
   await readJson(response);
 }
 
-export async function runScenarioLabDocument(
+export async function generateScenarioLabSurface(
   labBaseUrl: string,
   document: {
-    readonly expectedFacts: ScenarioLabExpectedFacts;
     readonly presentationInput: unknown;
   },
-): Promise<ScenarioRunResult> {
-  const response = await fetch(`${labBaseUrl}/run`, {
+): Promise<ScenarioGenerationResult> {
+  const response = await fetch(`${labBaseUrl}/generations`, {
     body: JSON.stringify(document),
     headers: { "content-type": "application/json" },
     method: "POST",
   });
-  return (await readJson(response)) as ScenarioRunResult;
+  return (await readJson(response)) as ScenarioGenerationResult;
+}
+
+export async function evaluateScenarioLabSurface(
+  labBaseUrl: string,
+  document: {
+    readonly evaluationOracle: ScenarioLabEvaluationOracle;
+    readonly presentationInput: unknown;
+  },
+): Promise<ScenarioEvaluationResult> {
+  const response = await fetch(`${labBaseUrl}/evaluations`, {
+    body: JSON.stringify(document),
+    headers: { "content-type": "application/json" },
+    method: "POST",
+  });
+  return (await readJson(response)) as ScenarioEvaluationResult;
 }
 
 export type ScenarioDraftResult =
@@ -115,7 +136,7 @@ export async function requestScenarioDraft(
   description: string,
   signal?: AbortSignal,
 ): Promise<ScenarioDraftResult> {
-  const response = await fetch(`${labBaseUrl}/draft`, {
+  const response = await fetch(`${labBaseUrl}/fixture-drafts`, {
     body: JSON.stringify({ description }),
     headers: { "content-type": "application/json" },
     method: "POST",

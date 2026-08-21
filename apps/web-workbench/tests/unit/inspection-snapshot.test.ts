@@ -7,6 +7,7 @@ describe("Inspection snapshot", () => {
       requestId: "request",
       threadId: "thread",
       runId: "run",
+      mapOperationCount: 4,
       messages: [
         { id: "assistant", role: "assistant", content: "secret result" },
       ],
@@ -15,6 +16,7 @@ describe("Inspection snapshot", () => {
       requestId: "request",
       outputKind: "ag-ui-messages",
       assistantMessageCount: 1,
+      mapOperationCount: 4,
     });
     expect(JSON.stringify(snapshot)).not.toContain("secret result");
   });

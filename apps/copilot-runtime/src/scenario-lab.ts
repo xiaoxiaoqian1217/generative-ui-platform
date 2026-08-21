@@ -26,7 +26,7 @@ import type { InvokeSubagent } from "./secondary-llm.js";
  * No persistence, no scenario management platform.
  */
 
-export const SCENARIO_LAB_BASE_PATH = "/api/copilotkit/dev/scenarios";
+export const SCENARIO_LAB_BASE_PATH = "/api/dev/scenario-lab";
 
 export interface ScenarioLabOptions {
   readonly draftScenarioFixture?: DraftScenarioFixture;
@@ -39,12 +39,12 @@ interface ExpectedFact {
   readonly value: unknown;
 }
 
-interface ExpectedFacts {
+interface EvaluationOracle {
   readonly facts: readonly ExpectedFact[];
 }
 
 interface ScenarioDocument {
-  readonly expectedFacts: ExpectedFacts;
+  readonly evaluationOracle: EvaluationOracle;
   readonly name: string;
   readonly presentationInput: unknown;
 }
@@ -66,21 +66,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseExpectedFacts(
+function parseEvaluationOracle(
   value: unknown,
   options: { readonly allowEmpty?: boolean } = {},
-): ExpectedFacts {
+): EvaluationOracle {
   if (!isRecord(value) || !Array.isArray(value.facts)) {
-    throw new Error("EXPECTED_FACTS_INVALID");
+    throw new Error("EVALUATION_ORACLE_INVALID");
   }
   const facts = value.facts.map((fact) => {
     if (!isRecord(fact) || typeof fact.pointer !== "string") {
-      throw new Error("EXPECTED_FACTS_INVALID");
+      throw new Error("EVALUATION_ORACLE_INVALID");
     }
     return { pointer: fact.pointer, value: fact.value };
   });
   if (facts.length === 0 && options.allowEmpty !== true)
-    throw new Error("EXPECTED_FACTS_REQUIRED");
+    throw new Error("EVALUATION_ORACLE_REQUIRED");
   return { facts };
 }
 
@@ -115,7 +115,7 @@ async function readScenario(
   name: string,
 ): Promise<ScenarioDocument | undefined> {
   try {
-    const [presentationInputRaw, expectedFactsRaw] = await Promise.all([
+    const [presentationInputRaw, evaluationOracleRaw] = await Promise.all([
       readFile(
         scenarioFileUrl(scenariosDir, name, "presentation-input.json"),
         "utf8",
@@ -126,7 +126,7 @@ async function readScenario(
       ),
     ]);
     return {
-      expectedFacts: JSON.parse(expectedFactsRaw) as ExpectedFacts,
+      evaluationOracle: JSON.parse(evaluationOracleRaw) as EvaluationOracle,
       name,
       presentationInput: JSON.parse(presentationInputRaw) as unknown,
     };
@@ -157,7 +157,10 @@ async function listScenarios(scenariosDir: URL): Promise<ScenarioDocument[]> {
 async function saveScenario(
   scenariosDir: URL,
   name: string,
-  document: { expectedFacts: ExpectedFacts; presentationInput: unknown },
+  document: {
+    evaluationOracle: EvaluationOracle;
+    presentationInput: unknown;
+  },
 ): Promise<void> {
   const dir = new URL(`${name}/`, scenariosDir);
   await mkdir(dir, { recursive: true });
@@ -169,41 +172,49 @@ async function saveScenario(
     ),
     writeFile(
       scenarioFileUrl(scenariosDir, name, "expected-facts.json"),
-      `${JSON.stringify(document.expectedFacts, null, 2)}\n`,
+      `${JSON.stringify(document.evaluationOracle, null, 2)}\n`,
       "utf8",
     ),
   ]);
 }
 
-async function runScenario(
+type ScenarioSurfaceGeneration =
+  | { readonly ok: true; readonly surface: Record<string, unknown> }
+  | {
+      readonly error: A2uiGenerationErrorContent;
+      readonly ok: false;
+      readonly status?: number;
+    };
+
+async function generateScenarioSurface(
   invokeSubagent: InvokeSubagent | undefined,
   body: unknown,
-): Promise<Response> {
-  if (!isRecord(body)) return json({ error: "SCENARIO_RUN_BODY_INVALID" }, 400);
+): Promise<ScenarioSurfaceGeneration> {
+  if (!isRecord(body)) {
+    return {
+      error: {
+        code: "A2UI_GENERATION_FAILED",
+        message: "SCENARIO_GENERATION_BODY_INVALID",
+      },
+      ok: false,
+      status: 400,
+    };
+  }
   let input: PresentationInput;
   try {
     input = parsePresentationInput(body.presentationInput);
   } catch (error) {
-    return json(
-      {
-        error: {
-          code: "PRESENTATION_INPUT_INVALID",
-          message: error instanceof Error ? error.message : "invalid input",
-        },
-        ok: false,
+    return {
+      error: {
+        code: "A2UI_GENERATION_FAILED",
+        message:
+          error instanceof Error
+            ? `PRESENTATION_INPUT_INVALID: ${error.message}`
+            : "PRESENTATION_INPUT_INVALID",
       },
-      400,
-    );
-  }
-  let expectedFacts: ExpectedFacts = { facts: [] };
-  if (body.expectedFacts !== undefined) {
-    try {
-      expectedFacts = parseExpectedFacts(body.expectedFacts, {
-        allowEmpty: true,
-      });
-    } catch {
-      return json({ error: "EXPECTED_FACTS_INVALID" }, 400);
-    }
+      ok: false,
+      status: 400,
+    };
   }
   if (invokeSubagent === undefined) {
     const error: A2uiGenerationErrorContent = {
@@ -211,7 +222,7 @@ async function runScenario(
       message:
         "A2UI Secondary LLM is not configured (A2UI_SECONDARY_LLM_API_KEY).",
     };
-    return json({ error, ok: false });
+    return { error, ok: false };
   }
   const generation = await generateA2uiSurfaceFromContent(
     serializePresentationInputContent(input),
@@ -228,13 +239,50 @@ async function runScenario(
       ok: false,
     }),
   );
-  if (!generation.ok) return json({ error: generation.error, ok: false });
-  const surface = JSON.parse(generation.envelope) as unknown;
-  const factCheck: FactCheckEntry[] = expectedFacts.facts.map((fact) => ({
+  if (!generation.ok) return generation;
+  return {
+    ok: true,
+    surface: JSON.parse(generation.envelope) as Record<string, unknown>,
+  };
+}
+
+async function generateScenario(
+  invokeSubagent: InvokeSubagent | undefined,
+  body: unknown,
+): Promise<Response> {
+  const generation = await generateScenarioSurface(invokeSubagent, body);
+  return json(
+    generation.ok
+      ? { ok: true, surface: generation.surface }
+      : { error: generation.error, ok: false },
+    generation.ok ? 200 : generation.status,
+  );
+}
+
+async function evaluateScenario(
+  invokeSubagent: InvokeSubagent | undefined,
+  body: unknown,
+): Promise<Response> {
+  if (!isRecord(body)) {
+    return json({ error: "SCENARIO_EVALUATION_BODY_INVALID" }, 400);
+  }
+  let evaluationOracle: EvaluationOracle;
+  try {
+    evaluationOracle = parseEvaluationOracle(body.evaluationOracle, {
+      allowEmpty: true,
+    });
+  } catch {
+    return json({ error: "EVALUATION_ORACLE_INVALID" }, 400);
+  }
+  const generation = await generateScenarioSurface(invokeSubagent, body);
+  if (!generation.ok) {
+    return json({ error: generation.error, ok: false }, generation.status);
+  }
+  const factCheck: FactCheckEntry[] = evaluationOracle.facts.map((fact) => ({
     ...fact,
-    status: deepContains(surface, fact.value) ? "found" : "review",
+    status: deepContains(generation.surface, fact.value) ? "found" : "review",
   }));
-  return json({ factCheck, ok: true, surface });
+  return json({ factCheck, ok: true, surface: generation.surface });
 }
 
 async function draftScenario(
@@ -295,12 +343,14 @@ async function draftScenario(
  */
 export function createScenarioLabHandler(options: ScenarioLabOptions) {
   const basePath = SCENARIO_LAB_BASE_PATH;
+  const scenariosPath = `${basePath}/scenarios`;
   return async (request: Request): Promise<Response | undefined> => {
     const url = new URL(request.url);
     const { pathname } = url;
-    if (!pathname.startsWith(basePath)) return undefined;
+    if (pathname !== basePath && !pathname.startsWith(`${basePath}/`))
+      return undefined;
 
-    if (pathname === basePath && request.method === "GET") {
+    if (pathname === scenariosPath && request.method === "GET") {
       return json({
         capabilities: {
           drafting: options.draftScenarioFixture !== undefined,
@@ -309,11 +359,18 @@ export function createScenarioLabHandler(options: ScenarioLabOptions) {
       });
     }
 
-    if (pathname === `${basePath}/run` && request.method === "POST") {
-      return runScenario(options.invokeSubagent, await request.json());
+    if (pathname === `${basePath}/generations` && request.method === "POST") {
+      return generateScenario(options.invokeSubagent, await request.json());
     }
 
-    if (pathname === `${basePath}/draft` && request.method === "POST") {
+    if (pathname === `${basePath}/evaluations` && request.method === "POST") {
+      return evaluateScenario(options.invokeSubagent, await request.json());
+    }
+
+    if (
+      pathname === `${basePath}/fixture-drafts` &&
+      request.method === "POST"
+    ) {
       return draftScenario(
         options.draftScenarioFixture,
         await request.json(),
@@ -321,9 +378,9 @@ export function createScenarioLabHandler(options: ScenarioLabOptions) {
       );
     }
 
-    const saveMatch = pathname.slice(basePath.length + 1);
+    const saveMatch = pathname.slice(scenariosPath.length + 1);
     if (
-      pathname.startsWith(`${basePath}/`) &&
+      pathname.startsWith(`${scenariosPath}/`) &&
       request.method === "PUT" &&
       SCENARIO_NAME_PATTERN.test(saveMatch)
     ) {
@@ -331,9 +388,9 @@ export function createScenarioLabHandler(options: ScenarioLabOptions) {
       if (!isRecord(body)) return json({ error: "SCENARIO_SAVE_INVALID" }, 400);
       try {
         parsePresentationInput(body.presentationInput);
-        const expectedFacts = parseExpectedFacts(body.expectedFacts);
+        const evaluationOracle = parseEvaluationOracle(body.evaluationOracle);
         await saveScenario(options.scenariosDir, saveMatch, {
-          expectedFacts,
+          evaluationOracle,
           presentationInput: body.presentationInput,
         });
       } catch (error) {

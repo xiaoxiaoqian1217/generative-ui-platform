@@ -4,6 +4,7 @@ export const INSPECTION_SNAPSHOT_KEY = "generative-ui.workbench.inspect.v2";
 
 export interface InspectionSnapshot {
   readonly assistantMessageCount: number;
+  readonly mapOperationCount: number;
   readonly messageCount: number;
   readonly outputKind: "ag-ui-messages";
   readonly requestId: string;
@@ -13,6 +14,7 @@ export interface InspectionSnapshot {
 }
 
 export interface InspectionSnapshotInput {
+  readonly mapOperationCount?: number;
   readonly messages: readonly Message[];
   readonly requestId: string;
   readonly runId: string;
@@ -26,6 +28,7 @@ export function createInspectionSnapshot(
     assistantMessageCount: input.messages.filter(
       (message) => message.role === "assistant",
     ).length,
+    mapOperationCount: input.mapOperationCount ?? 0,
     messageCount: input.messages.length,
     outputKind: "ag-ui-messages",
     requestId: input.requestId,
@@ -58,8 +61,13 @@ export function loadInspectionSnapshot(
       value.status === "completed" &&
       value.outputKind === "ag-ui-messages" &&
       typeof value.messageCount === "number" &&
-      typeof value.assistantMessageCount === "number"
-      ? (value as InspectionSnapshot)
+      typeof value.assistantMessageCount === "number" &&
+      (value.mapOperationCount === undefined ||
+        typeof value.mapOperationCount === "number")
+      ? ({
+          ...value,
+          mapOperationCount: value.mapOperationCount ?? 0,
+        } as InspectionSnapshot)
       : undefined;
   } catch {
     return undefined;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendTurnObservation,
   createConversationState,
   failOperation,
   resolveRun,
@@ -25,6 +26,40 @@ const userMessage = {
 };
 
 describe("Conversation Store", () => {
+  it("appends live observations to the active turn", () => {
+    const running = startRun(createConversationState(), {
+      message: userMessage,
+      requestId: "request-1",
+      turnId: "turn-1",
+    });
+
+    const observed = appendTurnObservation(
+      running,
+      "turn-1",
+      observation(0, "FRONTEND_TOOL_INVOCATION"),
+    );
+
+    expect(observed.turns[0]?.observations?.map((item) => item.type)).toEqual([
+      "FRONTEND_TOOL_INVOCATION",
+    ]);
+    expect(observed.turns[0]?.status).toBe("pending");
+
+    const resolved = resolveRun(observed, "turn-1", {
+      messages: [],
+      observations: [
+        observation(0, "FRONTEND_TOOL_INVOCATION"),
+        observation(1, "RUN_FINISHED"),
+      ],
+      runId: "run-1",
+      threadId: "thread-1",
+    });
+
+    expect(resolved.turns[0]?.observations?.map((item) => item.type)).toEqual([
+      "FRONTEND_TOOL_INVOCATION",
+      "RUN_FINISHED",
+    ]);
+  });
+
   it("permits only one active operation", () => {
     const running = startRun(createConversationState(), {
       message: userMessage,

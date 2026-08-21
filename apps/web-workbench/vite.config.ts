@@ -12,6 +12,10 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      "/api/dev/scenario-lab": {
+        changeOrigin: true,
+        target: "http://127.0.0.1:4801",
+      },
       "/api/copilotkit": {
         changeOrigin: true,
         target: "http://127.0.0.1:4801",

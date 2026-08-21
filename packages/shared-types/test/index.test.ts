@@ -1,6 +1,8 @@
 import { Ajv } from "ajv";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import {
+  isMapPlanActivityContent,
+  MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
   type JsonValue,
   jsonValueSchema,
   type ValidationResult,
@@ -51,6 +53,33 @@ describe("shared JSON types", () => {
     };
 
     expectTypeOf(result.error.code).toEqualTypeOf<"EXAMPLE_INVALID">();
+  });
+
+  it("validates the shared public map plan activity contract", () => {
+    expect(
+      isMapPlanActivityContent({
+        goal: "Inspect a corridor",
+        schemaVersion: MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
+        status: "running",
+        steps: [
+          {
+            detail: "Show the candidate route.",
+            id: "route",
+            label: "Preview route",
+            operationNames: ["previewPath"],
+            status: "running",
+          },
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      isMapPlanActivityContent({
+        goal: "Inspect a corridor",
+        schemaVersion: "2.0",
+        status: "running",
+        steps: [],
+      }),
+    ).toBe(false);
   });
 
   it.each([jsonValueSchema, validationErrorSchema])(

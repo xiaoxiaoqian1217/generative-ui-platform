@@ -5,6 +5,8 @@ import type {
   InterruptResponse,
 } from "../conversation/conversation-store.js";
 import ConversationTurnPresentation from "../conversation/ConversationTurnPresentation.vue";
+import MapPlanActivityPresentation from "../conversation/MapPlanActivityPresentation.vue";
+import { mapPlanFromTurn } from "../conversation/map-plan-activity.js";
 
 export type ConversationRunState =
   | "idle"
@@ -29,7 +31,11 @@ const scrollHost = ref<HTMLElement>();
 const isEmpty = computed(() => props.turns.length === 0);
 
 watch(
-  () => [props.turns.length, props.turns.at(-1)?.status],
+  () => [
+    props.turns.length,
+    props.turns.at(-1)?.status,
+    props.turns.at(-1)?.observations?.length,
+  ],
   async () => {
     await nextTick();
     const host = scrollHost.value;
@@ -61,7 +67,7 @@ watch(
 
         <div class="shell-assistant">
           <div
-            v-if="turn.status === 'pending'"
+            v-if="turn.status === 'pending' && mapPlanFromTurn(turn) === undefined"
             class="shell-turn-hint shell-turn-hint-running"
             role="status"
           >
@@ -88,6 +94,8 @@ watch(
           >
             Agent 请求确认，等待用户输入
           </div>
+
+          <MapPlanActivityPresentation :turn="turn" />
 
           <ConversationTurnPresentation
             :turn="turn"

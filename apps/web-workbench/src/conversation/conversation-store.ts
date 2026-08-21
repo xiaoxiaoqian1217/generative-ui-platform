@@ -80,6 +80,21 @@ export function setConversationInput(
   return { ...state, inputValue };
 }
 
+export function appendTurnObservation(
+  state: ConversationState,
+  turnId: string,
+  observation: TurnObservation,
+): ConversationState {
+  if (state.activeOperation?.turnId !== turnId) return state;
+  return updateTurn(state, turnId, (turn) => ({
+    ...turn,
+    observations: reindexObservations([
+      ...(turn.observations ?? []),
+      observation,
+    ]),
+  }));
+}
+
 export function startRun(
   state: ConversationState,
   input: StartRunInput,
@@ -126,11 +141,19 @@ function mergeObservations(
   incoming: readonly TurnObservation[] | undefined,
 ): Pick<ConversationTurn, "observations"> | Record<string, never> {
   if (incoming === undefined) return {};
-  return {
-    observations: reindexObservations([
-      ...(turn.observations ?? []),
-      ...incoming,
+  const observationsByIdentity = new Map(
+    (turn.observations ?? []).map((observation) => [
+      `${observation.id}:${observation.type}`,
+      observation,
     ]),
+  );
+  for (const observation of incoming)
+    observationsByIdentity.set(
+      `${observation.id}:${observation.type}`,
+      observation,
+    );
+  return {
+    observations: reindexObservations([...observationsByIdentity.values()]),
   };
 }
 

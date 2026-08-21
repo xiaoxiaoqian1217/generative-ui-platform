@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import type { ConversationTurn } from "../conversation/conversation-store.js";
+import {
+  mapOperationSteps,
+  type MapOperationStep,
+} from "../conversation/map-operation-trace.js";
+import {
+  mapPlanActivityObservation,
+  mapPlanFromTurn,
+} from "../conversation/map-plan-activity.js";
 import JsonTree from "../inspect/JsonTree.vue";
 import SwimlaneTimeline from "../inspect/SwimlaneTimeline.vue";
 import {
@@ -27,6 +35,8 @@ const copyState = ref<"" | "copied" | "failed">("");
 const observations = computed(
   (): readonly TurnObservation[] => props.turn.observations ?? [],
 );
+const mapSteps = computed(() => mapOperationSteps(observations.value));
+const mapPlan = computed(() => mapPlanFromTurn(props.turn));
 
 const selected = computed(() =>
   observations.value.find((item) => item.id === selectedId.value),
@@ -76,6 +86,20 @@ function select(id: string): void {
   copyState.value = "";
 }
 
+function selectMapStep(step: MapOperationStep): void {
+  const invocation = observations.value.find(
+    (observation) =>
+      observation.type === "FRONTEND_TOOL_INVOCATION" &&
+      observation.toolCallId === step.toolCallId,
+  );
+  if (invocation !== undefined) select(invocation.id);
+}
+
+function selectMapPlanActivity(): void {
+  const activity = mapPlanActivityObservation(observations.value);
+  if (activity !== undefined) select(activity.id);
+}
+
 async function copyJson(payload: unknown): Promise<void> {
   try {
     await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
@@ -109,6 +133,53 @@ async function copyJson(payload: unknown): Promise<void> {
       </div>
       <div><dt>status</dt><dd>{{ turn.status }}</dd></div>
     </dl>
+
+    <section
+      v-if="mapSteps.length > 0 || mapPlan !== undefined"
+      class="inspect-map-operations"
+      data-testid="inspect-map-operations"
+    >
+      <header>
+        <div>
+          <p class="eyebrow">USER-VISIBLE PROJECTION</p>
+          <h3>地图操作记录</h3>
+        </div>
+        <span>{{ mapSteps.length }} 项操作</span>
+      </header>
+      <p class="inspect-map-operations-note">
+        公开计划来自真实 map-plan Activity；操作和状态来自真实 Frontend Tool 调用与返回。两者均不代表 Agent 内部推理。
+      </p>
+      <button
+        v-if="mapPlan !== undefined"
+        class="inspect-map-plan"
+        data-testid="inspect-map-plan"
+        type="button"
+        @click="selectMapPlanActivity"
+      >
+        <span>
+          <small class="inspect-map-plan-label">公开计划</small>
+          <strong>{{ mapPlan.goal }}</strong>
+        </span>
+        <span>{{ mapPlan.steps.length }} 个阶段</span>
+      </button>
+      <ol>
+        <li v-for="(step, index) in mapSteps" :key="step.toolCallId">
+          <button
+            :data-status="step.status"
+            :data-testid="`inspect-map-operation-${step.toolCallId}`"
+            type="button"
+            @click="selectMapStep(step)"
+          >
+            <span class="inspect-map-operation-index">{{ index + 1 }}</span>
+            <span class="inspect-map-operation-copy">
+              <strong>{{ step.label }}</strong>
+              <code>{{ step.toolName }}</code>
+            </span>
+            <span class="inspect-map-operation-status">{{ step.status }}</span>
+          </button>
+        </li>
+      </ol>
+    </section>
 
     <div class="lane-layout">
       <SwimlaneTimeline

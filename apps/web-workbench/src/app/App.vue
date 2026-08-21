@@ -36,6 +36,18 @@ import type { AgentSource } from "../settings/agent-source.js";
 const ConversationPage = defineAsyncComponent(
   () => import("./ConversationPage.vue"),
 );
+// PROTOTYPE - throwaway: Agent map-action perception variants, dev-only.
+const MapAgentTracePrototype = defineAsyncComponent(
+  () => import("../conversation/prototype/MapAgentTracePrototype.vue"),
+);
+const mapTracePrototypeVariant = new URLSearchParams(
+  window.location.search,
+).get("variant");
+const showMapTracePrototype =
+  import.meta.env.DEV &&
+  (mapTracePrototypeVariant === "map-A" ||
+    mapTracePrototypeVariant === "map-B" ||
+    mapTracePrototypeVariant === "map-C");
 const ScenarioLabPage = defineAsyncComponent(
   () => import("../features/scenario-lab/ScenarioLabPage.vue"),
 );
@@ -170,6 +182,8 @@ function replayCase(item: WorkbenchCase): void {
 }
 
 function navigate(nextRoute: WorkbenchRoute): void {
+  if (nextRoute === "/inspect")
+    inspection.value = loadInspectionSnapshot(window.sessionStorage);
   route.value = nextRoute;
   window.history.pushState({}, "", nextRoute);
 }
@@ -204,7 +218,14 @@ onMounted(() => {
       @navigate="navigate"
     />
 
-    <main v-if="route === '/conversation'" class="shell-route">
+    <main
+      v-if="route === '/conversation' && showMapTracePrototype"
+      class="shell-route"
+    >
+      <MapAgentTracePrototype />
+    </main>
+
+    <main v-else-if="route === '/conversation'" class="shell-route">
       <ConversationPage
         :agent-source="agentSource"
         :config="config"
@@ -222,6 +243,13 @@ onMounted(() => {
       <ScenarioLabPrototype />
     </main>
 
+    <main v-else-if="route === '/scenarios'" class="shell-scenario-page">
+      <ScenarioLabPage
+        :runtime-url="endpoints.agUi"
+        :scenario-lab-url="endpoints.scenarioLab"
+      />
+    </main>
+
     <main v-else class="shell-static-page">
       <section class="shell-static-card">
         <h2>{{ workbenchRouteLabel(route) }}</h2>
@@ -229,7 +257,7 @@ onMounted(() => {
           <p>选择或重放一次运行后，在此查看已脱敏的阶段、关联 ID、耗时、展示决策和降级信息。</p>
           <div v-if="inspection" data-testid="inspection-summary">
             <p>{{ inspection.status }} · {{ inspection.outputKind }}</p>
-            <dl><div><dt>requestId</dt><dd>{{ inspection.requestId }}</dd></div><div><dt>runId</dt><dd>{{ inspection.runId }}</dd></div><div><dt>Assistant 消息</dt><dd>{{ inspection.assistantMessageCount }}</dd></div></dl>
+            <dl><div><dt>requestId</dt><dd>{{ inspection.requestId }}</dd></div><div><dt>runId</dt><dd>{{ inspection.runId }}</dd></div><div><dt>Assistant 消息</dt><dd>{{ inspection.assistantMessageCount }}</dd></div><div><dt>地图操作</dt><dd>{{ inspection.mapOperationCount }}</dd></div></dl>
           </div>
           <p v-else data-testid="inspection-empty">尚未保存可检查的运行摘要。</p>
         </template>
@@ -244,9 +272,6 @@ onMounted(() => {
           <div class="button-group"><button class="secondary-button" data-testid="export-cases" type="button" @click="exportCases">导出 JSON</button><button class="primary-button" data-testid="import-cases" type="button" @click="importCases">导入 JSON</button></div>
           <p v-if="caseNotice" data-testid="case-notice">{{ caseNotice }}</p>
           <p v-if="latestCaseFailure" data-testid="case-failure-diagnosis">{{ latestCaseFailure.caseId }} · {{ latestCaseFailure.failures.join(' ') }}</p>
-        </template>
-        <template v-else-if="route === '/scenarios'">
-          <ScenarioLabPage :runtime-url="endpoints.agUi" />
         </template>
         <template v-else-if="route === '/catalog'">
           <p>此页当前不可用。Catalog 元数据由 Business Agent 通过 AG-UI 提供，暂未实现。</p>
@@ -265,11 +290,24 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.shell-scenario-page {
+  flex: 1;
+  min-height: 0;
+  padding: 20px 24px;
+  overflow: hidden;
+}
+
 /* PROTOTYPE - throwaway: full-height host for the Scenario Lab UI variants. */
 .shell-prototype-page {
   flex: 1;
   min-height: 0;
   padding: 20px 24px 72px;
   overflow: hidden;
+}
+
+@media (max-width: 1250px) {
+  .shell-scenario-page {
+    overflow-y: auto;
+  }
 }
 </style>

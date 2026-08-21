@@ -77,6 +77,7 @@ defineExpose({
         </span>
         <span v-if="previewedPath !== undefined">路线预览</span>
       </div>
+      <slot name="overlay" />
       <DeviceCard v-if="selectedDevice !== undefined" :device="selectedDevice" />
     </div>
   </aside>

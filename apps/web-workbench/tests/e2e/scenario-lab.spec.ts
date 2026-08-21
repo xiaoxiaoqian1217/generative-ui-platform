@@ -4,7 +4,7 @@ test.beforeEach(async ({ request }) => {
   await request.post("/__control__/restore");
 });
 
-test("Scenario Lab lists repository scenarios and runs one through the real generation chain", async ({
+test("Scenario Lab freely generates a preview without sending the evaluation oracle", async ({
   page,
 }) => {
   await page.goto("/scenarios");
@@ -13,16 +13,28 @@ test("Scenario Lab lists repository scenarios and runs one through the real gene
   await expect(page.getByTestId("scenario-lab-content")).toHaveValue(
     /partial_success/,
   );
-  await expect(page.getByTestId("scenario-lab-facts")).toHaveValue(/\/total/);
+  await expect(page.getByTestId("scenario-lab-facts-editor")).toHaveCount(0);
 
   await page.getByTestId("scenario-lab-run").click();
 
   await expect(page.getByTestId("scenario-lab-surface")).toBeVisible();
-  const factCheck = page.getByTestId("scenario-lab-fact-check");
-  await expect(factCheck).toBeVisible();
-  await expect(factCheck.locator("li")).toHaveCount(5);
-  await expect(factCheck).toContainText("/total = 128");
-  await expect(factCheck).toContainText("/failed = 8");
+  await expect(page.getByTestId("scenario-lab-fact-check")).toHaveCount(0);
+  await expect(page.getByText("自由生成预览 · 未执行事实评估")).toBeVisible();
+});
+
+test("Scenario Lab runs a five-round evaluation with real generation results", async ({
+  page,
+}) => {
+  await page.goto("/scenarios");
+
+  await page.getByTestId("scenario-lab-evaluate").click();
+
+  const evaluation = page.getByTestId("scenario-lab-evaluation");
+  await expect(evaluation).toBeVisible();
+  await expect(evaluation.locator("tbody tr")).toHaveCount(5);
+  await expect(page.getByTestId("scenario-lab-list")).toContainText(
+    "5 轮 · 5/5",
+  );
 });
 
 test("Scenario Lab drafts content from a description without touching facts", async ({
@@ -33,6 +45,7 @@ test("Scenario Lab drafts content from a description without touching facts", as
   await page.getByTestId("scenario-lab-new-name").fill("draft-demo");
   await page.getByTestId("scenario-lab-new-name").press("Enter");
 
+  await page.getByTestId("scenario-lab-draft-entry").click();
   await page
     .getByTestId("scenario-lab-draft-description")
     .fill("三台设备一台异常的巡检结果");
@@ -44,10 +57,12 @@ test("Scenario Lab drafts content from a description without touching facts", as
   await expect(page.getByTestId("scenario-lab-content")).toHaveValue(
     /三台设备一台异常的巡检结果/,
   );
-  await expect(page.getByTestId("scenario-lab-facts")).toHaveValue(
-    /\{\s*"facts": \[\]\s*\}/,
-  );
+  await page.getByTestId("scenario-lab-run").click();
+  await expect(page.getByTestId("scenario-lab-surface")).toBeVisible();
+  await expect(page.getByTestId("scenario-lab-fact-row")).toHaveCount(0);
   await expect(page.getByTestId("scenario-lab-save")).toBeDisabled();
+  await page.getByTestId("scenario-lab-evaluation-toggle").click();
+  await page.getByTestId("scenario-lab-facts-json-tab").click();
   await page
     .getByTestId("scenario-lab-facts")
     .fill(
@@ -56,15 +71,15 @@ test("Scenario Lab drafts content from a description without touching facts", as
   await expect(page.getByTestId("scenario-lab-save")).toBeDisabled();
   await page.getByTestId("scenario-lab-draft-reviewed").check();
   await expect(page.getByTestId("scenario-lab-save")).toBeEnabled();
-  await expect(page.getByTestId("scenario-lab-notice")).toContainText(
-    "尚未保存",
-  );
+  await expect(
+    page.getByText("AI 草稿待审定 - 保存为评估场景前需要核对业务事实"),
+  ).toBeVisible();
 });
 
 test("Scenario Lab discards a draft response after switching scenarios", async ({
   page,
 }) => {
-  await page.route("**/dev/scenarios/draft", async (route) => {
+  await page.route("**/api/dev/scenario-lab/fixture-drafts", async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 250));
     await route.fulfill({
       body: JSON.stringify({
@@ -83,6 +98,7 @@ test("Scenario Lab discards a draft response after switching scenarios", async (
   await page.goto("/scenarios");
   await page.getByTestId("scenario-lab-new-name").fill("draft-race");
   await page.getByTestId("scenario-lab-new-name").press("Enter");
+  await page.getByTestId("scenario-lab-draft-entry").click();
   await page
     .getByTestId("scenario-lab-draft-description")
     .fill("延迟返回的草稿");

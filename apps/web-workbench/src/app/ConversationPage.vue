@@ -15,8 +15,11 @@ import {
 } from "../agent/business-agent-client.js";
 import type { ResumeEntry } from "@ag-ui/core";
 import CopilotKitConversationProvider from "../conversation/CopilotKitConversationProvider.vue";
+import AgentMapOperationHud from "../conversation/AgentMapOperationHud.vue";
+import { mapOperationSteps } from "../conversation/map-operation-trace.js";
 import { quickScenarios, type QuickScenario } from "./scenarios.js";
 import {
+  appendTurnObservation,
   type ConversationState,
   createConversationState,
   failOperation,
@@ -150,6 +153,31 @@ const inspectedTurn = computed(() =>
     (turn) => turn.turnId === inspectedTurnId.value,
   ),
 );
+const mapOperationTurn = computed(() => {
+  const activeTurnId = conversation.value.activeOperation?.turnId;
+  if (activeTurnId !== undefined) {
+    const activeTurn = conversation.value.turns.find(
+      (turn) => turn.turnId === activeTurnId,
+    );
+    return activeTurn !== undefined &&
+      mapOperationSteps(activeTurn.observations ?? []).length > 0
+      ? activeTurn
+      : undefined;
+  }
+  for (
+    let index = conversation.value.turns.length - 1;
+    index >= 0;
+    index -= 1
+  ) {
+    const turn = conversation.value.turns[index];
+    if (
+      turn !== undefined &&
+      mapOperationSteps(turn.observations ?? []).length > 0
+    )
+      return turn;
+  }
+  return undefined;
+});
 const isRunning = computed(() => runState.value === "running");
 const canSend = computed(
   () =>
@@ -168,7 +196,11 @@ let clientGeneration = 0;
 let activeFrontendToolCallIds: Set<string> | undefined;
 let activeRecorder: ObservationRecorder | undefined;
 let activeRunCorrelation:
-  | { readonly runId: string; readonly threadId: string }
+  | {
+      readonly runId: string;
+      readonly threadId: string;
+      readonly turnId: string;
+    }
   | undefined;
 
 // Issue #205：Frontend Tool handler 在 run 进行中异步触发，
@@ -179,15 +211,24 @@ function forwardObservation(input: TurnObservationInput): void {
     input.toolCallId !== undefined
   )
     activeFrontendToolCallIds?.add(input.toolCallId);
-  activeRecorder?.record({
+  const recorder = activeRecorder;
+  const correlation = activeRunCorrelation;
+  if (recorder === undefined || correlation === undefined) return;
+  const observation = recorder.record({
     ...input,
-    ...(input.runId !== undefined || activeRunCorrelation === undefined
-      ? {}
-      : { runId: activeRunCorrelation.runId }),
-    ...(input.threadId !== undefined || activeRunCorrelation === undefined
-      ? {}
-      : { threadId: activeRunCorrelation.threadId }),
+    ...(input.runId !== undefined ? {} : { runId: correlation.runId }),
+    ...(input.threadId !== undefined ? {} : { threadId: correlation.threadId }),
   });
+  if (
+    observation.type !== "FRONTEND_TOOL_INVOCATION" &&
+    observation.type !== "FRONTEND_TOOL_RESULT"
+  )
+    return;
+  conversation.value = appendTurnObservation(
+    conversation.value,
+    correlation.turnId,
+    observation,
+  );
 }
 
 function applyConnectionState(next: ConnectionState): void {
@@ -287,7 +328,7 @@ async function executeRun(
   const frontendToolCallIds = new Set<string>();
   activeFrontendToolCallIds = frontendToolCallIds;
   activeRecorder = recorder;
-  activeRunCorrelation = { runId, threadId };
+  activeRunCorrelation = { runId, threadId, turnId };
 
   try {
     const result = await active.run(
@@ -317,6 +358,7 @@ async function executeRun(
       threadId,
     });
     saveInspectionSnapshot(window.sessionStorage, {
+      mapOperationCount: mapOperationSteps(recorder.observations()).length,
       messages: result.newMessages,
       requestId: request.requestId,
       runId,
@@ -632,7 +674,15 @@ onBeforeUnmount(() => {
         :selected-device="selectedDevice"
         :visible-layer-ids="visibleMapLayerIds"
         @locate-device="handleLocateDevice"
-      />
+      >
+        <template #overlay>
+          <AgentMapOperationHud
+            v-if="mapOperationTurn !== undefined"
+            :turn="mapOperationTurn"
+            @inspect="inspectedTurnId = $event"
+          />
+        </template>
+      </MapWorkspace>
 
       <InspectPanel
         v-if="inspectedTurn !== undefined"

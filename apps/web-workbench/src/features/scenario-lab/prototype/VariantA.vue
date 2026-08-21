@@ -235,7 +235,7 @@ function draft(): void {
 
 <style scoped>
 .va {
-  grid-template-columns: 240px minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr) minmax(0, 1.35fr);
 }
 
 .va-list-body {

@@ -15,6 +15,7 @@ export interface WorkbenchConfig {
 
 export interface AgentEndpoints {
   agUi: string;
+  scenarioLab: string;
 }
 
 const INVALID_AGENT_URL = "WORKBENCH_AGENT_URL_INVALID";
@@ -63,6 +64,7 @@ export function createAgentEndpoints(agentUrl: string): AgentEndpoints {
   const host = normalizeAgentUrl(agentUrl);
   return {
     agUi: new URL("/api/copilotkit", host).toString(),
+    scenarioLab: new URL("/api/dev/scenario-lab", host).toString(),
   };
 }
 

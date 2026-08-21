@@ -549,6 +549,21 @@ test("scenario A applies the patrol map intents to one persistent surface", asyn
   await expect(page.getByTestId("markdown-result")).toContainText(
     "限制图层已显示",
   );
+  const mapOperations = page.getByTestId("map-operation-hud-summary");
+  await expect(page.getByTestId("map-operation-hud-current")).toContainText(
+    "地图操作已完成",
+  );
+  const mapOperationHistory = page.getByTestId("map-operation-hud-history");
+  await expect(mapOperationHistory).toContainText("显示任务限制图层");
+  await expect(mapOperationHistory).toContainText("聚焦北侧通道");
+  await expect(mapOperationHistory).toContainText(
+    "标记观察点和限制区",
+  );
+  await expect(mapOperationHistory).toContainText("预览候选路线 A");
+  await expect(mapOperations).toContainText("查看记录");
+  await expect(page.getByTestId("conversation-main")).not.toContainText(
+    "显示任务限制图层",
+  );
   expect(
     await page
       .getByTestId("quick-scenarios")
@@ -589,7 +604,14 @@ test("scenario A applies the patrol map intents to one persistent surface", asyn
     "路线预览",
   );
 
-  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  await mapOperations.click();
+  const mapOperationInspection = page.getByTestId("inspect-map-operations");
+  await expect(mapOperationInspection).toContainText("显示任务限制图层");
+  await expect(mapOperationInspection).toContainText("聚焦北侧通道");
+  await expect(mapOperationInspection).toContainText(
+    "标记观察点和限制区",
+  );
+  await expect(mapOperationInspection).toContainText("预览候选路线 A");
   const timeline = page.getByTestId("swimlane-timeline");
   const inspectedRunId =
     (await page.getByTestId("inspect-turn-run-id").textContent()) ?? "";
