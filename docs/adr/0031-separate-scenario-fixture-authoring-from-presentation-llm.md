@@ -33,8 +33,9 @@ Scenario Lab 默认不挂载。
 ### 3. 草稿不是业务事实来源
 
 模型返回值只进入未保存的编辑 buffer。
-Workbench 必须要求人工核对 AI 草稿并手写 expected facts。
-服务端必须拒绝 expected facts 为空的 Scenario 保存请求。
+自由生成预览不要求用户提供 expected facts。
+只有保存为可复用评估场景时，Workbench 才要求人工核对 AI 草稿并手写 evaluation oracle。
+服务端必须拒绝 evaluation oracle 为空的评估场景保存请求。
 草稿不得声称来自 SACS、AGUIMock 或其他真实 Business Agent。
 
 ### 4. Authoring adapter 必须约束输入与输出
@@ -43,6 +44,14 @@ Workbench 必须要求人工核对 AI 草稿并手写 expected facts。
 调用必须设置结构化 JSON schema、输出 token 上限和超时。
 Runtime 必须再次校验顶层字段数量、嵌套深度、数组长度、字符串长度和总体大小。
 无效输出不得进入 editor buffer。
+
+### 5. 生成与评估必须使用独立接口
+
+Scenario Lab 使用 source-neutral 的 `/api/dev/scenario-lab` 边界，不把 dev tooling 伪装成 `/api/copilotkit` 下的 Agent protocol 能力。
+`POST /generations` 只接收 `presentationInput`，并执行一次自由 Dynamic A2UI 生成。
+`POST /evaluations` 接收相同的 `presentationInput` 和独立的 `evaluationOracle`，在生成完成后执行事实保留检查。
+`evaluationOracle` 不得进入 Secondary Presentation LLM prompt，也不得约束组件、布局或视觉表达。
+Workbench 默认展示自由生成，高级评估和 oracle 编辑默认折叠。
 
 ## 与 ADR-0030 的关系
 
