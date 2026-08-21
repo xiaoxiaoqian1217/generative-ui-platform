@@ -203,8 +203,15 @@ let activeRunCorrelation:
     }
   | undefined;
 
-// Issue #205：Frontend Tool handler 在 run 进行中异步触发，
-// 通过该稳定委托把观察事实写入当前 active run 的 recorder。
+const LIVE_TURN_OBSERVATION_TYPES: ReadonlySet<string> = new Set([
+  "ACTIVITY_SNAPSHOT",
+  "FRONTEND_TOOL_INVOCATION",
+  "FRONTEND_TOOL_RESULT",
+]);
+
+// Issue #205: Frontend Tool handlers and public Agent activities arrive while
+// the run is active. This stable delegate records every fact, and projects the
+// user-visible subset into the current Turn without rewriting its payload.
 function forwardObservation(input: TurnObservationInput): void {
   if (
     input.type === "FRONTEND_TOOL_INVOCATION" &&
@@ -219,11 +226,7 @@ function forwardObservation(input: TurnObservationInput): void {
     ...(input.runId !== undefined ? {} : { runId: correlation.runId }),
     ...(input.threadId !== undefined ? {} : { threadId: correlation.threadId }),
   });
-  if (
-    observation.type !== "FRONTEND_TOOL_INVOCATION" &&
-    observation.type !== "FRONTEND_TOOL_RESULT"
-  )
-    return;
+  if (!LIVE_TURN_OBSERVATION_TYPES.has(observation.type)) return;
   conversation.value = appendTurnObservation(
     conversation.value,
     correlation.turnId,

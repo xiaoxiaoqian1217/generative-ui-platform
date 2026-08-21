@@ -3,7 +3,12 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import type { ConversationTurn } from "../../src/conversation/conversation-store.js";
+import type { TurnObservation } from "../../src/inspect/turn-inspection.js";
 import ConversationMainArea from "../../src/shell/ConversationMainArea.vue";
+import {
+  MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
+  MAP_PLAN_ACTIVITY_TYPE,
+} from "@generative-ui/shared-types";
 
 function makeTurn(overrides: Partial<ConversationTurn> = {}): ConversationTurn {
   return {
@@ -17,6 +22,38 @@ function makeTurn(overrides: Partial<ConversationTurn> = {}): ConversationTurn {
       role: "user",
     },
     ...overrides,
+  };
+}
+
+function mapPlanObservation(status: "completed" | "running"): TurnObservation {
+  return {
+    hasArtifact: true,
+    id: `activity-map-plan-${status}`,
+    messageId: "map-plan",
+    observedAt: "2026-08-21T10:00:00.000Z",
+    observedIndex: 0,
+    payload: {
+      activityType: MAP_PLAN_ACTIVITY_TYPE,
+      content: {
+        goal: "检查北侧通道",
+        schemaVersion: MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
+        status,
+        steps: [
+          {
+            detail: "显示限制图层并聚焦任务范围。",
+            id: "scope",
+            label: "确认范围",
+            operationNames: ["setLayerVisibility"],
+            status,
+          },
+        ],
+      },
+      messageId: "map-plan",
+      replace: true,
+      type: "ACTIVITY_SNAPSHOT",
+    },
+    source: "agent",
+    type: "ACTIVITY_SNAPSHOT",
   };
 }
 
@@ -62,6 +99,47 @@ describe("ConversationMainArea", () => {
     });
 
     expect(wrapper.find(".shell-turn-hint-running").exists()).toBe(true);
+  });
+
+  it("replaces the generic spinner with a compact task-level Agent status", () => {
+    const wrapper = mount(ConversationMainArea, {
+      props: {
+        isRunning: true,
+        runState: "running",
+        turns: [
+          makeTurn({
+            observations: [mapPlanObservation("running")],
+            status: "pending",
+          }),
+        ],
+      },
+    });
+
+    expect(wrapper.get('[data-testid="map-plan-activity"]').text()).toContain(
+      "检查北侧通道",
+    );
+    expect(
+      wrapper.get('[data-testid="map-plan-activity"]').text(),
+    ).not.toContain("确认范围");
+    expect(wrapper.find(".shell-turn-hint-running").exists()).toBe(false);
+  });
+
+  it("removes the task status after completion", () => {
+    const wrapper = mount(ConversationMainArea, {
+      props: {
+        isRunning: false,
+        runState: "completed",
+        turns: [
+          makeTurn({
+            observations: [mapPlanObservation("completed")],
+          }),
+        ],
+      },
+    });
+
+    expect(wrapper.find('[data-testid="map-plan-activity"]').exists()).toBe(
+      false,
+    );
   });
 
   it("shows a failed hint inline", () => {

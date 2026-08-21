@@ -546,6 +546,12 @@ test("scenario A applies the patrol map intents to one persistent surface", asyn
 
   await page.getByRole("button", { name: /北侧通道巡逻方案/ }).click();
 
+  const publicPlan = page.getByTestId("map-plan-activity");
+  await expect(publicPlan).toBeVisible();
+  await expect(publicPlan).toContainText("Agent 正在处理地图");
+  await expect(publicPlan).toContainText("北侧通道巡逻候选方案");
+  await expect(publicPlan).not.toContainText("确认任务范围与限制");
+
   await expect(page.getByTestId("markdown-result")).toContainText(
     "限制图层已显示",
   );
@@ -556,14 +562,10 @@ test("scenario A applies the patrol map intents to one persistent surface", asyn
   const mapOperationHistory = page.getByTestId("map-operation-hud-history");
   await expect(mapOperationHistory).toContainText("显示任务限制图层");
   await expect(mapOperationHistory).toContainText("聚焦北侧通道");
-  await expect(mapOperationHistory).toContainText(
-    "标记观察点和限制区",
-  );
+  await expect(mapOperationHistory).toContainText("标记观察点和限制区");
   await expect(mapOperationHistory).toContainText("预览候选路线 A");
   await expect(mapOperations).toContainText("查看记录");
-  await expect(page.getByTestId("conversation-main")).not.toContainText(
-    "显示任务限制图层",
-  );
+  await expect(publicPlan).toHaveCount(0);
   expect(
     await page
       .getByTestId("quick-scenarios")
@@ -606,11 +608,10 @@ test("scenario A applies the patrol map intents to one persistent surface", asyn
 
   await mapOperations.click();
   const mapOperationInspection = page.getByTestId("inspect-map-operations");
+  await expect(page.getByTestId("inspect-map-plan")).toContainText("3 个阶段");
   await expect(mapOperationInspection).toContainText("显示任务限制图层");
   await expect(mapOperationInspection).toContainText("聚焦北侧通道");
-  await expect(mapOperationInspection).toContainText(
-    "标记观察点和限制区",
-  );
+  await expect(mapOperationInspection).toContainText("标记观察点和限制区");
   await expect(mapOperationInspection).toContainText("预览候选路线 A");
   const timeline = page.getByTestId("swimlane-timeline");
   const inspectedRunId =
@@ -624,6 +625,9 @@ test("scenario A applies the patrol map intents to one persistent surface", asyn
   );
   await expect(timeline.locator("[data-type='TOOL_CALL_RESULT']")).toHaveCount(
     4,
+  );
+  await expect(timeline.locator("[data-type='ACTIVITY_SNAPSHOT']")).toHaveCount(
+    5,
   );
   await expect(
     timeline.locator("[data-type='FRONTEND_TOOL_INVOCATION']"),

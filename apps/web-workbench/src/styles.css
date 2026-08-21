@@ -358,100 +358,12 @@ textarea:focus-visible {
 }
 
 .map-plan-activity {
-  display: grid;
-  gap: 12px;
-  margin: 8px 0 12px;
-  padding: 14px;
-  border: 1px solid #dce5e1;
-  border-radius: 12px;
-  background: #f8faf9;
-}
-
-.map-plan-activity-header {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.map-plan-activity-goal {
-  display: grid;
-  gap: 3px;
-}
-
-.map-plan-activity-goal strong {
-  color: #253b35;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.map-plan-activity-status {
-  flex: 0 0 auto;
-  padding: 3px 8px;
-  border-radius: 999px;
-  color: #9b4b0c;
-  background: #fff0e3;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.map-plan-activity-status[data-status="completed"] {
-  color: #28584d;
-  background: #e8f1ed;
-}
-
-.map-plan-activity ol {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.map-plan-activity li {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
-  align-items: start;
   gap: 9px;
-  padding: 9px 10px;
-  border-radius: 9px;
-  color: #5d6b66;
-  background: #fff;
-}
-
-.map-plan-activity li[data-status="running"] {
-  color: #4a3424;
-  background: #fff8f1;
-  box-shadow: inset 2px 0 #e77e29;
-}
-
-.map-plan-activity li[data-status="completed"] {
-  color: #36564d;
-  background: #f0f6f3;
-}
-
-.map-plan-activity-index {
-  display: grid;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  border: 1px solid #d5dcda;
-  border-radius: 50%;
-  color: #7a8581;
-  background: #fff;
-  font-size: 9px;
-  font-weight: 800;
-}
-
-.map-plan-activity li[data-status="running"] .map-plan-activity-index {
-  border-color: #efbb91;
-  color: #b65b15;
-}
-
-.map-plan-activity li[data-status="completed"] .map-plan-activity-index {
-  border-color: #2d6d5a;
-  color: #fff;
-  background: #2d6d5a;
+  margin: 8px 0 12px;
+  padding: 4px 0 4px 10px;
+  border-left: 2px solid #8eb0a6;
 }
 
 .map-plan-activity-copy {
@@ -459,23 +371,29 @@ textarea:focus-visible {
   gap: 2px;
 }
 
-.map-plan-activity li strong {
-  color: currentColor;
-  font-size: 12px;
+.map-plan-activity p {
+  margin: 0;
+  color: #64736e;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
-.map-plan-activity li p {
-  margin: 0;
-  color: #71807a;
-  font-size: 11px;
+.map-plan-activity strong {
+  color: #334841;
+  font-size: 12px;
   line-height: 1.45;
 }
 
-.map-plan-activity-step-status {
-  padding-top: 3px;
-  color: currentColor;
-  font-size: 10px;
-  white-space: nowrap;
+.map-plan-activity-indicator {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #e77e29;
+  box-shadow: 0 0 0 4px rgb(231 126 41 / 12%);
+  animation: map-operation-pulse 1.4s ease-in-out infinite;
 }
 
 .inline-business-surface {
