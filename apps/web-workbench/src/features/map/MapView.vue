@@ -321,6 +321,7 @@ onBeforeUnmount(() => {
     :data-consult-candidate-feature-ids="
       consultCandidates.map((candidate) => candidate.featureId).join(',')
     "
+    :data-consult-emphasized-feature-id="consultEmphasizedFeatureId"
     :data-focused-feature-id="appliedFocusedTarget?.featureId"
     :data-highlighted-feature-ids="
       appliedHighlightedTargets.map((target) => target.featureId).join(',')

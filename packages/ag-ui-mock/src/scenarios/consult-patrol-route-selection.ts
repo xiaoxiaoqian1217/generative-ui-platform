@@ -58,6 +58,8 @@ export const PATROL_ROUTE_CONSULT_RESPONSES = {
 } as const;
 
 const HUMAN_RESPONSE_CONTINUATION_DELAY_MS = 160;
+// AG-UI tool call IDs are conversation-global. Preallocate a small sequence
+// so repeated deterministic consultations never reuse the same identity.
 const CONSULTATION_OCCURRENCE_LIMIT = 8;
 
 function consultationToolCallId(

@@ -794,6 +794,7 @@ test("accepted decision dock requires a route choice before map-anchored revisio
   await page.getByRole("button", { name: /候选巡逻路线征询/ }).click();
 
   const dock = page.getByTestId("consult-dock");
+  const mapView = page.getByTestId("map-view");
   const confirm = dock.getByTestId("dock-confirm");
   const routeA = page.getByRole("button", { name: "路线 A", exact: true });
   const routeB = page.getByRole("button", { name: "路线 B", exact: true });
@@ -805,6 +806,12 @@ test("accepted decision dock requires a route choice before map-anchored revisio
   await expect(routeB).toBeDisabled();
   await expect(page.getByTestId("consult-revision-popup")).toHaveCount(0);
 
+  await dock.getByTestId("dock-option-route-b").hover();
+  await expect(mapView).not.toHaveAttribute(
+    "data-consult-emphasized-feature-id",
+    "patrol-path-b",
+  );
+
   await dock.getByTestId("dock-option-route-b").click();
   await expect(dock.getByTestId("dock-option-route-b")).toHaveAttribute(
     "data-tentative",
@@ -815,6 +822,10 @@ test("accepted decision dock requires a route choice before map-anchored revisio
   );
   await expect(confirm).toBeEnabled();
   await expect(confirm).toHaveText("确认选择路线 B");
+  await expect(mapView).toHaveAttribute(
+    "data-consult-emphasized-feature-id",
+    "patrol-path-b",
+  );
   await expect(routeA).toBeDisabled();
   await expect(routeB).toBeEnabled();
   await expect(page.getByTestId("consult-revision-popup")).toHaveCount(0);

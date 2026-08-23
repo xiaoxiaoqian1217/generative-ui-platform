@@ -287,6 +287,7 @@ function consultOptionIdForFeature(featureId: string): string | undefined {
 
 function handleConsultCandidateHover(featureId: string | undefined): void {
   if (activeConsultSession.value === undefined) return;
+  if (consultVariant.value === "c") return;
   consultEmphasizedOptionId.value =
     featureId === undefined ? undefined : consultOptionIdForFeature(featureId);
 }

@@ -533,6 +533,9 @@ describe("createAguiMockServer", () => {
     ];
 
     const firstConsultEvents = await postMessages(url, messages);
+    const firstConsultToolCallId = firstConsultEvents.find(
+      (event) => event.type === "TOOL_CALL_START",
+    )?.toolCallId;
     appendCompletedToolCall(
       messages,
       firstConsultEvents,
@@ -568,6 +571,10 @@ describe("createAguiMockServer", () => {
     expect(
       secondConsultEvents.find((event) => event.type === "TOOL_CALL_ARGS"),
     ).toMatchObject({ delta: JSON.stringify(PATROL_ROUTE_CONSULT_REQUEST) });
+    expect(
+      secondConsultEvents.find((event) => event.type === "TOOL_CALL_START")
+        ?.toolCallId,
+    ).not.toBe(firstConsultToolCallId);
   });
 
   it.each([

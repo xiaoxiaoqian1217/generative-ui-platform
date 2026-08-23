@@ -79,10 +79,6 @@ const showDock = computed(
   () => consultVariant.value === "c" && session.value !== undefined,
 );
 
-function hoverOption(optionId: string): void {
-  if (!sessionCanRespond.value) return;
-  consultEmphasizedOptionId.value = optionId;
-}
 function pickOption(optionId: string): void {
   if (!sessionCanRespond.value) return;
   consultTentativeOptionId.value = optionId;
@@ -294,8 +290,6 @@ async function submitRevision(): Promise<void> {
           :disabled="!sessionCanRespond"
           type="button"
           @click="pickOption(option.id)"
-          @focus="hoverOption(option.id)"
-          @mouseenter="hoverOption(option.id)"
         >
           <span class="consult-dock-check" aria-hidden="true">✓</span>
           <strong>{{ option.label }}</strong>
@@ -318,7 +312,7 @@ async function submitRevision(): Promise<void> {
               ? "选择后才能在地图上提出修改"
               : !sessionCanRespond
                 ? "正在提交决定..."
-                : `已暂定 ${tentativeOption.label}`
+                : `已选中 ${tentativeOption.label}`
           }}
         </p>
         <span class="consult-dock-spacer"></span>
