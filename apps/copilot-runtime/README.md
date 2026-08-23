@@ -3,7 +3,8 @@
 ## Responsibility
 
 `apps/copilot-runtime` is the Workbench Agent integration boundary accepted by ADR-0029.
-It registers the AGUIMock and `single-agent-chat-server` Business Agent sources under stable Agent identities and proxies native AG-UI streams.
+It always registers the AGUIMock and `single-agent-chat-server` Business Agent sources under stable Agent identities and proxies native AG-UI streams.
+When explicit dev configuration is complete, it also registers the independent `map-validation-agent` through the official `LangGraphAgent` bridge.
 For controlled Dynamic A2UI it additionally hosts the narrow presentation wiring accepted by ADR-0030: a thin deterministic Presentation Policy, the Secondary Presentation LLM wiring based on `@ag-ui/a2ui-toolkit`, and the stitching of generation results into the AG-UI event stream.
 It does not own product runtime state, general presentation routing, orchestration, or durable history.
 
@@ -11,10 +12,12 @@ It does not own product runtime state, general presentation routing, orchestrati
 
 - `ag-ui-mock` is the deterministic Frontend Tool and failure-scenario fixture.
 - `single-agent-chat-server` is the real Business Agent profile.
+- `map-validation-agent` is a dev-only real LLM interaction validation source and is disabled by default.
 
 Both Agents are registered concurrently.
 The Workbench chooses one identity for a conversation.
 The SACS profile does not support client-provided Frontend Tools, and the Runtime does not emulate them.
+The validation source advertises client-provided Frontend Tools and streaming only when its independent LangGraph server is explicitly registered.
 
 ## Dynamic A2UI presentation policy
 
@@ -50,6 +53,11 @@ When the key is omitted, Dynamic Eligibility does not hold: an explicit dynamic 
 The model only answers through the catalog-constrained `render_a2ui` structured output; generated components outside the Final Catalog are rejected before painting.
 The adapter sends a fixed trust-boundary policy as the system message and keeps the toolkit-composed prompt, including untrusted business content, in the user message.
 The Secondary LLM credential stays in the Runtime process and never reaches the browser bundle.
+
+`MAP_VALIDATION_AGENT_ENABLED=true` opts into the third dev-only source.
+`MAP_VALIDATION_AGENT_URL` points to the independent LangGraph server and `MAP_VALIDATION_AGENT_GRAPH_ID` must match the graph id in its `langgraph.json`.
+If either value is missing, the Runtime fails closed and does not expose the source through `/info`.
+The Runtime does not load scenario facts or execute the graph in process.
 
 ## Dev-only Scenario Lab
 
@@ -87,6 +95,7 @@ From the repository root, run:
 
 ```powershell
 pnpm dev:ag-ui-mock
+pnpm dev:map-validation-agent
 pnpm dev:copilot-runtime
 pnpm dev:web-workbench
 ```

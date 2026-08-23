@@ -377,7 +377,10 @@ export function createMapController(
       if (from === undefined || to === undefined) continue;
       if (remaining <= length) {
         const ratio = length === 0 ? 0 : remaining / length;
-        return [from[0] + (to[0] - from[0]) * ratio, from[1] + (to[1] - from[1]) * ratio];
+        return [
+          from[0] + (to[0] - from[0]) * ratio,
+          from[1] + (to[1] - from[1]) * ratio,
+        ];
       }
       remaining -= length;
     }
@@ -397,16 +400,24 @@ export function createMapController(
       "#3451d1",
     ] as unknown as maplibregl.ExpressionSpecification;
     const emphasized = consultEmphasizedFeatureId;
-    const widthExpression = (
-      emphasized === undefined
-        ? 4.5
-        : ["match", ["get", "featureId"], emphasized, 7, 4]
-    ) as unknown as maplibregl.ExpressionSpecification;
-    const opacityExpression = (
-      emphasized === undefined
-        ? 0.7
-        : ["match", ["get", "featureId"], emphasized, 0.95, 0.22]
-    ) as unknown as maplibregl.ExpressionSpecification;
+    const widthExpression = (emphasized === undefined
+      ? 4.5
+      : [
+          "match",
+          ["get", "featureId"],
+          emphasized,
+          7,
+          4,
+        ]) as unknown as maplibregl.ExpressionSpecification;
+    const opacityExpression = (emphasized === undefined
+      ? 0.7
+      : [
+          "match",
+          ["get", "featureId"],
+          emphasized,
+          0.95,
+          0.22,
+        ]) as unknown as maplibregl.ExpressionSpecification;
     map.setPaintProperty(
       CONSULT_CANDIDATES_LAYER_ID,
       "line-color",

@@ -18,7 +18,11 @@ import type { ResumeEntry } from "@ag-ui/core";
 import CopilotKitConversationProvider from "../conversation/CopilotKitConversationProvider.vue";
 import AgentMapOperationHud from "../conversation/AgentMapOperationHud.vue";
 import { mapOperationSteps } from "../conversation/map-operation-trace.js";
-import { quickScenarios, type QuickScenario } from "./scenarios.js";
+import {
+  quickScenarioForwardedProps,
+  quickScenarios,
+  type QuickScenario,
+} from "./scenarios.js";
 import {
   appendTurnObservation,
   appendTurnResponseMessages,
@@ -60,11 +64,12 @@ import type {
   WorkbenchConfig,
 } from "../settings/agent-config.js";
 import {
-  AGENT_SOURCES,
   agentSourceProfile,
   type AgentSource,
+  type AgentSourceProfile,
+  discoverAgentSourceProfiles,
+  FAIL_CLOSED_AGENT_SOURCES,
 } from "../settings/agent-source.js";
-import { presentationForwardedProps } from "../settings/presentation-request.js";
 import ConversationComposer from "../shell/ConversationComposer.vue";
 import ConversationMainArea from "../shell/ConversationMainArea.vue";
 import ConversationSidebar from "../shell/ConversationSidebar.vue";
@@ -140,9 +145,16 @@ const previewedMapPathOwner = ref<
 >();
 const selectedDevice = ref<Device>();
 const visibleMapLayerIds = shallowRef<readonly string[]>([]);
-const selectedAgentSource = ref(props.agentSource);
+const availableAgentProfiles = shallowRef<readonly AgentSourceProfile[]>(
+  FAIL_CLOSED_AGENT_SOURCES,
+);
+const selectedAgentSource = ref<AgentSource>("ag-ui-mock");
 const selectedAgentProfile = computed(() =>
-  agentSourceProfile(selectedAgentSource.value),
+  agentSourceProfile(selectedAgentSource.value, availableAgentProfiles.value),
+);
+const selectedAgentProviderKey = computed(
+  () =>
+    `${selectedAgentProfile.value.agentId}:${selectedAgentProfile.value.frontendTools}:${selectedAgentProfile.value.a2uiCatalogEnabled}`,
 );
 
 const currentConversation = computed<LocalConversation | undefined>(() =>
@@ -244,21 +256,18 @@ const consultEmphasizedFeatureId = computed(() => {
   return session.request.options.find((option) => option.id === optionId)
     ?.target.featureId;
 });
-const consultCandidatesClickable = computed(
-  () => {
-    if (
-      activeConsultSession.value === undefined ||
-      !activeConsultSession.value.canRespond() ||
-      consultRevisionMode.value ||
-      consultVariant.value === "a"
-    )
-      return false;
-    return (
-      consultVariant.value === "b" ||
-      consultTentativeOptionId.value !== undefined
-    );
-  },
-);
+const consultCandidatesClickable = computed(() => {
+  if (
+    activeConsultSession.value === undefined ||
+    !activeConsultSession.value.canRespond() ||
+    consultRevisionMode.value ||
+    consultVariant.value === "a"
+  )
+    return false;
+  return (
+    consultVariant.value === "b" || consultTentativeOptionId.value !== undefined
+  );
+});
 const consultClickableFeatureId = computed(() => {
   if (consultVariant.value !== "c") return undefined;
   const session = activeConsultSession.value;
@@ -460,7 +469,12 @@ function configureRuntime(): void {
 
 async function selectAgentSource(event: Event): Promise<void> {
   const source = (event.target as HTMLSelectElement).value as AgentSource;
-  if (!AGENT_SOURCES.includes(source) || source === selectedAgentSource.value)
+  if (
+    !availableAgentProfiles.value.some(
+      (profile) => profile.agentId === source,
+    ) ||
+    source === selectedAgentSource.value
+  )
     return;
   selectedAgentSource.value = source;
   emit("agentSourceChange", source);
@@ -652,11 +666,9 @@ async function sendMessage(
  * forwarded to the Runtime presentation policy via AG-UI forwardedProps.
  */
 async function runScenario(scenario: QuickScenario): Promise<void> {
-  const forwardedProps = presentationForwardedProps(scenario.requestedMode);
+  const forwardedProps = quickScenarioForwardedProps(scenario);
   await sendMessage(scenario.message, {
-    ...(forwardedProps === undefined
-      ? {}
-      : { forwardedProps: { ...forwardedProps } }),
+    ...(forwardedProps === undefined ? {} : { forwardedProps }),
   });
 }
 
@@ -899,7 +911,18 @@ async function handleSetLayerVisibility(
   );
 }
 
-onMounted(() => {
+onMounted(async () => {
+  availableAgentProfiles.value = await discoverAgentSourceProfiles(
+    props.endpoints.agUi,
+  );
+  selectedAgentSource.value = availableAgentProfiles.value.some(
+    (profile) => profile.agentId === props.agentSource,
+  )
+    ? props.agentSource
+    : "ag-ui-mock";
+  if (selectedAgentSource.value !== props.agentSource)
+    emit("agentSourceChange", selectedAgentSource.value);
+  await nextTick();
   configureRuntime();
   if (conversations.value.length === 0) newConversation();
 });
@@ -914,7 +937,7 @@ onBeforeUnmount(() => {
 
 <template>
   <CopilotKitConversationProvider
-    :key="selectedAgentProfile.agentId"
+    :key="selectedAgentProviderKey"
     :a2ui-enabled="selectedAgentProfile.a2uiCatalogEnabled"
     :agent-id="selectedAgentProfile.agentId"
     :frontend-tools-enabled="selectedAgentProfile.frontendTools"
@@ -947,11 +970,11 @@ onBeforeUnmount(() => {
               @change="selectAgentSource"
             >
               <option
-                v-for="source in AGENT_SOURCES"
-                :key="source"
-                :value="source"
+                v-for="profile in availableAgentProfiles"
+                :key="profile.agentId"
+                :value="profile.agentId"
               >
-                {{ agentSourceProfile(source).label }}
+                {{ profile.label }}
               </option>
             </select>
           </label>

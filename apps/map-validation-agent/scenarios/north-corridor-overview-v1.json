@@ -1,0 +1,105 @@
+{
+  "input": {
+    "scenarioId": "north-corridor-overview-v1",
+    "version": "1",
+    "userGoal": "帮我想想怎么巡逻北侧通道。",
+    "facts": [
+      {
+        "id": "overview-area",
+        "kind": "statement",
+        "statement": "北侧通道是本次巡逻研判区域。"
+      },
+      {
+        "id": "overview-points",
+        "kind": "statement",
+        "statement": "东侧高地、桥下区域和检查点 B 是需要观察的既有点位。"
+      },
+      {
+        "id": "overview-constraint",
+        "kind": "statement",
+        "statement": "北坡限制区需要在地图上显式显示并高亮。"
+      },
+      {
+        "id": "overview-route",
+        "kind": "statement",
+        "statement": "路线 A 是既有临时候选路线，只能预览，尚未被选择或执行。"
+      }
+    ],
+    "mapTargets": [
+      {
+        "id": "constraints-layer",
+        "kind": "layer",
+        "label": "限制区图层",
+        "ref": { "layerId": "operational-constraints" }
+      },
+      {
+        "id": "corridor",
+        "kind": "feature",
+        "label": "北侧通道",
+        "ref": {
+          "featureId": "north-corridor",
+          "layerId": "operational-areas"
+        }
+      },
+      {
+        "id": "east-ridge",
+        "kind": "feature",
+        "label": "东侧高地",
+        "ref": {
+          "featureId": "east-ridge",
+          "layerId": "operational-points"
+        }
+      },
+      {
+        "id": "under-bridge",
+        "kind": "feature",
+        "label": "桥下区域",
+        "ref": {
+          "featureId": "under-bridge",
+          "layerId": "operational-points"
+        }
+      },
+      {
+        "id": "checkpoint-b",
+        "kind": "feature",
+        "label": "检查点 B",
+        "ref": {
+          "featureId": "checkpoint-b",
+          "layerId": "operational-points"
+        }
+      },
+      {
+        "id": "restricted-zone",
+        "kind": "feature",
+        "label": "北坡限制区",
+        "ref": {
+          "featureId": "north-restricted-zone",
+          "layerId": "operational-constraints"
+        }
+      },
+      {
+        "id": "route-a-target",
+        "kind": "feature",
+        "label": "路线 A",
+        "ref": {
+          "featureId": "patrol-path-a",
+          "layerId": "patrol-routes"
+        }
+      }
+    ]
+  },
+  "expected": {
+    "expectedInteraction": "act",
+    "requiredCapabilities": [
+      "setLayerVisibility",
+      "focusOn",
+      "highlight",
+      "previewPath"
+    ],
+    "forbiddenBehaviors": [
+      "generate a new route",
+      "claim route A was selected or executed",
+      "repeat a completed tool call without a new reason"
+    ]
+  }
+}

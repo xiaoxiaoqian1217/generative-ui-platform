@@ -25,9 +25,7 @@ import { PATROL_ROUTE_REVISE_INSTRUCTION } from "./patrol-route-consult.js";
  * only interactive children re-enable pointer events.
  */
 const session = activeConsultSession;
-const sessionCanRespond = computed(
-  () => session.value?.canRespond() === true,
-);
+const sessionCanRespond = computed(() => session.value?.canRespond() === true);
 
 const showPill = computed(
   () =>
@@ -154,11 +152,7 @@ async function selectPopupOption(): Promise<void> {
 function switchPopupToRevision(): void {
   const anchor = consultPopupAnchor.value;
   const option = popupOption.value;
-  if (
-    anchor === undefined ||
-    option === undefined ||
-    !sessionCanRespond.value
-  )
+  if (anchor === undefined || option === undefined || !sessionCanRespond.value)
     return;
   consultRevisionAnchor.value = {
     featureId: option.target.featureId,
@@ -238,8 +232,7 @@ async function submitRevision(): Promise<void> {
     return;
   }
   if (!revisionInstructionSupported.value) {
-    revisionError.value =
-      "当前确定性场景只支持示例中的固定修改要求。";
+    revisionError.value = "当前确定性场景只支持示例中的固定修改要求。";
     return;
   }
   consultRevisionPopup.value = undefined;

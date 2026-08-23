@@ -9,7 +9,7 @@ Its current release gate uses one thin CopilotKit Runtime boundary:
 ```text
 Web Workbench
 -> thin CopilotKit Runtime
--> AGUIMock or single-agent-chat-server
+-> AGUIMock, single-agent-chat-server, or an explicitly enabled map-validation-agent
 ```
 
 Agent Source is the only session-level choice; everyday natural language input always runs in auto presentation.
@@ -18,6 +18,10 @@ The `巡检摘要 (Dynamic A2UI)` quick scenario carries an explicit `requestedM
 Only the AGUIMock source advertises the business-independent browser `setLayerVisibility`, `focusOn`, `highlight`, and `previewPath` Frontend Tools.
 The browser resolves `MapTargetRef` values and applies the operations to the persistent MapLibre surface.
 The SACS source streams Business Agent text, state, activity, and structured results without client-provided Frontend Tools.
+The dev-only validation source uses the same existing map tools and consultation capability to study real LLM interaction decisions.
+
+Workbench discovers available sources and capabilities from the Runtime built-in `/api/copilotkit/info` endpoint at startup.
+It shows `map-validation-agent` only when the Runtime registered it, derives Frontend Tool availability from the reported capabilities, and fails closed to AGUIMock if discovery fails.
 
 Workbench consumes native AG-UI messages through CopilotKit.
 It does not wrap the run in `RuntimeRunResult`, `PresentationResult`, or another application protocol.
@@ -39,7 +43,7 @@ The active Conversation route supports:
 - per-turn Turn Inspect: a swimlane timeline of the observations the Workbench really saw (Workbench / CopilotKit Runtime / Agent / Frontend Tool lanes appear only when they actually occurred) plus on-demand raw JSON detail;
 - SACS interrupt / resume: an interrupted run renders an in-turn confirmation card, and the user's answer is sent back as a native AG-UI `resume` entry;
 - cancellation, retryable timeout handling, agent outage handling, and recovery;
-- explicit Agent Source selection between AGUIMock and `single-agent-chat-server`;
+- discovered Agent Source selection between AGUIMock, `single-agent-chat-server`, and the optional dev-only validation source;
 - the Dynamic A2UI quick scenario, which injects the controlled structured input and requests dynamic generation through forwardedProps.
 - a dev-only Scenario Lab that freely generates Dynamic A2UI previews from `PresentationInput` and keeps repository fact assertions inside a separate advanced evaluation flow.
 
@@ -121,6 +125,7 @@ To run the three development processes in separate terminals:
 
 ```bash
 pnpm dev:ag-ui-mock
+pnpm dev:map-validation-agent
 pnpm dev:copilot-runtime
 pnpm dev:web-workbench
 ```

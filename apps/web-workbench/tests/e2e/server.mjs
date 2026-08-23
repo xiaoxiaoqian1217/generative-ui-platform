@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { extname, isAbsolute, join, relative, resolve } from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
+import { HttpAgent } from "@ag-ui/client";
 import { createAguiMockServer } from "@generative-ui/ag-ui-mock";
 import { createRuntimeHandler } from "@generative-ui/copilot-runtime";
 import { createMockUpstreamProxy } from "./mock-upstream-proxy.mjs";
@@ -32,9 +33,13 @@ const sacs = await createSacsProfileFixture({
   serviceKey: sacsServiceKey,
 });
 const secondaryLlm = createSecondaryLlmFake();
+const mapValidationAgent = new HttpAgent({ url: mockProxy.url });
 const runtimeHandler = createRuntimeHandler(
   {
     agUiMockUrl: mockProxy.url,
+    mapValidationAgentEnabled: true,
+    mapValidationAgentGraphId: "map_validation_agent",
+    mapValidationAgentUrl: "http://map-validation-agent.invalid",
     sacsAgUiUrl: sacs.url,
     sacsJwtSecret,
     sacsPrincipalId,
@@ -45,6 +50,7 @@ const runtimeHandler = createRuntimeHandler(
   {
     draftScenarioFixture,
     invokeSubagent: secondaryLlm.invokeSubagent,
+    mapValidationAgent,
   },
 );
 let runtimeAvailable = true;

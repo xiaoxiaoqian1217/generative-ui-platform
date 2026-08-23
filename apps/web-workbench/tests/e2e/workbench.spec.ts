@@ -41,7 +41,11 @@ test("Conversation-first Shell is the default product interface", async ({
   await expect(page.getByTestId("map-effect-summary")).toHaveCount(0);
   await expect(
     page.getByTestId("agent-source-select").locator("option"),
-  ).toHaveText(["AGUIMock", "single-agent-chat-server"]);
+  ).toHaveText([
+    "AGUIMock",
+    "single-agent-chat-server",
+    "Map Validation Agent",
+  ]);
   await expect(page.getByTestId("presentation-mode-select")).toHaveCount(0);
   await expect(page.getByTestId("agent-connection-status")).toContainText(
     "已连接",
@@ -773,6 +777,39 @@ test("scenario A applies the patrol map intents to one persistent surface", asyn
   expect([...observedToolCallIds]).toEqual(protocolToolCallIds);
 });
 
+test("the discovered validation Agent reaches the patrol map terminal state", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByTestId("agent-source-select")
+    .selectOption("map-validation-agent");
+  await expect(page.getByTestId("frontend-tool-capability-gap")).toHaveCount(0);
+
+  await page.getByRole("button", { name: /北侧通道真实 Agent 展示/ }).click();
+
+  const mapView = page.getByTestId("map-view");
+  await expect(mapView).toHaveAttribute(
+    "data-focused-feature-id",
+    "north-corridor",
+  );
+  await expect(mapView).toHaveAttribute(
+    "data-visible-layer-ids",
+    "operational-constraints",
+  );
+  await expect(mapView).toHaveAttribute(
+    "data-highlighted-feature-ids",
+    "east-ridge,under-bridge,checkpoint-b,north-restricted-zone",
+  );
+  await expect(mapView).toHaveAttribute(
+    "data-previewed-path-feature-id",
+    "patrol-path-a",
+  );
+  await expect(page.getByTestId("map-operation-hud-current")).toContainText(
+    "地图操作已完成",
+  );
+});
+
 async function startPatrolRouteConsult(page: Page) {
   await page.getByRole("button", { name: /候选巡逻路线征询/ }).click();
   const consult = page.locator("[data-testid^='patrol-route-consult-']");
@@ -817,9 +854,7 @@ test("accepted decision dock requires a route choice before map-anchored revisio
     "data-tentative",
     "true",
   );
-  await expect(dock).toContainText(
-    "第 2 步: 点击地图中的路线 B，然后提出修改",
-  );
+  await expect(dock).toContainText("第 2 步: 点击地图中的路线 B，然后提出修改");
   await expect(confirm).toBeEnabled();
   await expect(confirm).toHaveText("确认选择路线 B");
   await expect(mapView).toHaveAttribute(
@@ -893,7 +928,9 @@ test("route A revision preserves the selected route and supports keyboard dialog
   );
 });
 
-test("cancel discards an unsubmitted route revision anchor", async ({ page }) => {
+test("cancel discards an unsubmitted route revision anchor", async ({
+  page,
+}) => {
   await page.goto("/");
   await page.getByRole("button", { name: /候选巡逻路线征询/ }).click();
 

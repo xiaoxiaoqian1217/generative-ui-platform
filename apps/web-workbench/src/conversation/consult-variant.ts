@@ -17,9 +17,7 @@ function readInitialVariant(): ConsultVariant {
   );
   const comparisonsEnabled =
     import.meta.env.DEV || import.meta.env.MODE === "test";
-  return comparisonsEnabled && (value === "a" || value === "b")
-    ? value
-    : "c";
+  return comparisonsEnabled && (value === "a" || value === "b") ? value : "c";
 }
 
 export const consultVariant = ref<ConsultVariant>(readInitialVariant());

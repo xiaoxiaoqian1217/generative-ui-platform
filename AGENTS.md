@@ -94,6 +94,17 @@ Issue #213 在此之上追加允许：
 当前 SACS profile 不支持 client-provided Frontend Tools。
 不得由 Runtime 或 Workbench 伪造 Tool Calling 来掩盖这一 capability gap。
 
+### map-validation-agent
+
+用于 dev-only 真实 LLM 地图交互决策验证：
+
+- 独立 TypeScript LangGraph server；
+- 版本化 run-scoped 场景输入；
+- 复用现有地图 Frontend Tools 与 HITL；
+- 依据真实 Tool Result continuation。
+
+它不是 SACS 替代品，不是产品 Business Agent，也不得嵌入 CopilotKit Runtime 进程。
+
 ## Active modules
 
 当前已经存在：
@@ -101,6 +112,7 @@ Issue #213 在此之上追加允许：
 ```text
 apps/
 ├─ copilot-runtime/
+├─ map-validation-agent/
 └─ web-workbench/
 
 packages/
@@ -113,6 +125,7 @@ packages/
 职责：
 
 - `apps/web-workbench`：当前产品主体与交互 / Generative UI 实验场。
+- `apps/map-validation-agent`：Issue #216 准入的独立 dev-only LangGraph 交互验证 Agent，只承载通用 prompt、模型接线与版本化场景输入。
 - `packages/a2ui-catalog`：框架无关的 Platform Catalog definitions（Metric / StatusBadge / InfoRow），仅依赖 zod 与 `@a2ui/web_core`，Workbench 与 Runtime 引用同一来源；只承载 definitions，不演变为通用 Catalog Platform。
 - `packages/ag-ui-mock`：可复用 AG-UI 测试服务。
 - `packages/ag-ui-adapter`：仅允许承载 AG-UI 协议边界辅助能力。
@@ -249,6 +262,7 @@ Current
   ↓
 #200 Real SACS Interoperability
 #213 Generative UI Scenario & Evaluation MVP
+#216 Dev-only Map Validation Agent
 
 Next
 SACS AgentContent → Dynamic A2UI

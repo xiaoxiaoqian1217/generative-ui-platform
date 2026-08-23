@@ -1,14 +1,14 @@
 import type { AGUIMock } from "@copilotkit/aimock";
 import type { AGUIRunAgentInput } from "@copilotkit/aimock/agui";
 import {
-  PATROL_ROUTE_CONSULT_TOOL,
-  PATROL_ROUTE_REVISE_INSTRUCTION,
-} from "@generative-ui/shared-types";
-import {
   buildCompositeResponse,
   buildTextResponse,
   buildToolCallResponse,
 } from "@copilotkit/aimock/agui";
+import {
+  PATROL_ROUTE_CONSULT_TOOL,
+  PATROL_ROUTE_REVISE_INSTRUCTION,
+} from "@generative-ui/shared-types";
 import {
   acknowledgeToolResult,
   acknowledgeToolResultContent,
@@ -120,13 +120,9 @@ function hasConsultResponse(
   const result = [...messages]
     .reverse()
     .find(
-      (message) =>
-        message.role === "tool" && message.toolCallId === toolCallId,
+      (message) => message.role === "tool" && message.toolCallId === toolCallId,
     );
-  if (
-    result?.role !== "tool" ||
-    typeof result.content !== "string"
-  )
+  if (result?.role !== "tool" || typeof result.content !== "string")
     return false;
   const sourceCall = [...messages]
     .reverse()

@@ -69,6 +69,20 @@ ADR-0029 已接受下一阶段目标：引入**薄 CopilotKit Runtime 集成层*
        测试 Agent          真实业务 Agent
 ```
 
+Issue #216 在该边界上增加一个默认关闭的独立验证来源：
+
+```text
+Workbench
+  -> existing CopilotKit Runtime
+       -> map-validation-agent
+            -> independent LangGraph server
+            -> validation LLM
+  -> existing Frontend Tools / HITL
+  -> MapLibre persistent surface
+```
+
+`map-validation-agent` 是 dev-only 交互研究仪器，不替代 SACS，也不在 Runtime 进程内执行 graph。
+
 在 #207 完成前，上图中的 CopilotKit Runtime 仍是目标状态，不应被误写成已完成实现。
 
 ## 4. CopilotKit Runtime 边界
@@ -142,7 +156,13 @@ AGUIMock 不承载生产 Runtime 职责。
 
 这些属于当前真实 Agent 的互操作缺口，不应限制 Workbench 自身能力模型，也不能由 Runtime 伪造。
 
-### 5.3 来源与呈现决策分离
+### 5.3 map-validation-agent
+
+`map-validation-agent` 用真实 LLM 验证地图意图选择、工具顺序、真实 Tool Result continuation 和缺少用户决定时的征询。
+它从 run-scoped context 加载版本化场景输入，只消费 Workbench 已有的地图和 HITL Frontend Tools。
+它不访问真实业务系统，不计算路线，不提供正式可靠性统计，也不改变默认产品 Agent 拓扑。
+
+### 5.4 来源发现与呈现决策分离
 
 Agent Source 回答业务内容从哪里来；呈现路径由 Runtime 的确定性 Presentation Policy 按内容决定。
 用户只有自然语言一个入口，可以切换的只有 Agent Source；呈现路径不是用户开关。
@@ -150,7 +170,8 @@ Agent Source 回答业务内容从哪里来；呈现路径由 Runtime 的确定�
 ```text
 Agent Source
 ├─ AGUIMock
-└─ single-agent-chat-server
+├─ single-agent-chat-server
+└─ map-validation-agent（dev-only，条件注册）
 
 Presentation paths(按内容单元决策,非全局模式)
 1. Native A2UI Passthrough(已是 A2UI,如固定 fixture)
@@ -288,6 +309,8 @@ SACS 不需要为了该方向理解 A2UI。
 
 当前
 #200 Real SACS Interoperability
+#213 Generative UI Scenario and Evaluation MVP
+#216 Dev-only map validation Agent interaction loop
 
 下一阶段
 SACS AgentContent → Dynamic A2UI

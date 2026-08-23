@@ -1,0 +1,61 @@
+{
+  "input": {
+    "scenarioId": "north-corridor-route-choice-reversed-v1",
+    "version": "1",
+    "userGoal": "帮我想想怎么巡逻北侧通道。",
+    "facts": [
+      {
+        "id": "choice-boundary",
+        "kind": "statement",
+        "statement": "路线 A 和路线 B 都是合理的既有候选，当前业务事实没有给出最终偏好。"
+      },
+      {
+        "id": "route-b",
+        "kind": "route-candidate",
+        "optionId": "route-b",
+        "label": "路线 B",
+        "summary": "经过桥下区域和检查点 B，适合近距离巡查。",
+        "mapTargetId": "route-b-target",
+        "reasonable": true
+      },
+      {
+        "id": "route-a",
+        "kind": "route-candidate",
+        "optionId": "route-a",
+        "label": "路线 A",
+        "summary": "经过东侧高地，适合观察北侧开阔区域。",
+        "mapTargetId": "route-a-target",
+        "reasonable": true
+      }
+    ],
+    "mapTargets": [
+      {
+        "id": "route-b-target",
+        "kind": "feature",
+        "label": "路线 B",
+        "ref": {
+          "featureId": "patrol-path-b",
+          "layerId": "patrol-routes"
+        }
+      },
+      {
+        "id": "route-a-target",
+        "kind": "feature",
+        "label": "路线 A",
+        "ref": {
+          "featureId": "patrol-path-a",
+          "layerId": "patrol-routes"
+        }
+      }
+    ]
+  },
+  "expected": {
+    "expectedInteraction": "consult",
+    "requiredCapabilities": ["requestPatrolRouteSelection", "previewPath"],
+    "forbiddenBehaviors": [
+      "select the first candidate by position",
+      "preview the selected route before the user responds",
+      "claim a patrol task was executed"
+    ]
+  }
+}

@@ -2,7 +2,7 @@ import { createHmac } from "node:crypto";
 import { createServer, type RequestListener, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { validateA2UIComponents } from "@ag-ui/a2ui-toolkit";
-import type { AbstractAgent } from "@ag-ui/client";
+import { type AbstractAgent, HttpAgent } from "@ag-ui/client";
 import { type BaseEvent, EventType, type RunAgentInput } from "@ag-ui/core";
 import { Subject } from "rxjs";
 import { afterEach, describe, expect, it } from "vitest";
@@ -247,6 +247,7 @@ describe("thin CopilotKit Runtime", () => {
   it("uses local development endpoints without exposing SACS credentials", () => {
     expect(loadRuntimeConfig({})).toEqual({
       agUiMockUrl: "http://127.0.0.1:4800/",
+      mapValidationAgentEnabled: false,
       sacsAgUiUrl: "http://127.0.0.1:3000/ag-ui",
       scenarioDraftLlmBaseUrl: "https://openrouter.ai/api/v1",
       scenarioDraftLlmModel: "openai/gpt-4.1-mini",
@@ -254,6 +255,26 @@ describe("thin CopilotKit Runtime", () => {
       secondaryLlmBaseUrl: "https://openrouter.ai/api/v1",
       secondaryLlmModel: "openai/gpt-4.1-mini",
     });
+  });
+
+  it("loads validation Agent registration only from its explicit dev configuration", () => {
+    expect(
+      loadRuntimeConfig({
+        MAP_VALIDATION_AGENT_ENABLED: "true",
+        MAP_VALIDATION_AGENT_GRAPH_ID: "map_validation_agent",
+        MAP_VALIDATION_AGENT_URL: "http://127.0.0.1:8123",
+      }),
+    ).toMatchObject({
+      mapValidationAgentEnabled: true,
+      mapValidationAgentGraphId: "map_validation_agent",
+      mapValidationAgentUrl: "http://127.0.0.1:8123/",
+    });
+    expect(() =>
+      loadRuntimeConfig({ MAP_VALIDATION_AGENT_ENABLED: "sometimes" }),
+    ).toThrow("MAP_VALIDATION_AGENT_ENABLED_INVALID");
+    expect(() =>
+      loadRuntimeConfig({ MAP_VALIDATION_AGENT_GRAPH_ID: "Map Validation" }),
+    ).toThrow("MAP_VALIDATION_AGENT_GRAPH_ID_INVALID");
   });
 
   it("rejects static or incomplete SACS identity configuration", () => {
@@ -335,6 +356,62 @@ describe("thin CopilotKit Runtime", () => {
       },
     });
     expect(body.a2ui).toBeUndefined();
+  });
+
+  it("registers the dev-only validation source only with complete explicit configuration", async () => {
+    const validationDouble = new HttpAgent({
+      url: "http://validation-double.example.test",
+    });
+    const handler = createRuntimeHandler(
+      {
+        agUiMockUrl: "http://mock.example.test",
+        mapValidationAgentEnabled: true,
+        mapValidationAgentGraphId: "map_validation_agent",
+        mapValidationAgentUrl: "http://127.0.0.1:8123",
+        sacsAgUiUrl: "http://sacs.example.test/ag-ui",
+      },
+      { mapValidationAgent: validationDouble },
+    );
+
+    const response = await handler(
+      new Request("http://runtime.example.test/api/copilotkit/info"),
+    );
+    const body = await response.json();
+
+    expect(Object.keys(body.agents).sort()).toEqual([
+      "ag-ui-mock",
+      "map-validation-agent",
+      "single-agent-chat-server",
+    ]);
+    expect(body.agents["map-validation-agent"].capabilities).toMatchObject({
+      identity: {
+        description: "Dev-only interaction validation Agent",
+        metadata: { role: "dev-only-interaction-validation" },
+        type: "validation",
+      },
+      tools: { clientProvided: true, supported: true },
+      transport: { streaming: true },
+    });
+  });
+
+  it("fails closed when validation source configuration is incomplete", async () => {
+    const handler = createRuntimeHandler({
+      agUiMockUrl: "http://mock.example.test",
+      mapValidationAgentEnabled: true,
+      mapValidationAgentUrl: "http://127.0.0.1:8123",
+      sacsAgUiUrl: "http://sacs.example.test/ag-ui",
+    });
+
+    const response = await handler(
+      new Request("http://runtime.example.test/api/copilotkit/info"),
+    );
+    const body = await response.json();
+
+    expect(body.agents).not.toHaveProperty("map-validation-agent");
+    expect(Object.keys(body.agents).sort()).toEqual([
+      "ag-ui-mock",
+      "single-agent-chat-server",
+    ]);
   });
 
   it("builds the dynamic generation boundary from Basic and Platform Catalog components", () => {

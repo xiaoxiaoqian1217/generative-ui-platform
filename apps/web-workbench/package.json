@@ -25,6 +25,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@ag-ui/client": "0.0.57",
     "@playwright/test": "1.62.1",
     "@types/markdown-it": "14.1.2",
     "@types/ws": "8.18.1",

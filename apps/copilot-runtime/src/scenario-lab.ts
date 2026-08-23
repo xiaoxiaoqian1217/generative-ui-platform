@@ -1,12 +1,12 @@
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import type { Dirent } from "node:fs";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import {
   type A2uiGenerationErrorContent,
   generateA2uiSurfaceFromContent,
 } from "./a2ui-generation.js";
 import {
-  parsePresentationInput,
   type PresentationInput,
+  parsePresentationInput,
   serializePresentationInputContent,
 } from "./presentation-input.js";
 import {
