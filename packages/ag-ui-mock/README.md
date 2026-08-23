@@ -15,6 +15,7 @@
 - 两个 A2UI fixture 的 `createSurface.catalogId` 都引用 `@generative-ui/shared-types` 导出的 `PLATFORM_A2UI_CATALOG_ID`，与 Workbench 注册的合并 Catalog 保持一致。
 - `locate-device` 将原有定位意图迁移为 `focusOn` 后接 `highlight`，每次续跑先返回对应的标准 `TOOL_CALL_RESULT`，再继续或返回最终 AG-UI 文本消息。
 - `map-patrol-route-review` 为“北侧通道巡逻方案研判与调整”确定性执行 `setLayerVisibility`、`focusOn`、`highlight`、`previewPath` 四步地图意图，并在每步之间保留短暂观察间隔。
+- `consult-patrol-route-selection` 通过 `requestPatrolRouteSelection` 等待标准 role = tool 的用户答复，并确定性覆盖路线 A、路线 B、取消和固定修改要求四个 continuation 分支。
 - `previewPath` 仅预览 fixture 中已有的候选路线，不计算、优化或提交路线。
 - `run-error` 对包含 `mock failure` 的输入返回 bounded `RUN_ERROR`（`MOCK_FIXTURE_ERROR`），用于失败定位与 Inspect 回归。
 

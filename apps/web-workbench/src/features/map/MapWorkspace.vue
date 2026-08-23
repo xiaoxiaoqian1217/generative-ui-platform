@@ -2,22 +2,73 @@
 import { ref } from "vue";
 import DeviceCard from "../../components/domain/DeviceCard.vue";
 import type { Device } from "./devices.js";
+import type { ConsultRouteCandidate } from "./map-controller.js";
 import type { MapTarget } from "./map-targets.js";
 import MapView from "./MapView.vue";
 
-defineProps<{
-  focusedTarget: MapTarget | undefined;
-  highlightedTargets: readonly MapTarget[];
-  previewedPath: MapTarget | undefined;
-  selectedDevice: Device | undefined;
-  visibleLayerIds: readonly string[];
-}>();
+withDefaults(
+  defineProps<{
+    consultCandidates?: readonly ConsultRouteCandidate[];
+    consultCandidatesClickable?: boolean;
+    consultClickableFeatureId?: string | undefined;
+    consultEmphasizedFeatureId?: string | undefined;
+    consultRevisionAnchor?:
+      | { readonly lng: number; readonly lat: number }
+      | undefined;
+    consultRevisionMode?: boolean;
+    focusedTarget: MapTarget | undefined;
+    highlightedTargets: readonly MapTarget[];
+    previewedPath: MapTarget | undefined;
+    selectedDevice: Device | undefined;
+    visibleLayerIds: readonly string[];
+  }>(),
+  {
+    consultCandidates: () => [],
+    consultCandidatesClickable: false,
+    consultClickableFeatureId: undefined,
+    consultEmphasizedFeatureId: undefined,
+    consultRevisionAnchor: undefined,
+    consultRevisionMode: false,
+  },
+);
 
 const emit = defineEmits<{
+  consultCandidateClick: [
+    featureId: string,
+    point: { readonly x: number; readonly y: number },
+    position: { readonly lng: number; readonly lat: number },
+  ];
+  consultCandidateHover: [featureId: string | undefined];
+  consultRevisionPick: [
+    position: { readonly lng: number; readonly lat: number },
+    point: { readonly x: number; readonly y: number },
+    featureId: string | undefined,
+  ];
   locateDevice: [deviceId: string];
 }>();
 
+function forwardCandidateClick(
+  featureId: string,
+  point: { readonly x: number; readonly y: number },
+  position: { readonly lng: number; readonly lat: number },
+): void {
+  emit("consultCandidateClick", featureId, point, position);
+}
+
+function forwardCandidateHover(featureId: string | undefined): void {
+  emit("consultCandidateHover", featureId);
+}
+
+function forwardRevisionPick(
+  position: { readonly lng: number; readonly lat: number },
+  point: { readonly x: number; readonly y: number },
+  featureId: string | undefined,
+): void {
+  emit("consultRevisionPick", position, point, featureId);
+}
+
 interface MapViewHandle {
+  clearPreviewPath(): Promise<void>;
   focusOn(target: MapTarget): void;
   highlight(targets: readonly MapTarget[]): void;
   previewPath(target: MapTarget): Promise<void>;
@@ -33,6 +84,7 @@ function requireMapView(): MapViewHandle {
 }
 
 defineExpose({
+  clearPreviewPath: () => requireMapView().clearPreviewPath(),
   focusOn: (target: MapTarget) => requireMapView().focusOn(target),
   highlight: (targets: readonly MapTarget[]) =>
     requireMapView().highlight(targets),
@@ -56,11 +108,20 @@ defineExpose({
     <div class="map-workspace-canvas">
       <MapView
         ref="mapView"
+        :consult-candidates="consultCandidates"
+        :consult-candidates-clickable="consultCandidatesClickable"
+        :consult-clickable-feature-id="consultClickableFeatureId"
+        :consult-emphasized-feature-id="consultEmphasizedFeatureId"
+        :consult-revision-anchor="consultRevisionAnchor"
+        :consult-revision-mode="consultRevisionMode"
         :focused-target="focusedTarget"
         :highlighted-targets="highlightedTargets"
         :previewed-path="previewedPath"
         :selected-device="selectedDevice"
         :visible-layer-ids="visibleLayerIds"
+        @consult-candidate-click="forwardCandidateClick"
+        @consult-candidate-hover="forwardCandidateHover"
+        @consult-revision-pick="forwardRevisionPick"
       />
       <div
         v-if="

@@ -16,6 +16,7 @@ The current E2E release gate covers:
 - browser Frontend Tool execution and AG-UI continuation with standard tool call / result correlation;
 - the migrated locate flow through `focusOn` and `highlight`;
 - the patrol-plan scenario through `setLayerVisibility -> focusOn -> highlight -> previewPath -> Assistant result` on one persistent MapLibre surface;
+- the patrol-route consultation through a live Vue `useHumanInTheLoop` renderer, consult-owned local map previews, scoped human wait, select/cancel/revise continuation, and Stop invalidation;
 - Agent source switching and the explicit SACS Frontend Tool capability gap;
 - SACS streaming text, state snapshot/delta, activity snapshot/delta, artifact result, and `RUN_ERROR` handling;
 - SACS interrupt / resume with real correlation and durable-run conflict facts;

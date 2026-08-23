@@ -2,9 +2,9 @@ import { Ajv } from "ajv";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   isMapPlanActivityContent,
-  MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
   type JsonValue,
   jsonValueSchema,
+  MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
   type ValidationResult,
   validationErrorSchema,
 } from "../src/index.js";
@@ -67,9 +67,11 @@ describe("shared JSON types", () => {
             id: "route",
             label: "Preview route",
             operationNames: ["previewPath"],
+            outcome: "Route A is ready for review.",
             status: "running",
           },
         ],
+        decisionBoundary: "No route has been selected.",
       }),
     ).toBe(true);
     expect(

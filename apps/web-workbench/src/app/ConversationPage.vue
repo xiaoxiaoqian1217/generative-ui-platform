@@ -6,6 +6,7 @@ import {
   onMounted,
   ref,
   shallowRef,
+  watch,
 } from "vue";
 import {
   type AgentTransportClient,
@@ -20,6 +21,7 @@ import { mapOperationSteps } from "../conversation/map-operation-trace.js";
 import { quickScenarios, type QuickScenario } from "./scenarios.js";
 import {
   appendTurnObservation,
+  appendTurnResponseMessages,
   type ConversationState,
   createConversationState,
   failOperation,
@@ -42,6 +44,7 @@ import type {
   MapTargetRef,
 } from "../features/map/map-operation.js";
 import {
+  findMapTarget,
   mapTargetRefForDevice,
   type MapTarget,
 } from "../features/map/map-targets.js";
@@ -66,6 +69,24 @@ import ConversationComposer from "../shell/ConversationComposer.vue";
 import ConversationMainArea from "../shell/ConversationMainArea.vue";
 import ConversationSidebar from "../shell/ConversationSidebar.vue";
 import InspectPanel from "../shell/InspectPanel.vue";
+import ConsultMapOverlay from "../conversation/ConsultMapOverlay.vue";
+import {
+  activeConsultSession,
+  clearConsultSessionState,
+  consultEmphasizedOptionId,
+  consultOutcome,
+  consultPopupAnchor,
+  consultRevisionAnchor,
+  consultRevisionMode,
+  consultRevisionPopup,
+  consultTentativeOptionId,
+} from "../conversation/consult-session.js";
+import { consultVariant } from "../conversation/consult-variant.js";
+import type { ConsultRouteCandidate } from "../features/map/map-controller.js";
+import type {
+  PatrolRouteConsultController,
+  PatrolRouteOption,
+} from "../conversation/patrol-route-consult.js";
 
 type RunState = "idle" | "running" | "completed" | "failed" | "cancelled";
 
@@ -100,6 +121,7 @@ const connectionState = ref<ConnectionState>("connecting");
 const runState = ref<RunState>("idle");
 const conversations = shallowRef<LocalConversation[]>([]);
 const mapWorkspace = ref<{
+  clearPreviewPath(): Promise<void>;
   focusOn(target: MapTarget): void;
   highlight(targets: readonly MapTarget[]): void;
   previewPath(target: MapTarget): Promise<void>;
@@ -112,6 +134,10 @@ const activeController = ref<AbortController>();
 const focusedMapTarget = ref<MapTarget>();
 const highlightedMapTargets = shallowRef<readonly MapTarget[]>([]);
 const previewedMapPath = ref<MapTarget>();
+const previewedMapPathOwner = ref<
+  | { readonly kind: "agent"; readonly toolCallId: string }
+  | { readonly kind: "consult"; readonly toolCallId: string }
+>();
 const selectedDevice = ref<Device>();
 const visibleMapLayerIds = shallowRef<readonly string[]>([]);
 const selectedAgentSource = ref(props.agentSource);
@@ -191,9 +217,158 @@ const isInputDisabled = computed(
     conversation.value.activeOperation !== undefined,
 );
 
+// The accepted decision dock lives on the map overlay. The slim chat record
+// registers the active consultation in consult-session, and map candidates
+// are driven from here like every other map state. Revision mode picks a
+// user-owned route anchor and submits the instruction through the unchanged
+// Agent consultation contract.
+const CONSULT_CANDIDATE_COLORS = ["#3451d1", "#0e9f6e"] as const;
+
+const consultMapCandidates = computed<readonly ConsultRouteCandidate[]>(() => {
+  if (consultVariant.value === "a") return [];
+  const session = activeConsultSession.value;
+  if (session === undefined) return [];
+  return session.request.options.map((option, index) => ({
+    color:
+      CONSULT_CANDIDATE_COLORS[index % CONSULT_CANDIDATE_COLORS.length] ??
+      "#3451d1",
+    featureId: option.target.featureId,
+    label: option.label,
+    letter: String.fromCharCode(65 + index),
+  }));
+});
+const consultEmphasizedFeatureId = computed(() => {
+  const session = activeConsultSession.value;
+  const optionId = consultEmphasizedOptionId.value;
+  if (session === undefined || optionId === undefined) return undefined;
+  return session.request.options.find((option) => option.id === optionId)
+    ?.target.featureId;
+});
+const consultCandidatesClickable = computed(
+  () => {
+    if (
+      activeConsultSession.value === undefined ||
+      !activeConsultSession.value.canRespond() ||
+      consultRevisionMode.value ||
+      consultVariant.value === "a"
+    )
+      return false;
+    return (
+      consultVariant.value === "b" ||
+      consultTentativeOptionId.value !== undefined
+    );
+  },
+);
+const consultClickableFeatureId = computed(() => {
+  if (consultVariant.value !== "c") return undefined;
+  const session = activeConsultSession.value;
+  const optionId = consultTentativeOptionId.value;
+  if (session === undefined || optionId === undefined) return undefined;
+  return session.request.options.find((option) => option.id === optionId)
+    ?.target.featureId;
+});
+const consultRevisionActive = computed(
+  () =>
+    consultVariant.value !== "c" &&
+    consultRevisionMode.value &&
+    activeConsultSession.value !== undefined,
+);
+const consultRevisionAnchorForMap = computed(() => {
+  const anchor = consultRevisionAnchor.value;
+  if (anchor === undefined) return undefined;
+  return { lat: anchor.lat, lng: anchor.lng };
+});
+
+function consultOptionIdForFeature(featureId: string): string | undefined {
+  return activeConsultSession.value?.request.options.find(
+    (option) => option.target.featureId === featureId,
+  )?.id;
+}
+
+function handleConsultCandidateHover(featureId: string | undefined): void {
+  if (activeConsultSession.value === undefined) return;
+  consultEmphasizedOptionId.value =
+    featureId === undefined ? undefined : consultOptionIdForFeature(featureId);
+}
+
+/**
+ * One route click has a variant-dependent meaning. In B the click opens the
+ * selection popup. In the accepted C interaction, a decision-dock choice is
+ * required first and only the matching map route can open a revision form.
+ */
+function handleConsultCandidateClick(
+  featureId: string,
+  point: { readonly x: number; readonly y: number },
+  position: { readonly lng: number; readonly lat: number },
+): void {
+  if (consultRevisionMode.value) return;
+  if (activeConsultSession.value?.canRespond() !== true) return;
+  const optionId = consultOptionIdForFeature(featureId);
+  if (optionId === undefined) return;
+  if (consultVariant.value === "b") {
+    consultPopupAnchor.value = {
+      lat: position.lat,
+      lng: position.lng,
+      optionId,
+      x: point.x,
+      y: point.y,
+    };
+    consultEmphasizedOptionId.value = optionId;
+    return;
+  }
+  if (consultVariant.value === "c") {
+    if (optionId !== consultTentativeOptionId.value) return;
+    consultRevisionAnchor.value = {
+      featureId,
+      lat: position.lat,
+      lng: position.lng,
+    };
+    consultRevisionPopup.value = { x: point.x, y: point.y };
+    consultRevisionMode.value = true;
+  }
+}
+
+function handleConsultRevisionPick(
+  position: { readonly lng: number; readonly lat: number },
+  point: { readonly x: number; readonly y: number },
+  featureId: string | undefined,
+): void {
+  if (!consultRevisionActive.value) return;
+  consultRevisionAnchor.value = {
+    lat: position.lat,
+    lng: position.lng,
+    ...(featureId === undefined ? {} : { featureId }),
+  };
+  consultRevisionPopup.value = { x: point.x, y: point.y };
+}
+
+watch(consultOutcome, async (outcome) => {
+  if (outcome === undefined || outcome.response.action !== "select") return;
+  const selectedOptionId = outcome.response.selectedOptionId;
+  const option = outcome.request.options.find(
+    (candidate) => candidate.id === selectedOptionId,
+  );
+  if (option === undefined) return;
+  const target = findMapTarget({
+    featureId: option.target.featureId,
+    ...(option.target.layerId === undefined
+      ? {}
+      : { layerId: option.target.layerId }),
+  });
+  if (target?.pathPreviewable !== true || mapWorkspace.value === undefined)
+    return;
+  await mapWorkspace.value.previewPath(target);
+  previewedMapPath.value = target;
+  previewedMapPathOwner.value = {
+    kind: "consult",
+    toolCallId: outcome.toolCallId,
+  };
+});
+
 let client: AgentTransportClient | undefined;
 let clientGeneration = 0;
 let activeFrontendToolCallIds: Set<string> | undefined;
+const activeConsultToolCallIds = new Set<string>();
 let activeRecorder: ObservationRecorder | undefined;
 let activeRunCorrelation:
   | {
@@ -207,6 +382,13 @@ const LIVE_TURN_OBSERVATION_TYPES: ReadonlySet<string> = new Set([
   "ACTIVITY_SNAPSHOT",
   "FRONTEND_TOOL_INVOCATION",
   "FRONTEND_TOOL_RESULT",
+  "HUMAN_WAIT_FINISHED",
+  "HUMAN_WAIT_STARTED",
+  "MAP_PREVIEW_STATE",
+  "TOOL_CALL_ARGS",
+  "TOOL_CALL_END",
+  "TOOL_CALL_RESULT",
+  "TOOL_CALL_START",
 ]);
 
 // Issue #205: Frontend Tool handlers and public Agent activities arrive while
@@ -245,9 +427,25 @@ function configureRuntime(): void {
   client?.close();
   client = undefined;
   activeController.value?.abort();
+  invalidateAllConsults();
+  clearConsultSessionState();
 
   const onConnectionStateChange = (state: ConnectionState) => {
-    if (generation === clientGeneration) applyConnectionState(state);
+    if (generation !== clientGeneration) return;
+    applyConnectionState(state);
+    if (
+      activeController.value !== undefined &&
+      (state === "disconnected" || state === "unavailable")
+    ) {
+      invalidateAllConsults();
+      activeController.value.abort(
+        new WorkbenchAgentError(
+          "WORKBENCH_AGENT_UNAVAILABLE",
+          "Unable to connect to the Business Agent.",
+          { retryable: true },
+        ),
+      );
+    }
   };
 
   applyConnectionState("connecting");
@@ -271,6 +469,7 @@ async function selectAgentSource(event: Event): Promise<void> {
   focusedMapTarget.value = undefined;
   highlightedMapTargets.value = [];
   previewedMapPath.value = undefined;
+  previewedMapPathOwner.value = undefined;
   selectedDevice.value = undefined;
   visibleMapLayerIds.value = [];
   await nextTick();
@@ -342,6 +541,13 @@ async function executeRun(
         isFrontendToolCall: (toolCallId) => frontendToolCallIds.has(toolCallId),
         ...(request.message === undefined ? {} : { message: request.message }),
         observe: forwardObservation,
+        onMessagesChanged: (messages) => {
+          conversation.value = appendTurnResponseMessages(
+            conversation.value,
+            turnId,
+            messages,
+          );
+        },
         ...(request.resume === undefined ? {} : { resume: request.resume }),
         runId,
         threadId,
@@ -369,6 +575,8 @@ async function executeRun(
     });
     runState.value = result.interrupts?.length ? "idle" : "completed";
   } catch (caught) {
+    invalidateAllConsults();
+    clearConsultSessionState();
     const displayError = displayErrorFromUnknown(caught);
     const cancelled = displayError.code === "WORKBENCH_REQUEST_CANCELLED";
     conversation.value = failOperation(
@@ -380,6 +588,7 @@ async function executeRun(
     );
     runState.value = cancelled ? "cancelled" : "failed";
   } finally {
+    invalidateAllConsults();
     if (activeRecorder === recorder) {
       activeFrontendToolCallIds = undefined;
       activeRecorder = undefined;
@@ -484,6 +693,8 @@ function respondToInterrupt(response: InterruptResponse): void {
 }
 
 function cancelRequest(): void {
+  invalidateAllConsults();
+  clearConsultSessionState();
   activeController.value?.abort();
 }
 
@@ -497,6 +708,8 @@ function retryTurn(turnId: string): void {
 }
 
 function newConversation(): void {
+  if (activeController.value !== undefined) cancelRequest();
+  clearConsultSessionState();
   const id = createId("conversation");
   const now = new Date().toISOString();
   const next: LocalConversation = {
@@ -513,6 +726,8 @@ function newConversation(): void {
 }
 
 function selectConversation(conversationId: string): void {
+  if (activeController.value !== undefined) cancelRequest();
+  clearConsultSessionState();
   selectedConversationId.value = conversationId;
   inspectedTurnId.value = undefined;
   runState.value = "idle";
@@ -552,16 +767,115 @@ function handleHighlight(targets: readonly MapTargetRef[]): string {
   );
 }
 
-async function handlePreviewPath(target: MapTargetRef): Promise<string> {
+async function handlePreviewPath(
+  target: MapTargetRef,
+  toolCallId: string,
+): Promise<string> {
   return JSON.stringify(
     await previewPath({ target }, async (resolvedTarget) => {
       if (mapWorkspace.value === undefined)
         throw new Error("Map surface is not ready.");
       await mapWorkspace.value.previewPath(resolvedTarget);
       previewedMapPath.value = resolvedTarget;
+      previewedMapPathOwner.value = { kind: "agent", toolCallId };
+      forwardObservation({
+        hasArtifact: true,
+        payload: {
+          featureId: resolvedTarget.featureId,
+          owner: "agent",
+          state: "previewing",
+        },
+        source: "workbench",
+        toolCallId,
+        type: "MAP_PREVIEW_STATE",
+      });
     }),
   );
 }
+
+function markConsultActive(toolCallId: string): void {
+  if (runState.value === "running") activeConsultToolCallIds.add(toolCallId);
+}
+
+function completeConsult(toolCallId: string): void {
+  activeConsultToolCallIds.delete(toolCallId);
+}
+
+function isConsultActive(toolCallId: string): boolean {
+  return (
+    runState.value === "running" && activeConsultToolCallIds.has(toolCallId)
+  );
+}
+
+async function previewConsultOption(
+  toolCallId: string,
+  option: PatrolRouteOption,
+): Promise<void> {
+  if (!isConsultActive(toolCallId))
+    throw new Error("本次征询已经失效。请重新发起请求。");
+  const target = findMapTarget({
+    featureId: option.target.featureId,
+    ...(option.target.layerId === undefined
+      ? {}
+      : { layerId: option.target.layerId }),
+  });
+  if (target?.pathPreviewable !== true)
+    throw new Error("候选路线不是可预览的既有路径。");
+  if (mapWorkspace.value === undefined)
+    throw new Error("Map surface is not ready.");
+  await mapWorkspace.value.previewPath(target);
+  previewedMapPath.value = target;
+  previewedMapPathOwner.value = { kind: "consult", toolCallId };
+  forwardObservation({
+    hasArtifact: true,
+    payload: {
+      featureId: target.featureId,
+      owner: "consult",
+      state: "previewing",
+    },
+    source: "workbench",
+    toolCallId,
+    type: "MAP_PREVIEW_STATE",
+  });
+}
+
+async function cancelConsultPreview(toolCallId: string): Promise<void> {
+  if (
+    previewedMapPathOwner.value?.kind !== "consult" ||
+    previewedMapPathOwner.value.toolCallId !== toolCallId
+  )
+    return;
+  await mapWorkspace.value?.clearPreviewPath();
+  previewedMapPath.value = undefined;
+  previewedMapPathOwner.value = undefined;
+  forwardObservation({
+    hasArtifact: true,
+    payload: { owner: "consult", state: "cleared" },
+    source: "workbench",
+    toolCallId,
+    type: "MAP_PREVIEW_STATE",
+  });
+}
+
+function invalidateConsult(toolCallId: string): void {
+  activeConsultToolCallIds.delete(toolCallId);
+  void cancelConsultPreview(toolCallId);
+}
+
+function invalidateAllConsults(): void {
+  const owner = previewedMapPathOwner.value;
+  activeConsultToolCallIds.clear();
+  if (owner?.kind === "consult") void cancelConsultPreview(owner.toolCallId);
+}
+
+const patrolRouteConsultController: PatrolRouteConsultController = {
+  cancelPreview: cancelConsultPreview,
+  complete: completeConsult,
+  invalidate: invalidateConsult,
+  isActive: isConsultActive,
+  markActive: markConsultActive,
+  previewOption: previewConsultOption,
+};
 
 async function handleSetLayerVisibility(
   layer: MapLayerRef,
@@ -591,6 +905,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clientGeneration += 1;
+  invalidateAllConsults();
   activeController.value?.abort();
   client?.close();
 });
@@ -605,6 +920,7 @@ onBeforeUnmount(() => {
     :focus-on="handleFocusOn"
     :highlight="handleHighlight"
     :preview-path="handlePreviewPath"
+    :patrol-route-consult="patrolRouteConsultController"
     :set-layer-visibility="handleSetLayerVisibility"
     :observe="forwardObservation"
     :runtime-url="endpoints.agUi"
@@ -671,11 +987,20 @@ onBeforeUnmount(() => {
 
       <MapWorkspace
         ref="mapWorkspace"
+        :consult-candidates="consultMapCandidates"
+        :consult-candidates-clickable="consultCandidatesClickable"
+        :consult-clickable-feature-id="consultClickableFeatureId"
+        :consult-emphasized-feature-id="consultEmphasizedFeatureId"
+        :consult-revision-anchor="consultRevisionAnchorForMap"
+        :consult-revision-mode="consultRevisionActive"
         :focused-target="focusedMapTarget"
         :highlighted-targets="highlightedMapTargets"
         :previewed-path="previewedMapPath"
         :selected-device="selectedDevice"
         :visible-layer-ids="visibleMapLayerIds"
+        @consult-candidate-click="handleConsultCandidateClick"
+        @consult-candidate-hover="handleConsultCandidateHover"
+        @consult-revision-pick="handleConsultRevisionPick"
         @locate-device="handleLocateDevice"
       >
         <template #overlay>
@@ -684,6 +1009,7 @@ onBeforeUnmount(() => {
             :turn="mapOperationTurn"
             @inspect="inspectedTurnId = $event"
           />
+          <ConsultMapOverlay />
         </template>
       </MapWorkspace>
 

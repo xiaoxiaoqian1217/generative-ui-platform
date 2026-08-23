@@ -20,7 +20,7 @@ import {
 
 export const MAP_PATROL_ROUTE_REVIEW_MESSAGE = "帮我想想怎么巡逻北侧通道";
 export const MAP_PATROL_ROUTE_REVIEW_RESULT =
-  "已展开北侧通道巡逻方案：限制图层已显示，3 个观察点与北坡限制区已高亮，并预览候选路线 A。";
+  "初步研判已完成。你可以继续让我比较其他候选路线，或调整巡逻重点。";
 export const MAP_PATROL_ROUTE_REVIEW_PLAN_MESSAGE_ID =
   "map-patrol-route-review-plan";
 
@@ -30,18 +30,21 @@ const MAP_PATROL_ROUTE_REVIEW_PLAN_STEPS = [
     id: "establish-scope",
     label: "确认任务范围与限制",
     operationNames: ["setLayerVisibility", "focusOn"],
+    outcome: "已明确北侧通道的任务范围和限制条件。",
   },
   {
     detail: "在地图上标出 3 个观察点和北坡限制区。",
     id: "mark-observations",
     label: "标记关键观察位置",
     operationNames: ["highlight"],
+    outcome: "已确认 3 个观察点，并识别北坡限制区为需避让区域。",
   },
   {
     detail: "展示已有候选路线 A，供后续检查和比较。",
     id: "preview-candidate",
     label: "预览候选路线",
     operationNames: ["previewPath"],
+    outcome: "候选路线 A 已覆盖当前观察点，目前仅作为临时预览。",
   },
 ] as const;
 
@@ -120,17 +123,26 @@ function planStepStatus(
 export function mapPatrolRouteReviewPlan(
   completedOperationCount: number,
 ): MapPlanActivityContent {
-  const steps = MAP_PATROL_ROUTE_REVIEW_PLAN_STEPS.map((step) => ({
-    ...step,
-    status: planStepStatus(step, completedOperationCount),
-  }));
+  const steps = MAP_PATROL_ROUTE_REVIEW_PLAN_STEPS.map((step) => {
+    const status = planStepStatus(step, completedOperationCount);
+    const { outcome, ...stage } = step;
+    return {
+      ...stage,
+      ...(status === "completed" ? { outcome } : {}),
+      status,
+    };
+  });
+  const isCompleted =
+    completedOperationCount >= MAP_PATROL_ROUTE_REVIEW_STEPS.length;
   return {
+    ...(isCompleted
+      ? {
+          decisionBoundary: "尚未比较其他候选路线，也未完成最终方案选择。",
+        }
+      : {}),
     goal: "形成一条覆盖关键观察点并避开限制区的北侧通道巡逻候选方案。",
     schemaVersion: MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
-    status:
-      completedOperationCount >= MAP_PATROL_ROUTE_REVIEW_STEPS.length
-        ? "completed"
-        : "running",
+    status: isCompleted ? "completed" : "running",
     steps,
   };
 }

@@ -35,6 +35,10 @@ test("Conversation-first Shell is the default product interface", async ({
   await expect(page.getByTestId("conversation-shell")).toBeVisible();
   await expect(page.getByTestId("conversation-sidebar")).toBeVisible();
   await expect(page.getByTestId("composer")).toBeVisible();
+  await expect(page.getByTestId("device-marker-01")).toBeVisible();
+  for (const featureId of ["east-ridge", "under-bridge", "checkpoint-b"])
+    await expect(page.getByTestId(`map-feature-${featureId}`)).toBeHidden();
+  await expect(page.getByTestId("map-effect-summary")).toHaveCount(0);
   await expect(
     page.getByTestId("agent-source-select").locator("option"),
   ).toHaveText(["AGUIMock", "single-agent-chat-server"]);
@@ -548,12 +552,11 @@ test("scenario A applies the patrol map intents to one persistent surface", asyn
 
   const publicPlan = page.getByTestId("map-plan-activity");
   await expect(publicPlan).toBeVisible();
-  await expect(publicPlan).toContainText("Agent 正在处理地图");
+  await expect(publicPlan).toContainText(/Agent (正在研判|研判摘要)/);
   await expect(publicPlan).toContainText("北侧通道巡逻候选方案");
-  await expect(publicPlan).not.toContainText("确认任务范围与限制");
 
   await expect(page.getByTestId("markdown-result")).toContainText(
-    "限制图层已显示",
+    "初步研判已完成",
   );
   const mapOperations = page.getByTestId("map-operation-hud-summary");
   await expect(page.getByTestId("map-operation-hud-current")).toContainText(
@@ -565,7 +568,11 @@ test("scenario A applies the patrol map intents to one persistent surface", asyn
   await expect(mapOperationHistory).toContainText("标记观察点和限制区");
   await expect(mapOperationHistory).toContainText("预览候选路线 A");
   await expect(mapOperations).toContainText("查看记录");
-  await expect(publicPlan).toHaveCount(0);
+  await expect(publicPlan).toContainText("Agent 研判摘要");
+  await expect(publicPlan).toContainText("3 个观察点");
+  await expect(publicPlan).toContainText("临时预览");
+  await expect(publicPlan).toContainText("尚未比较其他候选路线");
+  await expect(publicPlan).not.toContainText("显示任务限制图层");
   expect(
     await page
       .getByTestId("quick-scenarios")
@@ -764,6 +771,406 @@ test("scenario A applies the patrol map intents to one persistent surface", asyn
   expect(observedToolNames).toEqual(expectedSteps.map((step) => step.name));
   expect(observedToolCallIds.size).toBe(4);
   expect([...observedToolCallIds]).toEqual(protocolToolCallIds);
+});
+
+async function startPatrolRouteConsult(page: Page) {
+  await page.getByRole("button", { name: /候选巡逻路线征询/ }).click();
+  const consult = page.locator("[data-testid^='patrol-route-consult-']");
+  await expect(consult).toBeVisible({ timeout: 15_000 });
+  await expect(consult.getByTestId("consult-status")).toHaveText("executing");
+  await expect(
+    consult.getByTestId("patrol-route-option-route-a"),
+  ).toContainText("覆盖范围较大、距离较长");
+  await expect(
+    consult.getByTestId("patrol-route-option-route-b"),
+  ).toContainText("距离较短、东侧覆盖较少");
+  return consult;
+}
+
+test("accepted decision dock requires a route choice before map-anchored revision", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /候选巡逻路线征询/ }).click();
+
+  const dock = page.getByTestId("consult-dock");
+  const confirm = dock.getByTestId("dock-confirm");
+  const routeA = page.getByRole("button", { name: "路线 A", exact: true });
+  const routeB = page.getByRole("button", { name: "路线 B", exact: true });
+  await expect(dock).toBeVisible();
+  await expect(dock).toContainText("第 1 步: 先选择路线 A 或路线 B");
+  await expect(dock.getByTestId("dock-revise")).toHaveCount(0);
+  await expect(confirm).toBeDisabled();
+  await expect(routeA).toBeDisabled();
+  await expect(routeB).toBeDisabled();
+  await expect(page.getByTestId("consult-revision-popup")).toHaveCount(0);
+
+  await dock.getByTestId("dock-option-route-b").click();
+  await expect(dock.getByTestId("dock-option-route-b")).toHaveAttribute(
+    "data-tentative",
+    "true",
+  );
+  await expect(dock).toContainText(
+    "第 2 步: 点击地图中的路线 B，然后提出修改",
+  );
+  await expect(confirm).toBeEnabled();
+  await expect(confirm).toHaveText("确认选择路线 B");
+  await expect(routeA).toBeDisabled();
+  await expect(routeB).toBeEnabled();
+  await expect(page.getByTestId("consult-revision-popup")).toHaveCount(0);
+
+  await routeB.click();
+  const revision = page.getByTestId("consult-revision-popup");
+  await expect(revision).toBeVisible();
+  await expect(revision.getByTestId("revision-anchor-label")).toHaveText(
+    "锚点: 路线 B",
+  );
+  await expect(dock).toBeVisible();
+
+  await revision.getByTestId("revision-submit").click();
+  await expect(page.getByTestId("markdown-result").last()).toContainText(
+    "没有生成新路线",
+  );
+  await expect(page.getByTestId("map-view")).toHaveAttribute(
+    "data-highlighted-feature-ids",
+    "under-bridge",
+  );
+  await expect(page.getByTestId("consult-revision-pin")).toBeVisible();
+
+  await page.getByRole("button", { name: /候选巡逻路线征询/ }).click();
+  await expect(dock).toBeVisible({ timeout: 15_000 });
+  await expect(confirm).toBeDisabled();
+  await expect(dock).toContainText("第 1 步: 先选择路线 A 或路线 B");
+  await dock.getByTestId("dock-cancel").click();
+  await expect(page.getByTestId("markdown-result").last()).toContainText(
+    "没有选择巡逻路线",
+  );
+
+  await page.getByRole("button", { name: "+ 新建" }).click();
+  await expect(page.getByTestId("consult-revision-pin")).toHaveCount(0);
+  await expect(page.getByTestId("consult-map-pill")).toHaveCount(0);
+});
+
+test("route A revision preserves the selected route and supports keyboard dialog flow", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /候选巡逻路线征询/ }).click();
+
+  const dock = page.getByTestId("consult-dock");
+  const routeA = page.getByRole("button", { name: "路线 A", exact: true });
+  await dock.getByTestId("dock-option-route-a").click();
+  await expect(routeA).toBeEnabled();
+  await routeA.press("Enter");
+
+  const dialog = page.getByRole("dialog", { name: "提出修改" });
+  const instruction = dialog.getByTestId("revision-instruction");
+  await expect(dialog).toBeVisible();
+  await expect(instruction).toBeFocused();
+  await instruction.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(routeA).toBeFocused();
+
+  await routeA.press("Enter");
+  await page.getByTestId("revision-submit").click();
+  await expect(page.getByTestId("markdown-result").last()).toContainText(
+    "路线 A 的修改要求",
+  );
+  await expect(page.getByTestId("map-view")).toHaveAttribute(
+    "data-previewed-path-feature-id",
+    "patrol-path-a",
+  );
+});
+
+test("cancel discards an unsubmitted route revision anchor", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /候选巡逻路线征询/ }).click();
+
+  const dock = page.getByTestId("consult-dock");
+  await dock.getByTestId("dock-option-route-b").click();
+  await page.getByRole("button", { name: "路线 B", exact: true }).click();
+  await expect(page.getByTestId("consult-revision-pin")).toBeVisible();
+  await dock.getByTestId("dock-cancel").click();
+
+  await expect(page.getByTestId("markdown-result").last()).toContainText(
+    "没有选择巡逻路线",
+  );
+  await expect(page.getByTestId("consult-revision-pin")).toHaveCount(0);
+});
+
+async function establishScenarioAMapContext(page: Page) {
+  const mapView = page.getByTestId("map-view");
+  await page.getByRole("button", { name: /北侧通道巡逻方案/ }).click();
+  await expect(page.getByTestId("markdown-result").last()).toContainText(
+    "初步研判已完成",
+  );
+  await expect(mapView).toHaveAttribute(
+    "data-focused-feature-id",
+    "north-corridor",
+  );
+  await expect(mapView).toHaveAttribute(
+    "data-highlighted-feature-ids",
+    "east-ridge,under-bridge,checkpoint-b,north-restricted-zone",
+  );
+  await expect(mapView).toHaveAttribute(
+    "data-visible-layer-ids",
+    "operational-constraints",
+  );
+  await expect(mapView).toHaveAttribute(
+    "data-previewed-path-feature-id",
+    "patrol-path-a",
+  );
+}
+
+test("scenario B reuses scenario A context and continues route B without clearing the selection", async ({
+  page,
+}) => {
+  await page.goto("/?consultVariant=a");
+  const mapView = page.getByTestId("map-view");
+  await establishScenarioAMapContext(page);
+  const consult = await startPatrolRouteConsult(page);
+
+  await consult.getByTestId("preview-route-a").click();
+  await expect(mapView).toHaveAttribute(
+    "data-previewed-path-feature-id",
+    "patrol-path-a",
+  );
+  await consult.getByTestId("preview-route-b").press("Enter");
+  await expect(mapView).toHaveAttribute(
+    "data-previewed-path-feature-id",
+    "patrol-path-b",
+  );
+
+  await page.locator("[data-testid^='inspect-turn-']").last().click();
+  const waitingTimeline = page.getByTestId("swimlane-timeline");
+  await expect(
+    waitingTimeline.locator("[data-type='HUMAN_WAIT_STARTED']"),
+  ).toHaveCount(1);
+  await expect(
+    waitingTimeline.locator("[data-type='TOOL_CALL_START']"),
+  ).toHaveCount(1);
+  await page.getByTestId("inspect-close").click();
+
+  await mapView.evaluate((element) => {
+    element.setAttribute(
+      "data-preview-history",
+      element.getAttribute("data-previewed-path-feature-id") ?? "<empty>",
+    );
+    new MutationObserver(() => {
+      const history = element.getAttribute("data-preview-history") ?? "";
+      const next =
+        element.getAttribute("data-previewed-path-feature-id") ?? "<empty>";
+      element.setAttribute("data-preview-history", `${history},${next}`);
+    }).observe(element, {
+      attributeFilter: ["data-previewed-path-feature-id"],
+      attributes: true,
+    });
+  });
+  await consult.getByTestId("select-route-b").click();
+  await expect(mapView).toHaveAttribute(
+    "data-previewed-path-feature-id",
+    "patrol-path-b",
+  );
+  await expect(consult.getByTestId("select-route-b")).toBeDisabled();
+  await expect(page.getByTestId("markdown-result").last()).toContainText(
+    "尚未提交或执行巡逻任务",
+  );
+  await expect(mapView).toHaveAttribute(
+    "data-previewed-path-feature-id",
+    "patrol-path-b",
+  );
+  expect(await mapView.getAttribute("data-preview-history")).not.toContain(
+    "<empty>",
+  );
+
+  await page.locator("[data-testid^='inspect-turn-']").last().click();
+  const completedTimeline = page.getByTestId("swimlane-timeline");
+  await expect(
+    completedTimeline.locator("[data-type='HUMAN_WAIT_FINISHED']"),
+  ).toHaveCount(1);
+  await expect(
+    completedTimeline.locator("[data-type='TOOL_CALL_START']"),
+  ).toHaveCount(2);
+  await expect(
+    completedTimeline.locator("[data-type='TOOL_CALL_RESULT']"),
+  ).toHaveCount(2);
+  const consultStart = completedTimeline
+    .locator("[data-type='TOOL_CALL_START']")
+    .first();
+  await consultStart.click();
+  const consultToolCallId =
+    (await page.getByTestId("inspect-tool-call-id").textContent()) ?? "";
+  expect(consultToolCallId).not.toBe("");
+  await completedTimeline
+    .locator("[data-type='TOOL_CALL_RESULT']")
+    .first()
+    .click();
+  await expect(page.getByTestId("inspect-tool-call-id")).toHaveText(
+    consultToolCallId,
+  );
+  const previewStates = completedTimeline.locator(
+    "[data-type='MAP_PREVIEW_STATE']",
+  );
+  await expect(previewStates).toHaveCount(3);
+  await previewStates.last().click();
+  await expect(page.getByTestId("inspect-payload")).toContainText("agent");
+  await expect(page.getByTestId("inspect-payload")).toContainText(
+    "patrol-path-b",
+  );
+  await expect(
+    completedTimeline.locator("[data-type*='INTERRUPT']"),
+  ).toHaveCount(0);
+});
+
+test("scenario B keeps human wait outside the short run deadline", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "generative-ui.workbench.settings.v1",
+      JSON.stringify({ requestTimeoutMs: 1_000, showDebugDetails: false }),
+    );
+  });
+  await page.goto("/?consultVariant=a");
+  const consult = await startPatrolRouteConsult(page);
+
+  await page.waitForTimeout(1_500);
+  await expect(consult.getByTestId("consult-cancel")).toBeEnabled();
+  await expect(page.getByTestId("turn-failure")).toHaveCount(0);
+  await consult.getByTestId("consult-cancel").click();
+  await expect(page.getByTestId("markdown-result").last()).toContainText(
+    "没有选择巡逻路线",
+  );
+});
+
+test("a pending non-HITL focusOn handler remains inside the run deadline", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "generative-ui.workbench.settings.v1",
+      JSON.stringify({ requestTimeoutMs: 1_000, showDebugDetails: false }),
+    );
+    localStorage.setItem("generative-ui.workbench.e2e.hang-focus-on", "true");
+  });
+  await page.goto("/");
+  await conversationInput(page).fill("验证 focusOn 超时边界");
+  await conversationSend(page).click();
+
+  await expect(page.getByTestId("turn-failure")).toContainText(
+    "WORKBENCH_REQUEST_TIMEOUT",
+  );
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  const timeline = page.getByTestId("swimlane-timeline");
+  await expect(timeline.locator("[data-type='TOOL_CALL_START']")).toHaveCount(
+    1,
+  );
+  await expect(
+    timeline.locator("[data-type='HUMAN_WAIT_STARTED']"),
+  ).toHaveCount(0);
+  await expect(timeline.locator("[data-type='RUN_TIMEOUT']")).toHaveCount(1);
+});
+
+test("scenario B maps route A selection to the existing route A path", async ({
+  page,
+}) => {
+  await page.goto("/?consultVariant=a");
+  const consult = await startPatrolRouteConsult(page);
+  await consult.getByTestId("select-route-a").click();
+
+  await expect(page.getByTestId("markdown-result").last()).toContainText(
+    "已记录路线 A",
+  );
+  await expect(page.getByTestId("map-view")).toHaveAttribute(
+    "data-previewed-path-feature-id",
+    "patrol-path-a",
+  );
+});
+
+test("scenario B cancel clears consult preview without a map continuation", async ({
+  page,
+}) => {
+  await page.goto("/?consultVariant=a");
+  const consult = await startPatrolRouteConsult(page);
+  await consult.getByTestId("preview-route-a").click();
+  await expect(page.getByTestId("map-view")).toHaveAttribute(
+    "data-previewed-path-feature-id",
+    "patrol-path-a",
+  );
+
+  await consult.getByTestId("consult-cancel").click();
+  await expect(page.getByTestId("markdown-result").last()).toContainText(
+    "没有选择巡逻路线",
+  );
+  await expect(page.getByTestId("map-view")).not.toHaveAttribute(
+    "data-previewed-path-feature-id",
+  );
+  await page.locator("[data-testid^='inspect-turn-']").first().click();
+  await expect(
+    page
+      .getByTestId("swimlane-timeline")
+      .locator("[data-type='TOOL_CALL_START']"),
+  ).toHaveCount(1);
+});
+
+test("scenario B revision highlights under-bridge and reuses route B", async ({
+  page,
+}) => {
+  await page.goto("/?consultVariant=a");
+  const consult = await startPatrolRouteConsult(page);
+  await consult
+    .getByTestId("consult-revision-input")
+    .fill("避开东侧高地，重点巡逻桥下区域");
+  await consult.getByTestId("consult-revise").click();
+
+  await expect(page.getByTestId("markdown-result").last()).toContainText(
+    "没有生成新路线",
+  );
+  await expect(page.getByTestId("map-view")).toHaveAttribute(
+    "data-highlighted-feature-ids",
+    "under-bridge",
+  );
+  await expect(page.getByTestId("map-view")).toHaveAttribute(
+    "data-previewed-path-feature-id",
+    "patrol-path-b",
+  );
+});
+
+test("stopping scenario B invalidates the old consultation", async ({
+  page,
+}) => {
+  await page.goto("/?consultVariant=a");
+  const consult = await startPatrolRouteConsult(page);
+  await consult.getByTestId("preview-route-a").click();
+  await page.getByRole("button", { name: "停止生成" }).click();
+
+  await expect(page.getByTestId("turn-failure")).toContainText(
+    "WORKBENCH_REQUEST_CANCELLED",
+  );
+  await expect(consult.getByTestId("select-route-a")).toBeDisabled();
+  await expect(page.getByTestId("map-view")).not.toHaveAttribute(
+    "data-previewed-path-feature-id",
+  );
+});
+
+test("switching Agent Source removes the old consultation and its preview", async ({
+  page,
+}) => {
+  await page.goto("/?consultVariant=a");
+  const consult = await startPatrolRouteConsult(page);
+  await consult.getByTestId("preview-route-b").click();
+  await expect(page.getByTestId("map-view")).toHaveAttribute(
+    "data-previewed-path-feature-id",
+    "patrol-path-b",
+  );
+
+  await page
+    .getByTestId("agent-source-select")
+    .selectOption("single-agent-chat-server");
+  await expect(consult).toHaveCount(0);
+  await expect(page.getByTestId("map-view")).not.toHaveAttribute(
+    "data-previewed-path-feature-id",
+  );
 });
 
 test("AGUIMock serves the connection probe from the unified scenario server", async ({

@@ -1,4 +1,4 @@
-import type { Interrupt, ResumeEntry, UserMessage } from "@ag-ui/core";
+import type { Interrupt, Message, ResumeEntry, UserMessage } from "@ag-ui/core";
 import {
   type CopilotKitCore,
   CopilotKitCoreRuntimeConnectionStatus,
@@ -8,6 +8,7 @@ import {
   observationInputFromAgUiEvent,
   type TurnObservationInput,
 } from "../inspect/turn-inspection.js";
+import { PATROL_ROUTE_CONSULT_TOOL } from "../conversation/patrol-route-consult.js";
 
 export type ObservationSink = (input: TurnObservationInput) => void;
 
@@ -45,6 +46,7 @@ export interface AgentRunInput {
   readonly forwardedProps?: Record<string, unknown>;
   readonly isFrontendToolCall?: (toolCallId: string) => boolean;
   readonly message?: UserMessage & { readonly content: string };
+  readonly onMessagesChanged?: (messages: readonly Message[]) => void;
   readonly observe?: ObservationSink;
   readonly resume?: readonly ResumeEntry[];
   readonly runId: string;
@@ -72,6 +74,55 @@ export interface BusinessAgentClientOptions {
   readonly agentId?: string;
   readonly onConnectionStateChange?: (state: ConnectionState) => void;
   readonly timeoutMs?: number;
+}
+
+export interface PausableRunDeadline {
+  cancel(): void;
+  pause(): number;
+  resume(): number;
+}
+
+export function createPausableRunDeadline(
+  timeoutMs: number,
+  onTimeout: () => void,
+  now: () => number = () => Date.now(),
+): PausableRunDeadline {
+  let remainingMs = timeoutMs;
+  let startedAt = now();
+  let paused = false;
+  let cancelled = false;
+  let timer: ReturnType<typeof globalThis.setTimeout> | undefined;
+
+  const arm = () => {
+    if (cancelled || paused) return;
+    startedAt = now();
+    timer = globalThis.setTimeout(onTimeout, remainingMs);
+  };
+  arm();
+
+  return {
+    cancel() {
+      cancelled = true;
+      globalThis.clearTimeout(timer);
+    },
+    pause() {
+      if (cancelled || paused) return remainingMs;
+      remainingMs = Math.max(0, remainingMs - (now() - startedAt));
+      paused = true;
+      globalThis.clearTimeout(timer);
+      return remainingMs;
+    },
+    resume() {
+      if (cancelled || !paused) return remainingMs;
+      paused = false;
+      arm();
+      return remainingMs;
+    },
+  };
+}
+
+export function isPatrolRouteHumanWaitTool(toolName: string): boolean {
+  return toolName === PATROL_ROUTE_CONSULT_TOOL;
 }
 
 export function shouldObserveFrontendToolResult(
@@ -297,6 +348,7 @@ export function createBusinessAgentClient(
       const startedAt = globalThis.performance.now();
       const eventTypes: string[] = [];
       const observedToolResultCallIds = new Set<string>();
+      const patrolConsultToolCallIds = new Set<string>();
       let runError: { code?: string; message: string } | undefined;
       const eventSubscription = agent.subscribe({
         onEvent: ({ event }) => {
@@ -330,6 +382,9 @@ export function createBusinessAgentClient(
           }
         },
         onMessagesChanged: ({ messages }) => {
+          input.onMessagesChanged?.(
+            messages.filter((message) => !preRunMessageIds.has(message.id)),
+          );
           for (const message of messages) {
             if (message.role !== "tool") continue;
             if (
@@ -337,7 +392,9 @@ export function createBusinessAgentClient(
                 message,
                 preRunMessageIds,
                 observedToolResultCallIds,
-                input.isFrontendToolCall,
+                (toolCallId) =>
+                  patrolConsultToolCallIds.has(toolCallId) ||
+                  input.isFrontendToolCall?.(toolCallId) === true,
               )
             )
               continue;
@@ -379,27 +436,36 @@ export function createBusinessAgentClient(
         const finish = (callback: () => void) => {
           if (settled) return;
           settled = true;
-          globalThis.clearTimeout(timeout);
+          deadline.cancel();
           callerSignal?.removeEventListener("abort", cancel);
           activeAbort = undefined;
           activeObservation = undefined;
           eventSubscription.unsubscribe();
+          toolExecutionSubscription.unsubscribe();
           callback();
         };
         const cancel = () => {
           core.stopAgent({ agent });
-          settleObservation("RUN_CANCELLED", "cancelled");
-          finish(() =>
-            reject(
-              new WorkbenchAgentError(
-                "WORKBENCH_REQUEST_CANCELLED",
-                "The request was cancelled.",
-                { retryable: false },
-              ),
-            ),
+          const abortReason = callerSignal?.reason;
+          const failure =
+            abortReason instanceof WorkbenchAgentError
+              ? abortReason
+              : new WorkbenchAgentError(
+                  "WORKBENCH_REQUEST_CANCELLED",
+                  "The request was cancelled.",
+                  { retryable: false },
+                );
+          settleObservation(
+            failure.code === "WORKBENCH_REQUEST_CANCELLED"
+              ? "RUN_CANCELLED"
+              : "RUN_FAILED",
+            failure.code === "WORKBENCH_REQUEST_CANCELLED"
+              ? "cancelled"
+              : "failed",
           );
+          finish(() => reject(failure));
         };
-        const timeout = globalThis.setTimeout(() => {
+        const onTimeout = () => {
           core.stopAgent({ agent });
           settleObservation("RUN_TIMEOUT", "failed");
           finish(() =>
@@ -411,7 +477,72 @@ export function createBusinessAgentClient(
               ),
             ),
           );
-        }, timeoutMs);
+        };
+        const deadline = createPausableRunDeadline(timeoutMs, onTimeout);
+        const pauseDeadline = (toolCallId: string) => {
+          if (settled) return;
+          const deadlineRemainingMs = deadline.pause();
+          observe?.({
+            hasArtifact: false,
+            payload: { remainingMs: Math.round(deadlineRemainingMs) },
+            runId: input.runId,
+            source: "workbench",
+            threadId: input.threadId,
+            toolCallId,
+            type: "HUMAN_WAIT_STARTED",
+          });
+        };
+        const resumeDeadline = (toolCallId: string) => {
+          if (settled) return;
+          const deadlineRemainingMs = deadline.resume();
+          observe?.({
+            hasArtifact: false,
+            payload: { remainingMs: Math.round(deadlineRemainingMs) },
+            runId: input.runId,
+            source: "workbench",
+            threadId: input.threadId,
+            toolCallId,
+            type: "HUMAN_WAIT_FINISHED",
+          });
+        };
+        const toolExecutionSubscription = core.subscribe({
+          onToolExecutionStart: (event) => {
+            if (
+              event.agentId !== agentId ||
+              !isPatrolRouteHumanWaitTool(event.toolName)
+            )
+              return;
+            patrolConsultToolCallIds.add(event.toolCallId);
+            observe?.({
+              hasArtifact: true,
+              payload: { args: event.args, name: event.toolName },
+              runId: input.runId,
+              source: "frontend-tool",
+              threadId: input.threadId,
+              toolCallId: event.toolCallId,
+              type: "FRONTEND_TOOL_INVOCATION",
+            });
+            pauseDeadline(event.toolCallId);
+          },
+          onToolExecutionEnd: (event) => {
+            if (!patrolConsultToolCallIds.has(event.toolCallId)) return;
+            observe?.({
+              hasArtifact: true,
+              payload: {
+                ...(event.error === undefined ? {} : { error: event.error }),
+                name: event.toolName,
+                result: event.result,
+              },
+              runId: input.runId,
+              source: "frontend-tool",
+              status: event.error === undefined ? "ok" : "failed",
+              threadId: input.threadId,
+              toolCallId: event.toolCallId,
+              type: "FRONTEND_TOOL_RESULT",
+            });
+            resumeDeadline(event.toolCallId);
+          },
+        });
 
         callerSignal?.addEventListener("abort", cancel, { once: true });
         activeAbort = cancel;

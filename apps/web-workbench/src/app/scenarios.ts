@@ -23,6 +23,13 @@ export interface QuickScenario {
 export const quickScenarios: QuickScenario[] = [
   {
     agentSource: "ag-ui-mock",
+    id: "consult-patrol-route-selection",
+    label: "候选巡逻路线征询",
+    description: "比较路线 A / B 并验证选择、取消与修改 continuation",
+    message: "帮我想想怎么巡逻北侧通道。",
+  },
+  {
+    agentSource: "ag-ui-mock",
     id: "map-patrol-route-review",
     label: "北侧通道巡逻方案",
     description: "验证图层、聚焦、高亮与路径预览的连续地图意图",

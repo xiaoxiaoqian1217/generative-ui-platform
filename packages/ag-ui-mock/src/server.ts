@@ -5,6 +5,8 @@ import {
 } from "node:http";
 import { AGUIMock } from "@copilotkit/aimock";
 import { registerEchoScenario } from "./scenarios/echo.js";
+import { registerFrontendToolTimeoutScenario } from "./scenarios/frontend-tool-timeout.js";
+import { registerConsultPatrolRouteSelectionScenario } from "./scenarios/consult-patrol-route-selection.js";
 import { registerInspectionSummaryA2uiScenario } from "./scenarios/inspection-summary-a2ui.js";
 import { registerInspectionSummaryPlatformA2uiScenario } from "./scenarios/inspection-summary-platform-a2ui.js";
 import { registerInspectionSummaryStructuredScenario } from "./scenarios/inspection-summary-structured.js";
@@ -58,6 +60,8 @@ export function createAguiMockServer(
   registerInspectionSummaryPlatformA2uiScenario(mock);
   registerInspectionSummaryStructuredScenario(mock);
   registerEchoScenario(mock);
+  registerFrontendToolTimeoutScenario(mock);
+  registerConsultPatrolRouteSelectionScenario(mock);
   registerMapPatrolRouteReviewScenario(mock);
   registerLocateDeviceScenario(mock);
   registerRunErrorScenario(mock);

@@ -95,6 +95,27 @@ export function appendTurnObservation(
   }));
 }
 
+function mergeMessages(
+  current: readonly Message[],
+  incoming: readonly Message[],
+): readonly Message[] {
+  const messagesById = new Map(current.map((message) => [message.id, message]));
+  for (const message of incoming) messagesById.set(message.id, message);
+  return [...messagesById.values()];
+}
+
+export function appendTurnResponseMessages(
+  state: ConversationState,
+  turnId: string,
+  messages: readonly Message[],
+): ConversationState {
+  if (state.activeOperation?.turnId !== turnId) return state;
+  return updateTurn(state, turnId, (turn) => ({
+    ...turn,
+    responseMessages: mergeMessages(turn.responseMessages, messages),
+  }));
+}
+
 export function startRun(
   state: ConversationState,
   input: StartRunInput,
@@ -175,7 +196,7 @@ export function resolveRun(
       : { eventTypes: [...(turn.eventTypes ?? []), ...result.eventTypes] }),
     ...mergeObservations(turn, result.observations),
     ...(interrupted ? { pendingInterrupts: result.interrupts } : {}),
-    responseMessages: [...turn.responseMessages, ...result.messages],
+    responseMessages: mergeMessages(turn.responseMessages, result.messages),
     ...(result.runResult === undefined ? {} : { runResult: result.runResult }),
     runId: result.runId,
     status: interrupted ? "interrupted" : "completed",

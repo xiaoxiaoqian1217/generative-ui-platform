@@ -86,12 +86,12 @@ function onKeydown(event: KeyboardEvent): void {
     (variant) => variant.id === currentVariant.value,
   );
   if (event.key === "ArrowLeft") {
-    selectVariant(
-      variants[(index - 1 + variants.length) % variants.length]!.id,
-    );
+    const previous = variants[(index - 1 + variants.length) % variants.length];
+    if (previous !== undefined) selectVariant(previous.id);
   }
   if (event.key === "ArrowRight") {
-    selectVariant(variants[(index + 1) % variants.length]!.id);
+    const next = variants[(index + 1) % variants.length];
+    if (next !== undefined) selectVariant(next.id);
   }
 }
 

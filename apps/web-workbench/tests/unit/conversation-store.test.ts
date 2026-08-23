@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   appendTurnObservation,
+  appendTurnResponseMessages,
   createConversationState,
   failOperation,
   resolveRun,
@@ -58,6 +59,56 @@ describe("Conversation Store", () => {
       "FRONTEND_TOOL_INVOCATION",
       "RUN_FINISHED",
     ]);
+  });
+
+  it("projects live tool messages and merges the final snapshot by message id", () => {
+    const running = startRun(createConversationState(), {
+      message: userMessage,
+      requestId: "request-1",
+      turnId: "turn-1",
+    });
+    const live = appendTurnResponseMessages(running, "turn-1", [
+      {
+        content: "",
+        id: "assistant-tool",
+        role: "assistant",
+        toolCalls: [
+          {
+            function: { arguments: "{}", name: "requestPatrolRouteSelection" },
+            id: "consult-1",
+            type: "function",
+          },
+        ],
+      },
+    ]);
+    const completed = resolveRun(live, "turn-1", {
+      messages: [
+        {
+          content: "",
+          id: "assistant-tool",
+          role: "assistant",
+          toolCalls: [
+            {
+              function: {
+                arguments: '{"question":"choose"}',
+                name: "requestPatrolRouteSelection",
+              },
+              id: "consult-1",
+              type: "function",
+            },
+          ],
+        },
+        { content: "done", id: "assistant-final", role: "assistant" },
+      ],
+      runId: "run-1",
+      threadId: "thread-1",
+    });
+
+    expect(completed.turns[0]?.responseMessages).toHaveLength(2);
+    expect(completed.turns[0]?.responseMessages[0]).toMatchObject({
+      id: "assistant-tool",
+      toolCalls: [{ function: { arguments: '{"question":"choose"}' } }],
+    });
   });
 
   it("permits only one active operation", () => {

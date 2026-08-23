@@ -4,17 +4,50 @@ import type { Device } from "./devices.js";
 import { TEST_DEVICES } from "./devices.js";
 import {
   createMapController,
+  type ConsultRouteCandidate,
   type MapController,
   type MapViewportState,
 } from "./map-controller.js";
 import type { MapTarget } from "./map-targets.js";
 
-const props = defineProps<{
-  focusedTarget: MapTarget | undefined;
-  highlightedTargets: readonly MapTarget[];
-  previewedPath: MapTarget | undefined;
-  selectedDevice: Device | undefined;
-  visibleLayerIds: readonly string[];
+const props = withDefaults(
+  defineProps<{
+    consultCandidates?: readonly ConsultRouteCandidate[];
+    consultCandidatesClickable?: boolean;
+    consultClickableFeatureId?: string | undefined;
+    consultEmphasizedFeatureId?: string | undefined;
+    consultRevisionAnchor?:
+      | { readonly lng: number; readonly lat: number }
+      | undefined;
+    consultRevisionMode?: boolean;
+    focusedTarget: MapTarget | undefined;
+    highlightedTargets: readonly MapTarget[];
+    previewedPath: MapTarget | undefined;
+    selectedDevice: Device | undefined;
+    visibleLayerIds: readonly string[];
+  }>(),
+  {
+    consultCandidates: () => [],
+    consultCandidatesClickable: false,
+    consultClickableFeatureId: undefined,
+    consultEmphasizedFeatureId: undefined,
+    consultRevisionAnchor: undefined,
+    consultRevisionMode: false,
+  },
+);
+
+const emit = defineEmits<{
+  consultCandidateClick: [
+    featureId: string,
+    point: { readonly x: number; readonly y: number },
+    position: { readonly lng: number; readonly lat: number },
+  ];
+  consultCandidateHover: [featureId: string | undefined];
+  consultRevisionPick: [
+    position: { readonly lng: number; readonly lat: number },
+    point: { readonly x: number; readonly y: number },
+    featureId: string | undefined,
+  ];
 }>();
 
 const mapContainer = ref<HTMLElement>();
@@ -24,6 +57,8 @@ const appliedPreviewedPath = ref<MapTarget>();
 const appliedSelectedDeviceId = ref<string>();
 const appliedVisibleLayerIds = ref<readonly string[]>([]);
 const appliedViewport = ref<MapViewportState>();
+const appliedConsultCandidateKey = ref("");
+const appliedConsultEmphasis = ref<string>();
 let controller: MapController | undefined;
 let resizeObserver: ResizeObserver | undefined;
 
@@ -48,6 +83,11 @@ async function previewPath(target: MapTarget): Promise<void> {
   appliedPreviewedPath.value = target;
 }
 
+async function clearPreviewPath(): Promise<void> {
+  await requireController().clearPreviewPath();
+  appliedPreviewedPath.value = undefined;
+}
+
 function selectDevice(device: Device | undefined): void {
   requireController().selectDevice(device);
   appliedSelectedDeviceId.value = device?.deviceId;
@@ -61,6 +101,77 @@ async function setLayerVisibility(
   appliedVisibleLayerIds.value = visible
     ? [...new Set([...appliedVisibleLayerIds.value, layerId])]
     : appliedVisibleLayerIds.value.filter((candidate) => candidate !== layerId);
+}
+
+// Candidate routes shown during the patrol-route consultation, driven
+// entirely by props like other map state.
+function consultCandidateKey(
+  candidates: readonly ConsultRouteCandidate[],
+): string {
+  return candidates
+    .map(
+      (candidate) =>
+        `${candidate.featureId}:${candidate.color}:${candidate.label}:${candidate.letter}`,
+    )
+    .join("|");
+}
+
+async function applyConsultCandidates(
+  candidates: readonly ConsultRouteCandidate[],
+): Promise<void> {
+  const key = consultCandidateKey(candidates);
+  if (key === appliedConsultCandidateKey.value) return;
+  appliedConsultCandidateKey.value = key;
+  if (candidates.length === 0) {
+    await requireController().hideConsultRouteCandidates();
+    return;
+  }
+  await requireController().showConsultRouteCandidates(candidates);
+  requireController().emphasizeConsultRouteCandidate(
+    appliedConsultEmphasis.value,
+  );
+}
+
+function applyConsultEmphasis(featureId: string | undefined): void {
+  if (featureId === appliedConsultEmphasis.value) return;
+  appliedConsultEmphasis.value = featureId;
+  requireController().emphasizeConsultRouteCandidate(featureId);
+}
+
+function applyConsultCandidateHandlers(
+  clickable: boolean,
+  clickableFeatureId: string | undefined,
+): void {
+  requireController().setConsultRouteCandidateHandlers(
+    clickable
+      ? {
+          isClickable: (featureId) =>
+            clickableFeatureId === undefined ||
+            clickableFeatureId === featureId,
+          onClick: (featureId, point, position) =>
+            emit("consultCandidateClick", featureId, point, position),
+          onHover: (featureId) => emit("consultCandidateHover", featureId),
+        }
+      : undefined,
+  );
+}
+
+// Consultation revision anchor picking and the user-owned pin.
+function applyConsultRevisionMode(mode: boolean): void {
+  requireController().setConsultRevisionHandlers(
+    mode
+      ? {
+          onPick: (position, point, featureId) =>
+            emit("consultRevisionPick", position, point, featureId),
+        }
+      : undefined,
+  );
+}
+
+function applyConsultRevisionAnchor(
+  anchor: { readonly lng: number; readonly lat: number } | undefined,
+): void {
+  requireController().setConsultRevisionAnchor(anchor);
 }
 
 function sameTarget(
@@ -87,6 +198,7 @@ function sameTargets(
 }
 
 defineExpose({
+  clearPreviewPath,
   focusOn,
   highlight,
   previewPath,
@@ -105,7 +217,45 @@ onMounted(() => {
   for (const layerId of props.visibleLayerIds)
     void setLayerVisibility(layerId, true);
   if (props.previewedPath !== undefined) void previewPath(props.previewedPath);
+  void applyConsultCandidates(props.consultCandidates);
+  applyConsultEmphasis(props.consultEmphasizedFeatureId);
+  applyConsultCandidateHandlers(
+    props.consultCandidatesClickable,
+    props.consultClickableFeatureId,
+  );
+  applyConsultRevisionMode(props.consultRevisionMode);
+  applyConsultRevisionAnchor(props.consultRevisionAnchor);
 });
+
+watch(
+  () => props.consultCandidates,
+  (candidates) => void applyConsultCandidates(candidates),
+);
+
+watch(
+  () => props.consultEmphasizedFeatureId,
+  (featureId) => applyConsultEmphasis(featureId),
+);
+
+watch(
+  () =>
+    [
+      props.consultCandidatesClickable,
+      props.consultClickableFeatureId,
+    ] as const,
+  ([clickable, clickableFeatureId]) =>
+    applyConsultCandidateHandlers(clickable, clickableFeatureId),
+);
+
+watch(
+  () => props.consultRevisionMode,
+  (mode) => applyConsultRevisionMode(mode),
+);
+
+watch(
+  () => props.consultRevisionAnchor,
+  (anchor) => applyConsultRevisionAnchor(anchor),
+);
 
 watch(
   () => props.selectedDevice,
@@ -118,7 +268,11 @@ watch(
 watch(
   () => props.previewedPath,
   (target) => {
-    if (target !== undefined && !sameTarget(target, appliedPreviewedPath.value))
+    if (target === undefined) {
+      if (appliedPreviewedPath.value !== undefined) void clearPreviewPath();
+      return;
+    }
+    if (!sameTarget(target, appliedPreviewedPath.value))
       void previewPath(target);
   },
 );
@@ -155,6 +309,7 @@ onBeforeUnmount(() => {
   resizeObserver?.disconnect();
   controller?.destroy();
   controller = undefined;
+  appliedConsultCandidateKey.value = "";
 });
 </script>
 
@@ -163,6 +318,9 @@ onBeforeUnmount(() => {
     ref="mapContainer"
     class="map-view"
     :data-center="appliedViewport?.center.join(',')"
+    :data-consult-candidate-feature-ids="
+      consultCandidates.map((candidate) => candidate.featureId).join(',')
+    "
     :data-focused-feature-id="appliedFocusedTarget?.featureId"
     :data-highlighted-feature-ids="
       appliedHighlightedTargets.map((target) => target.featureId).join(',')

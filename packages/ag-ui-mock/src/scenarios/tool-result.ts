@@ -73,6 +73,18 @@ export function acknowledgeToolResult(
   toolCallEvents: readonly AGUIEvent[],
   result: CompletedMapOperationResult,
 ): AGUIEvent[] {
+  return acknowledgeToolResultContent(
+    responseEvents,
+    toolCallEvents,
+    JSON.stringify(result),
+  );
+}
+
+export function acknowledgeToolResultContent(
+  responseEvents: readonly AGUIEvent[],
+  toolCallEvents: readonly AGUIEvent[],
+  content: string,
+): AGUIEvent[] {
   const toolCallStart = toolCallEvents.find(
     (event) => event.type === "TOOL_CALL_START",
   );
@@ -86,7 +98,7 @@ export function acknowledgeToolResult(
   return [
     runStarted,
     {
-      content: JSON.stringify(result),
+      content,
       messageId: `result-${toolCallStart.toolCallId}`,
       role: "tool",
       toolCallId: toolCallStart.toolCallId,

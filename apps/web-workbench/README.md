@@ -134,6 +134,8 @@ Enter `定位无人机 01` in Conversation.
 The mock composes map-domain tools without exposing an intelligent-advisor-specific contract.
 Use the `北侧通道巡逻方案` quick scenario to run `setLayerVisibility -> focusOn -> highlight -> previewPath -> Assistant result` on the same map surface.
 `previewPath` only displays an existing route candidate; it does not calculate, optimize, or commit a patrol route.
+Use the `候选巡逻路线征询` quick scenario after that context to compare routes A and B through the tool-based Human-in-the-loop flow.
+Route hover, focus, and click previews stay local to the persistent map, while select, cancel, and revise responses continue through the standard Tool Result path.
 Workbench updates the GIS workspace and returns each Frontend Tool result to the Agent through the same Workbench run.
 
 ## Routes

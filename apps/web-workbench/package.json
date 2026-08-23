@@ -6,10 +6,11 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "build:e2e": "vite build --mode test",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "pnpm --filter @generative-ui/a2ui-catalog build && pnpm --filter @generative-ui/ag-ui-mock build && pnpm --filter @generative-ui/copilot-runtime build && pnpm build && playwright test"
+    "test:e2e": "pnpm --filter @generative-ui/a2ui-catalog build && pnpm --filter @generative-ui/ag-ui-mock build && pnpm --filter @generative-ui/copilot-runtime build && pnpm build:e2e && playwright test"
   },
   "dependencies": {
     "@a2ui/web_core": "0.9.0",

@@ -7,13 +7,20 @@ import { TEST_DEVICES } from "../../src/features/map/devices.js";
 import type { MapTarget } from "../../src/features/map/map-targets.js";
 
 const controller = vi.hoisted(() => ({
+  clearPreviewPath: vi.fn(async () => undefined),
   destroy: vi.fn(),
+  emphasizeConsultRouteCandidate: vi.fn(),
   focusOn: vi.fn(() => ({ center: [116.455, 39.925], zoom: 13.5 })),
+  hideConsultRouteCandidates: vi.fn(async () => undefined),
   highlight: vi.fn(),
   previewPath: vi.fn(async () => undefined),
   resize: vi.fn(),
   selectDevice: vi.fn(),
+  setConsultRevisionAnchor: vi.fn(),
+  setConsultRevisionHandlers: vi.fn(),
+  setConsultRouteCandidateHandlers: vi.fn(),
   setLayerVisibility: vi.fn(async () => undefined),
+  showConsultRouteCandidates: vi.fn(async () => undefined),
 }));
 
 vi.mock("../../src/features/map/map-controller.js", () => ({
@@ -97,5 +104,13 @@ describe("MapView operation application", () => {
     expect(controller.selectDevice).toHaveBeenCalledTimes(2);
     expect(controller.selectDevice).toHaveBeenLastCalledWith(device);
     expect(controller.setLayerVisibility).toHaveBeenCalledTimes(1);
+
+    await wrapper.setProps({ previewedPath: undefined });
+    expect(controller.clearPreviewPath).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    await wrapper.vm.$nextTick();
+    expect(
+      wrapper.get('[data-testid="map-view"]').attributes(),
+    ).not.toHaveProperty("data-previewed-path-feature-id");
   });
 });
