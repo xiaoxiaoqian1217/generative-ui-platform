@@ -1,5 +1,8 @@
 import type { AgentSource } from "../settings/agent-source.js";
-import type { RequestedPresentationMode } from "../settings/presentation-request.js";
+import {
+  presentationForwardedProps,
+  type RequestedPresentationMode,
+} from "../settings/presentation-request.js";
 
 export interface QuickScenario {
   agentSource: AgentSource;
@@ -14,6 +17,27 @@ export interface QuickScenario {
    * not a mode named "source-native".
    */
   requestedMode?: RequestedPresentationMode;
+  /** Run-scoped versioned input selected by the validation Agent. */
+  validationScenarioId?: string;
+}
+
+export function quickScenarioForwardedProps(
+  scenario: QuickScenario,
+): Record<string, unknown> | undefined {
+  const presentationProps = presentationForwardedProps(scenario.requestedMode);
+  const forwardedProps = {
+    ...presentationProps,
+    ...(scenario.validationScenarioId === undefined
+      ? {}
+      : {
+          config: {
+            configurable: {
+              validationScenarioId: scenario.validationScenarioId,
+            },
+          },
+        }),
+  };
+  return Object.keys(forwardedProps).length === 0 ? undefined : forwardedProps;
 }
 
 /**
@@ -21,6 +45,37 @@ export interface QuickScenario {
  * 没有受控入口支撑的入口不得加入列表。
  */
 export const quickScenarios: QuickScenario[] = [
+  {
+    agentSource: "map-validation-agent",
+    id: "north-corridor-overview-validation",
+    label: "北侧通道真实 Agent 展示",
+    description: "真实 LLM 自主选择地图意图与顺序",
+    message: "帮我想想怎么巡逻北侧通道",
+    validationScenarioId: "north-corridor-overview-v1",
+  },
+  {
+    agentSource: "map-validation-agent",
+    id: "north-corridor-route-choice-validation",
+    label: "候选路线真实 Agent 征询",
+    description: "两条合理路线缺少偏好时进入征询",
+    message: "帮我想想怎么巡逻北侧通道。",
+    validationScenarioId: "north-corridor-route-choice-v1",
+  },
+  {
+    agentSource: "map-validation-agent",
+    id: "north-corridor-route-choice-reversed-validation",
+    label: "候选顺序反转对照",
+    description: "反转候选顺序后仍由真实 Agent 征询",
+    message: "帮我想想怎么巡逻北侧通道。",
+    validationScenarioId: "north-corridor-route-choice-reversed-v1",
+  },
+  {
+    agentSource: "ag-ui-mock",
+    id: "consult-patrol-route-selection",
+    label: "候选巡逻路线征询",
+    description: "比较路线 A / B 并验证选择、取消与修改 continuation",
+    message: "帮我想想怎么巡逻北侧通道。",
+  },
   {
     agentSource: "ag-ui-mock",
     id: "map-patrol-route-review",

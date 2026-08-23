@@ -1,0 +1,29 @@
+{
+  "name": "@generative-ui/map-validation-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/agent.ts src/model.ts src/prompt.ts src/scenario-loader.ts --format esm --dts --clean --out-dir dist",
+    "dev": "langgraphjs dev --port 8123 --no-browser",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@copilotkit/sdk-js": "1.64.1",
+    "@langchain/core": "1.2.9",
+    "@langchain/langgraph": "1.4.12",
+    "@langchain/langgraph-checkpoint": "1.1.5",
+    "@langchain/openai": "1.5.10",
+    "langchain": "1.5.10",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@langchain/langgraph-cli": "1.4.3",
+    "@types/node": "24.0.15",
+    "tsup": "8.5.0",
+    "tsx": "4.20.3",
+    "typescript": "5.8.3",
+    "vitest": "3.2.6"
+  }
+}

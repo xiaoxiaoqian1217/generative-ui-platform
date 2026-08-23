@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { ActivityMessage } from "@ag-ui/core";
+import type { ActivityMessage, AssistantMessage } from "@ag-ui/core";
+import { CopilotChatToolCallsView } from "@copilotkit/vue/v2";
 import { computed, reactive } from "vue";
 import MarkdownRenderer from "../renderer/MarkdownRenderer.vue";
 import ActivityMessagePresentation from "./ActivityMessagePresentation.vue";
@@ -39,6 +40,13 @@ const presentableMessages = computed<PresentableMessage[]>(() => {
   }
   return messages;
 });
+
+const toolCallMessages = computed(() =>
+  props.turn.responseMessages.filter(
+    (message): message is AssistantMessage =>
+      message.role === "assistant" && (message.toolCalls?.length ?? 0) > 0,
+  ),
+);
 
 const failureSummary = computed(() => {
   if (props.turn.status === "cancelled") return "请求已取消。";
@@ -90,6 +98,13 @@ function respondInterrupt(
     </div>
     <ActivityMessagePresentation v-else :message="message.activity" />
   </template>
+
+  <CopilotChatToolCallsView
+    v-for="message in toolCallMessages"
+    :key="`tools-${message.id}`"
+    :message="message"
+    :messages="[...turn.responseMessages]"
+  />
 
   <section
     v-if="turn.status === 'interrupted' && turn.pendingInterrupts?.length"

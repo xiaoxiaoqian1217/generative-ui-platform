@@ -1,0 +1,8 @@
+{
+  "node_version": "24",
+  "dependencies": ["."],
+  "graphs": {
+    "map_validation_agent": "./src/agent.ts:graph"
+  },
+  "env": ".env"
+}

@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 
+import {
+  MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
+  MAP_PLAN_ACTIVITY_TYPE,
+} from "@generative-ui/shared-types";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import type { ConversationTurn } from "../../src/conversation/conversation-store.js";
 import type { TurnObservation } from "../../src/inspect/turn-inspection.js";
 import ConversationMainArea from "../../src/shell/ConversationMainArea.vue";
-import {
-  MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
-  MAP_PLAN_ACTIVITY_TYPE,
-} from "@generative-ui/shared-types";
 
 function makeTurn(overrides: Partial<ConversationTurn> = {}): ConversationTurn {
   return {
@@ -35,6 +35,9 @@ function mapPlanObservation(status: "completed" | "running"): TurnObservation {
     payload: {
       activityType: MAP_PLAN_ACTIVITY_TYPE,
       content: {
+        ...(status === "completed"
+          ? { decisionBoundary: "尚未选择最终方案。" }
+          : {}),
         goal: "检查北侧通道",
         schemaVersion: MAP_PLAN_ACTIVITY_SCHEMA_VERSION,
         status,
@@ -44,6 +47,9 @@ function mapPlanObservation(status: "completed" | "running"): TurnObservation {
             id: "scope",
             label: "确认范围",
             operationNames: ["setLayerVisibility"],
+            ...(status === "completed"
+              ? { outcome: "已明确任务范围和限制条件。" }
+              : {}),
             status,
           },
         ],
@@ -101,7 +107,7 @@ describe("ConversationMainArea", () => {
     expect(wrapper.find(".shell-turn-hint-running").exists()).toBe(true);
   });
 
-  it("replaces the generic spinner with a compact task-level Agent status", () => {
+  it("grows a semantic Agent brief without copying map operations", () => {
     const wrapper = mount(ConversationMainArea, {
       props: {
         isRunning: true,
@@ -118,13 +124,16 @@ describe("ConversationMainArea", () => {
     expect(wrapper.get('[data-testid="map-plan-activity"]').text()).toContain(
       "检查北侧通道",
     );
-    expect(
-      wrapper.get('[data-testid="map-plan-activity"]').text(),
-    ).not.toContain("确认范围");
+    expect(wrapper.get('[data-testid="map-plan-activity"]').text()).toContain(
+      "当前研判",
+    );
+    expect(wrapper.get('[data-testid="map-plan-activity"]').text()).toContain(
+      "确认范围",
+    );
     expect(wrapper.find(".shell-turn-hint-running").exists()).toBe(false);
   });
 
-  it("removes the task status after completion", () => {
+  it("keeps completed findings and the decision boundary in conversation", () => {
     const wrapper = mount(ConversationMainArea, {
       props: {
         isRunning: false,
@@ -137,9 +146,11 @@ describe("ConversationMainArea", () => {
       },
     });
 
-    expect(wrapper.find('[data-testid="map-plan-activity"]').exists()).toBe(
-      false,
-    );
+    const brief = wrapper.get('[data-testid="map-plan-activity"]');
+    expect(brief.text()).toContain("Agent 研判摘要");
+    expect(brief.text()).toContain("已明确任务范围和限制条件");
+    expect(brief.text()).toContain("尚未选择最终方案");
+    expect(brief.text()).not.toContain("setLayerVisibility");
   });
 
   it("shows a failed hint inline", () => {

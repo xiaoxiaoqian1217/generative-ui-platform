@@ -7,6 +7,7 @@ import type {
   MapLayerRef,
   MapTargetRef,
 } from "../features/map/map-operation.js";
+import type { PatrolRouteConsultController } from "./patrol-route-consult.js";
 import CopilotKitFrontendToolsBridge from "./CopilotKitFrontendToolsBridge.vue";
 
 const props = defineProps<{
@@ -15,7 +16,11 @@ const props = defineProps<{
   frontendToolsEnabled: boolean;
   focusOn?: (target: MapTargetRef) => string;
   highlight?: (targets: readonly MapTargetRef[]) => string;
-  previewPath?: (target: MapTargetRef) => Promise<string> | string;
+  previewPath?: (
+    target: MapTargetRef,
+    toolCallId: string,
+  ) => Promise<string> | string;
+  patrolRouteConsult: PatrolRouteConsultController;
   setLayerVisibility?: (
     layer: MapLayerRef,
     visible: boolean,
@@ -40,6 +45,7 @@ const providerProps = computed(() =>
       :focus-on="focusOn"
       :highlight="highlight"
       :preview-path="previewPath"
+      :patrol-route-consult="patrolRouteConsult"
       :set-layer-visibility="setLayerVisibility"
       :observe="observe"
     />

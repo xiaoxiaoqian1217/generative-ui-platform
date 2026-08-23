@@ -36,6 +36,18 @@ import type { AgentSource } from "../settings/agent-source.js";
 const ConversationPage = defineAsyncComponent(
   () => import("./ConversationPage.vue"),
 );
+// PROTOTYPE - throwaway: patrol consultation interaction variants, dev-only.
+const PatrolConsultPrototype = defineAsyncComponent(
+  () => import("../conversation/prototype/PatrolConsultPrototype.vue"),
+);
+const patrolConsultPrototypeVariant = new URLSearchParams(
+  window.location.search,
+).get("variant");
+const showPatrolConsultPrototype =
+  import.meta.env.DEV &&
+  (patrolConsultPrototypeVariant === "consult-A" ||
+    patrolConsultPrototypeVariant === "consult-B" ||
+    patrolConsultPrototypeVariant === "consult-C");
 // PROTOTYPE - throwaway: Agent map-action perception variants, dev-only.
 const MapAgentTracePrototype = defineAsyncComponent(
   () => import("../conversation/prototype/MapAgentTracePrototype.vue"),
@@ -219,7 +231,14 @@ onMounted(() => {
     />
 
     <main
-      v-if="route === '/conversation' && showMapTracePrototype"
+      v-if="route === '/conversation' && showPatrolConsultPrototype"
+      class="shell-route"
+    >
+      <PatrolConsultPrototype />
+    </main>
+
+    <main
+      v-else-if="route === '/conversation' && showMapTracePrototype"
       class="shell-route"
     >
       <MapAgentTracePrototype />

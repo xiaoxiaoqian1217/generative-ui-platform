@@ -23,18 +23,16 @@ function applyMapStateAfterLoad(): void {
   }, 1_000);
 }
 
-function requireTarget(
-  target: Parameters<typeof findMapTarget>[0],
-): MapTarget {
+function requireTarget(target: Parameters<typeof findMapTarget>[0]): MapTarget {
   const resolved = findMapTarget(target);
-  if (resolved === undefined) throw new Error("Prototype map target is missing.");
+  if (resolved === undefined)
+    throw new Error("Prototype map target is missing.");
   return resolved;
 }
 
 const corridor = requireTarget(MAP_PATROL_SCENARIO.corridor);
-const observationTargets = MAP_PATROL_SCENARIO.observationTargets.map(
-  requireTarget,
-);
+const observationTargets =
+  MAP_PATROL_SCENARIO.observationTargets.map(requireTarget);
 const route = requireTarget(MAP_PATROL_SCENARIO.pathA);
 
 const visibleLayerIds = computed(() =>

@@ -1,6 +1,12 @@
 import { PLATFORM_A2UI_CATALOG_ID } from "@generative-ui/shared-types";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  PATROL_ROUTE_CONSULT_MESSAGE,
+  PATROL_ROUTE_CONSULT_REQUEST,
+  PATROL_ROUTE_CONSULT_RESPONSES,
+  PATROL_ROUTE_CONSULT_TOOL,
+} from "../src/scenarios/consult-patrol-route-selection.js";
+import {
   createAguiMockServer,
   type ReusableAguiMockServer,
 } from "../src/index.js";
@@ -417,5 +423,149 @@ describe("createAguiMockServer", () => {
     expect(
       finalEvents.find((event) => event.type === "TEXT_MESSAGE_CONTENT"),
     ).toMatchObject({ delta: MAP_PATROL_ROUTE_REVIEW_RESULT });
+  });
+
+  it.each([
+    ["route A", PATROL_ROUTE_CONSULT_RESPONSES.selectA, "patrol-path-a"],
+    ["route B", PATROL_ROUTE_CONSULT_RESPONSES.selectB, "patrol-path-b"],
+  ] as const)(
+    "continues patrol consultation selection for %s",
+    async (_label, selection, pathFeatureId) => {
+      const server = createAguiMockServer({ port: 0 });
+      runningServers.push(server);
+      const url = await server.start();
+      const messages: Record<string, unknown>[] = [
+        {
+          id: "user-consult",
+          role: "user",
+          content: PATROL_ROUTE_CONSULT_MESSAGE,
+        },
+      ];
+
+      const consultEvents = await postMessages(url, messages);
+      expect(consultEvents.some((event) => event.type === "CUSTOM")).toBe(
+        false,
+      );
+      expect(
+        consultEvents.some((event) => event.type.includes("INTERRUPT")),
+      ).toBe(false);
+      expect(
+        consultEvents.find((event) => event.type === "TOOL_CALL_START"),
+      ).toMatchObject({ toolCallName: PATROL_ROUTE_CONSULT_TOOL });
+      expect(
+        consultEvents.find((event) => event.type === "TOOL_CALL_ARGS"),
+      ).toMatchObject({ delta: JSON.stringify(PATROL_ROUTE_CONSULT_REQUEST) });
+
+      const consultToolCallId = appendCompletedToolCall(
+        messages,
+        consultEvents,
+        selection,
+      );
+      const previewEvents = await postMessages(url, messages);
+      expect(
+        previewEvents.find((event) => event.type === "TOOL_CALL_RESULT"),
+      ).toMatchObject({
+        content: JSON.stringify(selection),
+        role: "tool",
+        toolCallId: consultToolCallId,
+      });
+      expect(
+        previewEvents.find((event) => event.type === "TOOL_CALL_START"),
+      ).toMatchObject({ toolCallName: "previewPath" });
+      expect(
+        previewEvents.find((event) => event.type === "TOOL_CALL_ARGS"),
+      ).toMatchObject({
+        delta: JSON.stringify({
+          target: { featureId: pathFeatureId, layerId: "patrol-routes" },
+        }),
+      });
+
+      appendCompletedToolCall(messages, previewEvents, {
+        affectedFeatureIds: [pathFeatureId],
+        status: "completed",
+      });
+      const finalEvents = await postMessages(url, messages);
+      expect(
+        finalEvents.find((event) => event.type === "TEXT_MESSAGE_CONTENT"),
+      ).toMatchObject({
+        delta: expect.stringContaining("尚未提交或执行巡逻任务"),
+      });
+    },
+  );
+
+  it("cancels patrol consultation without map continuation", async () => {
+    const server = createAguiMockServer({ port: 0 });
+    runningServers.push(server);
+    const url = await server.start();
+    const messages: Record<string, unknown>[] = [
+      {
+        id: "user-consult",
+        role: "user",
+        content: PATROL_ROUTE_CONSULT_MESSAGE,
+      },
+    ];
+    const consultEvents = await postMessages(url, messages);
+    appendCompletedToolCall(
+      messages,
+      consultEvents,
+      PATROL_ROUTE_CONSULT_RESPONSES.cancel,
+    );
+
+    const finalEvents = await postMessages(url, messages);
+    expect(finalEvents.some((event) => event.type === "TOOL_CALL_START")).toBe(
+      false,
+    );
+    expect(
+      finalEvents.find((event) => event.type === "TEXT_MESSAGE_CONTENT"),
+    ).toMatchObject({ delta: expect.stringContaining("没有选择巡逻路线") });
+  });
+
+  it("continues the fixed revision through highlight and existing route B", async () => {
+    const server = createAguiMockServer({ port: 0 });
+    runningServers.push(server);
+    const url = await server.start();
+    const messages: Record<string, unknown>[] = [
+      {
+        id: "user-consult",
+        role: "user",
+        content: PATROL_ROUTE_CONSULT_MESSAGE,
+      },
+    ];
+    const consultEvents = await postMessages(url, messages);
+    appendCompletedToolCall(
+      messages,
+      consultEvents,
+      PATROL_ROUTE_CONSULT_RESPONSES.revise,
+    );
+
+    const highlightEvents = await postMessages(url, messages);
+    expect(
+      highlightEvents.find((event) => event.type === "TOOL_CALL_START"),
+    ).toMatchObject({ toolCallName: "highlight" });
+    appendCompletedToolCall(messages, highlightEvents, {
+      affectedFeatureIds: ["under-bridge"],
+      status: "completed",
+    });
+
+    const previewEvents = await postMessages(url, messages);
+    expect(
+      previewEvents.find((event) => event.type === "TOOL_CALL_START"),
+    ).toMatchObject({ toolCallName: "previewPath" });
+    expect(
+      previewEvents.find((event) => event.type === "TOOL_CALL_ARGS"),
+    ).toMatchObject({
+      delta: JSON.stringify({
+        target: { featureId: "patrol-path-b", layerId: "patrol-routes" },
+      }),
+    });
+    appendCompletedToolCall(messages, previewEvents, {
+      affectedFeatureIds: ["patrol-path-b"],
+      status: "completed",
+    });
+
+    const finalEvents = await postMessages(url, messages);
+    expect(
+      finalEvents.find((event) => event.type === "TEXT_MESSAGE_CONTENT"),
+    ).toMatchObject({ delta: expect.stringContaining("没有生成新路线") });
   });
 });

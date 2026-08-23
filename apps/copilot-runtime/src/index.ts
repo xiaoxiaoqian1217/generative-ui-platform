@@ -1,7 +1,8 @@
 import { createHmac } from "node:crypto";
 
-import { HttpAgent } from "@ag-ui/client";
+import { type AbstractAgent, HttpAgent } from "@ag-ui/client";
 import { type AgentCapabilities, AgentCapabilitiesSchema } from "@ag-ui/core";
+import { LangGraphAgent } from "@ag-ui/langgraph";
 import {
   CopilotSseRuntime,
   createCopilotRuntimeHandler,
@@ -23,10 +24,14 @@ import {
 
 export const AG_UI_MOCK_AGENT_ID = "ag-ui-mock";
 export const SACS_AGENT_ID = "single-agent-chat-server";
+export const MAP_VALIDATION_AGENT_ID = "map-validation-agent";
 export const COPILOT_RUNTIME_PATH = "/api/copilotkit";
 
 export interface RuntimeConfig {
   readonly agUiMockUrl: string;
+  readonly mapValidationAgentEnabled?: boolean;
+  readonly mapValidationAgentGraphId?: string;
+  readonly mapValidationAgentUrl?: string;
   readonly sacsAgUiUrl: string;
   readonly sacsJwtSecret?: string;
   readonly sacsPrincipalId?: string;
@@ -55,6 +60,11 @@ export interface RuntimeHandlerOptions {
    * is wired from `A2UI_SECONDARY_LLM_*` configuration.
    */
   readonly invokeSubagent?: InvokeSubagent;
+  /**
+   * Test-only injection point for a deterministic validation Agent double.
+   * Normal wiring always creates the official LangGraphAgent bridge.
+   */
+  readonly mapValidationAgent?: AbstractAgent;
   readonly now?: () => number;
   /**
    * Scenario Lab file location (Issue #213 dev-only endpoints). Defaults to
@@ -91,6 +101,17 @@ const sacsCapabilities: AgentCapabilities = {
   transport: { streaming: true },
 };
 
+const mapValidationCapabilities: AgentCapabilities = {
+  identity: {
+    description: "Dev-only interaction validation Agent",
+    metadata: { role: "dev-only-interaction-validation" },
+    name: MAP_VALIDATION_AGENT_ID,
+    type: "validation",
+  },
+  tools: { clientProvided: true, supported: true },
+  transport: { streaming: true },
+};
+
 function httpAgent(
   url: string,
   capabilities: AgentCapabilities,
@@ -98,6 +119,26 @@ function httpAgent(
 ): HttpAgent {
   const agent = new HttpAgent({ headers, url });
   agent.getCapabilities = async () => capabilities;
+  return agent;
+}
+
+function validationAgent(
+  config: RuntimeConfig,
+  injected: AbstractAgent | undefined,
+): AbstractAgent | undefined {
+  if (
+    config.mapValidationAgentEnabled !== true ||
+    config.mapValidationAgentUrl === undefined ||
+    config.mapValidationAgentGraphId === undefined
+  )
+    return undefined;
+  const agent =
+    injected ??
+    new LangGraphAgent({
+      deploymentUrl: config.mapValidationAgentUrl,
+      graphId: config.mapValidationAgentGraphId,
+    });
+  agent.getCapabilities = async () => mapValidationCapabilities;
   return agent;
 }
 
@@ -244,7 +285,7 @@ export function createRuntimeHandler(
           invokeSubagent === undefined ? {} : { invokeSubagent },
         ),
       );
-      return {
+      const agents: Record<string, AbstractAgent> = {
         [AG_UI_MOCK_AGENT_ID]: mockAgent,
         [SACS_AGENT_ID]: sacsAgent(
           config.sacsAgUiUrl,
@@ -252,6 +293,13 @@ export function createRuntimeHandler(
           now,
         ),
       };
+      const mapValidationAgent = validationAgent(
+        config,
+        options.mapValidationAgent,
+      );
+      if (mapValidationAgent !== undefined)
+        agents[MAP_VALIDATION_AGENT_ID] = mapValidationAgent;
+      return agents;
     },
   });
 
@@ -293,6 +341,24 @@ function booleanEnvironment(name: string, value: string | undefined): boolean {
   throw new Error(`${name}_INVALID`);
 }
 
+function optionalGraphId(
+  name: string,
+  value: string | undefined,
+): string | undefined {
+  const normalized = value?.trim();
+  if (!normalized) return undefined;
+  if (!/^[a-z][a-z0-9_]*$/.test(normalized)) throw new Error(`${name}_INVALID`);
+  return normalized;
+}
+
+function optionalUrl(
+  name: string,
+  value: string | undefined,
+): string | undefined {
+  const normalized = value?.trim();
+  return normalized ? validUrl(name, normalized) : undefined;
+}
+
 function timeoutEnvironment(
   name: string,
   value: string | undefined,
@@ -325,11 +391,24 @@ export function loadRuntimeConfig(
     "A2UI_SECONDARY_LLM_TIMEOUT_MS",
     environment.A2UI_SECONDARY_LLM_TIMEOUT_MS,
   );
+  const mapValidationAgentEnabled = booleanEnvironment(
+    "MAP_VALIDATION_AGENT_ENABLED",
+    environment.MAP_VALIDATION_AGENT_ENABLED,
+  );
+  const mapValidationAgentGraphId = optionalGraphId(
+    "MAP_VALIDATION_AGENT_GRAPH_ID",
+    environment.MAP_VALIDATION_AGENT_GRAPH_ID,
+  );
+  const mapValidationAgentUrl = optionalUrl(
+    "MAP_VALIDATION_AGENT_URL",
+    environment.MAP_VALIDATION_AGENT_URL,
+  );
   const config: RuntimeConfig = {
     agUiMockUrl: validUrl(
       "AG_UI_MOCK_URL",
       environment.AG_UI_MOCK_URL ?? "http://127.0.0.1:4800",
     ),
+    mapValidationAgentEnabled,
     sacsAgUiUrl: validUrl(
       "SACS_AG_UI_URL",
       environment.SACS_AG_UI_URL ?? "http://127.0.0.1:3000/ag-ui",
@@ -353,6 +432,10 @@ export function loadRuntimeConfig(
       environment.A2UI_SECONDARY_LLM_MODEL?.trim() ||
       DEFAULT_SECONDARY_LLM_MODEL,
     ...(secondaryLlmTimeoutMs === undefined ? {} : { secondaryLlmTimeoutMs }),
+    ...(mapValidationAgentGraphId === undefined
+      ? {}
+      : { mapValidationAgentGraphId }),
+    ...(mapValidationAgentUrl === undefined ? {} : { mapValidationAgentUrl }),
     ...(scenarioDraftLlmTimeoutMs === undefined
       ? {}
       : { scenarioDraftLlmTimeoutMs }),
@@ -378,11 +461,6 @@ export function loadRuntimeConfig(
 }
 
 export {
-  DYNAMIC_A2UI_COMPONENT_NAMES,
-  dynamicA2uiCatalogSchema,
-  dynamicA2uiValidationCatalog,
-} from "./dynamic-a2ui.js";
-export {
   A2UI_GENERATION_ERROR_ACTIVITY_TYPE,
   type A2uiGenerationErrorCode,
   type A2uiGenerationErrorContent,
@@ -390,12 +468,17 @@ export {
   generateA2uiSurfaceFromContent,
 } from "./a2ui-generation.js";
 export {
+  DYNAMIC_A2UI_COMPONENT_NAMES,
+  dynamicA2uiCatalogSchema,
+  dynamicA2uiValidationCatalog,
+} from "./dynamic-a2ui.js";
+export {
   type JsonValue,
-  parsePresentationInput,
   type PresentationContent,
   type PresentationInput,
   type PresentationLifecycle,
   type PresentationProvenance,
+  parsePresentationInput,
   serializePresentationInputContent,
 } from "./presentation-input.js";
 export {

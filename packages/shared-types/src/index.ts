@@ -11,6 +11,10 @@ import { type Static, Type } from "@sinclair/typebox";
 export const PLATFORM_A2UI_CATALOG_ID =
   "https://generative-ui.dev/a2ui/v0_9/platform_catalog.json";
 
+/** Fixture-level correlation facts shared by AGUIMock and the Workbench. */
+export const PATROL_ROUTE_CONSULT_TOOL = "requestPatrolRouteSelection";
+export const PATROL_ROUTE_REVISE_INSTRUCTION = "避开东侧高地，重点巡逻桥下区域";
+
 export const jsonValueSchema = Type.Recursive(
   (jsonValue) =>
     Type.Union([
@@ -82,6 +86,11 @@ export interface MapPlanActivityStep {
   readonly detail: string;
   readonly operationNames: readonly string[];
   readonly status: MapPlanStatus;
+  /**
+   * Agent-authored, user-visible meaning established by a completed stage.
+   * This is a task outcome rather than a description of the tool operation.
+   */
+  readonly outcome?: string;
 }
 
 export interface MapPlanActivityContent {
@@ -89,6 +98,8 @@ export interface MapPlanActivityContent {
   readonly goal: string;
   readonly status: MapPlanStatus;
   readonly steps: readonly MapPlanActivityStep[];
+  /** What remains undecided or requires the user's next choice. */
+  readonly decisionBoundary?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -117,6 +128,8 @@ function isMapPlanStep(value: unknown): value is MapPlanActivityStep {
       (operationName) =>
         typeof operationName === "string" && operationName.length > 0,
     ) &&
+    (value.outcome === undefined ||
+      (typeof value.outcome === "string" && value.outcome.length > 0)) &&
     isMapPlanStatus(value.status)
   );
 }
@@ -129,6 +142,9 @@ export function isMapPlanActivityContent(
     value.schemaVersion === MAP_PLAN_ACTIVITY_SCHEMA_VERSION &&
     typeof value.goal === "string" &&
     value.goal.length > 0 &&
+    (value.decisionBoundary === undefined ||
+      (typeof value.decisionBoundary === "string" &&
+        value.decisionBoundary.length > 0)) &&
     isMapPlanStatus(value.status) &&
     Array.isArray(value.steps) &&
     value.steps.length > 0 &&
