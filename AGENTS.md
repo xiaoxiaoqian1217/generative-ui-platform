@@ -2,18 +2,19 @@
 
 ## Current scope
 
-当前阶段已经从单一 Controlled UI 验证推进到两步主线：
+当前阶段已经完成薄 Agent 接入边界、A2UI Renderer、Platform Catalog、受控 Dynamic A2UI、Scenario Lab 与 dev-only Map Validation Agent 的实现。
+当前主线为：
 
 ```text
-Step 1
-统一 Agent 服务端接入边界
-Workbench → thin CopilotKit Runtime → AGUIMock / SACS
-
-Step 2
-进入 A2UI Renderer / Catalog / Theme 实践
+Real SACS interoperability
+  ↓
+Map interaction real-provider smoke and human evaluation
+  ↓
+SACS AgentContent → Dynamic A2UI
 ```
 
-已经跑通的第一条纵向场景仍然是 `locateDevice`：Agent 发起前端工具调用，Workbench 通过 `useFrontendTool` 驱动 MapLibre 定位设备。
+当前跑通的纵向业务场景是共享空间表面上的巡逻方案研判与路线征询。
+Agent 通过 `setLayerVisibility`、`focusOn`、`highlight` 与 `previewPath` 四个稳定地图域意图操作 MapLibre，并通过 HITL 与真实 Tool Result continuation 和用户协作。
 
 当前阶段继续遵守：
 
@@ -173,7 +174,7 @@ Theme Tokens 不再是 Dynamic A2UI 的前置条件，按真实需要后置。
 - Renderer 已先于 Secondary LLM 证明；Secondary LLM 只在 ADR-0030 / Issue #210 的受控边界内接入（受控内容源 + 确定性 Presentation Policy），不先接 SACS；
 - 优先复用 CopilotKit Basic Catalog / 现成 Renderer 能力；
 - Custom Catalog 优先增加 Metric / StatusBadge / InfoRow 等高复用展示语义；
-- DeviceCard / AlarmCard / TaskCard 只有出现真实复用后再抽成公共能力；
+- 任何空间或业务领域组件只有出现真实复用后再抽成公共 Catalog 能力；
 - Controlled UI 与 A2UI 尽量复用同一套真实 UI implementation / Theme；
 - 不为了做 A2UI 恢复旧 Compiler / Presentation contracts。
 
@@ -230,7 +231,7 @@ c33504db91614420c2ccdf26a8c707f61d659065
 
 任何新 Issue / PR / 模块必须优先回答：
 
-1. 是否直接服务 #207 Agent integration、#200 Real Agent interoperability 或下一阶段 A2UI 验证？
+1. 是否直接服务 #200 Real Agent interoperability、地图人机协作验证或 SACS AgentContent 到 Dynamic A2UI？
 2. 是否由已经跑通或正在验证的真实场景提出？
 3. 是否可以先在 `web-workbench` 内最小实现，再根据第二个真实消费者抽象？
 4. CopilotKit / AG-UI / A2UI 已经提供的能力是否可以直接复用？
@@ -257,12 +258,13 @@ Completed
 #206 A2UI Renderer MVP
 #209 Platform Catalog MVP
 #210 Dynamic A2UI MVP (controlled content)
+#213 Generative UI Scenario & Evaluation MVP
+#216 Dev-only Map Validation Agent implementation
 
 Current
   ↓
 #200 Real SACS Interoperability
-#213 Generative UI Scenario & Evaluation MVP
-#216 Dev-only Map Validation Agent
+Map interaction real-provider smoke and human evaluation
 
 Next
 SACS AgentContent → Dynamic A2UI

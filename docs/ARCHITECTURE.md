@@ -43,9 +43,9 @@ MapLibre persistent surface
 - GIS 能力可以保持在前端实现；
 - AGUIMock 可以作为稳定的协议测试服务。
 
-## 3. 已接受的 Agent 接入目标
+## 3. 当前 Agent 接入拓扑
 
-ADR-0029 已接受下一阶段目标：引入**薄 CopilotKit Runtime 集成层**。
+ADR-0029 接受的**薄 CopilotKit Runtime 集成层**已经落地。
 
 ```text
 ┌──────────────────────────────────────────┐
@@ -53,8 +53,8 @@ ADR-0029 已接受下一阶段目标：引入**薄 CopilotKit Runtime 集成层*
 │                                          │
 │ Conversation                             │
 │ Controlled UI / Frontend Tools           │
-│ A2UI Renderer（下一阶段）                │
-│ Catalog / Theme（下一阶段）              │
+│ A2UI Renderer                            │
+│ Basic + Platform Catalog                 │
 └────────────────────┬─────────────────────┘
                      │
                      ▼
@@ -63,10 +63,10 @@ ADR-0029 已接受下一阶段目标：引入**薄 CopilotKit Runtime 集成层*
             │ 薄集成层           │
             └─────────┬──────────┘
                       │
-           ┌──────────┴───────────┐
-           ▼                      ▼
-       AGUIMock        single-agent-chat-server
-       测试 Agent          真实业务 Agent
+           ┌──────────┴───────────┬──────────────────────────┐
+           ▼                      ▼                          ▼
+       AGUIMock        single-agent-chat-server      map-validation-agent
+       测试 Agent          真实业务 Agent             dev-only validation
 ```
 
 Issue #216 在该边界上增加一个默认关闭的独立验证来源：
@@ -83,7 +83,8 @@ Workbench
 
 `map-validation-agent` 是 dev-only 交互研究仪器，不替代 SACS，也不在 Runtime 进程内执行 graph。
 
-在 #207 完成前，上图中的 CopilotKit Runtime 仍是目标状态，不应被误写成已完成实现。
+前两个来源默认注册。
+`map-validation-agent` 仅在显式启用并提供 URL 与 graph ID 时条件注册。
 
 ## 4. CopilotKit Runtime 边界
 
@@ -93,7 +94,10 @@ CopilotKit Runtime 在当前阶段只承担**支撑性基础设施**职责：
 - 服务端 Agent endpoint 配置；
 - 服务端 credential / header 注入；
 - Workbench 到不同 Agent 的统一接入边界；
-- 为后续 A2UI middleware 保留自然接入点。
+- CopilotKit / AG-UI / A2UI 所需的最小 middleware integration；
+- ADR-0030 白名单内的确定性 Presentation Policy、Secondary Presentation LLM 接线和 A2UI 事件流缝合；
+- ADR-0031 白名单内的 dev-only Scenario Lab；
+- 条件注册独立 `map-validation-agent` 的官方 LangGraph bridge。
 
 它不拥有新的业务状态模型，也不重新建设：
 
@@ -241,7 +245,7 @@ Dynamic A2UI（受控内容）
 ```
 
 Theme Tokens 经 ADR-0030 后置，不再是 Dynamic A2UI 的前置条件。
-第一阶段先验证 Renderer，不要求 Secondary LLM。
+Renderer、Basic Catalog、Platform Catalog 与受控 Dynamic A2UI 已完成。
 
 ## 7. 共享 UI 原则
 
@@ -306,11 +310,12 @@ SACS 不需要为了该方向理解 A2UI。
 #206 A2UI Renderer MVP
 #209 Platform Catalog MVP
 #210 Dynamic A2UI MVP（受控内容）
+#213 Generative UI Scenario and Evaluation MVP
+#216 Dev-only map validation Agent implementation
 
 当前
 #200 Real SACS Interoperability
-#213 Generative UI Scenario and Evaluation MVP
-#216 Dev-only map validation Agent interaction loop
+Map interaction real-provider smoke and human evaluation
 
 下一阶段
 SACS AgentContent → Dynamic A2UI

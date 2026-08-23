@@ -7,16 +7,24 @@ ADR 的生命周期状态与“是否仍适用于当前阶段”是两个不同�
 
 ## 当前阶段
 
-[ADR-0029](./0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md) 是当前阶段决策。
+[ADR-0029](./0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md)、[ADR-0030](./0030-prioritize-dynamic-a2ui-over-theme-and-extend-runtime-presentation-scope.md) 与 [ADR-0031](./0031-separate-scenario-fixture-authoring-from-presentation-llm.md) 共同定义当前阶段边界。
 
-它接受两项近期工作：
+当前实现与近期路线为：
 
 ```text
+已完成
 #207 Thin CopilotKit Runtime 接入边界
-  ↓
+#206 A2UI Renderer MVP
+#209 Platform Catalog MVP
+#210 Dynamic A2UI MVP（受控内容）
+#213 Scenario and Evaluation MVP
+
+当前
 #200 真实 single-agent-chat-server 互操作
-  ↓
-A2UI Renderer / Catalog / Theme
+地图交互真实模型 smoke 与人工评估
+
+下一阶段
+SACS AgentContent → Dynamic A2UI
 ```
 
 薄 CopilotKit Runtime 只属于**支撑性基础设施**，不得借此恢复已经移除的 Runtime Platform。
@@ -137,5 +145,5 @@ Active、Frozen、Removed、Historical 描述的是“当前适用性”，不�
 
 ## 冲突规则
 
-不得使用旧 ADR 静默覆盖 ADR-0029 / ADR-0030 或当前仓库指令。
-如果未来工作需要重新激活超出 ADR-0029 / ADR-0030 范围的 Historical / Frozen 能力，必须先记录新的明确阶段决策。
+不得使用旧 ADR 静默覆盖 ADR-0029 / ADR-0030 / ADR-0031 或当前仓库指令。
+如果未来工作需要重新激活超出 ADR-0029 / ADR-0030 / ADR-0031 范围的 Historical / Frozen 能力，必须先记录新的明确阶段决策。

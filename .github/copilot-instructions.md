@@ -1,6 +1,6 @@
-Read `/docs/REQUIREMENTS.md` and `/AGENTS.md` before generating code.
-Keep `ui-compiler-core` independent of frameworks, transports, and model vendors.
-Never create app-to-app package dependencies.
-Put shared schemas and types in contract packages.
-Use strict TypeScript, stable error codes, boundary validation, and tests.
-Do not implement frontend, Copilot Runtime, or real business agents in this MVP.
+Read `/AGENTS.md` before generating code and treat it as the repository source of truth.
+Use `/CONTEXT.md` and `/docs/ARCHITECTURE.md` for the current implementation boundary.
+Apps may depend on packages, but packages must not depend on apps.
+Prefer native CopilotKit, AG-UI, and A2UI contracts at framework boundaries.
+Keep `/packages/shared-types` minimal and do not recreate removed Runtime, Presentation, or Compiler contracts.
+Use strict TypeScript, boundary validation, stable error semantics, and tests.

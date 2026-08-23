@@ -26,7 +26,7 @@ body:
     attributes:
       label: Architecture checks
       options:
-        - label: This does not move frontend, Copilot Runtime, or real business agents into MVP scope.
+        - label: This directly serves the current SACS interoperability, map interaction validation, or Dynamic A2UI roadmap.
           required: true
-        - label: This respects the dependency rules in REQUIREMENTS.md.
+        - label: This respects the scope, dependency, and feature admission rules in AGENTS.md.
           required: true

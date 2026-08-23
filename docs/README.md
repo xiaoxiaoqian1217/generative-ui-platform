@@ -12,19 +12,24 @@ AGUIMock
   ↓ AG-UI
 CopilotKit Frontend
   ↓
-Frontend Tool
+Map-domain Frontend Tools / HITL
   ↓
-MapLibre + DeviceCard
+MapLibre persistent surface
 
 已实现
 Web Workbench
   ↓
 Thin CopilotKit Runtime
   ↓
-AGUIMock / single-agent-chat-server
+AGUIMock / single-agent-chat-server / optional map-validation-agent
+
+已实现
+A2UI Renderer / Platform Catalog / controlled Dynamic A2UI
+Scenario Lab / dev-only Map Validation Agent
 
 当前阶段
 #200 Real SACS Interoperability
+Map interaction real-provider smoke and human evaluation
 
 下一阶段
 SACS AgentContent → Dynamic A2UI
@@ -41,14 +46,17 @@ SACS AgentContent → Dynamic A2UI
 - [AGENTS.md](../AGENTS.md)：编码 Agent 必须遵守的工程规则；
 - [当前架构](./ARCHITECTURE.md)：当前实现、目标拓扑和职责边界；
 - [ADR-0029](./adr/0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md)：当前阶段架构决策；
+- [ADR-0030](./adr/0030-prioritize-dynamic-a2ui-over-theme-and-extend-runtime-presentation-scope.md)：Dynamic A2UI 阶段顺序与 Runtime Presentation 职责白名单；
+- [ADR-0031](./adr/0031-separate-scenario-fixture-authoring-from-presentation-llm.md)：Scenario Fixture Authoring 与 Secondary Presentation LLM 分离；
 - [ADR-0028](./adr/0028-use-native-ag-ui-and-retire-compatibility-contracts.md)：上一阶段 Scope Reset，继续约束 native AG-UI 与 Removed / Historical 边界；
 - [CopilotKit Runtime 文档](../apps/copilot-runtime/README.md)：Runtime 配置、SACS 凭据和真实服务 smoke test；
+- [Map Validation Agent 文档](../apps/map-validation-agent/README.md)：独立 LangGraph server、版本化场景、配置与真实模型 smoke；
 - [Web Workbench 文档](./workbench/README.md)：Workbench 产品定位与演进；
 - [Workbench 原型基线](./workbench/PROTOTYPE_BASELINES.md)：已确认的 UI / IA 参考；
 - [Research](./research/README.md)：非规范性研究与未来能力参考；
 - [Agent 工程文档](./agents/)：Issue、领域与 triage 协作规则。
 
-发生冲突时，以当前代码、ADR-0029、根 `AGENTS.md` 和 `CONTEXT.md` 为准。
+发生冲突时，以当前代码、ADR-0029 / ADR-0030 / ADR-0031、根 `AGENTS.md` 和 `CONTEXT.md` 为准。
 
 ## 文档目录职责
 
@@ -94,11 +102,12 @@ Research：
 ## 当前实现与目标架构必须区分
 
 Issue #207 已经落地 thin CopilotKit Runtime。
-当前可执行链路通过统一 `/api/copilotkit` endpoint 接入 `ag-ui-mock` 与 `single-agent-chat-server` 两个 Agent Source。
+当前可执行链路通过统一 `/api/copilotkit` endpoint 接入默认注册的 `ag-ui-mock` 与 `single-agent-chat-server`，并可条件注册独立的 dev-only `map-validation-agent`。
 受控 Dynamic A2UI 不作为独立身份存在：Dynamic scenario 经 `forwardedProps` 携带 `requestedMode`，由挂在 `ag-ui-mock` 上的薄 Presentation Policy middleware 在同一 run 内完成生成与缝合。
 
 AGUIMock 路线继续验证业务无关 `setLayerVisibility` / `focusOn` / `highlight` / `previewPath` Frontend Tools、浏览器地图操作与确定性多步场景。
 SACS 路线消费 streaming text、Run lifecycle、State、Activity、Artifact 和 bounded `RUN_ERROR`，但不伪造其尚未支持的 client-provided Frontend Tools。
+Map Validation Agent 路线复用现有地图 Frontend Tools 与 HITL，以版本化 run-scoped 场景验证真实 LLM 的工具选择、征询和 Tool Result continuation。
 
 A2UI Renderer、Platform Catalog 与受控 Dynamic A2UI 已完成。
 Theme 与真实 SACS AgentContent 到 Dynamic A2UI 仍是后续路线，不应描述为已实现能力。

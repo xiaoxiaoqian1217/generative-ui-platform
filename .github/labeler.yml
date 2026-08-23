@@ -1,13 +1,21 @@
-"area: compiler-core":
+"area: workbench":
   - changed-files:
-      - any-glob-to-any-file: "packages/ui-compiler-core/**"
-"area: compiler-service":
+      - any-glob-to-any-file: "apps/web-workbench/**"
+"area: runtime":
   - changed-files:
-      - any-glob-to-any-file: "apps/ui-compiler-service/**"
-"area: contracts":
+      - any-glob-to-any-file: "apps/copilot-runtime/**"
+"area: map-validation":
   - changed-files:
-      - any-glob-to-any-file: "packages/*-contract/**"
-      - any-glob-to-any-file: "packages/component-catalog-schema/**"
+      - any-glob-to-any-file: "apps/map-validation-agent/**"
+"area: a2ui":
+  - changed-files:
+      - any-glob-to-any-file: "packages/a2ui-catalog/**"
+"area: ag-ui":
+  - changed-files:
+      - any-glob-to-any-file: "packages/ag-ui-*/**"
+"area: shared-types":
+  - changed-files:
+      - any-glob-to-any-file: "packages/shared-types/**"
 "documentation":
   - changed-files:
       - any-glob-to-any-file: "**/*.md"

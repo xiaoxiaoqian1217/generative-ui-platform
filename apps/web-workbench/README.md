@@ -39,7 +39,7 @@ The active Conversation route supports:
 - CopilotKit `useFrontendTool` registration;
 - the `setLayerVisibility`, `focusOn`, `highlight`, and `previewPath` browser tools with stable map references and `MapOperationResult` outputs;
 - deterministic multi-step map analysis on one persistent MapLibre surface;
-- local device selection, map movement, marker highlighting, and a controlled `DeviceCard`;
+- one persistent MapLibre surface with route previews, spatial highlighting, local map interaction, and controlled route consultation UI;
 - per-turn Turn Inspect: a swimlane timeline of the observations the Workbench really saw (Workbench / CopilotKit Runtime / Agent / Frontend Tool lanes appear only when they actually occurred) plus on-demand raw JSON detail;
 - SACS interrupt / resume: an interrupted run renders an in-turn confirmation card, and the user's answer is sent back as a native AG-UI `resume` entry;
 - cancellation, retryable timeout handling, agent outage handling, and recovery;
@@ -134,7 +134,7 @@ The default same-origin configuration uses the Vite proxy to reach the Runtime.
 The Runtime registers AGUIMock and SACS at the same time; the Workbench Source selector chooses one of them for each conversation.
 SACS credentials remain in the Runtime process and are never browser configuration.
 See [`apps/copilot-runtime/README.md`](../copilot-runtime/README.md) for its environment variables and real-service smoke test.
-Enter `定位无人机 01` in Conversation.
+Use the `北侧通道巡逻方案` or `候选巡逻路线征询` quick scenario in Conversation to verify the current spatial interaction flow.
 
 The mock composes map-domain tools without exposing an intelligent-advisor-specific contract.
 Use the `北侧通道巡逻方案` quick scenario to run `setLayerVisibility -> focusOn -> highlight -> previewPath -> Assistant result` on the same map surface.

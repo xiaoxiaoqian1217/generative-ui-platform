@@ -1,6 +1,6 @@
 repository:
   name: generative-ui-platform
-  description: Framework-neutral Generative UI compiler
+  description: Agent interoperability and controlled Generative UI workbench
   private: true
   has_issues: true
   has_projects: true
@@ -12,12 +12,18 @@ repository:
   delete_branch_on_merge: true
 
 labels:
-  - name: "area: compiler-core"
+  - name: "area: workbench"
     color: "1d76db"
-  - name: "area: compiler-service"
+  - name: "area: runtime"
     color: "5319e7"
-  - name: "area: contracts"
+  - name: "area: map-validation"
     color: "006b75"
+  - name: "area: a2ui"
+    color: "fbca04"
+  - name: "area: ag-ui"
+    color: "0e8a16"
+  - name: "area: shared-types"
+    color: "c5def5"
   - name: "ci"
     color: "0e8a16"
   - name: "codex-review"

@@ -22,9 +22,12 @@ body:
     attributes:
       label: Module
       options:
-        - ui-compiler-core
-        - ui-compiler-service
-        - contracts
+        - web-workbench
+        - copilot-runtime
+        - map-validation-agent
+        - a2ui-catalog
+        - ag-ui-mock or ag-ui-adapter
+        - shared-types
         - CI/CD or documentation
     validations:
       required: true
