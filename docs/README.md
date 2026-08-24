@@ -39,6 +39,10 @@ SACS AgentContent → Dynamic A2UI
 
 > **先纵向跑通场景，再横向抽象公共能力。**
 
+对 Agent–User Interaction 探索额外采用：
+
+> **先定义 Research Question、可证伪假设与证据，再实现用于验证它们的 Demo。**
+
 ## 当前权威入口
 
 - [根 README](../README.md)：产品主线、模块和开发入口；
@@ -53,10 +57,12 @@ SACS AgentContent → Dynamic A2UI
 - [Map Validation Agent 文档](../apps/map-validation-agent/README.md)：独立 LangGraph server、版本化场景、配置与真实模型 smoke；
 - [Web Workbench 文档](./workbench/README.md)：Workbench 产品定位与演进；
 - [Workbench 原型基线](./workbench/PROTOTYPE_BASELINES.md)：已确认的 UI / IA 参考；
-- [Research](./research/README.md)：非规范性研究与未来能力参考；
+- [Research](./research/README.md)：非规范性研究与未来能力参考；其中 Agent–User Interaction 主线以 [地图场景验证研究设计](./research/AGENT-USER-INTERACTION-MAP-RESEARCH-PROTOCOL.md) 为上位 Research Protocol；
+- [Experiments](./experiments/README.md)：依据 Research Protocol 执行的单次实验与证据记录；
+- [Reports](./reports/README.md)：由多次实验汇总形成的阶段性验证报告；
 - [Agent 工程文档](./agents/)：Issue、领域与 triage 协作规则。
 
-发生冲突时，以当前代码、ADR-0029 / ADR-0030 / ADR-0031、根 `AGENTS.md` 和 `CONTEXT.md` 为准。
+发生冲突时，以当前代码、ADR-0029 / ADR-0030 / ADR-0031、根 `AGENTS.md` 和 `CONTEXT.md` 为准。Research Protocol 约束研究与证据表达，不替代当前架构事实。
 
 ## 文档目录职责
 
@@ -66,7 +72,9 @@ docs/
 ├─ ARCHITECTURE.md       # 当前架构
 ├─ adr/                  # 架构决策历史
 ├─ agents/               # 工程协作规则
-├─ research/             # 非规范性研究资料
+├─ research/             # 上位研究问题、方法、假设与研究输入
+├─ experiments/          # 单次实验设计、执行与证据记录
+├─ reports/              # 多次实验汇总后的阶段性验证结论
 └─ workbench/            # Workbench 产品与原型资料
 ```
 
@@ -86,7 +94,7 @@ ADR 负责回答“为什么做出某个架构决策”。
 
 ### Research
 
-`docs/research/` 用于保留值得参考的思想、方案调查和未来能力研究。
+`docs/research/` 用于保留值得参考的思想、方案调查、研究协议和未来能力研究。
 
 Research：
 
@@ -94,6 +102,20 @@ Research：
 - 不是 Release Gate；
 - 不授权直接恢复旧实现；
 - 真正进入产品前必须结合当时真实需求重新验证。
+
+对于 Agent–User Interaction 主线，Research 负责回答“为什么研究、要回答什么、如何判断证据”，而不是记录每次 Demo 的实现过程。
+
+### Experiments
+
+`docs/experiments/` 保存依据 Research Protocol 执行的单次实验。
+
+每个实验至少应明确：Research Question、Hypothesis、自变量、控制变量、证据、主要指标、反驳/退出条件和 Evidence Level。实验开发服务于验证问题，不以功能完成本身作为结论。
+
+### Reports
+
+`docs/reports/` 保存由多个实验汇总得到的阶段性验证结论。
+
+报告需要区分已验证事实、证据等级、适用边界和尚未验证的推断；只有单个 Demo 或单个地图领域的成功，不直接宣称为通用交互原则。
 
 ### Workbench
 
@@ -132,6 +154,8 @@ CopilotKit Runtime 是薄的 Agent Integration Layer，不等同于以上 Runtim
 
 1. 普通文档优先描述当前事实和已接受的近期目标。
 2. 重大架构阶段变化使用 ADR 记录，不静默覆盖历史决策。
-3. 研究资料放入 `docs/research/`，并保持非规范性定位。
-4. 已退出路线且只描述旧实现、旧命令、旧 Release Gate 的资料直接从当前主文档树移除；需要时通过 Git 历史或 archive 查阅。
-5. 不因为历史资料仍可找到，就恢复已经删除的 Runtime / Compiler / Presentation 架构。
+3. 上位研究问题、方法与假设放入 `docs/research/`。
+4. 单次实验与证据记录放入 `docs/experiments/`。
+5. 多次实验汇总后的阶段性结论放入 `docs/reports/`。
+6. 已退出路线且只描述旧实现、旧命令、旧 Release Gate 的资料直接从当前主文档树移除；需要时通过 Git 历史或 archive 查阅。
+7. 不因为历史资料仍可找到，就恢复已经删除的 Runtime / Compiler / Presentation 架构。
