@@ -54,20 +54,14 @@ export type ValidationModelFactory = () => ValidationChatModel;
 export function createValidationModel(
   config: ValidationModelConfig,
 ): ValidationChatModel {
-  const model = new ChatOpenAI({
+  // ChatOpenAI already satisfies ValidationChatModel structurally; returning it
+  // directly keeps the factory a plain constructor without a forwarding layer.
+  return new ChatOpenAI({
     apiKey: config.apiKey,
     configuration: { baseURL: config.baseUrl },
     model: config.model,
     temperature: 0,
   });
-  return {
-    bindTools(tools) {
-      const bound = model.bindTools(tools);
-      return {
-        invoke: (input, runtimeConfig) => bound.invoke(input, runtimeConfig),
-      };
-    },
-  };
 }
 
 export function defaultValidationModelFactory(): ValidationChatModel {

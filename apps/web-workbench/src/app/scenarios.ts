@@ -21,6 +21,26 @@ export interface QuickScenario {
   validationScenarioId?: string;
 }
 
+/**
+ * Builds the run-scoped scenario selection forwarded to the validation Agent.
+ *
+ * Wire contract: `@ag-ui/langgraph` forwards `forwardedProps.config` into the
+ * LangGraph run configuration, and the validation Agent resolves the id from
+ * the run context (`runtime.configurable` with the current 0.0.42 bridge).
+ * Keep this builder as the single place that knows that wire shape.
+ */
+function validationScenarioForwardedProps(
+  validationScenarioId: string,
+): Record<string, unknown> {
+  return {
+    config: {
+      configurable: {
+        validationScenarioId,
+      },
+    },
+  };
+}
+
 export function quickScenarioForwardedProps(
   scenario: QuickScenario,
 ): Record<string, unknown> | undefined {
@@ -29,13 +49,7 @@ export function quickScenarioForwardedProps(
     ...presentationProps,
     ...(scenario.validationScenarioId === undefined
       ? {}
-      : {
-          config: {
-            configurable: {
-              validationScenarioId: scenario.validationScenarioId,
-            },
-          },
-        }),
+      : validationScenarioForwardedProps(scenario.validationScenarioId)),
   };
   return Object.keys(forwardedProps).length === 0 ? undefined : forwardedProps;
 }

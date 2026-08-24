@@ -1,6 +1,6 @@
 # 地图场景实验
 
-本目录保存以地图作为实验场的 Agent–User Interaction 单次实验。
+本目录保存以地图作为实验场的 Agent-User Interaction 单次实验。
 
 实验文档重点回答：
 
@@ -22,7 +22,7 @@ Interaction Pattern / Design Principle / Boundary
 
 ## 当前实验
 
-- [`EXP-001-intent-visibility-a0-a1.md`](./EXP-001-intent-visibility-a0-a1.md)：验证 Agent 连续改变共享 GUI 时，是否需要最小意图反馈。
+- [`EXP-001-intent-visibility-a0-a1.md`](./EXP-001-intent-visibility-a0-a1.md)：依托“北侧通道巡逻方案”验证连续地图操作中的意图可见性，E1 工程实现和回归已完成，待形成性体验观察。
 - [`EXP-002-consult-and-confirm.md`](./EXP-002-consult-and-confirm.md)：验证 Agent 到达存在多个合理选择的决策点时，何时应该让渡控制权给用户。
 
 ## 后续方向

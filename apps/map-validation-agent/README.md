@@ -20,6 +20,10 @@ The supported client-provided actions are:
 The scenario loader parses the complete file for tests and human inspection, but the Agent boundary receives only `input`.
 The `expected` section is never added to model context.
 
+The run-scoped `validationScenarioId` is sent by the Workbench as `forwardedProps.config.configurable.validationScenarioId`.
+With the current `@ag-ui/langgraph` `0.0.42` bridge and a `StateSchema`-based graph, the assistant context schema is empty, so the bridge keeps the id inside the LangGraph run `config.configurable` instead of promoting it to the top-level `context` field.
+The Agent therefore resolves the id from `runtime.configurable`, and also accepts `runtime.context` for callers that pass the LangGraph `context` field directly.
+
 ## Version alignment
 
 `@copilotkit/sdk-js` is fixed at `1.64.1` to match the repository CopilotKit version.

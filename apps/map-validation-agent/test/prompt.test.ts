@@ -17,4 +17,17 @@ describe("map validation prompt", () => {
     );
     expect(prompt).not.toContain("Chain-of-Thought");
   });
+
+  it("enumerates the available map tools with their user-perceivable results", async () => {
+    const scenario = await loadValidationScenarioInput(
+      "north-corridor-overview-v1",
+    );
+    const prompt = createMapValidationSystemPrompt(scenario);
+
+    expect(prompt).toContain("focusOn: moves the shared map viewport");
+    expect(prompt).toContain("highlight: visually emphasizes");
+    expect(prompt).toContain("previewPath: temporarily previews");
+    expect(prompt).toContain("requestPatrolRouteSelection: asks the user");
+    expect(prompt).toContain("setLayerVisibility: shows or hides");
+  });
 });
