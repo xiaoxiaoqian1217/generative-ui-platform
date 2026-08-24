@@ -26,7 +26,7 @@ Experiment Records
 Validation Report
 ```
 
-- [Agent–User Interaction 地图场景验证研究设计](./AGENT-USER-INTERACTION-MAP-RESEARCH-PROTOCOL.md)：**上位 Research Protocol**。定义研究目标、stateful GUI 问题空间、DSRM + GQM 方法、RQ1–RQ7、可证伪假设、证据等级、Experiment Card 与 Stop Rules。后续地图 Demo 应先回答“它在验证哪个 Research Question”，再进入实现。
+- [Agent–User Interaction 地图场景验证研究设计](./AGENT-USER-INTERACTION-MAP-RESEARCH-PROTOCOL.md)：**上位 Research Protocol**。定义研究目标、stateful GUI 问题空间、DSRM + Research Question / Hypothesis + Evidence-driven Evaluation 方法、RQ1–RQ7、可证伪假设、证据等级、Experiment Card 与 Stop Rules。后续地图 Demo 应先回答“它在验证哪个 Research Question、需要获得什么证据”，再进入实现。
 - [地图场景人机交互验证方向](./MAP-AGENT-INTERACTION-VALIDATION.md)：Research Protocol 下的地图具体母场景与实验设计，包含 A-D 核心场景、E-H 横切维度、A0-A2 呈现变体和实施顺序。
 - [Agent 交互泛化方向讨论记录](./AGENT-INTERACTION-GENERALIZATION.md)：泛化交互方式而非 UI 界面的第一性原理推演，作为研究问题与交互模式抽象的思想输入。
 - [地图实验记录](../experiments/map/README.md)：按 Experiment Card 执行的单次实验与证据记录。
@@ -53,4 +53,5 @@ Validation Report
 1. 没有明确 Research Question 和可证伪假设，不进入实验开发；
 2. 工程链路通过只计为 E1 工程证据，不替代用户证据；
 3. 单个地图场景的结果不直接宣称为跨领域通用模式；
-4. 稳定结论进入 `docs/reports/`，单次实验事实保留在 `docs/experiments/`。
+4. 量化记录只作为首轮形成性研究的辅助证据，不默认设置 KPI 或硬阈值；
+5. 稳定结论进入 `docs/reports/`，单次实验事实保留在 `docs/experiments/`。
