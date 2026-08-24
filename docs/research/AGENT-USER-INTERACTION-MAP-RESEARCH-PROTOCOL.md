@@ -1,7 +1,7 @@
 # Agent–User Interaction 地图场景验证研究设计
 
 > **文档性质：Research Protocol（研究协议 / 验证研究设计）**  
-> **版本：v0.1**  
+> **版本：v0.2**  
 > **日期：2026-08-24**  
 > **适用项目：generative-ui-platform / dev_1.0**
 
@@ -84,7 +84,7 @@
 
 这些因素可以在后续研究，但首轮要尽量固定，否则交互失败时无法归因。
 
-## 2. 研究方法：DSRM + GQM + 假设驱动验证
+## 2. 研究方法：DSRM + Research Question / Hypothesis + Evidence-driven Evaluation
 
 本项目采用三层方法组合，而不是单一“做 Demo 看感觉”。
 
@@ -96,43 +96,53 @@ DSRM 适用于“通过构造并评估技术人工物来获得问题与解决方
 2. **定义解决目标**：交互应可理解、可预期、可控、可纠偏、可恢复，并尽量能跨业务迁移。
 3. **设计与开发**：实现受控 Demo、地图工具面、交互反馈和实验变体。
 4. **演示**：在固定母场景中运行真实任务流程。
-5. **评估**：采集工程事实、行为指标、主观评分与质性反馈，检验假设。
+5. **评估**：采集工程事实、用户行为、用户表述、异常与反例等可追溯证据，检验假设。
 6. **沟通与沉淀**：输出交互模式、决策矩阵、适用边界与最终验证报告。
 
 **关键点：设计与开发只是第 3 步，不是研究终点。**
 
-### 2.2 中层：Goal–Question–Metric（GQM）
+### 2.2 中层：Research Question → Hypothesis → Experiment → Evidence
 
-每一个实验都按以下链条定义：
+当前阶段以探索性、形成性验证为主，不强行要求每个问题都转化为量化指标。每一个实验按以下链条定义：
 
 ```text
-Goal（想改进/理解什么）
+Research Question（要回答什么）
   ↓
-Question（必须回答什么问题）
+Hypothesis（当前可被推翻的判断）
   ↓
-Metric / Evidence（需要采集什么证据）
+Experiment（如何控制变量进行验证）
+  ↓
+Evidence（需要观察和保存什么事实）
+  ↓
+Interpretation（这些证据意味着什么）
+  ↓
+Conclusion / Boundary（结论与适用边界）
 ```
 
 例如：
 
 ```text
-Goal：提高多步 Agent 地图操作的可理解性
+RQ4：Agent 的意图和动作需要多大程度可见？
   ↓
-Question：用户能否正确说出“Agent 刚刚做了什么、为什么做、下一步可能做什么”？
+H4：多步操作至少需要“当前意图 + 关键结果”的最小语义反馈
   ↓
-Evidence：归因正确率、纠错次数、回看/追问次数、主观理解评分、访谈解释
+Experiment：固定 Tool Call、业务事实和地图终态，只比较 A0 / A1
+  ↓
+Evidence：用户能否复述发生了什么、能否解释原因、是否误判发起者、何时出现困惑、是否主动追问
 ```
 
-因此不允许“先有一个可采集指标，再反过来给它找意义”。
+本阶段追求的是：**结论有证据、证据可追溯、反例不被忽略**，而不是为了显得科学而人为设置“理解率 ≥ 80%”之类缺少依据的阈值。
 
-### 2.3 底层：假设驱动 + 混合证据
+### 2.3 底层：可证伪假设 + 混合证据
 
-对每个 Research Question 写出可证伪假设，并同时采集：
+对每个 Research Question 写出可证伪假设，并优先采集四类证据：
 
-- **工程证据**：Tool Call、Result、Run、地图终态、失败/恢复事件；
-- **行为证据**：任务完成、耗时、追问、纠偏、误操作、取消、重复操作；
-- **主观证据**：用户对理解、可预测、控制感、信心、负担的评分；
-- **质性证据**：用户认为 Agent 在做什么、为什么这样做、期望下一步是什么。
+- **工程证据**：Tool Call、Result、Run、地图终态、失败/恢复事件，回答“系统实际上发生了什么”；
+- **行为证据**：用户点击、等待、打断、接管、回退、重新询问等，回答“用户实际上做了什么”；
+- **认知证据**：任务后复述、访谈、回放解释，回答“用户认为发生了什么”；
+- **反例证据**：困惑、误解、错误接管、状态冲突、无法恢复等，回答“设计在什么条件下失败”。
+
+任务耗时、操作次数、评分等量化数据仍然可以记录，但在首轮形成性研究中只作为**辅助证据**，不默认作为硬通过标准。
 
 工程证据证明“机制成立”，用户证据才能支持“交互成立”。两者不得互相替代。
 
@@ -226,64 +236,74 @@ Agent 建议 → UI 展示候选 → 用户直接修改 → 结构化状态回�
 - 自动执行 vs 预览确认；
 - 中断后全回滚 vs 保留已确认状态。
 
-### 5.5 避免测试方式污染指标
+### 5.5 避免取证方式污染观察
 
-如果要测完成时间，实时 Think-Aloud 会影响耗时。可采用“完成任务后回放解释”的 Retrospective Think-Aloud，或者把“探索性访谈”和“定量计时”分开进行。
+实时 Think-Aloud 可能改变用户原本的操作节奏和决策。首轮可优先采用屏幕/事件记录 + 任务后回放解释（Retrospective Think-Aloud），必要时再补充量化记录。重点是保留可复核证据，而不是为了采集数字改变用户行为。
 
-## 6. 证据与指标体系
+## 6. 证据体系
 
-### 6.1 四类证据
+### 6.1 四类核心证据
 
-| 类型 | 示例 | 回答什么 |
+| 类型 | 示例 | 主要回答什么 |
 | --- | --- | --- |
-| 工程事实 | Tool Call/Result、状态、错误、恢复、地图终态 | 系统是否按设计执行 |
-| 行为指标 | 成功率、耗时、追问次数、纠偏次数、误操作、撤销/取消 | 用户是否有效完成任务 |
-| 主观评分 | 理解、可预测、控制感、信心、任务难度 | 用户如何感知交互 |
-| 质性解释 | “我以为 Agent 下一步会…”、“我不知道这是谁改的” | 为什么出现这些行为 |
+| 工程证据 | Tool Call/Result、状态变化、错误、恢复、地图终态 | 系统实际上发生了什么 |
+| 行为证据 | 点击、等待、打断、接管、回退、重新询问 | 用户实际上做了什么 |
+| 认知证据 | 任务后复述、访谈、回放解释 | 用户认为发生了什么 |
+| 反例证据 | 困惑、误解、状态冲突、错误接管、无法恢复 | 设计在什么条件下失败 |
 
-### 6.2 首轮推荐指标
+四类证据应尽可能相互印证。例如，用户说“我不知道地图为什么跳过去了”时，应能回到对应 Tool Call、界面反馈和用户后续操作，形成完整证据链。
 
-**Effectiveness（有效性）**
+### 6.2 首轮优先观察什么
 
-- 任务是否完成；
-- 用户是否选对/修改对目标；
-- 是否出现状态不一致；
-- 中断后是否正确恢复。
+**理解与归因**
 
-**Efficiency（效率）**
+- 用户能否说出 Agent 刚刚做了什么；
+- 能否说出为什么发生变化；
+- 能否区分 Agent 操作与自己的操作；
+- 哪一步开始出现困惑或错误归因。
+
+**控制与纠偏**
+
+- 用户需要停止或修改时是否知道怎么做；
+- 用户接管后 Agent 是否继续执行过期计划；
+- 用户是否能恢复到可接受状态；
+- 哪些状态保留或清理与用户预期不一致。
+
+**状态闭环**
+
+- Tool Result 是否与视觉终态一致；
+- Agent 上下文是否与用户实际选择一致；
+- Cancel / Supersede 后是否仍出现过期操作；
+- 用户直接操作改变任务语义后，Agent 是否正确接续。
+
+**主动行为与反例**
+
+- 用户是否主动追问“你刚才做了什么/为什么”；
+- 是否主动寻找更多过程信息；
+- 是否重复操作、回退或尝试绕过当前交互；
+- 出现了哪些预先没有想到的失败方式。
+
+### 6.3 可选量化记录
+
+在不干扰实验的前提下，可以记录以下数据辅助解释现象：
 
 - 任务完成时间；
 - 对话轮次；
 - UI 操作次数；
-- 纠偏/重复操作次数。
+- 追问、纠偏、撤销、取消次数；
+- 任务是否完成；
+- 简单的理解或控制感评分。
 
-**Comprehension（理解）**
+这些数据当前**不是 KPI，也不默认设置通过阈值**。只有在后续需要比较稳定方案、扩大样本或形成更强外部结论时，才进一步定义主要指标、样本设计和统计方法。
 
-- 用户能否说明 Agent 刚做了什么；
-- 能否说明动作原因；
-- 能否预测下一步；
-- 是否能区分 Agent 操作与自己操作。
+### 6.4 证据使用纪律
 
-**Control（控制感）**
-
-- 需要停止时是否知道怎么停；
-- 是否知道当前谁在主导；
-- 是否能恢复到可接受状态；
-- 主观控制感评分。
-
-**Reliability（可靠性）**
-
-- Tool Result 是否与视觉终态一致；
-- Cancel / Supersede 后是否仍出现过期操作；
-- Agent 上下文是否与用户实际选择一致。
-
-### 6.3 指标使用纪律
-
-1. 每个指标必须能追溯到 Research Question。
-2. 实验前定义主要指标与判据，不在看到结果后挑最有利指标。
-3. 没有基线时先收集 baseline，再设置合理阈值。
-4. 工程测试通过不能替代用户评估。
-5. 主观“感觉不错”不能替代可观察行为。
+1. 每条结论必须能追溯到具体 Research Question、Experiment 和原始证据。
+2. 实验前写明“什么现象支持假设、什么现象反驳假设”，避免事后只挑有利观察。
+3. 反例与失败案例必须保留，不能因为主路径跑通而忽略。
+4. 工程测试通过不能替代用户证据。
+5. 单个用户的一句主观评价不能直接提升为普遍结论，应结合行为与其他证据解释。
+6. 量化记录是辅助证据；没有足够研究设计时，不使用人为阈值制造伪精确。
 
 ## 7. 证据等级：避免把 Demo 当成验证结论
 
@@ -323,15 +343,16 @@ Agent 建议 → UI 展示候选 → 用户直接修改 → 结构化状态回�
 **Experiment ID**：EXP-XXX  
 **Research Question**：RQ?  
 **Hypothesis**：H?  
-**Goal**：本实验要理解/改善什么？  
-**Independent Variable**：本次只改变什么？  
+**Goal**：本实验要理解什么？  
+**Changed Variable**：本次只改变什么？  
 **Controlled Variables**：哪些输入、业务事实、地图终态必须固定？  
 **Task**：用户需要完成什么任务？  
-**Evidence**：工程 / 行为 / 主观 / 质性分别采什么？  
-**Primary Metric**：最重要的 1–2 个指标是什么？  
-**Falsification / Exit Criterion**：什么结果会推翻假设或要求停止继续投入？  
+**Evidence to Collect**：工程 / 行为 / 认知 / 反例分别采什么？  
+**Supporting Evidence**：观察到什么现象会支持当前假设？  
+**Contradicting Evidence**：观察到什么现象会反驳或削弱当前假设？  
+**Optional Quantitative Records**：是否需要记录时间、次数、评分等辅助数据？  
 **Evidence Level Target**：E1 / E2 / E3 / E4  
-**Implementation Needed**：为了实验最少需要实现什么？  
+**Implementation Needed**：为了取到这些证据，最少需要实现什么？  
 **Non-goals**：为了控制变量明确不做什么？
 
 只有写完这张卡，才进入代码实现。
@@ -517,32 +538,39 @@ D 很可能是地图域最有价值的实验，因为它直接触及 Chat 与 GU
 ### 实验设置
 
 - 用户任务：
-- 自变量：
+- 本次改变的变量：
 - 控制变量：
 - 参与者特征：
 - 实验顺序：
 - 需要的 Demo 能力：
 
-### 观察
+### 预期证据
 
-- 任务成功：是 / 否 / 部分；
-- 完成时间：
-- 对话轮次：
-- UI 操作次数：
-- 纠偏/撤销/取消次数：
-- 状态不一致：
-- 用户对 Agent 当前意图的解释：
-- 用户对下一步的预测：
-- 理解评分：
-- 控制感评分：
-- 关键原话/观察：
+- 工程证据：
+- 行为证据：
+- 认知证据：
+- 重点关注的反例：
+- 支持假设的现象：
+- 反驳假设的现象：
+- 可选量化记录：
 
-### 结论
+### 实际观察
+
+- 系统实际发生了什么：
+- 用户实际做了什么：
+- 用户认为发生了什么：
+- 关键原话 / 回放解释：
+- 困惑、误解或状态冲突：
+- 未预期的反例：
+- 可选量化记录：
+
+### 解释与结论
 
 - Hypothesis：支持 / 部分支持 / 不支持 / 证据不足；
-- 最关键证据：
+- 最关键证据链：
+- 可能的其他解释 / 混杂因素：
 - 发现的失败模式：
-- 适用边界：
+- 当前适用边界：
 - 是否需要下一轮实验：
 - 是否可提炼 Pattern：
 
@@ -568,8 +596,7 @@ D 很可能是地图域最有价值的实验，因为它直接触及 Chat 与 GU
 
 1. Hevner, A. R., March, S. T., Park, J., & Ram, S. (2004). *Design Science in Information Systems Research*. MIS Quarterly, 28(1).
 2. Peffers, K., Tuunanen, T., Rothenberger, M. A., & Chatterjee, S. (2007/2008). *A Design Science Research Methodology for Information Systems Research*. Journal of Management Information Systems, 24(3), 45–77.
-3. Basili, V. R., Caldiera, G., & Rombach, H. D. (1994). *The Goal Question Metric Approach*. Encyclopedia of Software Engineering.
-4. HCI / usability measurement commonly combines task success, time on task, errors and participant satisfaction; formative testing should be used iteratively to discover interaction problems before making broad claims.
+3. Formative HCI / usability evaluation emphasizes observing real user behavior, collecting qualitative explanations and iteratively discovering interaction problems before making broad claims. Quantitative measures can supplement evidence when the study design and sample support them.
 
 ## 当前项目依据
 
