@@ -1,63 +1,87 @@
 # 地图场景实验
 
-本目录保存以地图作为实验场的 Agent-User Interaction 单次实验。
+本目录保存以地图作为实验场的 Agent–User Interaction 实验。
 
-实验文档重点回答：
+一级索引不是 UI 问题，而是**可复用交互模式**：
 
 ```text
-实验目标
+Interaction Mode
 ↓
-实验场景
+Map Scenario
 ↓
-对照方案
+Experiment
 ↓
 实验结果
 ↓
-Interaction Pattern / Design Principle / Boundary
+交互知识资产 + 可复用技术资产
 ```
 
-上位研究说明：[`AGENT-USER-INTERACTION-MAP-VALIDATION.md`](../../AGENT-USER-INTERACTION-MAP-VALIDATION.md)。
+上位分享说明：[`AGENT-USER-INTERACTION-MAP-VALIDATION.md`](../../AGENT-USER-INTERACTION-MAP-VALIDATION.md)。  
+地图验证主设计：[`MAP-AGENT-INTERACTION-VALIDATION.md`](../../research/MAP-AGENT-INTERACTION-VALIDATION.md)。  
 详细研究底稿：[`AGENT-USER-INTERACTION-MAP-RESEARCH-PROTOCOL.md`](../../research/AGENT-USER-INTERACTION-MAP-RESEARCH-PROTOCOL.md)。
-地图母场景与既有验证设计：[`MAP-AGENT-INTERACTION-VALIDATION.md`](../../research/MAP-AGENT-INTERACTION-VALIDATION.md)。
 
-## 当前实验
+## 交互模式与实验映射
 
-- [`EXP-001-intent-visibility-a0-a1.md`](./EXP-001-intent-visibility-a0-a1.md)：验证 Agent 连续操作共享 GUI 时的最小意图可见性。
-- [`EXP-002-consult-and-confirm.md`](./EXP-002-consult-and-confirm.md)：验证 Agent 到达存在多个合理选择的决策点时，何时应该让渡控制权给用户。
-- [`EXP-003-interrupt-and-correct.md`](./EXP-003-interrupt-and-correct.md)：验证用户通过语言打断 / 纠偏后，依赖旧条件且尚未执行的 Agent 计划如何失效，并从最新状态继续。
-- [`EXP-004-direct-manipulation-and-shared-state.md`](./EXP-004-direct-manipulation-and-shared-state.md)：验证用户直接操作 GUI 产生的任务语义状态，何时应该成为 Agent 的最新上下文。
+| 交互模式 | 地图验证场景 | EXP |
+| --- | --- | --- |
+| 单轮问答 | 普通文本问答 | 已成熟，不单独 EXP |
+| 委托执行 | 用户把北侧通道巡逻研判整体交给 Agent | [`EXP-001-delegated-execution.md`](./EXP-001-delegated-execution.md) |
+| 征询等待 | 路线 A / B 均合理，Agent 停下来让用户选择 | [`EXP-002-consult-and-wait.md`](./EXP-002-consult-and-wait.md) |
+| 工具中介行动 | Agent 通过 Frontend Tool 操作共享地图 | [`EXP-003-tool-mediated-action.md`](./EXP-003-tool-mediated-action.md) |
+| 打断纠偏 | Agent 执行中用户修改目标 / 约束，旧待执行计划失效 | [`EXP-004-interrupt-and-correct.md`](./EXP-004-interrupt-and-correct.md) |
 
-## 当前实验主线
+## EXP 统一模板
 
 ```text
-EXP-001
-Agent 在做什么？
-→ Intent Visibility
-
-EXP-002
-Agent 什么时候应该停下来让用户决定？
-→ Control Yield / Decision Point
-
-EXP-003
-用户通过语言改变方向后怎么办？
-→ Interrupt / Correction / Stale Plan
-
-EXP-004
-用户直接操作 GUI 表达意图后怎么办？
-→ Direct Manipulation / Semantic Shared State
+1. 交互模式
+2. 实验目标
+3. 实验场景
+4. 交互流程
+5. 验证重点
+6. 实验结果
+7. 最终沉淀
+   7.1 交互知识资产
+   7.2 可复用技术资产
 ```
 
-这四个实验逐步从“看懂 Agent”推进到“人与 Agent 共同操作同一个有状态 GUI”。
+### 交互知识资产
 
-## 后续方向
+主要沉淀：
 
-后续不按功能 Roadmap 自动增加实验，而根据前述实验暴露的问题决定。
+- 模式定义；
+- 标准交互流程；
+- 设计原则；
+- 适用边界；
+- 可迁移场景。
 
-优先可能进入：
+### 可复用技术资产
 
-- Agent 操作与用户直接操作发生冲突时，当前控制权如何确定；
-- 哪些 GUI State 应进入 Agent Context，哪些只属于本地视觉状态；
-- 高风险 / 不可逆操作中的 Preview、Confirm 与 Commit 边界；
-- 从地图实验中提炼可迁移到表格、甘特图、工作流等 GUI 的 Interaction Pattern。
+主要检查：
 
-后续实验的目的仍然不是补齐功能，而是形成可以复用的 **Interaction Pattern、Design Principle 和 Boundary**。
+- 可复用交互能力；
+- 状态 / 协议约定；
+- Frontend / Runtime 实现；
+- Scenario / Fixture；
+- 自动化测试与可观察证据。
+
+## 横切验证问题
+
+以下内容不是独立一级 Interaction Mode，优先放回对应 EXP 中验证：
+
+- 意图可见性；
+- Progress / Activity；
+- 控制权让渡；
+- Shared State；
+- Direct Manipulation；
+- 失败与恢复；
+- Preview / Confirm / Approval。
+
+只有出现明确设计争议时才增加局部 A/B 对照。**对照方案是实验手段，不是 EXP 的固定章节。**
+
+## 维护原则
+
+1. 不因为出现一个新 UI 问题就自动创建新 EXP。
+2. 新 EXP 优先对应一个可独立描述、可跨业务复用的 Interaction Mode。
+3. 地图只是验证载体，业务名词不进入模式结构。
+4. 实验结果只写真实运行和实际观察，不把候选原则提前写成已验证结论。
+5. 单个 EXP 完成后，优先沉淀知识资产和技术资产，而不是继续扩 Demo 功能。
