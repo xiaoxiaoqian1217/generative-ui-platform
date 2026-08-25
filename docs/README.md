@@ -39,9 +39,9 @@ SACS AgentContent → Dynamic A2UI
 
 > **先纵向跑通场景，再横向抽象公共能力。**
 
-对 Agent–User Interaction 探索额外采用：
+Agent–User Interaction 验证进一步采用：
 
-> **先明确要回答的交互问题和需要保留的证据，再实现用于验证它们的 Demo。**
+> **以有限的 Interaction Mode 为一级索引，用具体场景验证，再沉淀交互知识资产与可复用技术资产。**
 
 ## 当前权威入口
 
@@ -57,9 +57,10 @@ SACS AgentContent → Dynamic A2UI
 - [Map Validation Agent 文档](../apps/map-validation-agent/README.md)：独立 LangGraph server、版本化场景、配置与真实模型 smoke；
 - [Web Workbench 文档](./workbench/README.md)：Workbench 产品定位与演进；
 - [Workbench 原型基线](./workbench/PROTOTYPE_BASELINES.md)：已确认的 UI / IA 参考；
-- [Agent–User Interaction 地图场景验证说明](./AGENT-USER-INTERACTION-MAP-VALIDATION.md)：**面向分享的验证主文档**，快速说明验证目的、做法、可信度、当前实验以及最终要沉淀的 Interaction Pattern、Design Principle 与适用边界；
-- [Research](./research/README.md)：详细研究底稿与未来能力参考；其中 [地图场景验证研究设计](./research/AGENT-USER-INTERACTION-MAP-RESEARCH-PROTOCOL.md) 保存 Research Question、假设与证据方法；
-- [Experiments](./experiments/README.md)：单次实验设计与证据记录；
+- [Agent–User Interaction 地图场景验证说明](./AGENT-USER-INTERACTION-MAP-VALIDATION.md)：**面向分享的验证主文档**，说明 5 类交互模式、4 个地图实验、验证方式以及最终两类资产；
+- [地图场景 Agent–User Interaction 验证方向](./research/MAP-AGENT-INTERACTION-VALIDATION.md)：**当前地图验证主设计**，维护 Interaction Mode → Scenario → EXP 的映射、横切问题和实现载体；
+- [Research](./research/README.md)：详细研究底稿与未来能力参考；Research Protocol 保存 Research Question、假设与证据方法，但不负责当前 EXP 编号；
+- [Experiments](./experiments/README.md)：按 Interaction Mode 组织的单次实验；
 - [Reports](./reports/README.md)：由多次实验汇总形成的阶段性验证报告；
 - [Agent 工程文档](./agents/)：Issue、领域与 triage 协作规则。
 
@@ -69,15 +70,15 @@ SACS AgentContent → Dynamic A2UI
 
 ```text
 docs/
-├─ README.md                              # 当前文档导航
-├─ ARCHITECTURE.md                        # 当前架构
+├─ README.md                                # 当前文档导航
+├─ ARCHITECTURE.md                          # 当前架构
 ├─ AGENT-USER-INTERACTION-MAP-VALIDATION.md # 面向分享的验证主文档
-├─ adr/                                   # 架构决策历史
-├─ agents/                                # 工程协作规则
-├─ research/                              # 详细研究问题、假设、方法与研究输入
-├─ experiments/                           # 单次实验设计、执行与证据记录
-├─ reports/                               # 多次实验汇总后的阶段性验证结论
-└─ workbench/                             # Workbench 产品与原型资料
+├─ adr/                                     # 架构决策历史
+├─ agents/                                  # 工程协作规则
+├─ research/                                # 验证主设计、方法底稿与研究输入
+├─ experiments/                             # Interaction Mode 实验与结果记录
+├─ reports/                                 # 多实验汇总后的阶段性成果
+└─ workbench/                               # Workbench 产品与原型资料
 ```
 
 ### ADR
@@ -96,7 +97,7 @@ ADR 负责回答“为什么做出某个架构决策”。
 
 ### Research
 
-`docs/research/` 用于保留值得参考的思想、方案调查、研究协议和未来能力研究。
+`docs/research/` 保存值得参考的思想、验证设计、研究协议和未来能力研究。
 
 Research：
 
@@ -105,25 +106,40 @@ Research：
 - 不授权直接恢复旧实现；
 - 真正进入产品前必须结合当时真实需求重新验证。
 
-对于 Agent–User Interaction 主线，Research 保存详细研究底稿；对外说明优先阅读 `docs/AGENT-USER-INTERACTION-MAP-VALIDATION.md`。
+对于 Agent–User Interaction 主线：
+
+- `MAP-AGENT-INTERACTION-VALIDATION.md` 维护当前 Interaction Mode → Scenario → EXP 主设计；
+- `AGENT-USER-INTERACTION-MAP-RESEARCH-PROTOCOL.md` 保留详细方法底稿，需要解释 Research Question、假设和证据时再查阅；
+- 对外说明优先阅读 `docs/AGENT-USER-INTERACTION-MAP-VALIDATION.md`。
 
 ### Experiments
 
-`docs/experiments/` 保存单次实验设计、执行过程和原始证据。
+`docs/experiments/` 保存单次实验设计和实验结果。
 
-每个实验至少应明确：要回答的问题、当前判断、只改变什么、固定什么、需要收集什么证据、什么现象会支持或反驳判断，以及为了取证最少需要实现什么。量化指标当前只作为可选辅助证据，不作为默认通过门槛。
+当前 EXP 优先对应可跨业务描述的 Interaction Mode，并统一回答：
+
+```text
+交互模式
+→ 实验目标
+→ 实验场景
+→ User / Agent / GUI 交互流程
+→ 验证重点
+→ 实验结果
+→ 交互知识资产 + 可复用技术资产
+```
+
+A/B 对照是可选实验手段，不是每个 EXP 的固定要求。意图可见性、Shared State、Direct Manipulation 等优先作为横切问题放回相应模式中验证。
 
 ### Reports
 
 `docs/reports/` 保存由多个实验汇总得到的阶段性验证结论。
 
-报告需要区分已观察事实、当前判断、反例、适用边界和尚未验证的推断；只有单个 Demo 或单个地图领域的成功，不直接宣称为通用交互原则。
+稳定成果优先分成两类：
 
-最终稳定成果应逐步沉淀为：
+- **交互知识资产**：模式定义、标准流程、设计原则、适用边界和可迁移场景；
+- **可复用技术资产**：交互能力、状态 / 协议约定、Frontend / Runtime 实现、Scenario / Fixture 和自动化测试。
 
-- 可复用的 Interaction Pattern；
-- Design Principle；
-- Pattern / Principle 的适用与不适用边界。
+只有单个 Demo 或单个地图领域的成功，不直接宣称为跨领域通用结论。
 
 ### Workbench
 
@@ -163,8 +179,8 @@ CopilotKit Runtime 是薄的 Agent Integration Layer，不等同于以上 Runtim
 1. 普通文档优先描述当前事实和已接受的近期目标。
 2. 重大架构阶段变化使用 ADR 记录，不静默覆盖历史决策。
 3. 面向分享的 Agent–User Interaction 验证总览放在 `docs/AGENT-USER-INTERACTION-MAP-VALIDATION.md`。
-4. 详细研究问题、假设与方法放入 `docs/research/`。
-5. 单次实验与原始证据记录放入 `docs/experiments/`。
-6. 多次实验汇总后的阶段性结论、Interaction Pattern、Design Principle 与适用边界放入 `docs/reports/`。
+4. Interaction Mode → Scenario → EXP 主设计放在 `docs/research/MAP-AGENT-INTERACTION-VALIDATION.md`；详细研究方法留在 Research Protocol。
+5. 单次 Interaction Mode 实验和结果放入 `docs/experiments/`。
+6. 多次实验汇总后的交互知识资产与可复用技术资产放入 `docs/reports/`。
 7. 已退出路线且只描述旧实现、旧命令、旧 Release Gate 的资料直接从当前主文档树移除；需要时通过 Git 历史或 archive 查阅。
 8. 不因为历史资料仍可找到，就恢复已经删除的 Runtime / Compiler / Presentation 架构。
