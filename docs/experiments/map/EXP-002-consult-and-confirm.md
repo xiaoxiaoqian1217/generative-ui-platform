@@ -166,25 +166,49 @@ Agent 预览路线 B
 
 ## 4. 实验结果
 
-> **待实际验证后填写。**
+> **当前状态（2026-08-25）**：A1 的确定性工程闭环已经实现并通过自动化回归，但 EXP-002 尚未完成真实模型与参与者体验验证。
+
+当前工程已经具备以下证据：
+
+- AGUIMock 通过 `requestPatrolRouteSelection` 提供固定路线 A / B，并等待标准 `role = tool` 的用户答复；
+- Workbench 通过 `useHumanInTheLoop` 呈现路线差异，支持地图本地预览、选择、取消和固定修改要求；
+- 用户选择后，Agent 根据真实 Tool Result continuation 预览对应的既有路线，并明确路线尚未提交或执行；
+- Chromium E2E 已验证场景 A 的地图上下文可以保留到征询场景，并覆盖路线 A、路线 B、取消和修改分支；
+- Map Validation Agent 已提供正常顺序和候选顺序反转的版本化征询场景，但真实 provider smoke 记录仍为 Pending。
+
+对应工程证据见 [`consult-patrol-route-selection.ts`](../../../packages/ag-ui-mock/src/scenarios/consult-patrol-route-selection.ts)、[`CopilotKitFrontendToolsBridge.vue`](../../../apps/web-workbench/src/conversation/CopilotKitFrontendToolsBridge.vue)、[`workbench.spec.ts`](../../../apps/web-workbench/tests/e2e/workbench.spec.ts) 和 [`smoke/README.md`](../../../apps/map-validation-agent/smoke/README.md)。
 
 ### A0
 
-- Agent 直接选择是否自然：
-- 是否产生“为什么替我决定”的感觉：
-- 是否出现事后纠正：
-- 哪些情况下直接继续反而更高效：
+- Agent 直接选择是否自然：待参与者验证。
+  A0 是用于比较“Agent 直接替用户选择”的研究对照，不是当前参考体验必须实现的产品能力。
+- 是否产生“为什么替我决定”的感觉：待参与者验证。
+  只有后续确实执行 A0 对照验证时，才需要补充对应观察记录。
+- 是否出现事后纠正：待参与者验证。
+  当前自动化不用于证明用户是否会因为 A0 而产生纠正行为。
+- 哪些情况下直接继续反而更高效：待参与者验证。
+  低风险、可逆且不表达用户偏好的地图观察动作已经由现有场景直接执行，但路线偏好选择不属于这类动作。
 
 ### A1
 
-- 征询是否出现在合理的时机：
-- 选项和差异是否足以支持用户做决定：
-- 是否感觉被无意义地打断：
-- 用户回答后 Agent 是否能够自然继续：
+- 征询是否出现在合理的时机：工程 fixture 会在两个合理候选且缺少最终偏好时进入征询。
+  真实模型能否在单次自然任务中稳定识别该时机，仍待 provider smoke 与重复运行验证。
+- 选项和差异是否足以支持用户做决定：当前界面会同时呈现路线 A / B 的摘要，并允许在地图上分别预览。
+  这些信息已足以完成工程交互，但是否足以支持真实用户判断仍待参与者验证。
+- 是否感觉被无意义地打断：待参与者验证。
+  自动化测试只能证明 Agent 确实停止并等待，不能证明等待是否自然或负担是否合理。
+- 用户回答后 Agent 是否能够自然继续：工程闭环已经验证。
+  路线 A / B 会映射到对应既有路径，取消不会触发地图 continuation，固定修改要求会高亮桥下区域并继续预览路线 B。
+  真实模型续接的语言质量和行为稳定性仍待 provider smoke 验证。
 
 ### 当前判断
 
-> 待验证后填写。
+> 当前工程已经实现 EXP-002 的 A1 核心场景：Agent 在路线决策点进入征询等待，由用户选择路线 A 或路线 B，再根据答复继续。
+
+EXP-002 目前属于“A1 工程实现已经完成，体验实验结论待验证”。
+A0 只是文档中的研究对照，不是判断 A1 是否实现的前置条件，也不是当前工程缺口。
+前置研判场景与征询场景可以在同一 Conversation 中连续运行，并保留地图上下文。
+真实 provider smoke、重复运行和参与者观察尚未完成。
 
 实验不预设“征询越多越好”。
 
@@ -322,6 +346,13 @@ Approval
 ---
 
 ## 6. 下一步
+
+在进入实验结论判断前，先补齐以下证据：
+
+1. 完成 `north-corridor-route-choice-v1` 和 `north-corridor-route-choice-reversed-v1` 的真实 provider smoke，并记录公开 Tool Call、Tool Result、HITL 答复和最终边界；
+2. 如果需要正式比较 A0 / A1，再为 A0 保留同任务、同数据、同前置地图操作下的可审查实验材料，但不把 A0 作为产品能力或增加 A0/A1 产品开关；
+3. 使用 A0 / A1 完成形成性参与者验证，记录是否自然、是否打断、是否发生纠正以及用户如何解释路线差异；
+4. 将原始运行、截图或录屏、Inspect 证据和参与者回答关联到本节结果，避免仅凭工程可运行性得出体验结论。
 
 实验结束后根据结果决定下一步：
 
