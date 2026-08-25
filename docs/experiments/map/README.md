@@ -22,12 +22,42 @@ Interaction Pattern / Design Principle / Boundary
 
 ## 当前实验
 
-- [`EXP-001-intent-visibility-a0-a1.md`](./EXP-001-intent-visibility-a0-a1.md)：依托“北侧通道巡逻方案”验证连续地图操作中的意图可见性，E1 工程实现和回归已完成，待形成性体验观察。
+- [`EXP-001-intent-visibility-a0-a1.md`](./EXP-001-intent-visibility-a0-a1.md)：验证 Agent 连续操作共享 GUI 时的最小意图可见性。
 - [`EXP-002-consult-and-confirm.md`](./EXP-002-consult-and-confirm.md)：验证 Agent 到达存在多个合理选择的决策点时，何时应该让渡控制权给用户。
+- [`EXP-003-interrupt-and-correct.md`](./EXP-003-interrupt-and-correct.md)：验证用户通过语言打断 / 纠偏后，依赖旧条件且尚未执行的 Agent 计划如何失效，并从最新状态继续。
+- [`EXP-004-direct-manipulation-and-shared-state.md`](./EXP-004-direct-manipulation-and-shared-state.md)：验证用户直接操作 GUI 产生的任务语义状态，何时应该成为 Agent 的最新上下文。
+
+## 当前实验主线
+
+```text
+EXP-001
+Agent 在做什么？
+→ Intent Visibility
+
+EXP-002
+Agent 什么时候应该停下来让用户决定？
+→ Control Yield / Decision Point
+
+EXP-003
+用户通过语言改变方向后怎么办？
+→ Interrupt / Correction / Stale Plan
+
+EXP-004
+用户直接操作 GUI 表达意图后怎么办？
+→ Direct Manipulation / Semantic Shared State
+```
+
+这四个实验逐步从“看懂 Agent”推进到“人与 Agent 共同操作同一个有状态 GUI”。
 
 ## 后续方向
 
-- `EXP-003-interrupt-and-correct.md`：用户打断 / 纠偏后，Agent 的旧计划如何失效与接续。
-- Direct Manipulation / 混合主导：用户直接修改 GUI 后，Agent 如何读取新状态并继续工作。
+后续不按功能 Roadmap 自动增加实验，而根据前述实验暴露的问题决定。
 
-后续实验不按功能 Roadmap 自动展开，而根据前一个实验暴露的问题和形成的交互边界决定是否进入实现。
+优先可能进入：
+
+- Agent 操作与用户直接操作发生冲突时，当前控制权如何确定；
+- 哪些 GUI State 应进入 Agent Context，哪些只属于本地视觉状态；
+- 高风险 / 不可逆操作中的 Preview、Confirm 与 Commit 边界；
+- 从地图实验中提炼可迁移到表格、甘特图、工作流等 GUI 的 Interaction Pattern。
+
+后续实验的目的仍然不是补齐功能，而是形成可以复用的 **Interaction Pattern、Design Principle 和 Boundary**。
