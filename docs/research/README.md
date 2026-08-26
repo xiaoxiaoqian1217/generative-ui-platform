@@ -37,7 +37,7 @@ EXP-001 ~ EXP-004
 - [Agent–User Interaction 地图场景验证说明](../AGENT-USER-INTERACTION-MAP-VALIDATION.md)：**面向分享的主文档**，说明为什么验证、如何验证以及最终价值。
 - [地图场景 Agent–User Interaction 验证方向](./MAP-AGENT-INTERACTION-VALIDATION.md)：**当前地图验证主设计**，维护 Interaction Mode → Scenario → EXP 的映射、横切问题和实现载体。
 - [地图实验记录](../experiments/map/README.md)：四类核心交互模式的具体实验。
-- [Agent 交互泛化方向讨论记录](./AGENT-INTERACTION-GENERALIZATION.md)：五类交互模式及 Layer 2 泛化逻辑的思想来源。
+- [Agent 交互泛化方向讨论记录](./AGENT-INTERACTION-GENERALIZATION.md)：五类交互模式及 Layer 2 泛化逻辑的思想来源，含五种交互模式的 AG-UI 事件流对照（fixture 与两条消费路径）。
 - [Agent–User Interaction 地图场景验证研究设计](./AGENT-USER-INTERACTION-MAP-RESEARCH-PROTOCOL.md)：**详细方法底稿**，保留 Research Question、假设、证据和研究方法；用于需要解释验证严谨性时查阅，不再作为 EXP 编号或场景组织的一级入口。
 - [验证报告](../reports/README.md)：多个 EXP 稳定后形成阶段性结论。
 
