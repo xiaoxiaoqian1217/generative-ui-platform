@@ -21,7 +21,7 @@
     "@generative-ui/runtime-contract": "workspace:*"
   },
   "devDependencies": {
-    "tsup": "8.5.0",
+    "tsup": "8.5.1",
     "typescript": "5.8.3",
     "vitest": "3.2.6"
   }
