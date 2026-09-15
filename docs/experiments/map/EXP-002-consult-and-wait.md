@@ -142,17 +142,20 @@ Agent 基于 B 继续展示方案
 
 ### 7.2 可复用技术资产
 
-当前可复用基础：
+当前已经存在的具体技术资产如下。
 
-- `requestPatrolRouteSelection` Frontend Tool / HITL 交互；
-- Tool Result continuation；
-- Workbench 征询呈现与地图预览；
-- route-choice / reversed Scenario；
-- AGUIMock 与 E2E 回归基础。
+| 类型 | 具体资产 | 代码入口 | 作用 | 当前复用成熟度 |
+| --- | --- | --- | --- | --- |
+| 共享标识 | `PATROL_ROUTE_CONSULT_TOOL`、`PATROL_ROUTE_REVISE_INSTRUCTION` | [`packages/shared-types/src/index.ts`](../../../packages/shared-types/src/index.ts) | 在 AGUIMock 和 Workbench 之间保持 Tool 名称与受控修改指令一致。 | 已位于 `shared-types`，但仍是当前巡逻场景专用语义。 |
+| 征询契约 | `patrolRouteConsultRequestSchema`、`patrolRouteConsultResponseSchema`、`parsePatrolRouteConsultResponse`、`patrolRouteConsultResult` | [`apps/web-workbench/src/conversation/patrol-route-consult.ts`](../../../apps/web-workbench/src/conversation/patrol-route-consult.ts) | 校验两条既有路线、选择、取消和受控修改响应，并拒绝请求外选项。 | Workbench 应用内可复用，当前绑定巡逻路线领域。 |
+| 控制器接口 | `PatrolRouteConsultController` | [`apps/web-workbench/src/conversation/patrol-route-consult.ts`](../../../apps/web-workbench/src/conversation/patrol-route-consult.ts) | 统一预览、激活、完成、取消预览和失效处理。 | 已形成明确应用内接口，尚未证明跨业务通用性。 |
+| HITL 注册 | `useHumanInTheLoop` 的 `requestPatrolRouteSelection` 注册 | [`CopilotKitFrontendToolsBridge.vue`](../../../apps/web-workbench/src/conversation/CopilotKitFrontendToolsBridge.vue) | 把结构化征询交给用户，并通过真实 Tool Result 返回选择。 | 已在 Workbench 产品链路使用。 |
+| 呈现组件 | `PatrolRouteConsultHost.vue`、`PatrolRouteConsultSlim.vue`、`ConsultMapOverlay.vue` | [`PatrolRouteConsultHost.vue`](../../../apps/web-workbench/src/conversation/PatrolRouteConsultHost.vue)、[`PatrolRouteConsultSlim.vue`](../../../apps/web-workbench/src/conversation/PatrolRouteConsultSlim.vue)、[`ConsultMapOverlay.vue`](../../../apps/web-workbench/src/conversation/ConsultMapOverlay.vue) | 在 Conversation 与地图决策 dock 之间呈现等待、比较、选择、取消和修改。 | 真实产品组件，当前与地图路线场景耦合。 |
+| 会话状态 | `activeConsultSession`、`consultOutcome`、`resetConsultInteractionUi`、`clearConsultSessionState` | [`apps/web-workbench/src/conversation/consult-session.ts`](../../../apps/web-workbench/src/conversation/consult-session.ts) | 连接 Conversation 内 HITL renderer 与地图覆盖层，并清理过期交互状态。 | Workbench 应用内状态资产。 |
+| 等待期限方法 | `createPausableRunDeadline`、`isPatrolRouteHumanWaitTool` | [`apps/web-workbench/src/agent/business-agent-client.ts`](../../../apps/web-workbench/src/agent/business-agent-client.ts) | 将真实用户等待排除在短 Run deadline 之外，同时保留普通 Frontend Tool 的执行期限。 | 可复用机制已实现，但当前的等待 Tool 识别仍绑定具体名称。 |
+| 确定性 Fixture | `PATROL_ROUTE_CONSULT_REQUEST`、`PATROL_ROUTE_CONSULT_RESPONSES`、`registerConsultPatrolRouteSelectionScenario` | [`packages/ag-ui-mock/src/scenarios/consult-patrol-route-selection.ts`](../../../packages/ag-ui-mock/src/scenarios/consult-patrol-route-selection.ts) | 覆盖选择 A/B、取消、修改和后续地图 continuation。 | 已位于 `ag-ui-mock`，可直接用于协议回归。 |
+| 顺序鲁棒性场景 | `north-corridor-route-choice-v1`、`north-corridor-route-choice-reversed-v1` | [`north-corridor-route-choice-v1.json`](../../../apps/map-validation-agent/scenarios/north-corridor-route-choice-v1.json)、[`north-corridor-route-choice-reversed-v1.json`](../../../apps/map-validation-agent/scenarios/north-corridor-route-choice-reversed-v1.json) | 验证模型依据候选事实而不是固定选择第一个选项。 | 真实 Agent 验证资产，provider 结论仍待 smoke 证据。 |
+| 自动化证据 | 征询单元测试、AGUIMock 分支测试和浏览器 E2E | [`patrol-route-consult.test.ts`](../../../apps/web-workbench/tests/unit/patrol-route-consult.test.ts)、[`server.test.ts`](../../../packages/ag-ui-mock/test/server.test.ts)、[`workbench.spec.ts`](../../../apps/web-workbench/tests/e2e/workbench.spec.ts) | 验证等待、选择、取消、修改、Stop 失效和真实 continuation。 | 已形成较完整的确定性回归资产。 |
 
-实验后再决定是否进一步沉淀：
-
-- 通用 `waiting_for_user` / `resuming` 状态约定；
-- 选项、差异与用户响应的结构化契约；
-- 征询等待的跨 Agent capability contract；
-- 可复用 Fixture 与一致性测试。
+这套工程闭环已经真实存在，但当前公共复用单位主要是 Fixture、测试方法和局部接口。
+通用 `waiting_for_user` / `resuming` 状态、跨 Agent capability contract 和业务无关的选择契约仍需第二个消费者证明后再抽象。

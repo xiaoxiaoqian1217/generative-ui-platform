@@ -152,18 +152,25 @@ Direct Manipulation 不再作为独立一级 EXP；如果用户通过地图直�
 
 ### 7.2 可复用技术资产
 
-当前可复用基础：
+当前只有支撑打断纠偏的具体资产，还没有形成 EXP-004 所要求的完整技术闭环。
 
-- AG-UI Run / Tool 生命周期；
-- Workbench 当前地图状态；
-- 地图 Frontend Tools；
-- Scenario / Fixture 机制；
-- Inspect 事件追踪。
+| 类型 | 具体资产 | 代码入口 | 当前能支持什么 | 与 EXP-004 的缺口 |
+| --- | --- | --- | --- | --- |
+| Run 取消状态 | `failOperation` 的 cancelled 状态与晚到结果隔离 | [`apps/web-workbench/src/conversation/conversation-store.ts`](../../../apps/web-workbench/src/conversation/conversation-store.ts) | 用户停止当前请求后，将 Turn 标记为已取消，并拒绝晚到的 Run 结果覆盖终态。 | 只能取消整个运行，不能判断哪些旧计划失效、哪些状态应保留。 |
+| 请求取消接线 | `cancelRequest`、`invalidateAllConsults` | [`apps/web-workbench/src/app/ConversationPage.vue`](../../../apps/web-workbench/src/app/ConversationPage.vue) | Stop 时中止请求并清理过期征询和预览。 | 不是“提交新约束并从最新状态继续”的纠偏流程。 |
+| 原生 Interrupt / Resume | `resumeInterrupt`、`ConversationTurnPresentation.vue` 中的 interrupt 响应 | [`conversation-store.ts`](../../../apps/web-workbench/src/conversation/conversation-store.ts)、[`ConversationTurnPresentation.vue`](../../../apps/web-workbench/src/conversation/ConversationTurnPresentation.vue) | 支持 Agent 发起的 AG-UI interrupt，用户回答后按相同 interruptId 恢复。 | 控制权发起方相反，不能替代用户主动打断正在执行的 Agent。 |
+| 过期状态清理 | `PatrolRouteConsultController.invalidate`、`clearConsultSessionState` | [`patrol-route-consult.ts`](../../../apps/web-workbench/src/conversation/patrol-route-consult.ts)、[`consult-session.ts`](../../../apps/web-workbench/src/conversation/consult-session.ts) | Stop、Agent Source 切换或组件卸载时使旧征询失效并清理临时 UI。 | 目前只处理征询局部状态，没有通用 stale pending work 语义。 |
+| 操作结果表示 | `MapOperationResult.status` 的 `superseded`、`mapOperationSteps` 的已替代呈现 | [`map-operation.ts`](../../../apps/web-workbench/src/features/map/map-operation.ts)、[`map-operation-trace.ts`](../../../apps/web-workbench/src/conversation/map-operation-trace.ts) | 数据结构和 UI 投影能够表示某个操作已被新操作替代。 | 尚无纠偏策略负责产生和关联 superseded 结果。 |
+| 共享地图状态 | `MapController`、`MapWorkspace.vue` | [`map-controller.ts`](../../../apps/web-workbench/src/features/map/map-controller.ts)、[`MapWorkspace.vue`](../../../apps/web-workbench/src/features/map/MapWorkspace.vue) | 保留当前视口、图层、高亮和路线预览，提供继续执行的现实状态基础。 | 尚未定义哪些状态在纠偏后仍然有效，以及如何重新注入 Agent 上下文。 |
+| 现有自动化证据 | Conversation Store 取消与恢复测试、Stop E2E、SACS interrupt/resume E2E | [`conversation-store.test.ts`](../../../apps/web-workbench/tests/unit/conversation-store.test.ts)、[`workbench.spec.ts`](../../../apps/web-workbench/tests/e2e/workbench.spec.ts) | 证明取消终态、旧征询失效和原生 interrupt/resume 能工作。 | 没有覆盖“用户新约束 -> 旧动作失效 -> 保留有效地图状态 -> 继续”的测试。 |
 
-实验后再决定是否进一步沉淀：
+以下资产目前尚未实现，因此不能列入当前可复用成果：
 
-- stale pending work 的失效语义；
-- latest intent + shared state 的对齐规则；
-- Interrupt / Resume capability contract；
-- Direct Manipulation 作为纠偏输入的结构化状态映射；
-- 打断纠偏的 Fixture 与自动化测试。
+- EXP-004 专用版本化 Scenario / Fixture；
+- 用户纠偏输入与被替代 Tool Call 之间的关联契约；
+- stale pending work 的失效方法；
+- latest intent 与 shared map state 的对齐方法；
+- 纠偏后 continuation 的 Agent 接线；
+- 完整的单元测试、协议测试和浏览器 E2E。
+
+这些缺口完成并经过真实场景验证后，才能把 EXP-004 的实现称为可复用技术资产，而不是仅有基础设施支持。

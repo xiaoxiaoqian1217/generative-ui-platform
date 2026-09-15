@@ -143,19 +143,20 @@ previewPath(...)
 
 ### 7.2 可复用技术资产
 
-当前可复用基础：
+当前已经存在的具体技术资产如下。
 
-- 地图域 Frontend Tool 集合；
-- CopilotKit `useFrontendTool` 承载；
-- Tool Result continuation；
-- MapLibre persistent surface；
-- AGUIMock deterministic scenarios；
-- `map-validation-agent` 与 overview Scenario；
-- Inspect / E2E 证据链。
+| 类型 | 具体资产 | 代码入口 | 作用 | 当前复用成熟度 |
+| --- | --- | --- | --- | --- |
+| 地图意图契约 | `MapTargetRef`、`MapLayerRef`、`MapOperationResult` | [`apps/web-workbench/src/features/map/map-operation.ts`](../../../apps/web-workbench/src/features/map/map-operation.ts) | 以稳定地图引用和结构化结果隔离 Agent 与 MapLibre 实现细节。 | Workbench 应用内契约，具有地图场景复用价值。 |
+| 地图工具方法 | `focusOn`、`highlight`、`setLayerVisibility`、`previewPath` | [`apps/web-workbench/src/features/frontend-tools`](../../../apps/web-workbench/src/features/frontend-tools) | 校验引用并调用前端拥有的地图能力，返回 completed、failed 等明确结果。 | 真实应用内方法，尚未封装为跨项目 package。 |
+| CopilotKit 工具注册 | 四个 `useFrontendTool` 注册与 `observeHandler` | [`CopilotKitFrontendToolsBridge.vue`](../../../apps/web-workbench/src/conversation/CopilotKitFrontendToolsBridge.vue) | 暴露受控能力、接收 Tool Call、执行 GUI 操作并记录 Tool Result。 | Workbench 集成资产，依赖 CopilotKit 和当前 observation 接线。 |
+| 地图执行组件 | `MapController`、`createMapController`、`MapWorkspace.vue`、`MapView.vue` | [`map-controller.ts`](../../../apps/web-workbench/src/features/map/map-controller.ts)、[`MapWorkspace.vue`](../../../apps/web-workbench/src/features/map/MapWorkspace.vue)、[`MapView.vue`](../../../apps/web-workbench/src/features/map/MapView.vue) | 在一个持续存在的 MapLibre surface 上执行视口、图层、高亮和路线预览操作。 | 真实产品实现，当前属于 Workbench 地图模块。 |
+| Tool Result 测试方法 | `MapOperationExpectation`、`hasCompletedToolResult`、`completedMapOperationResult`、`acknowledgeToolResult` | [`packages/ag-ui-mock/src/scenarios/tool-result.ts`](../../../packages/ag-ui-mock/src/scenarios/tool-result.ts) | 构造并匹配真实 Tool Result continuation，避免仅根据文本推进场景。 | 已位于 `ag-ui-mock`，可被其他确定性工具场景复用。 |
+| 多步场景 Fixture | `MAP_PATROL_ROUTE_REVIEW_STEPS`、`registerMapPatrolRouteReviewScenario` | [`packages/ag-ui-mock/src/scenarios/map-patrol-route-review.ts`](../../../packages/ag-ui-mock/src/scenarios/map-patrol-route-review.ts) | 编排四个地图域意图，并且只在前一步真实完成后继续。 | 已位于 `ag-ui-mock`，是可执行协议资产。 |
+| 真实 Agent 图与提示词 | `createMapValidationGraph`、`createValidationAgentNode`、`createMapValidationSystemPrompt` | [`agent.ts`](../../../apps/map-validation-agent/src/agent.ts)、[`prompt.ts`](../../../apps/map-validation-agent/src/prompt.ts) | 让真实模型只看到允许的地图能力，并依据 Tool Result continuation 继续。 | dev-only 验证资产，不是产品 Business Agent。 |
+| 版本化验证场景 | `north-corridor-overview-v1`、`loadValidationScenario` | [`north-corridor-overview-v1.json`](../../../apps/map-validation-agent/scenarios/north-corridor-overview-v1.json)、[`scenario-loader.ts`](../../../apps/map-validation-agent/src/scenario-loader.ts) | 固定事实、目标、允许能力和禁止行为，为真实 provider smoke 提供输入。 | 验证资产已实现，真实 provider 可靠性仍待运行证据。 |
+| 可观察方法 | `createObservationRecorder`、`observationInputFromAgUiEvent`、`exchangeForObservation` | [`apps/web-workbench/src/inspect/turn-inspection.ts`](../../../apps/web-workbench/src/inspect/turn-inspection.ts) | 记录 Run、Tool Call、Tool Result 并按真实 correlation 恢复交互交换。 | Workbench 应用内通用观察资产。 |
+| 自动化证据 | 地图工具单元测试、Agent continuation 测试、AGUIMock 协议测试和浏览器 E2E | [`map-operations.test.ts`](../../../apps/web-workbench/tests/unit/map-operations.test.ts)、[`agent.test.ts`](../../../apps/map-validation-agent/test/agent.test.ts)、[`server.test.ts`](../../../packages/ag-ui-mock/test/server.test.ts)、[`workbench.spec.ts`](../../../apps/web-workbench/tests/e2e/workbench.spec.ts) | 验证工具参数、失败边界、真实 Result continuation、多步调用和最终地图状态。 | 已形成完整的确定性工程证据链。 |
 
-实验后再决定是否进一步沉淀：
-
-- Frontend Tool capability contract；
-- 跨业务可复用的 Tool Call / Result 测试规范；
-- 失败 / 超时 /取消的统一状态语义；
-- 其他 GUI 域的同构工具中介实现模板。
+这些条目证明本 EXP 已经产生真实的方法、契约、组件、Fixture 和测试资产。
+跨业务 Frontend Tool capability contract、统一超时与取消语义以及其他 GUI 域模板仍需要非地图消费者后再决定是否抽象。
