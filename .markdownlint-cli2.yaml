@@ -6,3 +6,5 @@ config:
   MD041: false
 ignores:
   - "**/node_modules/**"
+  # 独立嵌套仓库，保存论文资料，不参与主仓库文档检查
+  - "apps/spatial-agent-interaction-research/**"
