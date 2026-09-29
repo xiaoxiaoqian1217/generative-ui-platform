@@ -93,6 +93,21 @@ A/B 对照是可选实验手段，不是每个 EXP 的固定结构。
 - [委托执行与 Artifact 语义讨论记录](./DELEGATED-EXECUTION-ARTIFACT-SEMANTICS.md)：委托执行、生命周期、Artifact 与事件流的深度研究输入。
 - [Felt 地图域意图参考](./FELT-MAP-INTENT-REFERENCE.md)：Felt 官方地图能力与当前地图域意图边界参考。
 
+## 协同介入交互专利研究（2026-09-29）
+
+本组保存本次头脑风暴的四份阶段报告、一份文献推进计划，以及后续确定主场景后的场景说明。它们属于候选研究方案，不是多次实验汇总后的验证结论，也不改变当前架构准入范围。当前应用验证采用地图优先、无人巡检主场景。
+
+| 文档 | 内容 |
+| --- | --- |
+| [01 选题演进与阶段共识报告](./agent-intervention-patent/01-topic-consensus.md) | 选题依据、已认可方向、候选机制和边界 |
+| [02 协同介入交互模型与技术方案报告](./agent-intervention-patent/02-interaction-model.md) | 五类介入对象、交互流程、实施例及异常处理 |
+| [03 相近专利检索与技术特征对比报告](./agent-intervention-patent/03-patent-comparison.md) | 可追溯来源、权项对比、组合压力和待核实事项 |
+| [04 候选创新点与专利深化路线报告](./agent-intervention-patent/04-innovation-roadmap.md) | 差异假设、预期技术效果、交底骨架和收缩条件 |
+| [05 基于文献的初步计划与推进步骤](./agent-intervention-patent/05-literature-plan.md) | 文献到机制的映射、阶段产出、对照验证及验收 |
+| [06 无人巡检主场景与介入任务说明](./agent-intervention-patent/06-patrol-scenario.md) | 一条异常的处理闭环、M1/M2 任务卡及地图介入边界 |
+
+建议先读 01、06 和 05，再结合 02、03、04 深化。专利相关判断保持阶段性，当前没有据此宣称新颖性成立或用户收益已被验证。
+
 ## 使用原则
 
 1. 真实代码、当前 ADR、`AGENTS.md` 和 `CONTEXT.md` 仍定义当前工程事实。
