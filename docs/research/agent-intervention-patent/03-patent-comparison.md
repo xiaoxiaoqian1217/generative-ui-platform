@@ -123,3 +123,9 @@ F8 故意使用较严格的定义。“存在继续执行”“图上局部 reba
 新增对照为 [Airbus US9952593B2](https://patents.google.com/patent/US9952593B2/en) 与 [GE US10775314B2](https://patents.google.com/patent/US10775314B2/en)。已核读相关说明书；尚未将两件专利逐项并入 F1—F8 权项矩阵，不将说明书实例直接等同于独立权利要求范围。
 
 这使“人工复核异常、补充取证、改变检查安排”成为必须面对的已有公开内容。找到真实应用需求不等于找到专利空白。下一轮应以修订后的 M1/M2 完整实施例核查最接近公开，并说明候选交互机制实际增加了什么；当前未形成新增专利的法律状态、同族或可专利性结论。
+
+## 10. 主动参与的公开边界（2026-09-29 补充）
+
+本次进一步定位 GE US10775314B2 说明书 FIG.1：用户可以主动反馈并打断检查，机器人也可以请求用户反馈；位置见[原文](https://patents.google.com/patent/US10775314B2/en)中包含 `the user may interrupt` 的段落。另核到 [Air-Cobot 2017](https://laris.univ-angers.fr/_resource/IFAC2017/IFAC_Paper_3176.pdf) 第5—6页“Human to robot interaction requests / Adding NDT tasks”。
+
+这些是两种发起方式已有公开的直接依据，不是关于本方案全部权利要求的法律判断。“支持用户主动参与”和“兼有系统征询与用户发起”不宜单独承担创新论证。下一轮以 [04 §2.1](04-innovation-roadmap.md#21-用户主动参与如何进入专利方案) 的具体处理关系检索对象关联、上下文命令、执行中修改及并发冲突机制；本次尚未完成该扩展检索。
