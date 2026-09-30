@@ -181,7 +181,7 @@ Workbench 继续使用 CopilotKit / 原生 AG-UI 契约。
 
 ## A2UI 当前状态
 
-当前 A2UI 主线状态为：
+A2UI 已完成一条可复用的能力基线：
 
 ```text
 A2UI Renderer MVP（已完成）
@@ -193,12 +193,12 @@ Basic Catalog（已完成）
 Platform Catalog MVP（已完成）
         ↓
 Dynamic A2UI（受控内容，已完成）
-        ↓
-SACS AgentContent → Dynamic A2UI
 ```
 
 Theme Tokens 经 ADR-0030 后置，不再是 Dynamic A2UI 的前置条件。
 当前受控链路已经证明 Renderer、共享 Catalog、确定性 Presentation Policy 与 Secondary Presentation LLM 可以协同工作。
+
+根据 ADR-0032，`SACS AgentContent → Dynamic A2UI` 仍是有效后续能力，但不再是当前紧接着的优先事项；它将在 Shared State、Rule-based Adaptive UI 与 UI Strategy 边界稳定后，作为 Phase 5 的 Generative UI 表达路径继续推进。
 
 Controlled UI 与 A2UI 应尽量复用同一套真实 UI Implementation / Theme：
 
