@@ -9,7 +9,21 @@
 
 Generative UI Platform 当前聚焦于验证并沉淀：
 
-> **真实业务 Agent 如何通过 AG-UI 与 Web Workbench 交互，并逐步支持受控 UI、A2UI、组件目录与主题能力。**
+> **真实业务 Agent 如何通过 AG-UI 持续驱动 Web Workbench 状态，并在稳定 Shared State 上逐步形成 Adaptive UI、Embedded UI Agent 与 Generative UI。**
+
+当前演进顺序由 ADR-0032 定义：
+
+```text
+AG-UI + Business Agent
+        ↓
+Shared State
+        ↓
+Rule-based Adaptive UI
+        ↓
+Embedded UI Agent
+        ↓
+Generative UI
+```
 
 平台当前不是：
 
@@ -262,29 +276,73 @@ Controlled UI   A2UI Renderer
 
 A2UI Catalog 描述 AI 可以声明哪些 UI；它不是第二套真实组件库。
 
-## 8. Post-Agent Presentation 方向
+## 8. State-driven Agent UI 方向
 
-受控内容下的 Dynamic A2UI 已由 Issue #210 跑通。
-当前下一步是验证真实业务结果到 Dynamic A2UI：
+当前优先解决的不是“如何生成更多 UI”，而是“Agent 状态如何持续改变同一个 UI”。
+
+目标数据流：
 
 ```text
-single-agent-chat-server
+Business Agent
+      ↓
+    AG-UI
+      ↓
+Shared UI State
+      ↓
+UI Decision Layer
+      ↓
+Controlled UI / Adaptive UI / A2UI
+```
+
+Shared UI State 只保存支持界面决策所需的 Interaction Context，例如 task、agent、activity、tools、risks、map 与 userInteraction。
+它不是业务真值，不进入新的 Runtime Repository，也不替代 Business Agent 的状态所有权。
+
+第一阶段 UI Decision Layer 使用确定性规则：
+
+```text
+State / Event
+    ↓
+Rule-based UI Strategy
+    ↓
+任务面板 / 地图 / HITL / 风险提示
+```
+
+只有当规则方案出现经过记录的复杂判断缺口后，才允许增加 Embedded UI Agent：
+
+```text
+Shared UI State
+      ↓
+Embedded UI Agent
+      ↓
+UI Strategy
+```
+
+UI Agent 不直接向 Business Agent 发送自由自然语言业务指令，也不拥有业务状态；它只负责交互与呈现决策。
+
+Issue #217 的打断纠偏与混合主导场景将作为 Shared State、状态所有权和 Adaptive UI 的关键验证场景。
+
+## 9. Generative UI / Post-Agent Presentation
+
+受控内容下的 Dynamic A2UI 已由 Issue #210 跑通，能力继续保留。
+
+根据 ADR-0032，真实 AgentContent → Dynamic A2UI 从“当前下一步”调整为后续表达层：
+
+```text
+Shared UI State / AgentContent
         ↓
-Text / State / Activity / Artifact
+Rule Engine / Embedded UI Agent
         ↓
-AgentContent
+UI Strategy
         ↓
-Presentation Intelligence / Secondary LLM
-        ↓
-A2UI
+Controlled UI / A2UI
         ↓
 Workbench Renderer
 ```
 
-SACS 不需要为了该方向理解 A2UI。
-业务 Agent 负责业务结果，Presentation 层负责展示决策。
+业务 Agent 负责业务结果；UI Decision Layer 负责交互策略；A2UI 负责受约束的动态表达。
+A2UI 不承担业务决策，也不是 Shared State 的替代品。
 
-## 9. 明确延期的能力
+## 10. 明确延期的能力
 
 以下方向当前明确延期：
 
@@ -301,7 +359,7 @@ SACS 不需要为了该方向理解 A2UI。
 
 旧 Compiler 中关于 Validation / Policy / Controlled Generation 的思想可以作为未来 Reliability 研究输入，但不是当前 A2UI Renderer 的前置条件。
 
-## 10. 当前路线图
+## 11. 当前路线图
 
 ```text
 已完成
@@ -313,21 +371,31 @@ SACS 不需要为了该方向理解 A2UI。
 #213 Generative UI Scenario and Evaluation MVP
 #216 Dev-only map validation Agent implementation
 
-当前
+Phase 1 — 当前
 #200 Real SACS Interoperability
-Map interaction real-provider smoke and human evaluation
+AG-UI 持续驱动同一任务 Surface
+Map interaction real-provider smoke
 
-下一阶段
-SACS AgentContent → Dynamic A2UI
+Phase 2 — 下一阶段
+Shared UI State
+AG-UI Event → Shared State
 
-经 ADR-0030 后置
-Theme Tokens（不再是 Dynamic A2UI 的前置条件）
+Phase 3
+Rule-based Adaptive UI
+#217 打断纠偏 / 混合主导验证
+
+Phase 4 — 有证据后准入
+Embedded UI Agent → UI Strategy
+
+Phase 5
+UI Strategy → Controlled UI / A2UI
+Human-Agent Interaction evaluation
 
 以后按真实需求再考虑
 Runtime Platform / Controlled-generation Compiler
 ```
 
-## 11. 架构原则
+## 12. 架构原则
 
 1. **先纵向跑通场景，再横向抽象公共能力。**
 2. Workbench 不自研框架已经提供的 Agent Gateway / Runtime 能力。
