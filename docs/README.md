@@ -7,33 +7,33 @@
 ## 当前产品路线
 
 ```text
-已验证
-AGUIMock
+已验证 / 已实现
+AG-UI / Frontend Tools / HITL / A2UI Renderer / Platform Catalog
+Thin CopilotKit Runtime / AGUIMock / SACS / optional map-validation-agent
+
+Phase 1 — 当前
+Business Agent
   ↓ AG-UI
-CopilotKit Frontend
-  ↓
-Map-domain Frontend Tools / HITL
-  ↓
-MapLibre persistent surface
+同一任务 Surface 持续更新
 
-已实现
-Web Workbench
+Phase 2
+Shared UI State
+
+Phase 3
+Rule-based Adaptive UI
   ↓
-Thin CopilotKit Runtime
+#217 打断纠偏 / 混合主导验证
+
+Phase 4
+Embedded UI Agent → UI Strategy
+
+Phase 5
+Controlled UI / A2UI / Generative UI
   ↓
-AGUIMock / single-agent-chat-server / optional map-validation-agent
-
-已实现
-A2UI Renderer / Platform Catalog / controlled Dynamic A2UI
-Scenario Lab / dev-only Map Validation Agent
-
-当前阶段
-#200 Real SACS Interoperability
-Map interaction real-provider smoke and human evaluation
-
-下一阶段
-SACS AgentContent → Dynamic A2UI
+Human-Agent Interaction evaluation
 ```
+
+详细路线见 [ADR-0032](./adr/0032-prioritize-state-driven-adaptive-ui-before-embedded-ui-agent.md) 与 [Agent-driven UI Roadmap](./research/AGENT-DRIVEN-UI-ROADMAP.md)。
 
 当前仍遵循：
 
@@ -50,6 +50,8 @@ Agent–User Interaction 验证进一步采用：
 - [AGENTS.md](../AGENTS.md)：编码 Agent 必须遵守的工程规则；
 - [当前架构](./ARCHITECTURE.md)：当前实现、目标拓扑和职责边界；
 - [ADR-0029](./adr/0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md)：当前阶段架构决策；
+- [ADR-0032](./adr/0032-prioritize-state-driven-adaptive-ui-before-embedded-ui-agent.md)：当前状态驱动 Agent UI 主线，定义 Shared State → Adaptive UI → Embedded UI Agent 的准入顺序；
+- [Agent-driven UI Roadmap](./research/AGENT-DRIVEN-UI-ROADMAP.md)：五阶段实施路线、状态边界和完成标准；
 - [ADR-0030](./adr/0030-prioritize-dynamic-a2ui-over-theme-and-extend-runtime-presentation-scope.md)：Dynamic A2UI 阶段顺序与 Runtime Presentation 职责白名单；
 - [ADR-0031](./adr/0031-separate-scenario-fixture-authoring-from-presentation-llm.md)：Scenario Fixture Authoring 与 Secondary Presentation LLM 分离；
 - [ADR-0028](./adr/0028-use-native-ag-ui-and-retire-compatibility-contracts.md)：上一阶段 Scope Reset，继续约束 native AG-UI 与 Removed / Historical 边界；
@@ -64,7 +66,7 @@ Agent–User Interaction 验证进一步采用：
 - [Reports](./reports/README.md)：由多次实验汇总形成的阶段性验证报告；
 - [Agent 工程文档](./agents/)：Issue、领域与 triage 协作规则。
 
-发生冲突时，以当前代码、ADR-0029 / ADR-0030 / ADR-0031、根 `AGENTS.md` 和 `CONTEXT.md` 为准。研究资料约束研究与证据表达，不替代当前架构事实。
+发生冲突时，以当前代码、ADR-0032、ADR-0029 / ADR-0030 / ADR-0031、根 `AGENTS.md` 和 `CONTEXT.md` 为准。研究资料约束研究与证据表达，不替代当前架构事实。
 
 ## 文档目录职责
 
