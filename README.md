@@ -1,11 +1,27 @@
 # Generative UI Platform
 
-Generative UI Platform 当前聚焦两类互补能力：
+Generative UI Platform 当前主线收敛为：
 
-> **确定性交互使用 Frontend Tool / Controlled UI；不确定业务结果展示逐步进入 A2UI / Generative UI。**
+> **先让 AG-UI 持续驱动同一任务 UI，再建立 Shared State 与规则驱动 Adaptive UI；Embedded UI Agent 和 Generative UI 在稳定状态基线之后逐步引入。**
 
-当前阶段已经完成薄 Agent 接入边界、A2UI Renderer、Platform Catalog、受控 Dynamic A2UI、Scenario Lab 和 dev-only Map Validation Agent 的实现。
-当前主线继续验证真实 SACS 互操作、地图交互证据和真实 SACS AgentContent 到 Dynamic A2UI 的接入。
+当前已经完成薄 Agent 接入边界、A2UI Renderer、Platform Catalog、受控 Dynamic A2UI、Scenario Lab 和 dev-only Map Validation Agent。
+这些能力继续保留，但当前优先级从“继续扩张 Dynamic A2UI”调整为：
+
+```text
+AG-UI + Business Agent
+        ↓
+Shared State
+        ↓
+Rule-based Adaptive UI
+        ↓
+Embedded UI Agent
+        ↓
+Generative UI
+        ↓
+Human-Agent Interaction
+```
+
+对应架构决策见 [ADR-0032](./docs/adr/0032-prioritize-state-driven-adaptive-ui-before-embedded-ui-agent.md)。
 
 ## 已验证能力
 
@@ -165,7 +181,7 @@ Workbench 继续使用 CopilotKit / 原生 AG-UI 契约。
 
 ## A2UI 当前状态
 
-当前 A2UI 主线状态为：
+A2UI 已完成一条可复用的能力基线：
 
 ```text
 A2UI Renderer MVP（已完成）
@@ -177,12 +193,12 @@ Basic Catalog（已完成）
 Platform Catalog MVP（已完成）
         ↓
 Dynamic A2UI（受控内容，已完成）
-        ↓
-SACS AgentContent → Dynamic A2UI
 ```
 
 Theme Tokens 经 ADR-0030 后置，不再是 Dynamic A2UI 的前置条件。
 当前受控链路已经证明 Renderer、共享 Catalog、确定性 Presentation Policy 与 Secondary Presentation LLM 可以协同工作。
+
+根据 ADR-0032，`SACS AgentContent → Dynamic A2UI` 仍是有效后续能力，但不再是当前紧接着的优先事项；它将在 Shared State、Rule-based Adaptive UI 与 UI Strategy 边界稳定后，作为 Phase 5 的 Generative UI 表达路径继续推进。
 
 Controlled UI 与 A2UI 应尽量复用同一套真实 UI Implementation / Theme：
 
@@ -245,20 +261,31 @@ Completed
 #213 Generative UI Scenario and Evaluation MVP
 #216 Dev-only Map Validation Agent implementation
 
-Current
-  ↓
+Phase 1 — Current
 #200 Real SACS Interoperability
-Map interaction real-provider smoke and human evaluation
+AG-UI continuous state-driven task surface
+Map interaction real-provider smoke
 
-Next
-SACS AgentContent → Dynamic A2UI
+Phase 2 — Next
+Shared UI State
+AG-UI Event → Shared State mapping
 
-Postponed per ADR-0030
-Theme Tokens
+Phase 3
+Rule-based Adaptive UI
+#217 interruption / mixed-initiative as a validation scenario
 
-Later, only when evidence requires it
+Phase 4 — after rule limits are evidenced
+Embedded UI Agent → UI Strategy
+
+Phase 5
+UI Strategy → Controlled UI / A2UI / Generative UI
+Human-Agent Interaction evaluation
+
+Deferred
 Runtime Platform / controlled-generation Compiler
 ```
+
+完整阶段路线见 [`docs/research/AGENT-DRIVEN-UI-ROADMAP.md`](./docs/research/AGENT-DRIVEN-UI-ROADMAP.md)。
 
 ## 开发原则
 
@@ -298,6 +325,8 @@ pnpm docs:check
 
 - [当前文档导航](./docs/README.md)；
 - [当前阶段决策 ADR-0029](./docs/adr/0029-adopt-thin-copilotkit-runtime-and-activate-a2ui-next-phase.md)；
+- [状态驱动 Agent UI 决策 ADR-0032](./docs/adr/0032-prioritize-state-driven-adaptive-ui-before-embedded-ui-agent.md)；
+- [Agent-driven UI 演进路线](./docs/research/AGENT-DRIVEN-UI-ROADMAP.md)；
 - [Dynamic A2UI 决策 ADR-0030](./docs/adr/0030-prioritize-dynamic-a2ui-over-theme-and-extend-runtime-presentation-scope.md)；
 - [Scenario Fixture Authoring 决策 ADR-0031](./docs/adr/0031-separate-scenario-fixture-authoring-from-presentation-llm.md)；
 - [上一阶段 Scope Reset ADR-0028](./docs/adr/0028-use-native-ag-ui-and-retire-compatibility-contracts.md)；
