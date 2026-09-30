@@ -132,14 +132,24 @@ Runtime 不得伪造 SACS 不支持的 Tool Calling。
 - Agent Conversation；
 - CopilotKit Frontend；
 - AG-UI 传输与事件观察；
+- Real SACS interoperability；
+- 同一任务 Surface 的持续状态更新；
+- Shared UI State 与事件归一；
+- Rule-based Adaptive UI；
 - `useFrontendTool`；
 - Controlled UI；
 - MapLibre GIS Workspace；
 - AGUIMock 场景；
-- Real SACS interoperability；
+- #217 打断纠偏 / 混合主导验证；
+- dev-only Map Validation Agent 的真实模型 smoke 和地图人机协作评估。
+
+已完成但当前不继续优先扩张：
+
 - A2UI Renderer、Platform Catalog 与受控 Dynamic A2UI；
-- Scenario Lab 与生成结果评估；
-- dev-only Map Validation Agent 的真实模型 smoke 和地图人机协作评估；
+- Scenario Lab 与生成结果评估。
+
+后续在 ADR-0032 的 Phase 5 再继续：
+
 - 真实 SACS AgentContent 到 Dynamic A2UI；
 - 按真实需要后置的 Theme 实践。
 
@@ -190,9 +200,10 @@ Basic Catalog（已完成）
 Platform Catalog MVP（已完成）
         ↓
 Dynamic A2UI（受控内容，已完成）
-        ↓
-SACS AgentContent → Dynamic A2UI
 ```
+
+根据 ADR-0032，A2UI 现在作为已验证的 Generative UI 表达能力保留。
+`SACS AgentContent → Dynamic A2UI` 后置到 Shared State、Rule-based Adaptive UI 和 UI Strategy 边界稳定之后，不再定义当前紧接着的下一阶段。
 
 Theme Tokens 经 ADR-0030 后置，不再是 Dynamic A2UI 的前置条件。
 
