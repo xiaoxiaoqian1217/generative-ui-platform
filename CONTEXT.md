@@ -4,9 +4,23 @@
 
 Generative UI Platform 当前不是 Agent Runtime Platform，也不是完整 UI Compiler Platform。
 
-当前目标已经从“只证明一个 Controlled UI 场景”推进到：
+当前目标已经从“只证明一个 Controlled UI 场景”进一步收敛为：
 
-> **在已经落地的薄 Agent 接入、A2UI Renderer、Platform Catalog 和受控 Dynamic A2UI 基线上，继续验证真实 SACS 互操作、地图人机协作证据和真实 AgentContent 的生成式展示。**
+> **在现有 AG-UI、Controlled UI、A2UI 与地图交互能力之上，优先建立持续状态驱动 UI：先完成真实 Business Agent → AG-UI → Shared State → Rule-based Adaptive UI，再根据真实复杂决策缺口引入 Embedded UI Agent，最后按需使用 Generative UI 表达。**
+
+当前阶段顺序由 ADR-0032 固化：
+
+```text
+AG-UI + Business Agent
+        ↓
+Shared State
+        ↓
+Rule-based Adaptive UI
+        ↓
+Embedded UI Agent
+        ↓
+Generative UI
+```
 
 当前已经跑通的空间交互纵向场景是：
 
@@ -270,17 +284,28 @@ Completed
 #213 Generative UI Scenario and Evaluation MVP
 #216 Dev-only Map Validation Agent implementation
 
-Current
-  ↓
+Phase 1 — Current
 #200 Real SACS Interoperability
-Map interaction real-provider smoke and human evaluation
+同一任务 Surface 的 AG-UI 持续状态驱动
+Map interaction real-provider smoke
 
-Next
-SACS AgentContent → Dynamic A2UI
+Phase 2 — Next
+Shared UI State
+AG-UI Event → Shared State mapping
 
-Postponed per ADR-0030
-Theme Tokens
+Phase 3
+Rule-based Adaptive UI
+#217 interruption / mixed-initiative validation
 
-Later
+Phase 4 — gated
+Embedded UI Agent → UI Strategy
+
+Phase 5
+UI Strategy → Controlled UI / Generative UI
+Human-Agent Interaction evaluation
+
+Deferred
 Runtime Platform / controlled-generation Compiler
 ```
+
+A2UI / Dynamic A2UI 已有成果继续保留，但真实 SACS AgentContent → Dynamic A2UI 不再优先于 Shared State / Adaptive UI。
