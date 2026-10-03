@@ -21,7 +21,19 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        ...(process.env.CI ? {} : { channel: "chrome" }),
+        ...(process.env.WORKBENCH_CHROMIUM_PATH
+          ? {
+              launchOptions: {
+                executablePath: process.env.WORKBENCH_CHROMIUM_PATH,
+                args:
+                  process.env.WORKBENCH_CHROMIUM_NO_ZYGOTE === "1"
+                    ? ["--no-zygote", "--disable-gpu"]
+                    : [],
+              },
+            }
+          : process.env.CI
+            ? {}
+            : { channel: "chrome" }),
       },
     },
   ],

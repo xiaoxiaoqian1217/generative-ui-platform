@@ -1,0 +1,361 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+npm warn Unknown project config "strict-peer-dependencies". This will stop working in the next major version of npm.
+
+> generative-ui-platform@0.1.0 lint /workspace/scratch/8449a05e434b/repo
+> biome lint .
+
+apps/web-workbench/src/features/intervention-lab/InterventionLabPage.vue:24:24 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    23 │ const mode = ref<DisplayMode>("dynamic");
+  > 24 │ const scenarioId = ref(LAB_SCENARIOS[0]!.id);
+       │                        ^^^^^^^^^^^^^^^^^
+    25 │ const runningScenarioId = ref(scenarioId.value);
+    26 │ const state = ref(createInitialState());
+
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+
+     21  21 │
+     22  22 │   const mode = ref<DisplayMode>("dynamic");
+     23     │ - const·scenarioId·=·ref(LAB_SCENARIOS[0]!.id);
+         23 │ + const·scenarioId·=·ref(LAB_SCENARIOS[0]?.id);
+     24  24 │   const runningScenarioId = ref(scenarioId.value);
+     25  25 │   const state = ref(createInitialState());
+
+
+apps/web-workbench/src/features/intervention-lab/InterventionLabPage.vue:28:48 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    26 │ const state = ref(createInitialState());
+    27 │ const cursor = ref(0);
+  > 28 │ const executionQueue = ref<ScenarioStep[]>([...LAB_SCENARIOS[0]!.steps]);
+       │                                                ^^^^^^^^^^^^^^^^^
+    29 │ const branchNotice = ref("");
+    30 │ const started = ref(false);
+
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+
+     25  25 │   const state = ref(createInitialState());
+     26  26 │   const cursor = ref(0);
+     27     │ - const·executionQueue·=·ref<ScenarioStep[]>([...LAB_SCENARIOS[0]!.steps]);
+         27 │ + const·executionQueue·=·ref<ScenarioStep[]>([...LAB_SCENARIOS[0]?.steps]);
+     28  28 │   const branchNotice = ref("");
+     29  29 │   const started = ref(false);
+
+
+apps/web-workbench/src/features/intervention-lab/InterventionLabPage.vue:45:9 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    44 │ const selectedScenario = computed(
+  > 45 │   () => LAB_SCENARIOS.find((item) => item.id === scenarioId.value)!,
+       │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    46 │ );
+    47 │ const runningScenario = computed(
+
+
+apps/web-workbench/src/features/intervention-lab/InterventionLabPage.vue:48:9 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    46 │ );
+    47 │ const runningScenario = computed(
+  > 48 │   () => LAB_SCENARIOS.find((item) => item.id === runningScenarioId.value)!,
+       │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    49 │ );
+    50 │ const presentation = computed(() => getPresentation(state.value));
+
+
+apps/web-workbench/src/features/intervention-lab/InterventionLabPage.vue:53:9 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    51 │ const pending = computed(() => presentation.value.pendingRequests);
+    52 │ const selectedRoad = computed(
+  > 53 │   () => state.value.roads.find((road) => road.id === selectedRoadId.value)!,
+       │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    54 │ );
+    55 │ const nextStep = computed(() => executionQueue.value[cursor.value]);
+
+
+apps/web-workbench/src/features/intervention-lab/InterventionLabPage.vue:173:36 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    171 │   while (executionQueue.value[cursor.value]?.scriptedOperator === true) {
+    172 │     if (pending.value.length > 0) return;
+  > 173 │     record("skip-scripted-answer", executionQueue.value[cursor.value]!.label);
+        │                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    174 │     cursor.value += 1;
+    175 │   }
+
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+
+    170 170 │     while (executionQueue.value[cursor.value]?.scriptedOperator === true) {
+    171 171 │       if (pending.value.length > 0) return;
+    172     │ - ····record("skip-scripted-answer",·executionQueue.value[cursor.value]!.label);
+        172 │ + ····record("skip-scripted-answer",·executionQueue.value[cursor.value]?.label);
+    173 173 │       cursor.value += 1;
+    174 174 │     }
+
+
+apps/web-workbench/src/features/intervention-lab/InterventionLabPage.vue:341:16 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    339 │ function addConstraint(): void {
+    340 │   stopReplay();
+  > 341 │   const road = state.value.roads.find(
+        │                ^^^^^^^^^^^^^^^^^^^^^^^
+  > 342 │     (item) => item.id === constraintRoadId.value,
+  > 343 │   )!;
+        │   ^^
+    344 │   apply(
+    345 │     {
+
+
+apps/web-workbench/src/features/intervention-lab/intervention-lab.css:391:1 lint/style/noDescendingSpecificity ━━━━━━━━━━
+
+  ! Descending specificity selector found. This selector specificity is (0, 1, 0)
+
+    389 │   color: #e3be83;
+    390 │ }
+  > 391 │ .step-symbol {
+        │ ^^^^^^^^^^^^
+    392 │   display: inline-block;
+    393 │   min-width: 11px;
+
+  i This selector specificity is (0, 3, 1)
+
+    383 │   color: #d2c2ed;
+    384 │ }
+  > 385 │ .step-list li.completed .step-symbol {
+        │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    386 │   color: #98d5b2;
+    387 │ }
+
+  i Descending specificity selector may not applied. Consider rearranging the order of the selectors. See MDN web docs for more details.
+
+
+apps/web-workbench/src/features/intervention-lab/model.ts:493:11 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    491 │   switch (action.type) {
+    492 │     case "start-step": {
+  > 493 │       if (step!.status !== "pending") return reject("只有待执行步骤可以开始。");
+        │           ^^^^^
+    494 │       if (
+    495 │         state.device.link !== "online" ||
+
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+
+     491  491 │     switch (action.type) {
+     492  492 │       case "start-step": {
+     493      │ - ······if·(step!.status·!==·"pending")·return·reject("只有待执行步骤可以开始。");
+          493 │ + ······if·(step?.status·!==·"pending")·return·reject("只有待执行步骤可以开始。");
+     494  494 │         if (
+     495  495 │           state.device.link !== "online" ||
+
+
+apps/web-workbench/src/features/intervention-lab/model.ts:501:62 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    499 │       if (
+    500 │         state.steps.some(
+  > 501 │           (item) => item.status === "running" && item.id !== step!.id,
+        │                                                              ^^^^^
+    502 │         )
+    503 │       )
+
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+
+     499  499 │         if (
+     500  500 │           state.steps.some(
+     501      │ - ··········(item)·=>·item.status·===·"running"·&&·item.id·!==·step!.id,
+          501 │ + ··········(item)·=>·item.status·===·"running"·&&·item.id·!==·step?.id,
+     502  502 │           )
+     503  503 │         )
+
+
+apps/web-workbench/src/features/intervention-lab/model.ts:508:70 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    506 │         state.requests.some(
+    507 │           (request) =>
+  > 508 │             request.status === "pending" && request.stepIds.includes(step!.id),
+        │                                                                      ^^^^^
+    509 │         )
+    510 │       )
+
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+
+     506  506 │           state.requests.some(
+     507  507 │             (request) =>
+     508      │ - ············request.status·===·"pending"·&&·request.stepIds.includes(step!.id),
+          508 │ + ············request.status·===·"pending"·&&·request.stepIds.includes(step?.id),
+     509  509 │           )
+     510  510 │         )
+
+
+apps/web-workbench/src/features/intervention-lab/model.ts:512:7 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    510 │       )
+    511 │         return reject("本步骤仍有待处理请求。");
+  > 512 │       step!.status = "running";
+        │       ^^^^^
+    513 │       step!.version += 1;
+    514 │       state.device.position = {
+
+
+apps/web-workbench/src/features/intervention-lab/model.ts:513:7 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    511 │         return reject("本步骤仍有待处理请求。");
+    512 │       step!.status = "running";
+  > 513 │       step!.version += 1;
+        │       ^^^^^
+    514 │       state.device.position = {
+    515 │         ...state.roads.find((road) => road.id === step!.roadId)!.polyline[0]!,
+
+
+apps/web-workbench/src/features/intervention-lab/model.ts:515:12 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    513 │       step!.version += 1;
+    514 │       state.device.position = {
+  > 515 │         ...state.roads.find((road) => road.id === step!.roadId)!.polyline[0]!,
+        │            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    516 │       };
+    517 │       state.device.lastConfirmedAt = state.logicalTime;
+
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+
+     513  513 │         step!.version += 1;
+     514  514 │         state.device.position = {
+     515      │ - ········...state.roads.find((road)·=>·road.id·===·step!.roadId)!.polyline[0]!,
+          515 │ + ········...state.roads.find((road)·=>·road.id·===·step!.roadId)?.polyline[0]!,
+     516  516 │         };
+     517  517 │         state.device.lastConfirmedAt = state.logicalTime;
+
+
+apps/web-workbench/src/features/intervention-lab/model.ts:515:12 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    513 │       step!.version += 1;
+    514 │       state.device.position = {
+  > 515 │         ...state.roads.find((road) => road.id === step!.roadId)!.polyline[0]!,
+        │            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    516 │       };
+    517 │       state.device.lastConfirmedAt = state.logicalTime;
+
+
+apps/web-workbench/src/features/intervention-lab/model.ts:515:51 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    513 │       step!.version += 1;
+    514 │       state.device.position = {
+  > 515 │         ...state.roads.find((road) => road.id === step!.roadId)!.polyline[0]!,
+        │                                                   ^^^^^
+    516 │       };
+    517 │       state.device.lastConfirmedAt = state.logicalTime;
+
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+
+     513  513 │         step!.version += 1;
+     514  514 │         state.device.position = {
+     515      │ - ········...state.roads.find((road)·=>·road.id·===·step!.roadId)!.polyline[0]!,
+          515 │ + ········...state.roads.find((road)·=>·road.id·===·step?.roadId)!.polyline[0]!,
+     516  516 │         };
+     517  517 │         state.device.lastConfirmedAt = state.logicalTime;
+
+
+apps/web-workbench/src/features/intervention-lab/model.ts:518:29 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    516 │       };
+    517 │       state.device.lastConfirmedAt = state.logicalTime;
+  > 518 │       return accept(`模拟执行：${step!.label}。`);
+        │                                  ^^^^^
+    519 │     }
+    520 │     case "local-detour": {
+
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+
+     516  516 │         };
+     517  517 │         state.device.lastConfirmedAt = state.logicalTime;
+     518      │ - ······return·accept(`模拟执行：${step!.label}。`);
+          518 │ + ······return·accept(`模拟执行：${step?.label}。`);
+     519  519 │       }
+     520  520 │       case "local-detour": {
+
+
+apps/web-workbench/src/features/intervention-lab/model.ts:521:11 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    519 │     }
+    520 │     case "local-detour": {
+  > 521 │       if (step!.status !== "running")
+        │           ^^^^^
+    522 │         return reject("局部绕行事件只能作用于执行中的步骤。");
+    523 │       if (
+
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+
+     519  519 │       }
+     520  520 │       case "local-detour": {
+     521      │ - ······if·(step!.status·!==·"running")
+          521 │ + ······if·(step?.status·!==·"running")
+     522  522 │           return reject("局部绕行事件只能作用于执行中的步骤。");
+     523  523 │         if (
+
+
+apps/web-workbench/src/features/intervention-lab/model.ts:562:11 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    560 │     }
+    561 │     case "complete-step": {
+  > 562 │       if (step!.status !== "running")
+        │           ^^^^^
+    563 │         return reject("步骤未处于执行中，不能标记完成。");
+    564 │       if (
+
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+
+     560  560 │       }
+     561  561 │       case "complete-step": {
+     562      │ - ······if·(step!.status·!==·"running")
+          562 │ + ······if·(step?.status·!==·"running")
+     563  563 │           return reject("步骤未处于执行中，不能标记完成。");
+     564  564 │         if (
+
+
+apps/web-workbench/src/features/intervention-lab/scenarios.ts:67:7 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+
+    65 │     steps: [
+    66 │       start("normal"),
+  > 67 │       inspect("normal", "a")[0]!,
+       │       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    68 │       {
+    69 │         label: "注入局部绕行成功（不请求人工）",
+
+
+The number of diagnostics exceeds the limit allowed. Use --max-diagnostics to increase it.
+Diagnostics not shown: 93.
+Checked 261 files in 91ms. No fixes applied.
+Found 113 warnings.

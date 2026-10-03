@@ -5,7 +5,7 @@ import {
 } from "../../src/app/routes.js";
 
 describe("Workbench routes", () => {
-  it("recognizes the seven stable product routes", () => {
+  it("recognizes stable routes and the isolated intervention experiment", () => {
     expect(WORKBENCH_ROUTES).toEqual([
       "/conversation",
       "/playground",
@@ -13,6 +13,7 @@ describe("Workbench routes", () => {
       "/cases",
       "/catalog",
       "/scenarios",
+      "/intervention-lab",
       "/settings",
     ]);
     for (const route of WORKBENCH_ROUTES) {

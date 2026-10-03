@@ -1,0 +1,2613 @@
+{
+  "config": {
+    "argv": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/node_modules/@playwright/test/cli.js",
+      "test",
+      "--workers=1",
+      "--reporter=line,json"
+    ],
+    "configFile": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/playwright.config.ts",
+    "rootDir": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 20000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": {
+      "command": "node tests/e2e/server.mjs",
+      "reuseExistingServer": false,
+      "timeout": 20000,
+      "url": "http://127.0.0.1:4173/workbench-health"
+    }
+  },
+  "suites": [
+    {
+      "title": "intervention-lab-branches.spec.ts",
+      "file": "intervention-lab-branches.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "navigation retry has an explicit simulated continuation and reaches complete",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1433,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:44.037Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-branches--dfff0-uation-and-reaches-complete-chromium/attachments/branch-raw-run-e3d9d358103cac7576420e509241c2de38b744b1.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-3ef816aabd33072dc054",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 121,
+          "column": 1
+        },
+        {
+          "title": "navigation end closes early and preserves unknown roads without further replay",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 569,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:45.570Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-branches--bf6b3-oads-without-further-replay-chromium/attachments/branch-raw-run-bd34b02a1123a793ef5aad698daaa4fad11bae64.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-8e80bf82c77ee22e688d",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 158,
+          "column": 1
+        },
+        {
+          "title": "rejecting the stale-case proposal preserves B and completes it through a declared branch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1303,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:46.147Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-branches--e7cf7-t-through-a-declared-branch-chromium/attachments/branch-raw-run-bd416905ee327b24e0902450f4f965a5bc74bc14.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-ec8347707e34100e1a76",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 190,
+          "column": 1
+        },
+        {
+          "title": "approving deferral skips B execution and never generates a B observation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1196,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:47.457Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-branches--4d441-r-generates-a-B-observation-chromium/attachments/branch-raw-run-8ec56fefc8655aced2be05a9f2497f16b833f8ab.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-66f2d1a7c00f6c6e2e16",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 227,
+          "column": 1
+        },
+        {
+          "title": "supplement requires actual fields before applying the related exclusion",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1202,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:48.662Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-branches--31357-lying-the-related-exclusion-chromium/attachments/branch-raw-run-f680adafb3354f23ddc94503af79482143d304f5.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-f770a832502bd00c0b42",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 264,
+          "column": 1
+        },
+        {
+          "title": "a constraint on the running road is refused without cancelling its execution",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1384,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:49.874Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-branches--409c1-ut-cancelling-its-execution-chromium/attachments/branch-raw-run-8f85fc90863d87b12e02a1bb13f028f74b2e8bd6.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-2183d7f910bfc099ec2d",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 303,
+          "column": 1
+        },
+        {
+          "title": "starting a different case resets request, constraints, observations and the run binding",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 695,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:51.264Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-branches--dbe21-vations-and-the-run-binding-chromium/attachments/branch-raw-run-219eaba282ffc7df6e503ec2b2345725fff575b4.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-ec326d2e99dd83c2c828",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 329,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "intervention-lab.spec.ts",
+      "file": "intervention-lab.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "fixed: normal-detour closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1040,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:51.984Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-fixed-nor-3ca5a-es-through-visible-controls-chromium/attachments/raw-run-1987dfc45b77815119fa373a45dbf998a1544e71.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-f1470f859383ab2fa390",
+          "file": "intervention-lab.spec.ts",
+          "line": 133,
+          "column": 5
+        },
+        {
+          "title": "fixed: navigation-failure closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1123,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:53.032Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-fixed-nav-022ba-es-through-visible-controls-chromium/attachments/raw-run-cc87fae0ed258e117c8172e7fa5ad63df9406a13.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-02b22e500f0a58854db0",
+          "file": "intervention-lab.spec.ts",
+          "line": 133,
+          "column": 5
+        },
+        {
+          "title": "fixed: constraint-stale closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 958,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:54.162Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-fixed-con-f5cd5-es-through-visible-controls-chromium/attachments/raw-run-c7fc74186b4363bba385ff999a56c7ea5d6b2667.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-d69ff606b87087800776",
+          "file": "intervention-lab.spec.ts",
+          "line": 133,
+          "column": 5
+        },
+        {
+          "title": "fixed: confirmation-reject closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 976,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:55.128Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-fixed-con-7e4c4-es-through-visible-controls-chromium/attachments/raw-run-11525965019ab2ab7fb0ec22bf22fe904988ad14.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-0533fc4e6ddfadd5abcb",
+          "file": "intervention-lab.spec.ts",
+          "line": 133,
+          "column": 5
+        },
+        {
+          "title": "fixed: supplement-exclusion closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 877,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:56.111Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-fixed-sup-5d562-es-through-visible-controls-chromium/attachments/raw-run-224509d7fc1c0c630f2e11b000f62c2ae7c90291.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-edef3998c03fa916e50b",
+          "file": "intervention-lab.spec.ts",
+          "line": 133,
+          "column": 5
+        },
+        {
+          "title": "fixed: link-command-ack closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 840,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:56.994Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-fixed-lin-e3898-es-through-visible-controls-chromium/attachments/raw-run-9baea3bff3967f52c4b98d56bd4ebfaed7879ab8.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-f1573781dd98ef4ab5fe",
+          "file": "intervention-lab.spec.ts",
+          "line": 133,
+          "column": 5
+        },
+        {
+          "title": "dynamic: normal-detour closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 905,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:57.845Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-dynamic-n-637e3-es-through-visible-controls-chromium/attachments/raw-run-46521b3120520eb8874d9ba8d904f0e6787790e1.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-0c1c39a141fe5df1a754",
+          "file": "intervention-lab.spec.ts",
+          "line": 133,
+          "column": 5
+        },
+        {
+          "title": "dynamic: navigation-failure closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 851,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:58.756Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-dynamic-n-ec99a-es-through-visible-controls-chromium/attachments/raw-run-724c7d3d2eba162873813322d8b91b35c3fdea13.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-2228e9e2b7df311de0c4",
+          "file": "intervention-lab.spec.ts",
+          "line": 133,
+          "column": 5
+        },
+        {
+          "title": "dynamic: constraint-stale closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1042,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:01:59.615Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-dynamic-c-22ad2-es-through-visible-controls-chromium/attachments/raw-run-6214089a797f4529161f29e27a8d17aaac7222fc.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-045e51ff0ad6e00eacc3",
+          "file": "intervention-lab.spec.ts",
+          "line": 133,
+          "column": 5
+        },
+        {
+          "title": "dynamic: confirmation-reject closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1088,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:00.664Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-dynamic-c-f9151-es-through-visible-controls-chromium/attachments/raw-run-71a6935db8b999061fc732268ec3ebeb5df4cb57.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-eb044bc991171d74892e",
+          "file": "intervention-lab.spec.ts",
+          "line": 133,
+          "column": 5
+        },
+        {
+          "title": "dynamic: supplement-exclusion closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1052,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:01.759Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-dynamic-s-d11b1-es-through-visible-controls-chromium/attachments/raw-run-e6679923338bed0bce1a180b094b078dd6458947.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-90e8b90ea26b52894b9e",
+          "file": "intervention-lab.spec.ts",
+          "line": 133,
+          "column": 5
+        },
+        {
+          "title": "dynamic: link-command-ack closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 783,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:02.819Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-dynamic-l-b44e8-es-through-visible-controls-chromium/attachments/raw-run-64771e1880f0c02b26bec18efee40c763e6188d4.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-b7d067fc61a52fc646ac",
+          "file": "intervention-lab.spec.ts",
+          "line": 133,
+          "column": 5
+        },
+        {
+          "title": "mode switch preserves state and actions while moving pending request",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 692,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:03.609Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-114ab101866430254520",
+          "file": "intervention-lab.spec.ts",
+          "line": 158,
+          "column": 1
+        },
+        {
+          "title": "active constraint invalidates old request without rewriting road facts",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 546,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:04.308Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-3ab90f2b647905aba7d4",
+          "file": "intervention-lab.spec.ts",
+          "line": 211,
+          "column": 1
+        },
+        {
+          "title": "lost link and sent command remain unknown until matching device ACK",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 706,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:04.862Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-lost-link-e12b3-n-until-matching-device-ACK-chromium/attachments/raw-run-30bd50613c8f42962204e9117dde0ca56c5baa66.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-948b7135ffc7294cbc0d",
+          "file": "intervention-lab.spec.ts",
+          "line": 238,
+          "column": 1
+        },
+        {
+          "title": "mobile layout has no horizontal overflow and pending controls remain usable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 542,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:05.574Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-390261206ff7ba631397",
+          "file": "intervention-lab.spec.ts",
+          "line": 274,
+          "column": 1
+        },
+        {
+          "title": "lab makes no Agent API calls and existing routes still resolve",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1085,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:06.128Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-79e53b92b918a4c7e6a0",
+          "file": "intervention-lab.spec.ts",
+          "line": 303,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "scenario-lab.spec.ts",
+      "file": "scenario-lab.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Scenario Lab freely generates a preview without sending the evaluation oracle",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 361,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:07.224Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4d3c2b63aacc72e1fea-bc442fee2469e0cc9cff",
+          "file": "scenario-lab.spec.ts",
+          "line": 7,
+          "column": 1
+        },
+        {
+          "title": "Scenario Lab runs a five-round evaluation with real generation results",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 350,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:07.592Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4d3c2b63aacc72e1fea-ceb90fa99e41cd803fd9",
+          "file": "scenario-lab.spec.ts",
+          "line": 25,
+          "column": 1
+        },
+        {
+          "title": "Scenario Lab drafts content from a description without touching facts",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 696,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:07.954Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4d3c2b63aacc72e1fea-0553135155b794e6a98c",
+          "file": "scenario-lab.spec.ts",
+          "line": 40,
+          "column": 1
+        },
+        {
+          "title": "Scenario Lab discards a draft response after switching scenarios",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 800,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:08.657Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4d3c2b63aacc72e1fea-c6858107582ffb1bc874",
+          "file": "scenario-lab.spec.ts",
+          "line": 79,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "workbench.spec.ts",
+      "file": "workbench.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Conversation-first Shell is the default product interface",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 604,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:11.185Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-b5eec817e67838903cc9",
+          "file": "workbench.spec.ts",
+          "line": 31,
+          "column": 1
+        },
+        {
+          "title": "Conversation-first Shell sends a real message and renders safe Markdown inline",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 782,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:11.797Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-e1d093b349227bce8bc1",
+          "file": "workbench.spec.ts",
+          "line": 55,
+          "column": 1
+        },
+        {
+          "title": "Conversation-first Shell opens a per-turn Inspect overlay with swimlane timeline",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1007,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:12.588Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-cf6d60532bdd4ba3af86",
+          "file": "workbench.spec.ts",
+          "line": 79,
+          "column": 1
+        },
+        {
+          "title": "Conversation-first Shell explains the deterministic A2UI scenario for generic requests",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 771,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:13.605Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-64d60ca658b785af0b5f",
+          "file": "workbench.spec.ts",
+          "line": 138,
+          "column": 1
+        },
+        {
+          "title": "the inspection summary renders identically across consecutive runs",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 982,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:14.385Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-9bacc4b10e4e7bc05c17",
+          "file": "workbench.spec.ts",
+          "line": 160,
+          "column": 1
+        },
+        {
+          "title": "an invalid A2UI surface is isolated and the conversation remains usable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 795,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:15.376Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-c619f253ba850cc6533b",
+          "file": "workbench.spec.ts",
+          "line": 199,
+          "column": 1
+        },
+        {
+          "title": "the Platform Catalog scenario renders Metric, StatusBadge, and InfoRow through the merged catalog",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 841,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:16.180Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-954024ee9ffabef2eaf5",
+          "file": "workbench.spec.ts",
+          "line": 222,
+          "column": 1
+        },
+        {
+          "title": "Dynamic A2UI renders the controlled business content through the final catalog",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1210,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:17.037Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-2097674e258014d596e9",
+          "file": "workbench.spec.ts",
+          "line": 270,
+          "column": 1
+        },
+        {
+          "title": "Dynamic A2UI catalog violation falls back to content with an explicit error",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 951,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:18.258Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-a4989df2a07826b15f47",
+          "file": "workbench.spec.ts",
+          "line": 355,
+          "column": 1
+        },
+        {
+          "title": "Dynamic A2UI Secondary LLM failure is bounded and does not break fixed A2UI",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1127,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:19.217Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-2d9149c03a3931a15141",
+          "file": "workbench.spec.ts",
+          "line": 390,
+          "column": 1
+        },
+        {
+          "title": "Dynamic A2UI generated actions are recorded in Inspect only and never sent back",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1800,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:20.353Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-8dbb333e42f3fe14b351",
+          "file": "workbench.spec.ts",
+          "line": 424,
+          "column": 1
+        },
+        {
+          "title": "Frontend Tool is advertised, executed in the browser, and continued through AG-UI",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 711,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:22.162Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-ee025e468e0f49779886",
+          "file": "workbench.spec.ts",
+          "line": 478,
+          "column": 1
+        },
+        {
+          "title": "the migrated locate intent composes map-domain tools on the GIS surface",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 755,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:22.881Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-ce5d734f165c370f8f25",
+          "file": "workbench.spec.ts",
+          "line": 516,
+          "column": 1
+        },
+        {
+          "title": "scenario A applies the patrol map intents to one persistent surface",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6239,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:23.645Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-80f97d0b62f9ec9ffd82",
+          "file": "workbench.spec.ts",
+          "line": 548,
+          "column": 1
+        },
+        {
+          "title": "the discovered validation Agent reaches the patrol map terminal state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5027,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:29.894Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-4799ff59ab5b9d970750",
+          "file": "workbench.spec.ts",
+          "line": 780,
+          "column": 1
+        },
+        {
+          "title": "accepted decision dock requires a route choice before map-anchored revision",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3841,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:34.929Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-69fc34ec327f1d4294fb",
+          "file": "workbench.spec.ts",
+          "line": 827,
+          "column": 1
+        },
+        {
+          "title": "route A revision preserves the selected route and supports keyboard dialog flow",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2485,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:38.778Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-2cf23efbccc42e41a088",
+          "file": "workbench.spec.ts",
+          "line": 900,
+          "column": 1
+        },
+        {
+          "title": "cancel discards an unsubmitted route revision anchor",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2068,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:41.270Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-118f743246e043558490",
+          "file": "workbench.spec.ts",
+          "line": 931,
+          "column": 1
+        },
+        {
+          "title": "scenario B reuses scenario A context and continues route B without clearing the selection",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 19795,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid^=\\'patrol-route-consult-\\']')\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid^=\\'patrol-route-consult-\\']')\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid^=\\'patrol-route-consult-\\']')\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid^=\\'patrol-route-consult-\\']')\u001b[22m\n\n    at startPatrolRouteConsult (/workspace/scratch/8449a05e434b/repo/apps/web-workbench/tests/e2e/workbench.spec.ts:816:25)\n    at /workspace/scratch/8449a05e434b/repo/apps/web-workbench/tests/e2e/workbench.spec.ts:979:19",
+                    "location": {
+                      "file": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/tests/e2e/workbench.spec.ts",
+                      "column": 25,
+                      "line": 816
+                    },
+                    "snippet": "  814 |   await page.getByRole(\"button\", { name: /候选巡逻路线征询/ }).click();\n  815 |   const consult = page.locator(\"[data-testid^='patrol-route-consult-']\");\n> 816 |   await expect(consult).toBeVisible({ timeout: 15_000 });\n      |                         ^\n  817 |   await expect(consult.getByTestId(\"consult-status\")).toHaveText(\"executing\");\n  818 |   await expect(\n  819 |     consult.getByTestId(\"patrol-route-option-route-a\"),"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/tests/e2e/workbench.spec.ts",
+                        "column": 25,
+                        "line": 816
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid^=\\'patrol-route-consult-\\']')\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid^=\\'patrol-route-consult-\\']')\u001b[22m\n\n\n  814 |   await page.getByRole(\"button\", { name: /候选巡逻路线征询/ }).click();\n  815 |   const consult = page.locator(\"[data-testid^='patrol-route-consult-']\");\n> 816 |   await expect(consult).toBeVisible({ timeout: 15_000 });\n      |                         ^\n  817 |   await expect(consult.getByTestId(\"consult-status\")).toHaveText(\"executing\");\n  818 |   await expect(\n  819 |     consult.getByTestId(\"patrol-route-option-route-a\"),\n    at startPatrolRouteConsult (/workspace/scratch/8449a05e434b/repo/apps/web-workbench/tests/e2e/workbench.spec.ts:816:25)\n    at /workspace/scratch/8449a05e434b/repo/apps/web-workbench/tests/e2e/workbench.spec.ts:979:19"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:02:43.345Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/workbench-scenario-B-reuse-60c9c-hout-clearing-the-selection-chromium/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/workbench-scenario-B-reuse-60c9c-hout-clearing-the-selection-chromium/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/tests/e2e/workbench.spec.ts",
+                    "column": 25,
+                    "line": 816
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-38e2e712c5ef74ba922e",
+          "file": "workbench.spec.ts",
+          "line": 973,
+          "column": 1
+        },
+        {
+          "title": "scenario B keeps human wait outside the short run deadline",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3140,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:05.579Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-efdc8e12d59224b4bfaf",
+          "file": "workbench.spec.ts",
+          "line": 1073,
+          "column": 1
+        },
+        {
+          "title": "a pending non-HITL focusOn handler remains inside the run deadline",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2157,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:08.794Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-c1d9cf128ae4c7739e83",
+          "file": "workbench.spec.ts",
+          "line": 1094,
+          "column": 1
+        },
+        {
+          "title": "scenario B maps route A selection to the existing route A path",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2217,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:10.963Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-ca09ec25136e05678a25",
+          "file": "workbench.spec.ts",
+          "line": 1122,
+          "column": 1
+        },
+        {
+          "title": "scenario B cancel clears consult preview without a map continuation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1990,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:13.189Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-1a1424d6c69bd04d1730",
+          "file": "workbench.spec.ts",
+          "line": 1138,
+          "column": 1
+        },
+        {
+          "title": "scenario B revision highlights under-bridge and reuses route B",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2186,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:15.191Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-afbba8f9326176fba8b9",
+          "file": "workbench.spec.ts",
+          "line": 1164,
+          "column": 1
+        },
+        {
+          "title": "stopping scenario B invalidates the old consultation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1127,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:17.392Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-ed2a2cf9c32cc45a4b57",
+          "file": "workbench.spec.ts",
+          "line": 1187,
+          "column": 1
+        },
+        {
+          "title": "switching Agent Source removes the old consultation and its preview",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 978,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:18.531Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-38eec3248cc5df98bc4a",
+          "file": "workbench.spec.ts",
+          "line": 1204,
+          "column": 1
+        },
+        {
+          "title": "AGUIMock serves the connection probe from the unified scenario server",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 734,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:19.518Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-20240b33e751d2992cb9",
+          "file": "workbench.spec.ts",
+          "line": 1224,
+          "column": 1
+        },
+        {
+          "title": "legacy locateDevice compatibility preserves its full observable terminal state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 698,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:20.262Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-50933e0175b607297239",
+          "file": "workbench.spec.ts",
+          "line": 1240,
+          "column": 1
+        },
+        {
+          "title": "stop cancels a turn",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 702,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:20.971Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-b88c587af65e4d8f284c",
+          "file": "workbench.spec.ts",
+          "line": 1269,
+          "column": 1
+        },
+        {
+          "title": "a retryable timeout can be explicitly retried in its turn",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1957,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:21.683Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-c3970b15b28475c258b4",
+          "file": "workbench.spec.ts",
+          "line": 1281,
+          "column": 1
+        },
+        {
+          "title": "agent outage disables input and recovers",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1829,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:23.647Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-46f41b7c464b806cc503",
+          "file": "workbench.spec.ts",
+          "line": 1300,
+          "column": 1
+        },
+        {
+          "title": "SACS Source streams text, state, activity, and artifact without Frontend Tools",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1219,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:25.486Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-501fa7826f9cc67ce271",
+          "file": "workbench.spec.ts",
+          "line": 1318,
+          "column": 1
+        },
+        {
+          "title": "the selected Agent Source survives a page reload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 977,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:26.712Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-aef48c57fec7e22d8046",
+          "file": "workbench.spec.ts",
+          "line": 1375,
+          "column": 1
+        },
+        {
+          "title": "a structured SACS result without assistant text still enters Inspect",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 991,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:27.698Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-76b94deb785b54d65c7b",
+          "file": "workbench.spec.ts",
+          "line": 1389,
+          "column": 1
+        },
+        {
+          "title": "an unavailable SACS upstream is retryable while Runtime stays available",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 952,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:28.697Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-9479de03aa7c20cca50b",
+          "file": "workbench.spec.ts",
+          "line": 1412,
+          "column": 1
+        },
+        {
+          "title": "SACS RUN_ERROR enters the bounded failed state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1045,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:29.661Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-a277a179ed822e174601",
+          "file": "workbench.spec.ts",
+          "line": 1440,
+          "column": 1
+        },
+        {
+          "title": "Inspect shows the migrated locate loop with real correlation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1146,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:30.715Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-b781a5a60bf8c54394c7",
+          "file": "workbench.spec.ts",
+          "line": 1455,
+          "column": 1
+        },
+        {
+          "title": "AGUIMock bounded RUN_ERROR is located in Inspect with its public payload",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 861,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:31.870Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-5af07e1192ff83ea2d8f",
+          "file": "workbench.spec.ts",
+          "line": 1510,
+          "column": 1
+        },
+        {
+          "title": "SACS Interrupt is answered in the turn and resumed with real correlation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1191,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:32.741Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-dda189dcd16b42849575",
+          "file": "workbench.spec.ts",
+          "line": 1533,
+          "column": 1
+        },
+        {
+          "title": "SACS durable run conflict is observable as a bounded public error",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 859,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:33.944Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-e4e9dee123110ea60573",
+          "file": "workbench.spec.ts",
+          "line": 1592,
+          "column": 1
+        },
+        {
+          "title": "a large SACS payload stays folded and lazily rendered in Inspect",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 975,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:03:34.813Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-fa61e7942b4d85dc4f87",
+          "file": "workbench.spec.ts",
+          "line": 1616,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-03T15:01:38.644Z",
+    "duration": 117223.881,
+    "expected": 68,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

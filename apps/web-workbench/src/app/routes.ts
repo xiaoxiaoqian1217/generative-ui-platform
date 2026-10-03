@@ -5,6 +5,7 @@ export const WORKBENCH_ROUTES = [
   "/cases",
   "/catalog",
   "/scenarios",
+  "/intervention-lab",
   "/settings",
 ] as const;
 
@@ -24,6 +25,7 @@ export function workbenchRouteLabel(route: WorkbenchRoute): string {
     "/cases": "Cases",
     "/catalog": "Catalog",
     "/scenarios": "Scenarios",
+    "/intervention-lab": "Intervention Lab",
     "/settings": "Settings",
   }[route];
 }

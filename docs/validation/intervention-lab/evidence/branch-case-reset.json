@@ -1,0 +1,269 @@
+{
+  "schemaVersion": "intervention-lab-export/v1",
+  "experiment": "deterministic-simulation",
+  "connectedToRealDevice": false,
+  "connectedToRealAgent": false,
+  "scenarioId": "normal-detour",
+  "displayMode": "dynamic",
+  "eventCursor": 1,
+  "eventCount": 12,
+  "originalFixtureEventCount": 12,
+  "executionQueue": [
+    {
+      "label": "操作员启动模拟任务",
+      "action": {
+        "type": "start-task",
+        "actionId": "normal:start"
+      }
+    },
+    {
+      "label": "模拟开始道路 A 查验",
+      "action": {
+        "type": "start-step",
+        "actionId": "normal:a:start",
+        "stepId": "s-a"
+      }
+    },
+    {
+      "label": "注入局部绕行成功（不请求人工）",
+      "action": {
+        "type": "local-detour",
+        "actionId": "normal:a:detour",
+        "stepId": "s-a"
+      }
+    },
+    {
+      "label": "注入道路 A 观测",
+      "action": {
+        "type": "observe-road",
+        "actionId": "normal:a:observe",
+        "roadId": "r-a",
+        "condition": "passable",
+        "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。"
+      }
+    },
+    {
+      "label": "模拟道路 A 查验完成",
+      "action": {
+        "type": "complete-step",
+        "actionId": "normal:a:done",
+        "stepId": "s-a"
+      }
+    },
+    {
+      "label": "模拟开始道路 B 查验",
+      "action": {
+        "type": "start-step",
+        "actionId": "normal:b:start",
+        "stepId": "s-b"
+      }
+    },
+    {
+      "label": "注入道路 B 观测",
+      "action": {
+        "type": "observe-road",
+        "actionId": "normal:b:observe",
+        "roadId": "r-b",
+        "condition": "passable",
+        "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。"
+      }
+    },
+    {
+      "label": "模拟道路 B 查验完成",
+      "action": {
+        "type": "complete-step",
+        "actionId": "normal:b:done",
+        "stepId": "s-b"
+      }
+    },
+    {
+      "label": "模拟开始道路 C 查验",
+      "action": {
+        "type": "start-step",
+        "actionId": "normal:c:start",
+        "stepId": "s-c"
+      }
+    },
+    {
+      "label": "注入道路 C 观测",
+      "action": {
+        "type": "observe-road",
+        "actionId": "normal:c:observe",
+        "roadId": "r-c",
+        "condition": "passable",
+        "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。"
+      }
+    },
+    {
+      "label": "模拟道路 C 查验完成",
+      "action": {
+        "type": "complete-step",
+        "actionId": "normal:c:done",
+        "stepId": "s-c"
+      }
+    },
+    {
+      "label": "操作员核查并结束本次模拟任务",
+      "action": {
+        "type": "finish-task",
+        "actionId": "normal:finish"
+      }
+    }
+  ],
+  "state": {
+    "schemaVersion": "intervention-lab/v1",
+    "simulation": true,
+    "runId": "lab:0613bfd8-14a3-493b-9c52-4fa67a8f3d76",
+    "goal": "查清选定街区主要道路的通行情况，标出受阻和未查明路段。",
+    "phase": "running",
+    "outcome": "in-progress",
+    "planVersion": 1,
+    "logicalTime": 1,
+    "roads": [
+      {
+        "id": "r-a",
+        "name": "西侧主路 A",
+        "polyline": [
+          {
+            "x": 18,
+            "y": 20
+          },
+          {
+            "x": 18,
+            "y": 72
+          }
+        ],
+        "status": "unchecked",
+        "condition": "unknown",
+        "version": 1,
+        "evidence": []
+      },
+      {
+        "id": "r-b",
+        "name": "中央道路 B",
+        "polyline": [
+          {
+            "x": 18,
+            "y": 47
+          },
+          {
+            "x": 76,
+            "y": 47
+          }
+        ],
+        "status": "unchecked",
+        "condition": "unknown",
+        "version": 1,
+        "evidence": []
+      },
+      {
+        "id": "r-c",
+        "name": "东侧道路 C",
+        "polyline": [
+          {
+            "x": 76,
+            "y": 20
+          },
+          {
+            "x": 76,
+            "y": 78
+          }
+        ],
+        "status": "unchecked",
+        "condition": "unknown",
+        "version": 1,
+        "evidence": []
+      }
+    ],
+    "steps": [
+      {
+        "id": "s-a",
+        "label": "查验西侧主路",
+        "roadId": "r-a",
+        "status": "pending",
+        "version": 1
+      },
+      {
+        "id": "s-b",
+        "label": "查验中央道路",
+        "roadId": "r-b",
+        "status": "pending",
+        "version": 1
+      },
+      {
+        "id": "s-c",
+        "label": "查验东侧道路",
+        "roadId": "r-c",
+        "status": "pending",
+        "version": 1
+      }
+    ],
+    "requests": [],
+    "constraints": [],
+    "device": {
+      "id": "ugv-01",
+      "name": "模拟 UGV-01",
+      "link": "online",
+      "execution": "running",
+      "position": {
+        "x": 18,
+        "y": 20
+      },
+      "lastConfirmedAt": 0
+    },
+    "commands": [],
+    "logs": [
+      {
+        "runId": "lab:0613bfd8-14a3-493b-9c52-4fa67a8f3d76",
+        "sequence": 1,
+        "logicalTime": 1,
+        "source": "operator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-1",
+        "actionType": "start-task",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+      }
+    ],
+    "processedActionIds": [
+      "ui-event-1"
+    ]
+  },
+  "inputActions": [
+    {
+      "type": "start-task",
+      "actionId": "ui-event-1",
+      "provenance": "fixture-event"
+    }
+  ],
+  "interactionTelemetry": [
+    {
+      "sequence": 1,
+      "at": "2026-10-03T15:01:51.855Z",
+      "elapsedMs": 0,
+      "mode": "dynamic",
+      "kind": "start",
+      "detail": "normal-detour"
+    },
+    {
+      "sequence": 2,
+      "at": "2026-10-03T15:01:51.855Z",
+      "elapsedMs": 0,
+      "mode": "dynamic",
+      "kind": "fixture-event",
+      "detail": "start-task: accepted"
+    },
+    {
+      "sequence": 3,
+      "at": "2026-10-03T15:01:51.906Z",
+      "elapsedMs": 51,
+      "mode": "dynamic",
+      "kind": "export",
+      "detail": "state + raw actions + application log + interaction telemetry"
+    }
+  ],
+  "measurementNote": "交互耗时为本浏览器的实际操作记录。没有参与者对照实验，不能据此主张效率改善。",
+  "verificationDriver": "playwright-automated-clicks",
+  "humanPerformanceEvidence": false
+}

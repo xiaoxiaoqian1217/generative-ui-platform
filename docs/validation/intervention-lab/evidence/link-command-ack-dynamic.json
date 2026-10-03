@@ -1,0 +1,665 @@
+{
+  "schemaVersion": "intervention-lab-export/v1",
+  "experiment": "deterministic-simulation",
+  "connectedToRealDevice": false,
+  "connectedToRealAgent": false,
+  "scenarioId": "link-command-ack",
+  "displayMode": "dynamic",
+  "eventCursor": 8,
+  "eventCount": 8,
+  "originalFixtureEventCount": 9,
+  "executionQueue": [
+    {
+      "label": "操作员启动模拟任务",
+      "action": {
+        "type": "start-task",
+        "actionId": "link:start"
+      }
+    },
+    {
+      "label": "模拟开始西侧道路查验",
+      "action": {
+        "type": "start-step",
+        "actionId": "link:a:start",
+        "stepId": "s-a"
+      }
+    },
+    {
+      "label": "注入链路失联",
+      "action": {
+        "type": "link-lost",
+        "actionId": "link:lost"
+      }
+    },
+    {
+      "label": "注入显式任务控制请求",
+      "action": {
+        "type": "open-request",
+        "actionId": "link:open",
+        "requestId": "request:link-control",
+        "title": "链路失联：操作员任务控制",
+        "reason": "设备当前执行状态未知，最后位置只代表最后确认状态。",
+        "basis": "fixture应用约定：失联时展示显式暂停或结束控制，由人决定；设备失联自主策略不在本原型实现范围。",
+        "roadIds": [
+          "r-a"
+        ],
+        "stepIds": [
+          "s-a"
+        ],
+        "requiredInput": {
+          "kind": "command",
+          "commands": [
+            {
+              "id": "pause",
+              "label": "请求暂停（等待设备回执）",
+              "effect": "pause"
+            },
+            {
+              "id": "end",
+              "label": "结束本次任务",
+              "effect": "end-task"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "脚本人工请求暂停（交互模式由您操作）",
+      "scriptedOperator": true,
+      "action": {
+        "type": "respond",
+        "runId": "fixture-run",
+        "actionId": "link:reply",
+        "requestId": "request:link-control",
+        "requestVersion": 1,
+        "optionId": "pause"
+      }
+    },
+    {
+      "label": "注入链路恢复（仍未确认暂停）",
+      "action": {
+        "type": "link-restored",
+        "actionId": "link:restored"
+      }
+    },
+    {
+      "label": "注入模拟设备暂停回执（不是真实设备回执）",
+      "action": {
+        "type": "device-ack",
+        "actionId": "link:ack",
+        "commandId": "pause:link:reply"
+      }
+    },
+    {
+      "label": "注入结束核查请求",
+      "action": {
+        "type": "open-request",
+        "actionId": "link:end-open",
+        "requestId": "request:link-end",
+        "title": "结束本次模拟任务",
+        "reason": "模拟设备暂停已确认，本fixture随后请求结束。",
+        "basis": "fixture明确操作输入为结束命令。",
+        "roadIds": [
+          "r-a"
+        ],
+        "stepIds": [
+          "s-a"
+        ],
+        "requiredInput": {
+          "kind": "command",
+          "commands": [
+            {
+              "id": "end",
+              "label": "结束并保留未查明事实",
+              "effect": "end-task"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "state": {
+    "schemaVersion": "intervention-lab/v1",
+    "simulation": true,
+    "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+    "goal": "查清选定街区主要道路的通行情况，标出受阻和未查明路段。",
+    "phase": "ended",
+    "outcome": "partial",
+    "planVersion": 1,
+    "logicalTime": 9,
+    "roads": [
+      {
+        "id": "r-a",
+        "name": "西侧主路 A",
+        "polyline": [
+          {
+            "x": 18,
+            "y": 20
+          },
+          {
+            "x": 18,
+            "y": 72
+          }
+        ],
+        "status": "unchecked",
+        "condition": "unknown",
+        "version": 1,
+        "evidence": []
+      },
+      {
+        "id": "r-b",
+        "name": "中央道路 B",
+        "polyline": [
+          {
+            "x": 18,
+            "y": 47
+          },
+          {
+            "x": 76,
+            "y": 47
+          }
+        ],
+        "status": "unchecked",
+        "condition": "unknown",
+        "version": 1,
+        "evidence": []
+      },
+      {
+        "id": "r-c",
+        "name": "东侧道路 C",
+        "polyline": [
+          {
+            "x": 76,
+            "y": 20
+          },
+          {
+            "x": 76,
+            "y": 78
+          }
+        ],
+        "status": "unchecked",
+        "condition": "unknown",
+        "version": 1,
+        "evidence": []
+      }
+    ],
+    "steps": [
+      {
+        "id": "s-a",
+        "label": "查验西侧主路",
+        "roadId": "r-a",
+        "status": "cancelled",
+        "version": 3
+      },
+      {
+        "id": "s-b",
+        "label": "查验中央道路",
+        "roadId": "r-b",
+        "status": "cancelled",
+        "version": 2
+      },
+      {
+        "id": "s-c",
+        "label": "查验东侧道路",
+        "roadId": "r-c",
+        "status": "cancelled",
+        "version": 2
+      }
+    ],
+    "requests": [
+      {
+        "id": "request:link-control",
+        "title": "链路失联：操作员任务控制",
+        "reason": "设备当前执行状态未知，最后位置只代表最后确认状态。",
+        "basis": "fixture应用约定：失联时展示显式暂停或结束控制，由人决定；设备失联自主策略不在本原型实现范围。",
+        "roadIds": [
+          "r-a"
+        ],
+        "stepIds": [
+          "s-a"
+        ],
+        "requiredInput": {
+          "kind": "command",
+          "commands": [
+            {
+              "id": "pause",
+              "label": "请求暂停（等待设备回执）",
+              "effect": "pause"
+            },
+            {
+              "id": "end",
+              "label": "结束本次任务",
+              "effect": "end-task"
+            }
+          ]
+        },
+        "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+        "version": 1,
+        "type": "control",
+        "status": "resolved",
+        "options": [
+          {
+            "id": "pause",
+            "label": "请求暂停（等待设备回执）",
+            "effect": "pause"
+          },
+          {
+            "id": "end",
+            "label": "结束本次任务",
+            "effect": "end-task"
+          }
+        ],
+        "createdPlanVersion": 1,
+        "createdAt": 4,
+        "roadVersions": {
+          "r-a": 1
+        },
+        "stepVersions": {
+          "s-a": 2
+        },
+        "resolvedAt": 5,
+        "resolution": "请求暂停（等待设备回执）"
+      },
+      {
+        "id": "request:link-end",
+        "title": "结束本次模拟任务",
+        "reason": "模拟设备暂停已确认，本fixture随后请求结束。",
+        "basis": "fixture明确操作输入为结束命令。",
+        "roadIds": [
+          "r-a"
+        ],
+        "stepIds": [
+          "s-a"
+        ],
+        "requiredInput": {
+          "kind": "command",
+          "commands": [
+            {
+              "id": "end",
+              "label": "结束并保留未查明事实",
+              "effect": "end-task"
+            }
+          ]
+        },
+        "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+        "version": 1,
+        "type": "control",
+        "status": "resolved",
+        "options": [
+          {
+            "id": "end",
+            "label": "结束并保留未查明事实",
+            "effect": "end-task"
+          }
+        ],
+        "createdPlanVersion": 1,
+        "createdAt": 8,
+        "roadVersions": {
+          "r-a": 1
+        },
+        "stepVersions": {
+          "s-a": 2
+        },
+        "resolvedAt": 9,
+        "resolution": "结束并保留未查明事实"
+      }
+    ],
+    "constraints": [],
+    "device": {
+      "id": "ugv-01",
+      "name": "模拟 UGV-01",
+      "link": "online",
+      "execution": "paused",
+      "position": {
+        "x": 18,
+        "y": 20
+      },
+      "lastConfirmedAt": 7
+    },
+    "commands": [
+      {
+        "id": "pause:ui-response-5",
+        "kind": "pause",
+        "status": "acknowledged",
+        "createdAt": 5,
+        "acknowledgedAt": 7
+      }
+    ],
+    "logs": [
+      {
+        "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+        "sequence": 1,
+        "logicalTime": 1,
+        "source": "operator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-1",
+        "actionType": "start-task",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+      },
+      {
+        "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+        "sequence": 2,
+        "logicalTime": 2,
+        "source": "simulator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-2",
+        "actionType": "start-step",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "模拟执行：查验西侧主路。"
+      },
+      {
+        "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+        "sequence": 3,
+        "logicalTime": 3,
+        "source": "simulator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-3",
+        "actionType": "link-lost",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "模拟链路失联：位置和执行状态仅代表最后确认，不推定设备已经停止。"
+      },
+      {
+        "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+        "sequence": 4,
+        "logicalTime": 4,
+        "source": "application",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-4",
+        "actionType": "open-request",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "依据显式所需输入形成control请求，不依赖LLM风险判断。",
+        "requestId": "request:link-control"
+      },
+      {
+        "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+        "sequence": 5,
+        "logicalTime": 5,
+        "source": "operator",
+        "inputProvenance": "interactive",
+        "actionId": "ui-response-5",
+        "actionType": "respond",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "已接收人工答复：请求暂停（等待设备回执）。暂停指令待设备确认。",
+        "requestId": "request:link-control"
+      },
+      {
+        "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+        "sequence": 6,
+        "logicalTime": 6,
+        "source": "simulator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-6",
+        "actionType": "link-restored",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "模拟链路恢复，已排队指令变为已发送；设备执行状态仍等待回执。"
+      },
+      {
+        "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+        "sequence": 7,
+        "logicalTime": 7,
+        "source": "simulator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-7",
+        "actionType": "device-ack",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "已收到模拟设备暂停回执，当前才显示设备已暂停。"
+      },
+      {
+        "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+        "sequence": 8,
+        "logicalTime": 8,
+        "source": "application",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-8",
+        "actionType": "open-request",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "依据显式所需输入形成control请求，不依赖LLM风险判断。",
+        "requestId": "request:link-end"
+      },
+      {
+        "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+        "sequence": 9,
+        "logicalTime": 9,
+        "source": "operator",
+        "inputProvenance": "interactive",
+        "actionId": "ui-response-9",
+        "actionType": "respond",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "已接收人工答复：结束并保留未查明事实。道路事实不由答复自动改写。",
+        "requestId": "request:link-end"
+      }
+    ],
+    "processedActionIds": [
+      "ui-event-1",
+      "ui-event-2",
+      "ui-event-3",
+      "ui-event-4",
+      "ui-response-5",
+      "ui-event-6",
+      "ui-event-7",
+      "ui-event-8",
+      "ui-response-9"
+    ]
+  },
+  "inputActions": [
+    {
+      "type": "start-task",
+      "actionId": "ui-event-1",
+      "provenance": "fixture-event"
+    },
+    {
+      "type": "start-step",
+      "actionId": "ui-event-2",
+      "stepId": "s-a",
+      "provenance": "fixture-event"
+    },
+    {
+      "type": "link-lost",
+      "actionId": "ui-event-3",
+      "provenance": "fixture-event"
+    },
+    {
+      "type": "open-request",
+      "actionId": "ui-event-4",
+      "requestId": "request:link-control",
+      "title": "链路失联：操作员任务控制",
+      "reason": "设备当前执行状态未知，最后位置只代表最后确认状态。",
+      "basis": "fixture应用约定：失联时展示显式暂停或结束控制，由人决定；设备失联自主策略不在本原型实现范围。",
+      "roadIds": [
+        "r-a"
+      ],
+      "stepIds": [
+        "s-a"
+      ],
+      "requiredInput": {
+        "kind": "command",
+        "commands": [
+          {
+            "id": "pause",
+            "label": "请求暂停（等待设备回执）",
+            "effect": "pause"
+          },
+          {
+            "id": "end",
+            "label": "结束本次任务",
+            "effect": "end-task"
+          }
+        ]
+      },
+      "provenance": "fixture-event"
+    },
+    {
+      "type": "respond",
+      "actionId": "ui-response-5",
+      "requestId": "request:link-control",
+      "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+      "requestVersion": 1,
+      "optionId": "pause",
+      "provenance": "interactive"
+    },
+    {
+      "type": "link-restored",
+      "actionId": "ui-event-6",
+      "provenance": "fixture-event"
+    },
+    {
+      "type": "device-ack",
+      "actionId": "ui-event-7",
+      "commandId": "pause:ui-response-5",
+      "provenance": "fixture-event"
+    },
+    {
+      "type": "open-request",
+      "actionId": "ui-event-8",
+      "requestId": "request:link-end",
+      "title": "结束本次模拟任务",
+      "reason": "模拟设备暂停已确认，本fixture随后请求结束。",
+      "basis": "fixture明确操作输入为结束命令。",
+      "roadIds": [
+        "r-a"
+      ],
+      "stepIds": [
+        "s-a"
+      ],
+      "requiredInput": {
+        "kind": "command",
+        "commands": [
+          {
+            "id": "end",
+            "label": "结束并保留未查明事实",
+            "effect": "end-task"
+          }
+        ]
+      },
+      "provenance": "fixture-event"
+    },
+    {
+      "type": "respond",
+      "actionId": "ui-response-9",
+      "requestId": "request:link-end",
+      "runId": "lab:a58834cb-0201-4d0e-80f4-d19d9476d7fc",
+      "requestVersion": 1,
+      "optionId": "end",
+      "provenance": "interactive"
+    }
+  ],
+  "interactionTelemetry": [
+    {
+      "sequence": 1,
+      "at": "2026-10-03T15:02:03.085Z",
+      "elapsedMs": 0,
+      "mode": "dynamic",
+      "kind": "start",
+      "detail": "link-command-ack"
+    },
+    {
+      "sequence": 2,
+      "at": "2026-10-03T15:02:03.085Z",
+      "elapsedMs": 1,
+      "mode": "dynamic",
+      "kind": "fixture-event",
+      "detail": "start-task: accepted"
+    },
+    {
+      "sequence": 3,
+      "at": "2026-10-03T15:02:03.135Z",
+      "elapsedMs": 50,
+      "mode": "dynamic",
+      "kind": "fixture-event",
+      "detail": "start-step: accepted"
+    },
+    {
+      "sequence": 4,
+      "at": "2026-10-03T15:02:03.185Z",
+      "elapsedMs": 100,
+      "mode": "dynamic",
+      "kind": "fixture-event",
+      "detail": "link-lost: accepted"
+    },
+    {
+      "sequence": 5,
+      "at": "2026-10-03T15:02:03.236Z",
+      "elapsedMs": 151,
+      "mode": "dynamic",
+      "kind": "fixture-event",
+      "detail": "open-request: accepted"
+    },
+    {
+      "sequence": 6,
+      "at": "2026-10-03T15:02:03.301Z",
+      "elapsedMs": 217,
+      "mode": "dynamic",
+      "kind": "operator-response",
+      "detail": "respond: accepted"
+    },
+    {
+      "sequence": 7,
+      "at": "2026-10-03T15:02:03.351Z",
+      "elapsedMs": 267,
+      "mode": "dynamic",
+      "kind": "skip-scripted-answer",
+      "detail": "脚本人工请求暂停（交互模式由您操作）"
+    },
+    {
+      "sequence": 8,
+      "at": "2026-10-03T15:02:03.352Z",
+      "elapsedMs": 267,
+      "mode": "dynamic",
+      "kind": "fixture-event",
+      "detail": "link-restored: accepted"
+    },
+    {
+      "sequence": 9,
+      "at": "2026-10-03T15:02:03.400Z",
+      "elapsedMs": 316,
+      "mode": "dynamic",
+      "kind": "fixture-event",
+      "detail": "device-ack: accepted"
+    },
+    {
+      "sequence": 10,
+      "at": "2026-10-03T15:02:03.451Z",
+      "elapsedMs": 366,
+      "mode": "dynamic",
+      "kind": "fixture-event",
+      "detail": "open-request: accepted"
+    },
+    {
+      "sequence": 11,
+      "at": "2026-10-03T15:02:03.519Z",
+      "elapsedMs": 434,
+      "mode": "dynamic",
+      "kind": "operator-response",
+      "detail": "respond: accepted"
+    },
+    {
+      "sequence": 12,
+      "at": "2026-10-03T15:02:03.519Z",
+      "elapsedMs": 434,
+      "mode": "dynamic",
+      "kind": "stop-on-end",
+      "detail": "未注入的剩余fixture事件已清除。原案例脚本仍保留在scenario定义。"
+    },
+    {
+      "sequence": 13,
+      "at": "2026-10-03T15:02:03.569Z",
+      "elapsedMs": 484,
+      "mode": "dynamic",
+      "kind": "export",
+      "detail": "state + raw actions + application log + interaction telemetry"
+    }
+  ],
+  "measurementNote": "交互耗时为本浏览器的实际操作记录。没有参与者对照实验，不能据此主张效率改善。",
+  "verificationDriver": "playwright-automated-clicks",
+  "humanPerformanceEvidence": false
+}

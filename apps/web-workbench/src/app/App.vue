@@ -51,6 +51,10 @@ const showMapTracePrototype =
 const ScenarioLabPage = defineAsyncComponent(
   () => import("../features/scenario-lab/ScenarioLabPage.vue"),
 );
+// Standalone experiment: deterministic fixtures, without any device / Agent connection.
+const InterventionLabPage = defineAsyncComponent(
+  () => import("../features/intervention-lab/InterventionLabPage.vue"),
+);
 // PROTOTYPE - throwaway: Scenario Lab UI variants, dev-only via ?variant=A|B|C.
 const ScenarioLabPrototype = defineAsyncComponent(
   () => import("../features/scenario-lab/prototype/ScenarioLabPrototype.vue"),
@@ -210,16 +214,21 @@ onMounted(() => {
 <template>
   <div class="shell-root">
     <WorkbenchTopNav
-      :connection-label="connectionLabels[connectionState]"
-      :connection-state="connectionState"
-      :environment="config.environment"
+      :class="{ 'shell-experiment-nav': route === '/intervention-lab' }"
+      :connection-label="route === '/intervention-lab' ? '本地确定性仿真 · 未连接真实设备' : connectionLabels[connectionState]"
+      :connection-state="route === '/intervention-lab' ? 'disconnected' : connectionState"
+      :environment="route === '/intervention-lab' ? '实验' : config.environment"
       :route="route"
       :version="workbenchVersion"
       @navigate="navigate"
     />
 
+    <main v-if="route === '/intervention-lab'" class="shell-intervention-page">
+      <InterventionLabPage />
+    </main>
+
     <main
-      v-if="route === '/conversation' && showMapTracePrototype"
+      v-else-if="route === '/conversation' && showMapTracePrototype"
       class="shell-route"
     >
       <MapAgentTracePrototype />
@@ -290,6 +299,57 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.shell-experiment-nav {
+  flex-shrink: 0;
+  min-height: 48px;
+  height: auto;
+  background: #14201f;
+  border-color: #2c3c38;
+  color: #eaf2ed;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-block: 7px;
+}
+
+.shell-experiment-nav :deep(.shell-topbar-nav) {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.shell-experiment-nav :deep(.shell-topbar-nav a) {
+  color: #b9c8c1;
+  white-space: nowrap;
+  padding-inline: 9px;
+}
+
+.shell-experiment-nav :deep(.shell-topbar-nav a.active) {
+  color: #c8f3db;
+  background: #25483a;
+}
+
+.shell-experiment-nav :deep(.shell-topbar-status) {
+  background: #26342f;
+  color: #c6d4cd;
+}
+
+@media (max-width: 600px) {
+  .shell-experiment-nav :deep(.shell-topbar-nav) {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .shell-experiment-nav :deep(.shell-topbar-status) {
+    white-space: normal;
+    font-size: 10px;
+  }
+}
+
+.shell-intervention-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .shell-scenario-page {
   flex: 1;
   min-height: 0;

@@ -1,0 +1,243 @@
+{
+  "schemaVersion": "intervention-lab-export-replay/v1",
+  "generatedAt": "2026-10-03T15:03:37.055Z",
+  "simulation": true,
+  "humanPerformanceEvidence": false,
+  "allMatched": true,
+  "results": [
+    {
+      "filename": "ack-checkpoints.json",
+      "actionCount": 7,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "f4a9027e731ac303a2701812d21c1369a55777efabccb8b6cb4f9b1ca25ee50e"
+    },
+    {
+      "filename": "branch-case-reset.json",
+      "actionCount": 1,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "0a8304a8713490d2ca9e0c24a88d4d15c2cee701f62b9039e599ffbe2edaa3fe"
+    },
+    {
+      "filename": "branch-confirmation-approve.json",
+      "actionCount": 10,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "c1a5c4c8f55a5f3e17fe868abee016cb38b94664158373ac164ed243729cf11e"
+    },
+    {
+      "filename": "branch-navigation-end.json",
+      "actionCount": 4,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "cfa652933cedc6245aa6846585b07e68bacf87fda9b12a2e23f3523966a92a80"
+    },
+    {
+      "filename": "branch-navigation-retry.json",
+      "actionCount": 14,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "3210b69f16c068d9b6da4447d0eb7b80a60f959cf0d8ca79598712ba60632cba"
+    },
+    {
+      "filename": "branch-running-constraint-refused.json",
+      "actionCount": 13,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "08b55ca975e97ac99aaeb7a9ff786bb812fd852d0faa6864d72507650b6bb0af"
+    },
+    {
+      "filename": "branch-stale-proposal-reject.json",
+      "actionCount": 14,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "73aa52ecf4a25f5ef1027fd76980c27bfd921522594040f369b739c31272742a"
+    },
+    {
+      "filename": "branch-supplement-validation.json",
+      "actionCount": 11,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "9eff257a1abba67add54973459060dd475e63106670ede012290db99988bf89b"
+    },
+    {
+      "filename": "confirmation-reject-dynamic.json",
+      "actionCount": 13,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "0069ff552eb524dda8d1cee3d28a638678550bfa662e1ab33e8303abb6c2a7d4"
+    },
+    {
+      "filename": "confirmation-reject-fixed.json",
+      "actionCount": 13,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "e01a4d92700161ccabcf5cdfa7d61b7cc7e0aa5a64d401f05232c06e48d22665"
+    },
+    {
+      "filename": "constraint-stale-dynamic.json",
+      "actionCount": 11,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "52c3a815516591985447917340ce62e121d8f9379deae8d767a292d217807344"
+    },
+    {
+      "filename": "constraint-stale-fixed.json",
+      "actionCount": 11,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "94c8284e834c4741aa9da4a68156c51d1676affd7bc372ff36eb1570d5853502"
+    },
+    {
+      "filename": "dom-branch-approve.json",
+      "actionCount": 10,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "e00007634c90391ec1df88c990ce887da4a8c9893530cfde39dca270ae4f71e1"
+    },
+    {
+      "filename": "dom-branch-early-end.json",
+      "actionCount": 4,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "fece9bfa8a222868445628309d7c0dcfd4c2af9ea257089d1d792083bc4e669f"
+    },
+    {
+      "filename": "dom-branch-reject-stale-proposal.json",
+      "actionCount": 14,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "003b80951e3c18c92661f332e84eb8c513c8d2dae79b5ff00deb8345e851a7d6"
+    },
+    {
+      "filename": "dom-branch-retry.json",
+      "actionCount": 14,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "3958caca729b9e7ede0cd3cd25d7bcb192ce616fb285c246aee771529427c931"
+    },
+    {
+      "filename": "dom-branch-supplement.json",
+      "actionCount": 11,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "c9577d48592b7694e28ed64f6cf0cb7f884dcfa5e38afd58289841780954132e"
+    },
+    {
+      "filename": "dom-confirmation-reject-dynamic.json",
+      "actionCount": 13,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "1758f1c5e08e2350766604f9b94efd6e2e51029db5c76aaf29aa1353d930d90f"
+    },
+    {
+      "filename": "dom-confirmation-reject-fixed.json",
+      "actionCount": 13,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "1b001d3948313699a418f964ae868f325398182d7cb43dbeab6eb9133a51cc75"
+    },
+    {
+      "filename": "dom-constraint-stale-dynamic.json",
+      "actionCount": 11,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "0822345e19676cc0027b70fcefafab2f241bc5d8f82f76fd14d38b5fe4d2f187"
+    },
+    {
+      "filename": "dom-constraint-stale-fixed.json",
+      "actionCount": 11,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "1e219b638a18a22bd5402aca1cf06b588810269ccc76d8255715d089fce5c4be"
+    },
+    {
+      "filename": "dom-link-command-ack-dynamic.json",
+      "actionCount": 9,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "1b418945a092ac54952b1314c0239f09cc4ce355ff222e831b3c5c853880685e"
+    },
+    {
+      "filename": "dom-link-command-ack-fixed.json",
+      "actionCount": 9,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "3b4fbe11cbc8bf0a51804970c9b9c00d465884500f00b8bda5ff1582f7b65e40"
+    },
+    {
+      "filename": "dom-mode-parity-and-duplicate.json",
+      "actionCount": 12,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "85d35f3d8a5897cffff7675cb5fa8683d4e263fd9bb45ee8903553a2288b58f0"
+    },
+    {
+      "filename": "dom-navigation-failure-dynamic.json",
+      "actionCount": 11,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "acf77d0e4d821976ce73b129b00cf5acf1fe3d36d77f927e48161267bcf90365"
+    },
+    {
+      "filename": "dom-navigation-failure-fixed.json",
+      "actionCount": 11,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "ce58f0f80c93f65c468b290f330949ed6b468cc3b70d73bc0e1945eacae8a109"
+    },
+    {
+      "filename": "dom-normal-detour-dynamic.json",
+      "actionCount": 12,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "c46b4d9e3eb1cad041bef4f7899a7a25bed258fcab39888e66a7fb3c3bf2d84f"
+    },
+    {
+      "filename": "dom-normal-detour-fixed.json",
+      "actionCount": 12,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "e7eac7e26be3e943818b5f974601328cc9c935b2ff7c545471ded72f1c036733"
+    },
+    {
+      "filename": "dom-running-guard-and-reset.json",
+      "actionCount": 1,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "830a973637aa7b9463904fa2809099040017d0b5ec25c43a8be50c0e2275b0ee"
+    },
+    {
+      "filename": "dom-supplement-exclusion-dynamic.json",
+      "actionCount": 10,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "805da4f16b060b4abca61f07ee8bf4470c559e1c2e0c6d14a5011ef4da493577"
+    },
+    {
+      "filename": "dom-supplement-exclusion-fixed.json",
+      "actionCount": 10,
+      "driver": "vue-test-utils-jsdom-dom-clicks",
+      "identicalStateSha256": "60ea52c41bd516ab22bbe01bb1ba4b2c7d0ca85397e6808093c7300cff4537da"
+    },
+    {
+      "filename": "link-command-ack-dynamic.json",
+      "actionCount": 9,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "3d54683eba260610e02023e7c9428553a65d6c2c1f885aa957762d2339ba7f12"
+    },
+    {
+      "filename": "link-command-ack-fixed.json",
+      "actionCount": 9,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "c2daffa3ec0581f4caa15fdc7eee93c655663f6d4648e170122df5ae2acd2273"
+    },
+    {
+      "filename": "navigation-failure-dynamic.json",
+      "actionCount": 11,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "6fc709ddf5f917e238a56e7b5406f347645933ba3290f4c8d46392b5bfad1ebd"
+    },
+    {
+      "filename": "navigation-failure-fixed.json",
+      "actionCount": 11,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "0d251a6abf7cec6ca380eb5bd5e417ec443e63189ad76241285778371cbc70ab"
+    },
+    {
+      "filename": "normal-detour-dynamic.json",
+      "actionCount": 12,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "83aee04fc641f530a95fa506e9d4d85ca1c8c284bbb9201f54e5682d9a97bbce"
+    },
+    {
+      "filename": "normal-detour-fixed.json",
+      "actionCount": 12,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "3a61c4b711fc3ea864028964c5aa52c7f529fd0565a0ab2848c59ee86436e879"
+    },
+    {
+      "filename": "supplement-exclusion-dynamic.json",
+      "actionCount": 10,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "06887a742a76c411aec0997ece101aa4278655a2b6c4b169c5c34ea16d7c04ab"
+    },
+    {
+      "filename": "supplement-exclusion-fixed.json",
+      "actionCount": 10,
+      "driver": "playwright-automated-clicks",
+      "identicalStateSha256": "ebc41e6a365d406c62fe0722b69ab69dd18155a08cb7673cf47be39d49e14287"
+    }
+  ]
+}

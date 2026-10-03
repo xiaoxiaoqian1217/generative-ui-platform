@@ -1,0 +1,161 @@
+{
+  "config": {
+    "argv": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "/workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/node_modules/@playwright/test/cli.js",
+      "test",
+      "workbench.spec.ts",
+      "--grep",
+      "scenario B reuses scenario A context",
+      "--config",
+      "playwright-baseline.config.ts",
+      "--reporter=line,json"
+    ],
+    "configFile": "/workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/playwright-baseline.config.ts",
+    "rootDir": "/workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "baseline-chromium",
+        "name": "baseline-chromium",
+        "testDir": "/workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 20000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": {
+      "command": "node tests/e2e/server.mjs",
+      "reuseExistingServer": false,
+      "timeout": 20000,
+      "url": "http://127.0.0.1:4173/workbench-health"
+    }
+  },
+  "suites": [
+    {
+      "title": "workbench.spec.ts",
+      "file": "workbench.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "scenario B reuses scenario A context and continues route B without clearing the selection",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "baseline-chromium",
+              "projectName": "baseline-chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 19829,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid^=\\'patrol-route-consult-\\']')\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid^=\\'patrol-route-consult-\\']')\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid^=\\'patrol-route-consult-\\']')\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid^=\\'patrol-route-consult-\\']')\u001b[22m\n\n    at startPatrolRouteConsult (/workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/tests/e2e/workbench.spec.ts:816:25)\n    at /workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/tests/e2e/workbench.spec.ts:979:19",
+                    "location": {
+                      "file": "/workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/tests/e2e/workbench.spec.ts",
+                      "column": 25,
+                      "line": 816
+                    },
+                    "snippet": "  814 |   await page.getByRole(\"button\", { name: /候选巡逻路线征询/ }).click();\n  815 |   const consult = page.locator(\"[data-testid^='patrol-route-consult-']\");\n> 816 |   await expect(consult).toBeVisible({ timeout: 15_000 });\n      |                         ^\n  817 |   await expect(consult.getByTestId(\"consult-status\")).toHaveText(\"executing\");\n  818 |   await expect(\n  819 |     consult.getByTestId(\"patrol-route-option-route-a\"),"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/tests/e2e/workbench.spec.ts",
+                        "column": 25,
+                        "line": 816
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('[data-testid^=\\'patrol-route-consult-\\']')\nExpected: visible\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 15000ms\u001b[22m\n\u001b[2m  - waiting for locator('[data-testid^=\\'patrol-route-consult-\\']')\u001b[22m\n\n\n  814 |   await page.getByRole(\"button\", { name: /候选巡逻路线征询/ }).click();\n  815 |   const consult = page.locator(\"[data-testid^='patrol-route-consult-']\");\n> 816 |   await expect(consult).toBeVisible({ timeout: 15_000 });\n      |                         ^\n  817 |   await expect(consult.getByTestId(\"consult-status\")).toHaveText(\"executing\");\n  818 |   await expect(\n  819 |     consult.getByTestId(\"patrol-route-option-route-a\"),\n    at startPatrolRouteConsult (/workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/tests/e2e/workbench.spec.ts:816:25)\n    at /workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/tests/e2e/workbench.spec.ts:979:19"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-03T15:07:00.355Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/test-results/workbench-scenario-B-reuse-60c9c-hout-clearing-the-selection-baseline-chromium/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/test-results/workbench-scenario-B-reuse-60c9c-hout-clearing-the-selection-baseline-chromium/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/workspace/scratch/8449a05e434b/baseline-check/apps/web-workbench/tests/e2e/workbench.spec.ts",
+                    "column": 25,
+                    "line": 816
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "921e070f285a8b470d11-592594753ca40f75b43f",
+          "file": "workbench.spec.ts",
+          "line": 973,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-03T15:06:54.631Z",
+    "duration": 25953.254,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}
