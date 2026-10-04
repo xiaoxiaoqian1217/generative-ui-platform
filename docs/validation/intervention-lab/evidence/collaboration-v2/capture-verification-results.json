@@ -1,0 +1,155 @@
+{
+  "schemaVersion": "intervention-lab-collaboration-verification/v2",
+  "generatedAt": "2026-10-04T09:10:52.786Z",
+  "simulation": true,
+  "humanPerformanceEvidence": false,
+  "allMatched": true,
+  "screenshotCount": 8,
+  "rawExportCount": 9,
+  "sourceResults": [
+    {
+      "filename": "apps/web-workbench/src/features/intervention-lab/InterventionLabPage.vue",
+      "sha256": "a4566334c6a1b8f148fad2b9d1555087cbc6e249f1fa7b44dd3555882db7264d",
+      "workingBytesMatched": true
+    },
+    {
+      "filename": "apps/web-workbench/src/features/intervention-lab/model.ts",
+      "sha256": "d8ba718b0adc9aba7f2288fac0801372e8fa12e4af9bf99708a23fa32ae4af62",
+      "workingBytesMatched": true
+    },
+    {
+      "filename": "apps/web-workbench/src/features/intervention-lab/scenarios.ts",
+      "sha256": "ef9f4856e26fde7d78211f7f5cb849a3e27f76bd0a17c7f0219c708db8d9acf4",
+      "workingBytesMatched": true
+    },
+    {
+      "filename": "apps/web-workbench/src/features/intervention-lab/intervention-lab.css",
+      "sha256": "14384e6e1bce75b7a8dc970ad62e5122f11cfe9250363cef41399e870329cdae",
+      "workingBytesMatched": true
+    }
+  ],
+  "groups": [
+    {
+      "group": "observation-input",
+      "checkpointCount": 4,
+      "runIds": [
+        "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867"
+      ],
+      "singleRun": true
+    },
+    {
+      "group": "active-priority",
+      "checkpointCount": 4,
+      "runIds": [
+        "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36"
+      ],
+      "singleRun": true
+    },
+    {
+      "group": "default-priority",
+      "checkpointCount": 1,
+      "runIds": [
+        "lab:59356428-d02c-4353-b149-5dd693cc33ce"
+      ],
+      "singleRun": true
+    }
+  ],
+  "results": [
+    {
+      "name": "observation-request-pending",
+      "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+      "rawExportMatchedCapture": true,
+      "pngHashAndDimensionsMatched": true,
+      "dimensions": {
+        "width": 1480,
+        "height": 2392
+      },
+      "fullStateReplayAssertedByBrowserTest": true
+    },
+    {
+      "name": "observation-empty-response-rejected",
+      "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+      "rawExportMatchedCapture": true,
+      "pngHashAndDimensionsMatched": true,
+      "dimensions": {
+        "width": 1480,
+        "height": 2442
+      },
+      "fullStateReplayAssertedByBrowserTest": true
+    },
+    {
+      "name": "observation-parameter-applied",
+      "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+      "rawExportMatchedCapture": true,
+      "pngHashAndDimensionsMatched": true,
+      "dimensions": {
+        "width": 1480,
+        "height": 2466
+      },
+      "fullStateReplayAssertedByBrowserTest": true
+    },
+    {
+      "name": "observation-feedback-received",
+      "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+      "rawExportMatchedCapture": true,
+      "pngHashAndDimensionsMatched": true,
+      "dimensions": {
+        "width": 1480,
+        "height": 2490
+      },
+      "fullStateReplayAssertedByBrowserTest": true
+    },
+    {
+      "name": "priority-before-adjustment",
+      "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+      "rawExportMatchedCapture": true,
+      "pngHashAndDimensionsMatched": true,
+      "dimensions": {
+        "width": 1480,
+        "height": 1944
+      },
+      "fullStateReplayAssertedByBrowserTest": true
+    },
+    {
+      "name": "priority-adjustment-applied",
+      "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+      "rawExportMatchedCapture": true,
+      "pngHashAndDimensionsMatched": true,
+      "dimensions": {
+        "width": 1480,
+        "height": 2156
+      },
+      "fullStateReplayAssertedByBrowserTest": true
+    },
+    {
+      "name": "priority-next-C-running",
+      "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+      "rawExportMatchedCapture": true,
+      "pngHashAndDimensionsMatched": true,
+      "dimensions": {
+        "width": 1480,
+        "height": 2221
+      },
+      "fullStateReplayAssertedByBrowserTest": true
+    },
+    {
+      "name": "priority-completed",
+      "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+      "rawExportMatchedCapture": true,
+      "pngHashAndDimensionsMatched": true,
+      "dimensions": {
+        "width": 1480,
+        "height": 2245
+      },
+      "fullStateReplayAssertedByBrowserTest": true
+    },
+    {
+      "name": "priority-default-order-completed",
+      "runId": "lab:59356428-d02c-4353-b149-5dd693cc33ce",
+      "rawExportMatchedCapture": true,
+      "pngHashAndDimensionsMatched": null,
+      "dimensions": null,
+      "fullStateReplayAssertedByBrowserTest": true
+    }
+  ]
+}

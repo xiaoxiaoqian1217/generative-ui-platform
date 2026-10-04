@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import {
   createInitialState,
   dispatchLabAction,
@@ -20,19 +20,24 @@ type InteractionRecord = {
   detail: string;
 };
 
+const defaultScenario =
+  LAB_SCENARIOS.find((scenario) => scenario.id === "observation-cooperation") ??
+  LAB_SCENARIOS[0]!;
 const mode = ref<DisplayMode>("dynamic");
-const scenarioId = ref(LAB_SCENARIOS[0]!.id);
+const scenarioId = ref(defaultScenario.id);
 const runningScenarioId = ref(scenarioId.value);
-const state = ref(createInitialState());
+const state = ref(createInitialState("fixture-run", defaultScenario.collaboration));
 const cursor = ref(0);
-const executionQueue = ref<ScenarioStep[]>([...LAB_SCENARIOS[0]!.steps]);
+const executionQueue = ref<ScenarioStep[]>([...defaultScenario.steps]);
 const branchNotice = ref("");
 const started = ref(false);
 const notice = ref("");
-const selectedRoadId = ref("r-b");
+const selectedRoadId = ref("r-a");
 const constraintRoadId = ref("r-c");
 const constraintNote = ref("");
+const priorityStepId = ref("s-c");
 const fieldValues = ref<Record<string, Record<string, string>>>({});
+const observationPointValues = ref<Record<string, string>>({});
 const inputActions = ref<LabAction[]>([]);
 const telemetry = ref<InteractionRecord[]>([]);
 const exportPreview = ref("");
@@ -49,6 +54,29 @@ const runningScenario = computed(
 );
 const presentation = computed(() => getPresentation(state.value));
 const pending = computed(() => presentation.value.pendingRequests);
+const collaboration = computed(() => presentation.value.collaboration);
+const orderedSteps = computed(() => {
+  const order = collaboration.value?.stepOrder;
+  return order === undefined
+    ? state.value.steps
+    : order
+        .map((id) => state.value.steps.find((step) => step.id === id))
+        .filter((step) => step !== undefined);
+});
+const upcomingSteps = computed(() =>
+  orderedSteps.value.filter((step) => step.status === "pending"),
+);
+const nextScheduledStep = computed(() => upcomingSteps.value[0]);
+watch(upcomingSteps, (steps) => {
+  if (!steps.some((step) => step.id === priorityStepId.value))
+    priorityStepId.value = steps[0]?.id ?? "";
+});
+const currentStep = computed(() =>
+  state.value.steps.find((step) => step.status === "running"),
+);
+const completedStepCount = computed(
+  () => state.value.steps.filter((step) => step.status === "completed").length,
+);
 const selectedRoad = computed(
   () => state.value.roads.find((road) => road.id === selectedRoadId.value)!,
 );
@@ -60,14 +88,17 @@ const stateJson = computed(() => JSON.stringify(state.value, null, 2));
 const fixtureJson = computed(() =>
   JSON.stringify(executionQueue.value, null, 2),
 );
-const nextEventLabel = computed(() =>
-  nextStep.value?.action.type === "finish-task" &&
-  state.value.steps.some(
-    (step) => step.status === "pending" || step.status === "running",
-  )
+const nextEventLabel = computed(() => {
+  if (nextStep.value?.scriptedOperator && pending.value.length === 0)
+    return "保留你的实际选择，继续下一个仿真事件";
+  return !runningScenario.value.collaboration &&
+    nextStep.value?.action.type === "finish-task" &&
+    state.value.steps.some(
+      (step) => step.status === "pending" || step.status === "running",
+    )
     ? "注入仍待完成分支的成功 fixture，再结束（仿真）"
-    : (nextStep.value?.label ?? "事件已注入完毕"),
-);
+    : (nextStep.value?.label ?? "事件已注入完毕");
+});
 const phaseLabels = {
   ready: "准备",
   running: "执行中",
@@ -151,7 +182,10 @@ function stopReplay(): void {
 function start(): void {
   stopReplay();
   runningScenarioId.value = scenarioId.value;
-  state.value = createInitialState(`lab:${crypto.randomUUID()}`);
+  state.value = createInitialState(
+    `lab:${crypto.randomUUID()}`,
+    runningScenario.value.collaboration,
+  );
   cursor.value = 0;
   executionQueue.value = [...runningScenario.value.steps];
   branchNotice.value = "";
@@ -159,6 +193,9 @@ function start(): void {
   inputActions.value = [];
   telemetry.value = [];
   fieldValues.value = {};
+  observationPointValues.value = {};
+  priorityStepId.value = "s-c";
+  selectedRoadId.value = runningScenario.value.collaboration ? "r-a" : "r-b";
   exportPreview.value = "";
   actionSequence = 0;
   startedAt = performance.now();
@@ -256,7 +293,10 @@ function advance(): void {
     cursor.value += 1;
     skipScriptedOperatorSteps();
   }
-  if (nextStep.value?.action.type === "finish-task")
+  if (
+    !runningScenario.value.collaboration &&
+    nextStep.value?.action.type === "finish-task"
+  )
     insertRemainingFixtureChecks();
   const step = executionQueue.value[cursor.value];
   if (step === undefined) {
@@ -336,6 +376,12 @@ function updateField(requestId: string, key: string, value: string): void {
   };
 }
 
+function isObservationRequest(request: LabRequest): boolean {
+  return request.options.some(
+    (option) => option.effect === "provide-observation-point",
+  );
+}
+
 function addConstraint(): void {
   stopReplay();
   const road = state.value.roads.find(
@@ -363,6 +409,34 @@ function pauseCommand(): void {
     },
     "operator-command",
   );
+}
+
+function prioritizeStep(): void {
+  stopReplay();
+  apply(
+    {
+      type: "prioritize-step",
+      actionId: uid("priority"),
+      runId: state.value.runId,
+      planVersion: state.value.planVersion,
+      stepId: priorityStepId.value,
+    },
+    "operator-priority",
+  );
+}
+
+function stepName(id: string): string {
+  return state.value.steps.find((step) => step.id === id)?.label ?? id;
+}
+
+function contributionFeedback(stepIds: string[]): string {
+  const steps = state.value.steps.filter((step) => stepIds.includes(step.id));
+  return steps
+    .map((step) => {
+      const road = state.value.roads.find((item) => item.id === step.roadId);
+      return `${step.label}：${stepLabels[step.status]}${road?.status === "observed" ? "，模拟观测反馈已到达" : "，道路仍未查明"}`;
+    })
+    .join("；");
 }
 
 function rejectOldResponse(request: LabRequest): void {
@@ -407,7 +481,9 @@ function roadPoints(road: LabRoad): string {
 function isMapFocus(id: string): boolean {
   return (
     id === selectedRoadId.value ||
-    (mode.value === "dynamic" && presentation.value.focusRoadIds.includes(id))
+    (mode.value === "dynamic" &&
+      (presentation.value.focusRoadIds.includes(id) ||
+        (collaboration.value !== undefined && currentStep.value?.roadId === id)))
   );
 }
 
@@ -452,8 +528,8 @@ onUnmounted(stopReplay);
   <div class="lab" :data-mode="mode" data-testid="intervention-lab">
     <header class="lab-heading">
       <div>
-        <p class="eyebrow">INTERVENTION LAB · 专利交互验证</p>
-        <h1>道路探查 · 人与 Agent 协同介入</h1>
+        <p class="eyebrow">COLLABORATIVE TASK PANEL · 专利交互验证</p>
+        <h1>道路探查 · 人与 Agent 一起完成任务</h1>
         <p class="scope-note" data-testid="lab-simulation-label">确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面</p>
       </div>
       <button type="button" class="subtle" data-testid="lab-export" @click="exportRun">↓ 导出原始记录</button>
@@ -481,6 +557,12 @@ onUnmounted(stopReplay);
     <p v-if="started && scenarioId !== runningScenarioId" class="case-description">当前运行仍是「{{ runningScenario.title }}」；开始所选案例会重置这次实验。</p>
     <p v-if="branchNotice" class="branch-note" data-testid="lab-branch-note">{{ branchNotice }}</p>
 
+    <section class="mission-strip" aria-label="持续任务概览" data-testid="lab-continuous-panel">
+      <div class="mission-goal"><span class="panel-label">这次要完成</span><strong data-testid="lab-task-goal">{{ state.goal }}</strong><small>同一任务持续更新 · {{ state.phase === 'ready' ? '尚未开始' : phaseLabels[state.phase] }}</small></div>
+      <div class="mission-current"><span class="panel-label">Agent 当前在做</span><strong data-testid="lab-current-step">{{ currentStep?.label ?? (state.phase === 'ended' ? '本次执行已结束' : pending.length ? '等待协作后继续' : started ? '准备下一步' : '等待开始') }}</strong><small>{{ pending.length ? `有 ${pending.length} 件事需要你参与` : '执行反馈会更新当前步骤和道路证据' }}</small></div>
+      <div class="mission-progress"><span class="panel-label">当前取得的结果</span><strong data-testid="lab-progress">已完成 {{ completedStepCount }}/{{ state.steps.length }} 步</strong><small data-testid="lab-coverage">已查明 {{ state.roads.length - presentation.uncheckedRoadIds.length }}/{{ state.roads.length }} 条路 · {{ presentation.uncheckedRoadIds.length }} 条未查明</small></div>
+    </section>
+
     <div class="workspace">
       <section class="map-card" aria-label="任务关联地图">
         <div class="card-heading"><strong>街区道路状态</strong><span>虚构示意 / 非实测地图</span></div>
@@ -496,6 +578,11 @@ onUnmounted(stopReplay);
               <polyline :points="roadPoints(road)" fill="none" stroke="transparent" stroke-width="9" />
             </g>
             <text class="road-name" x="9" y="18">A</text><text class="road-name" x="48" y="52">B</text><text class="road-name" x="80" y="42">C</text>
+            <g v-if="collaboration?.observationInput?.selectedPointId" class="observation-point" data-testid="lab-selected-point-marker">
+              <template v-for="point in collaboration.observationInput.points.filter((item) => item.id === collaboration?.observationInput?.selectedPointId)" :key="point.id">
+                <circle :cx="point.position.x" :cy="point.position.y" r="2.2" /><text :x="point.position.x + 3" :y="point.position.y - 2">观测点参数</text>
+              </template>
+            </g>
             <g :transform="`translate(${state.device.position.x},${state.device.position.y})`" class="ugv-marker">
               <circle r="3.5" /><rect x="-1.8" y="-1.6" width="3.6" height="3.2" rx=".5" /><text x="5" y="1">UGV</text>
             </g>
@@ -514,25 +601,32 @@ onUnmounted(stopReplay);
 
       <div class="task-column">
         <section class="task-card overview-card" data-testid="lab-task-state">
-          <div class="card-heading"><strong>任务与执行步骤</strong><span>计划 v{{ state.planVersion }}</span></div>
+          <div class="card-heading"><strong>任务与执行顺序</strong><span>计划 v{{ state.planVersion }}</span></div>
           <p class="goal">{{ state.goal }}</p>
-          <ol class="step-list"><li v-for="step in state.steps" :key="step.id" :class="step.status" :data-testid="`lab-step-${step.id}`" :data-status="step.status"><span class="step-symbol">{{ step.status === 'completed' ? '✓' : step.status === 'running' ? '●' : '·' }}</span><span>{{ step.label }}</span><small>{{ stepLabels[step.status] }}</small></li></ol>
+          <div class="next-step-row" data-testid="lab-next-scheduled-step"><span>当前步骤之后</span><strong>{{ nextScheduledStep?.label ?? '没有尚未开始的步骤' }}</strong><small>{{ collaboration ? '按下方实际顺序调度' : '按案例事件推进' }}</small></div>
+          <ol class="step-list" data-testid="lab-step-order"><li v-for="(step, index) in orderedSteps" :key="step.id" :class="step.status" :data-testid="`lab-step-${step.id}`" :data-status="step.status" :data-order="index + 1"><span class="step-symbol">{{ step.status === 'completed' ? '✓' : step.status === 'running' ? '●' : index + 1 }}</span><span>{{ step.label }}</span><small>{{ stepLabels[step.status] }}</small></li></ol>
+          <p v-if="collaboration?.executionOrder.length" class="execution-trace" data-testid="lab-execution-order">实际已开始：{{ collaboration.executionOrder.map(stepName).join(' → ') }}</p>
           <div class="outcome" data-testid="lab-outcome"><strong>{{ state.outcome === 'complete' ? '本次目标已完成（仿真）' : state.outcome === 'partial' ? '本次结束，仍有未查明路段' : '结果持续更新中' }}</strong><span>未查明 {{ presentation.uncheckedRoadIds.length }}/{{ state.roads.length }} 条 · 未观察的事实始终保留</span></div>
         </section>
 
         <section class="task-card intervention-card" :class="{ needsAttention: pending.length > 0 }" data-testid="lab-interventions">
-          <div class="card-heading"><strong>人工处理事项 <b class="count">{{ pending.length }}</b></strong><span>{{ mode === 'dynamic' ? '按当前事项聚焦' : '固定区域' }}</span></div>
-          <p v-if="pending.length === 0" class="empty-note">当前没有待决事项。你仍可主动追加约束或发出任务控制。</p>
+          <div class="card-heading"><strong>Agent 需要你参与 <b class="count">{{ pending.length }}</b></strong><span>{{ mode === 'dynamic' ? '随当前状态聚焦' : '固定区域' }}</span></div>
+          <p v-if="pending.length === 0" class="empty-note">当前没有待处理的协作请求。你仍可以主动调整后续任务。</p>
           <article v-for="request in pending" :key="`${request.id}-${request.version}`" class="request" :data-testid="`lab-request-${request.id}`" :data-request-type="request.type">
             <div class="request-title"><span class="type-tag">{{ typeLabels[request.type] }}型</span><h2>{{ request.title }}</h2></div>
             <p>{{ request.reason }}</p>
-            <dl class="request-facts"><div><dt>关联道路</dt><dd>{{ roadNames(request.roadIds) }}</dd></div><div><dt>处理依据</dt><dd>{{ request.basis }}</dd></div><div><dt>请求版本</dt><dd>{{ request.id }} · v{{ request.version }} · 生成时计划 v{{ request.createdPlanVersion }}</dd></div></dl>
+            <dl class="request-facts"><div><dt>关联道路</dt><dd>{{ roadNames(request.roadIds) }}</dd></div><div><dt>处理依据</dt><dd>{{ request.basis }}</dd></div><div><dt>请求版本</dt><dd>第 {{ request.version }} 版 · 基于生成时的计划第 {{ request.createdPlanVersion }} 版</dd></div></dl>
             <button class="text-button" type="button" :disabled="request.roadIds.length === 0" @click="selectedRoadId = request.roadIds[0]!; record('locate-request', request.id)">定位关联道路 ↗</button>
             <div v-if="request.requiredInput.kind === 'fields'" class="request-fields">
               <p class="empty-note">提交内容只记录本次不检查关联道路的要求；实际应用范围为 {{ roadNames(request.roadIds) }}，不会执行文本中的其他指令。</p>
               <label v-for="field in request.requiredInput.fields" :key="field.key">{{ field.label }}{{ field.required ? '（必填）' : '' }}<input :value="fieldValues[request.id]?.[field.key] ?? ''" :data-testid="`lab-field-${request.id}-${field.key}`" @input="updateField(request.id, field.key, ($event.target as HTMLInputElement).value)" /></label>
             </div>
-            <div class="request-actions"><button v-for="option in request.options" :key="option.id" type="button" :data-testid="`lab-response-${request.id}-${option.id}`" :class="option.id === 'reject' || option.effect === 'end-task' ? 'subtle' : 'primary'" @click="respond(request, option.id)">{{ option.label }}</button></div>
+            <form v-if="isObservationRequest(request)" class="observation-input-form" data-testid="lab-observation-point-form" @submit.prevent="respond(request, observationPointValues[request.id] ?? '')">
+              <label>提供这一步需要的观测点<select :value="observationPointValues[request.id] ?? ''" data-testid="lab-observation-point" @change="observationPointValues[request.id] = ($event.target as HTMLSelectElement).value"><option value="">请选择预设观测点</option><option v-for="option in request.options" :key="option.id" :value="option.id">{{ option.label }}</option></select></label>
+              <p class="empty-note">选择会写入当前步骤的执行参数。未选点时提交会被拒绝，任务仍等待你的补充。</p>
+              <button type="submit" class="primary" data-testid="lab-submit-observation">提交观测点，继续协作</button>
+            </form>
+            <div v-else class="request-actions"><button v-for="option in request.options" :key="option.id" type="button" :data-testid="`lab-response-${request.id}-${option.id}`" :class="option.id === 'reject' || option.effect === 'end-task' ? 'subtle' : 'primary'" @click="respond(request, option.id)">{{ option.label }}</button></div>
           </article>
         </section>
 
@@ -540,12 +634,18 @@ onUnmounted(stopReplay);
           <div class="card-heading"><strong>{{ state.device.name }}</strong><span :class="{ amber: state.device.link === 'offline' }">{{ state.device.link === 'offline' ? '链路失联' : '模拟链路正常' }}</span></div>
           <div class="device-row"><span>设备执行反馈</span><strong>{{ state.device.execution === 'unknown' ? '当前执行状态未知' : state.device.execution === 'paused' ? '设备已确认暂停' : state.phase === 'ready' ? '仿真尚未开始' : '执行中（仿真）' }}</strong></div>
           <p v-if="state.device.link === 'offline'" class="empty-note amber">保留最后有效位置。链路中断不能直接推定设备已停下。</p>
-          <button type="button" class="subtle" data-testid="lab-pause" :disabled="!started || state.phase === 'ended'" @click="pauseCommand">Ⅱ 请求暂停设备</button>
+          <button type="button" class="subtle" data-testid="lab-pause" :disabled="!started || state.phase === 'ended' || state.device.execution === 'paused' || state.commands.some((command) => command.status !== 'acknowledged')" @click="pauseCommand">Ⅱ 请求暂停设备</button>
           <div v-for="command in state.commands" :key="command.id" class="command-row" :data-testid="`lab-command-${command.id}`" :data-status="command.status"><code>{{ command.id }}</code><span>{{ commandLabels[command.status] }}</span></div>
         </section>
 
         <section class="task-card constraint-card" data-testid="lab-active-constraint">
           <div class="card-heading"><strong>主动调整任务</strong><span>始终可见</span></div>
+          <form v-if="collaboration" class="priority-form" @submit.prevent="prioritizeStep" data-testid="lab-active-priority">
+            <label>当前步骤完成后，优先做哪一步<select v-model="priorityStepId" data-testid="lab-priority-step" :disabled="upcomingSteps.length === 0"><option v-if="upcomingSteps.length === 0" value="">没有待执行步骤</option><option v-for="step in upcomingSteps" :key="step.id" :value="step.id">{{ step.label }}</option></select></label>
+            <p v-if="started && priorityStepId === nextScheduledStep?.id" class="empty-note">当前计划已把这一步排在待执行首位。</p>
+            <p class="empty-note">你可以在 Agent 执行时调整后续安排。只改变尚未开始步骤的顺序，当前步骤继续执行；下一次调度会读取修改后的顺序。</p>
+            <button type="submit" class="primary" data-testid="lab-prioritize" :disabled="!started || state.phase === 'ended' || priorityStepId === nextScheduledStep?.id || !upcomingSteps.some((step) => step.id === priorityStepId)">应用优先顺序</button>
+          </form>
           <form @submit.prevent="addConstraint">
             <label>本次不检查的路段<select v-model="constraintRoadId" data-testid="lab-constraint-road"><option v-for="road in state.roads" :key="road.id" :value="road.id">{{ road.name }}</option></select></label>
             <label>补充说明（记录用途）<input v-model="constraintNote" data-testid="lab-constraint-note" maxlength="300" placeholder="例如：该段本次暂缓，保留未查明结果" /></label>
@@ -553,6 +653,25 @@ onUnmounted(stopReplay);
             <button type="submit" class="primary" data-testid="lab-add-constraint" :disabled="!started || state.phase === 'ended'">应用路段约束</button>
           </form>
           <ul v-if="state.constraints.length" class="constraint-list"><li v-for="constraint in state.constraints" :key="constraint.id">{{ constraint.text }}</li></ul>
+        </section>
+
+        <section v-if="collaboration" class="task-card collaboration-card" :class="{ hasContributions: collaboration.contributions.length > 0 }" data-testid="lab-collaboration-feedback">
+          <div class="card-heading"><strong>协作之后，任务怎样变化</strong><span>输入 → 应用 → 执行反馈</span></div>
+          <div v-if="collaboration.observationInput" class="parameter-state" data-testid="lab-observation-input" :data-status="collaboration.observationInput.status">
+            <span class="panel-label">{{ stepName(collaboration.observationInput.stepId) }}的观测点参数</span>
+            <strong>{{ collaboration.observationInput.selectedPointId ? collaboration.observationInput.points.find((point) => point.id === collaboration?.observationInput?.selectedPointId)?.label : collaboration.observationInput.status === 'requested' ? 'Agent 已请求你提供观测点' : '尚未提供，不能写入道路观测结果' }}</strong>
+            <p class="empty-note">{{ collaboration.observationInput.selectedPointId ? '你的选择已写入这一步的执行参数。后续仿真观测反馈到达后，才会更新位置、道路证据和查明结果。' : 'Agent 负责继续执行和取得反馈；你负责选择本案例中预设的观测点。按钮答复本身不等于已完成观测。' }}</p>
+          </div>
+          <div class="contribution-list" data-testid="lab-contributions">
+            <p v-if="collaboration.contributions.length === 0" class="empty-note">尚无已应用的协作输入。你做出的选择和主动调整会留在这里，并关联到后续执行状态。</p>
+            <article v-for="contribution in collaboration.contributions" :key="contribution.actionId" class="contribution" :data-testid="`lab-contribution-${contribution.actionId}`" :data-kind="contribution.kind">
+              <strong>{{ contribution.kind === 'observation-input' ? '你补充了执行信息' : '你调整了后续优先顺序' }}</strong>
+              <p>{{ contribution.detail }}</p>
+              <small>已应用到计划 v{{ contribution.planVersion }} · 逻辑时刻 {{ contribution.logicalTime }}</small>
+              <div class="contribution-feedback">后续步骤反馈：{{ contributionFeedback(contribution.stepIds) }}</div>
+            </article>
+          </div>
+          <p class="empty-note">这里核对协作输入是否接回执行。能力和质量是否提升，需要真实任务与人员评测。</p>
         </section>
       </div>
     </div>

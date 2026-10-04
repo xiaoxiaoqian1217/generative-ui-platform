@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "intervention-lab-export-replay/v1",
+  "generatedAt": "2026-10-04T09:08:50.949Z",
+  "simulation": true,
+  "humanPerformanceEvidence": false,
+  "allMatched": true,
+  "results": [
+    {
+      "filename": "observation-empty-response-rejected.json",
+      "actionCount": 4,
+      "identicalStateSha256": "bb5dcdd943ac983334dc8bc8d25cb7e28fe92807e94030e41c42237caed8701f"
+    },
+    {
+      "filename": "observation-feedback-received.json",
+      "actionCount": 14,
+      "identicalStateSha256": "9d092a7fca07c06bed6d551c37110d81f2acfb9bba90237d8a69b7874753a3c4"
+    },
+    {
+      "filename": "observation-parameter-applied.json",
+      "actionCount": 5,
+      "identicalStateSha256": "18f5e6669a5e54f71882c19e4cdf1a7f1ca4e73656fd142d9b2194d491fd2b08"
+    },
+    {
+      "filename": "observation-request-pending.json",
+      "actionCount": 3,
+      "identicalStateSha256": "10b9939a0087ab24362d788c7c09ff4bcfa424e035a4389df9734fd47030ca1f"
+    },
+    {
+      "filename": "priority-adjustment-applied.json",
+      "actionCount": 3,
+      "identicalStateSha256": "72f29b8467de4b7637c14afe5afc46e5eab739abf82206ab382919fc6bd58dae"
+    },
+    {
+      "filename": "priority-before-adjustment.json",
+      "actionCount": 2,
+      "identicalStateSha256": "fd5ca15ef31e263db54df7a742757f33b57981e0134b0a8339043f7bb2691b9d"
+    },
+    {
+      "filename": "priority-completed.json",
+      "actionCount": 12,
+      "identicalStateSha256": "29fd606f9a7418211224154afaa15aa0665dfa07f224f4edb4d0b444fe43bb93"
+    },
+    {
+      "filename": "priority-default-order-completed.json",
+      "actionCount": 11,
+      "identicalStateSha256": "8ce20e9ebdd5a0cd4b98b9683df5f10441daa284db88995545f1f699849b813e"
+    },
+    {
+      "filename": "priority-next-C-running.json",
+      "actionCount": 6,
+      "identicalStateSha256": "2d37bd237036afce4c2c1196e1dace357a87c49bf43b360180ff89088befd2a6"
+    }
+  ]
+}

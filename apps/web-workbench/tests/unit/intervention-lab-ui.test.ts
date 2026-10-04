@@ -145,22 +145,43 @@ async function completeFixtureThroughControls(
     const next = queueOf(wrapper)[cursor];
     expect(next).toBeDefined();
     const request = state.requests.find((item) => item.status === "pending");
-    if (next?.scriptedOperator && request) {
+    if (next?.scriptedOperator && next.action.type === "prioritize-step") {
+      await wrapper.get(byId("lab-priority-step")).setValue(next.action.stepId);
+      await click(wrapper, "lab-prioritize");
+      expect(stateOf(wrapper).collaboration?.stepOrder).toEqual([
+        "s-a",
+        "s-c",
+        "s-b",
+      ]);
+      // The UI skips fixture operator actions after the real form submission.
+      await click(wrapper, "lab-next");
+    } else if (next?.scriptedOperator && request) {
       if (next.action.type === "add-constraint") {
         await wrapper
           .get(byId("lab-constraint-road"))
           .setValue(next.action.roadIds[0]);
         await click(wrapper, "lab-add-constraint");
       } else if (next.action.type === "respond") {
-        for (const [key, value] of Object.entries(next.action.values ?? {})) {
+        if (
+          request.options.some(
+            (option) => option.effect === "provide-observation-point",
+          )
+        ) {
           await wrapper
-            .get(byId(`lab-field-${request.id}-${key}`))
-            .setValue(value);
+            .get(byId("lab-observation-point"))
+            .setValue(next.action.optionId);
+          await click(wrapper, "lab-submit-observation");
+        } else {
+          for (const [key, value] of Object.entries(next.action.values ?? {})) {
+            await wrapper
+              .get(byId(`lab-field-${request.id}-${key}`))
+              .setValue(value);
+          }
+          await click(
+            wrapper,
+            `lab-response-${request.id}-${next.action.optionId}`,
+          );
         }
-        await click(
-          wrapper,
-          `lab-response-${request.id}-${next.action.optionId}`,
-        );
       } else throw new Error("Unsupported fixture operator action");
     } else await click(wrapper, "lab-next");
   }
@@ -186,6 +207,21 @@ function facts(state: LabState) {
     constraints: state.constraints.map(({ roadIds }) => roadIds),
     device: { ...state.device, lastConfirmedAt: 0 },
     commands: state.commands.map(({ kind, status }) => ({ kind, status })),
+    ...(state.collaboration
+      ? {
+          collaboration: {
+            ...state.collaboration,
+            contributions: state.collaboration.contributions.map(
+              ({ kind, detail, stepIds, planVersion }) => ({
+                kind,
+                detail,
+                stepIds,
+                planVersion,
+              }),
+            ),
+          },
+        }
+      : {}),
   };
 }
 async function exportAndReplay(
@@ -203,7 +239,11 @@ async function exportAndReplay(
   expect(document.state).toEqual(stateOf(wrapper));
   const replayed = document.inputActions.reduce(
     dispatchLabAction,
-    createInitialState(document.state.runId),
+    createInitialState(
+      document.state.runId,
+      LAB_SCENARIOS.find((scenario) => scenario.id === document.scenarioId)
+        ?.collaboration,
+    ),
   );
   expect(replayed).toEqual(document.state);
   expect(document.inputActions).toHaveLength(document.state.logs.length);

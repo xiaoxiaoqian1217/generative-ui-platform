@@ -104,9 +104,30 @@ async function completeCase(page: Page, scenario: LabScenario) {
         for (const [key, value] of Object.entries(next.action.values ?? {})) {
           await page.getByTestId(`lab-field-${request.id}-${key}`).fill(value);
         }
+        if (
+          request.options.some(
+            (option) => option.effect === "provide-observation-point",
+          )
+        ) {
+          await page
+            .getByTestId("lab-observation-point")
+            .selectOption(next.action.optionId);
+          await page.getByTestId("lab-submit-observation").click();
+        } else {
+          await page
+            .getByTestId(`lab-response-${request.id}-${next.action.optionId}`)
+            .click();
+        }
+      } else if (
+        next.action.type === "prioritize-step" &&
+        !state.collaboration?.contributions.some(
+          (item) => item.kind === "priority-order",
+        )
+      ) {
         await page
-          .getByTestId(`lab-response-${request.id}-${next.action.optionId}`)
-          .click();
+          .getByTestId("lab-priority-step")
+          .selectOption(next.action.stepId);
+        await page.getByTestId("lab-prioritize").click();
       } else {
         await page.getByTestId("lab-next").click();
       }

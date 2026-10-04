@@ -1,0 +1,293 @@
+apps/web-workbench/src/features/intervention-lab/scenarios.ts:94:7 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    92 │     steps: [
+    93 │       start("normal"),
+  > 94 │       inspect("normal", "a")[0]!,
+       │       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    95 │       {
+    96 │         label: "注入局部绕行成功（不请求人工）",
+  
+
+apps/web-workbench/src/features/intervention-lab/scenarios.ts:395:7 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    393 │     steps: [
+    394 │       start("observation"),
+  > 395 │       inspectNext("observation", 1)[0]!,
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    396 │       {
+    397 │         label: "模拟Agent发现缺少观测点，主动请求人补充",
+  
+
+apps/web-workbench/src/features/intervention-lab/scenarios.ts:431:7 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    429 │     steps: [
+    430 │       start("priority"),
+  > 431 │       inspectNext("priority", 1)[0]!,
+        │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    432 │       {
+    433 │         label: "脚本人工优先安排C（交互模式可主动修改或保留原顺序）",
+  
+
+apps/web-workbench/tests/e2e/intervention-lab-collaboration.spec.ts:90:16 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    88 │   const state = await stateOf(page);
+    89 │   const lab = page.getByTestId("intervention-lab");
+  > 90 │   let bounds = (await lab.boundingBox())!;
+       │                ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    91 │   const viewport = page.viewportSize()!;
+    92 │   if (bounds.y + bounds.height + 24 > viewport.height) {
+  
+
+apps/web-workbench/tests/e2e/intervention-lab-collaboration.spec.ts:91:20 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    89 │   const lab = page.getByTestId("intervention-lab");
+    90 │   let bounds = (await lab.boundingBox())!;
+  > 91 │   const viewport = page.viewportSize()!;
+       │                    ^^^^^^^^^^^^^^^^^^^^
+    92 │   if (bounds.y + bounds.height + 24 > viewport.height) {
+    93 │     await page.setViewportSize({
+  
+
+apps/web-workbench/tests/e2e/intervention-lab-collaboration.spec.ts:99:12 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+     97 │   }
+     98 │   await lab.scrollIntoViewIfNeeded();
+   > 99 │   bounds = (await lab.boundingBox())!;
+        │            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    100 │   const fittedViewport = page.viewportSize()!;
+    101 │   expect(bounds.x).toBeGreaterThanOrEqual(0);
+  
+
+apps/web-workbench/tests/e2e/intervention-lab-collaboration.spec.ts:100:26 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+     98 │   await lab.scrollIntoViewIfNeeded();
+     99 │   bounds = (await lab.boundingBox())!;
+  > 100 │   const fittedViewport = page.viewportSize()!;
+        │                          ^^^^^^^^^^^^^^^^^^^^
+    101 │   expect(bounds.x).toBeGreaterThanOrEqual(0);
+    102 │   expect(bounds.y).toBeGreaterThanOrEqual(0);
+  
+
+apps/web-workbench/tests/e2e/intervention-lab-collaboration.spec.ts:109:17 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    107 │     const locator = page.getByTestId(testId);
+    108 │     await expect(locator).toBeVisible();
+  > 109 │     const box = (await locator.boundingBox())!;
+        │                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    110 │     expect(box.x).toBeGreaterThanOrEqual(bounds.x);
+    111 │     expect(box.y).toBeGreaterThanOrEqual(bounds.y);
+  
+
+apps/web-workbench/tests/e2e/intervention-lab.spec.ts:100:25 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+     98 │         await page
+     99 │           .getByTestId("lab-constraint-road")
+  > 100 │           .selectOption(next.action.roadIds[0]!);
+        │                         ^^^^^^^^^^^^^^^^^^^^^^^
+    101 │         await page.getByTestId("lab-add-constraint").click();
+    102 │       } else if (pending.length && next.action.type === "respond") {
+  
+
+apps/web-workbench/tests/e2e/intervention-lab.spec.ts:103:25 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    101 │         await page.getByTestId("lab-add-constraint").click();
+    102 │       } else if (pending.length && next.action.type === "respond") {
+  > 103 │         const request = pending[0]!;
+        │                         ^^^^^^^^^^^
+    104 │         for (const [key, value] of Object.entries(next.action.values ?? {})) {
+    105 │           await page.getByTestId(`lab-field-${request.id}-${key}`).fill(value);
+  
+
+apps/web-workbench/tests/e2e/intervention-lab.spec.ts:186:19 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    184 │   await page.getByTestId("lab-next").click();
+    185 │   const before = await stateOf(page);
+  > 186 │   const request = before.requests[0]!;
+        │                   ^^^^^^^^^^^^^^^^^^^
+    187 │   const actions = await page
+    188 │     .locator(".request-actions button")
+  
+
+apps/web-workbench/tests/e2e/intervention-lab.spec.ts:198:20 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    196 │   );
+    197 │   await expect(page.getByTestId("lab-next")).toBeDisabled();
+  > 198 │   const dynamicY = (await page.getByTestId("lab-interventions").boundingBox())!
+        │                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    199 │     .y;
+    200 │   const dynamicTaskY = (await page.getByTestId("lab-task-state").boundingBox())!
+  
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+  
+    196 196 │     );
+    197 197 │     await expect(page.getByTestId("lab-next")).toBeDisabled();
+    198     │ - ··const·dynamicY·=·(await·page.getByTestId("lab-interventions").boundingBox())!
+    199     │ - ····.y;
+        198 │ + ··const·dynamicY·=·(await·page.getByTestId("lab-interventions").boundingBox())?.y;
+    200 199 │     const dynamicTaskY = (await page.getByTestId("lab-task-state").boundingBox())!
+    201 200 │       .y;
+  
+
+apps/web-workbench/tests/e2e/intervention-lab.spec.ts:200:24 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    198 │   const dynamicY = (await page.getByTestId("lab-interventions").boundingBox())!
+    199 │     .y;
+  > 200 │   const dynamicTaskY = (await page.getByTestId("lab-task-state").boundingBox())!
+        │                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    201 │     .y;
+    202 │   expect(dynamicY).toBeLessThan(dynamicTaskY);
+  
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+  
+    198 198 │     const dynamicY = (await page.getByTestId("lab-interventions").boundingBox())!
+    199 199 │       .y;
+    200     │ - ··const·dynamicTaskY·=·(await·page.getByTestId("lab-task-state").boundingBox())!
+    201     │ - ····.y;
+        200 │ + ··const·dynamicTaskY·=·(await·page.getByTestId("lab-task-state").boundingBox())?.y;
+    202 201 │     expect(dynamicY).toBeLessThan(dynamicTaskY);
+    203 202 │     await page.getByTestId("lab-mode-fixed").click();
+  
+
+apps/web-workbench/tests/e2e/intervention-lab.spec.ts:209:5 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    207 │   ).toEqual(actions);
+    208 │   expect(
+  > 209 │     (await page.getByTestId("lab-interventions").boundingBox())!.y,
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    210 │   ).toBeGreaterThan(
+    211 │     (await page.getByTestId("lab-task-state").boundingBox())!.y,
+  
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+  
+    207 207 │     ).toEqual(actions);
+    208 208 │     expect(
+    209     │ - ····(await·page.getByTestId("lab-interventions").boundingBox())!.y,
+        209 │ + ····(await·page.getByTestId("lab-interventions").boundingBox())?.y,
+    210 210 │     ).toBeGreaterThan(
+    211 211 │       (await page.getByTestId("lab-task-state").boundingBox())!.y,
+  
+
+apps/web-workbench/tests/e2e/intervention-lab.spec.ts:211:5 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    209 │     (await page.getByTestId("lab-interventions").boundingBox())!.y,
+    210 │   ).toBeGreaterThan(
+  > 211 │     (await page.getByTestId("lab-task-state").boundingBox())!.y,
+        │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    212 │   );
+    213 │   await page.getByTestId("lab-mode-dynamic").click();
+  
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+  
+    209 209 │       (await page.getByTestId("lab-interventions").boundingBox())!.y,
+    210 210 │     ).toBeGreaterThan(
+    211     │ - ····(await·page.getByTestId("lab-task-state").boundingBox())!.y,
+        211 │ + ····(await·page.getByTestId("lab-task-state").boundingBox())?.y,
+    212 212 │     );
+    213 213 │     await page.getByTestId("lab-mode-dynamic").click();
+  
+
+apps/web-workbench/tests/e2e/intervention-lab.spec.ts:239:19 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    237 │     await page.getByTestId("lab-next").click();
+    238 │   const before = await stateOf(page);
+  > 239 │   const request = before.requests[0]!;
+        │                   ^^^^^^^^^^^^^^^^^^^
+    240 │   await page.getByTestId("lab-constraint-road").selectOption("r-b");
+    241 │   await page.getByTestId("lab-add-constraint").click();
+  
+
+apps/web-workbench/tests/e2e/intervention-lab.spec.ts:265:19 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    263 │   for (let index = 0; index < 3; index += 1)
+    264 │     await page.getByTestId("lab-next").click();
+  > 265 │   const request = (await stateOf(page)).requests[0]!;
+        │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    266 │   await page.getByTestId(`lab-response-${request.id}-pause`).click();
+    267 │   let state = await stateOf(page);
+  
+
+apps/web-workbench/tests/e2e/intervention-lab.spec.ts:307:19 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    305 │     ),
+    306 │   ).toBe(true);
+  > 307 │   const request = (await stateOf(page)).requests[0]!;
+        │                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    308 │   await expect(
+    309 │     page.getByTestId(`lab-response-${request.id}-defer`),
+  
+
+apps/web-workbench/tests/e2e/intervention-lab.spec.ts:333:28 lint/style/noNonNullAssertion ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    331 │   });
+    332 │   await begin(page, "normal-detour");
+  > 333 │   await completeCase(page, LAB_SCENARIOS[0]!);
+        │                            ^^^^^^^^^^^^^^^^^
+    334 │   expect(calls).toEqual([]);
+    335 │   for (const route of ["/catalog", "/cases", "/settings"]) {
+  
+
+apps/web-workbench/tests/e2e/intervention-lab.spec.ts:81:41 lint/correctness/noUnusedFunctionParameters  FIXABLE  ━━━━━━━━━━
+
+  ! This parameter is unused.
+  
+    79 │ }
+    80 │ 
+  > 81 │ async function completeCase(page: Page, scenario: LabScenario) {
+       │                                         ^^^^^^^^
+    82 │   // Exercise the visible controls; scriptedOperator fixtures are never injected as answers.
+    83 │   for (let guard = 0; guard < 60; guard += 1) {
+  
+  i Unused parameters might be the result of an incomplete refactoring.
+  
+  i Unsafe fix: If this is intentional, prepend scenario with an underscore.
+  
+     79  79 │   }
+     80  80 │   
+     81     │ - async·function·completeCase(page:·Page,·scenario:·LabScenario)·{
+         81 │ + async·function·completeCase(page:·Page,·_scenario:·LabScenario)·{
+     82  82 │     // Exercise the visible controls; scriptedOperator fixtures are never injected as answers.
+     83  83 │     for (let guard = 0; guard < 60; guard += 1) {
+  
+
+The number of diagnostics exceeds the limit allowed. Use --max-diagnostics to increase it.
+Diagnostics not shown: 109.
+Checked 7 files in 59ms. No fixes applied.
+Found 129 warnings.

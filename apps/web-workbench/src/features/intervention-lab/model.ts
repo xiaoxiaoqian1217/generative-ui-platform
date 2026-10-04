@@ -35,6 +35,7 @@ export type ResponseEffect =
   | "accept-change"
   | "reject-change"
   | "add-constraint"
+  | "provide-observation-point"
   | "pause";
 export interface RequestOption {
   id: string;
@@ -89,6 +90,29 @@ export interface LabLog {
   planVersion: number;
   inputProvenance: "interactive" | "fixture-event" | "fixture-script";
 }
+export type CollaborationMode = "observation-input" | "priority-order";
+export interface LabCollaboration {
+  mode: CollaborationMode;
+  /** Scheduler input, not merely a presentation ordering. */
+  stepOrder: string[];
+  /** Appended only when a simulator step actually starts. */
+  executionOrder: string[];
+  observationInput?: {
+    stepId: string;
+    status: "missing" | "requested" | "provided";
+    requestId?: string;
+    points: { id: string; label: string; position: Point }[];
+    selectedPointId?: string;
+  };
+  contributions: {
+    actionId: string;
+    kind: "observation-input" | "priority-order";
+    detail: string;
+    stepIds: string[];
+    logicalTime: number;
+    planVersion: number;
+  }[];
+}
 export interface LabState {
   schemaVersion: "intervention-lab/v1";
   simulation: true;
@@ -119,6 +143,8 @@ export interface LabState {
   commands: LabCommand[];
   logs: LabLog[];
   processedActionIds: string[];
+  /** Present only in the two collaboration fixtures; legacy replay bytes stay unchanged. */
+  collaboration?: LabCollaboration;
 }
 type ActionBase = {
   actionId: string;
@@ -128,6 +154,24 @@ export type LabAction = ActionBase &
   (
     | { type: "start-task" }
     | { type: "start-step"; stepId: string }
+    | { type: "start-next-step" }
+    | {
+        type: "observe-current-road";
+        condition: Exclude<RoadCondition, "unknown">;
+        detail: string;
+      }
+    | { type: "complete-current-step" }
+    | {
+        type: "request-observation-point";
+        stepId: string;
+        requestId: string;
+      }
+    | {
+        type: "prioritize-step";
+        runId: string;
+        planVersion: number;
+        stepId: string;
+      }
     | { type: "local-detour"; stepId: string }
     | {
         type: "observe-road";
@@ -185,6 +229,7 @@ export interface LabPresentation {
   logs: LabLog[];
   uncheckedRoadIds: string[];
   rules: typeof LAB_RULES;
+  collaboration?: LabCollaboration;
 }
 
 export const LAB_RULES = [
@@ -231,8 +276,11 @@ function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-export function createInitialState(runId = "fixture-run"): LabState {
-  return {
+export function createInitialState(
+  runId = "fixture-run",
+  collaboration?: CollaborationMode,
+): LabState {
+  const state: LabState = {
     schemaVersion: "intervention-lab/v1",
     simulation: true,
     runId,
@@ -316,6 +364,44 @@ export function createInitialState(runId = "fixture-run"): LabState {
     logs: [],
     processedActionIds: [],
   };
+  if (collaboration) {
+    state.collaboration = {
+      mode: collaboration,
+      stepOrder: state.steps.map((step) => step.id),
+      executionOrder: [],
+      contributions: [],
+      ...(collaboration === "observation-input"
+        ? {
+            observationInput: {
+              stepId: "s-a",
+              status: "missing" as const,
+              points: [
+                {
+                  id: "point-a-north",
+                  label: "A路北侧观测点（预设模拟位置）",
+                  position: { x: 18, y: 25 },
+                },
+                {
+                  id: "point-a-south",
+                  label: "A路南侧观测点（预设模拟位置）",
+                  position: { x: 18, y: 65 },
+                },
+              ],
+            },
+          }
+        : {}),
+    };
+  }
+  return state;
+}
+
+/** The local simulator consults this order before starting a collaboration step. */
+export function getNextPlannedStepId(state: LabState): string | undefined {
+  return (
+    state.collaboration?.stepOrder ?? state.steps.map((step) => step.id)
+  ).find(
+    (id) => state.steps.find((step) => step.id === id)?.status === "pending",
+  );
 }
 
 export function interventionType(input: RequiredInput): InterventionType {
@@ -346,12 +432,16 @@ function sourceOf(action: LabAction): LabLog["source"] {
       "start-task",
       "respond",
       "add-constraint",
+      "prioritize-step",
       "pause-command",
       "finish-task",
     ].includes(action.type)
   )
     return "operator";
-  return action.type === "open-request" ? "application" : "simulator";
+  return action.type === "open-request" ||
+    action.type === "request-observation-point"
+    ? "application"
+    : "simulator";
 }
 
 function invalidateRequests(
@@ -489,6 +579,111 @@ function applyAction(
     return reject("本次任务已结束，后续动作不再改变任务。");
   if ("stepId" in action && !step) return reject("找不到指定任务步骤。");
   switch (action.type) {
+    case "start-next-step": {
+      if (!state.collaboration) return reject("当前案例未启用协作调度。");
+      const nextStepId = getNextPlannedStepId(state);
+      if (!nextStepId) return reject("没有可开始的后续步骤。");
+      return applyAction(state, {
+        ...action,
+        type: "start-step",
+        stepId: nextStepId,
+      });
+    }
+    case "observe-current-road": {
+      if (!state.collaboration) return reject("当前案例未启用协作调度。");
+      const current = state.steps.find((item) => item.status === "running");
+      if (!current) return reject("没有执行中的道路查验。");
+      return applyAction(state, {
+        ...action,
+        type: "observe-road",
+        roadId: current.roadId,
+      });
+    }
+    case "complete-current-step": {
+      if (!state.collaboration) return reject("当前案例未启用协作调度。");
+      const current = state.steps.find((item) => item.status === "running");
+      if (!current) return reject("没有执行中的道路查验。");
+      return applyAction(state, {
+        ...action,
+        type: "complete-step",
+        stepId: current.id,
+      });
+    }
+    case "request-observation-point": {
+      const input = state.collaboration?.observationInput;
+      if (!input || input.stepId !== step!.id || input.status !== "missing")
+        return reject("当前步骤没有待补充的观测点参数。");
+      if (step!.status !== "running")
+        return reject("本案例由执行中的步骤提出观测点请求。");
+      if (
+        !action.requestId.trim() ||
+        state.requests.some((item) => item.id === action.requestId)
+      )
+        return reject("请求标识为空或重复。");
+      newRequest(state, {
+        id: action.requestId,
+        title: "请为A路查验选择观测点",
+        reason:
+          "模拟Agent缺少本步骤的观测点参数，尚不能产生道路观测；请人从预设模拟位置中选择。",
+        basis:
+          "协作fixture的明确参数依赖：选择写入执行参数，后续模拟观测反馈才形成道路事实。预设位置不代表真实现场安全或可达。",
+        roadIds: [step!.roadId],
+        stepIds: [step!.id],
+        requiredInput: {
+          kind: "option",
+          options: input.points.map((point) => ({
+            id: point.id,
+            label: `选择${point.label}`,
+            effect: "provide-observation-point",
+          })),
+        },
+      });
+      input.status = "requested";
+      input.requestId = action.requestId;
+      return accept(
+        "模拟Agent已请求观测点参数；在人工答复前，本步骤不接受道路观测。",
+        action.requestId,
+      );
+    }
+    case "prioritize-step": {
+      const collaboration = state.collaboration;
+      if (!collaboration) return reject("当前案例未启用可调整的协作计划。");
+      if (action.runId !== state.runId)
+        return reject("主动调整属于其他实验实例，未改变当前计划。");
+      if (action.planVersion !== state.planVersion)
+        return reject("主动调整绑定的计划版本已变化，请按当前计划重新提交。");
+      if (step!.status !== "pending")
+        return reject("只能优先安排尚未开始的步骤，不能改写当前或已完成步骤。");
+      const pendingIds = collaboration.stepOrder.filter(
+        (id) =>
+          state.steps.find((item) => item.id === id)?.status === "pending",
+      );
+      if (pendingIds[0] === step!.id)
+        return reject("该步骤已经是下一优先步骤，计划没有变化。");
+      const before = [...collaboration.stepOrder];
+      const firstPendingIndex = collaboration.stepOrder.findIndex(
+        (id) => id === pendingIds[0],
+      );
+      collaboration.stepOrder = collaboration.stepOrder.filter(
+        (id) => id !== step!.id,
+      );
+      collaboration.stepOrder.splice(firstPendingIndex, 0, step!.id);
+      state.planVersion += 1;
+      const describeOrder = (ids: string[]) =>
+        ids
+          .map((id) => state.steps.find((item) => item.id === id)!.label)
+          .join(" → ");
+      const detail = `人工优先安排${step!.label}：${describeOrder(before)}改为${describeOrder(collaboration.stepOrder)}；当前步骤和已取得观测保持。后续模拟调度按新顺序取待执行步骤。`;
+      collaboration.contributions.push({
+        actionId: action.actionId,
+        kind: "priority-order",
+        detail,
+        stepIds: [step!.id],
+        logicalTime: state.logicalTime,
+        planVersion: state.planVersion,
+      });
+      return accept(detail);
+    }
     case "start-step": {
       if (step!.status !== "pending") return reject("只有待执行步骤可以开始。");
       if (
@@ -509,8 +704,13 @@ function applyAction(
         )
       )
         return reject("本步骤仍有待处理请求。");
+      if (state.collaboration && getNextPlannedStepId(state) !== step!.id)
+        return reject(
+          "该步骤不是当前计划的下一待执行步骤；模拟调度须按已确认顺序执行。",
+        );
       step!.status = "running";
       step!.version += 1;
+      state.collaboration?.executionOrder.push(step!.id);
       state.device.position = {
         ...state.roads.find((road) => road.id === step!.roadId)!.polyline[0]!,
       };
@@ -540,14 +740,34 @@ function applyAction(
         state.device.execution !== "running"
       )
         return reject("缺少在线运行确认，不接收模拟实时道路观测。");
+      const observationInput = state.collaboration?.observationInput;
+      if (
+        observationInput?.stepId === roadStep.id &&
+        observationInput.status !== "provided"
+      )
+        return reject("本步骤缺少人工选择的观测点参数，不能接收道路观测。");
+      const selectedPoint =
+        observationInput?.stepId === roadStep.id
+          ? observationInput.points.find(
+              (point) => point.id === observationInput.selectedPointId,
+            )
+          : undefined;
+      if (observationInput?.stepId === roadStep.id && !selectedPoint)
+        return reject("观测点执行参数无效，不能接收道路观测。");
       road.status = "observed";
       road.condition = action.condition;
       road.version += 1;
       road.evidence.push({
         source: "模拟 UGV 观测事件",
-        detail: action.detail,
+        detail: selectedPoint
+          ? `${action.detail} 执行参数：观测点 ${selectedPoint.id}，模拟坐标 (${selectedPoint.position.x}, ${selectedPoint.position.y})。`
+          : action.detail,
         logicalTime: state.logicalTime,
       });
+      if (selectedPoint) {
+        state.device.position = { ...selectedPoint.position };
+        state.device.lastConfirmedAt = state.logicalTime;
+      }
       invalidateRequests(
         state,
         [road.id],
@@ -577,7 +797,10 @@ function applyAction(
         (road) => road.id === step!.roadId,
       )!;
       // A successful inspection may discover blockage without traversing the road.
-      if (completedRoad.condition === "passable")
+      if (
+        completedRoad.condition === "passable" &&
+        state.collaboration?.observationInput?.stepId !== step!.id
+      )
         state.device.position = { ...completedRoad.polyline.at(-1)! };
       state.device.lastConfirmedAt = state.logicalTime;
       invalidateRequests(
@@ -749,6 +972,20 @@ function applyAction(
         state.commands.some((command) => command.status !== "acknowledged")
       )
         return reject("已有待确认暂停指令，请勿重复发送。");
+      if (option.effect === "provide-observation-point") {
+        const input = state.collaboration?.observationInput;
+        const target = state.steps.find((item) => item.id === input?.stepId);
+        if (
+          !input ||
+          input.status !== "requested" ||
+          input.requestId !== request.id ||
+          !input.points.some((point) => point.id === option.id) ||
+          target?.status !== "running"
+        )
+          return reject(
+            "答复没有匹配当前步骤的观测点参数请求，未写入执行参数。",
+          );
+      }
       request.status = "resolved";
       request.resolvedAt = state.logicalTime;
       request.resolution =
@@ -798,6 +1035,35 @@ function applyAction(
           Object.values(action.values ?? {}).join("；"),
           request.roadIds,
           action.actionId,
+          request.id,
+        );
+      } else if (option.effect === "provide-observation-point") {
+        const collaboration = state.collaboration!;
+        const input = collaboration.observationInput!;
+        const target = state.steps.find((item) => item.id === input.stepId)!;
+        const point = input.points.find((item) => item.id === option.id)!;
+        input.status = "provided";
+        input.selectedPointId = point.id;
+        target.version += 1;
+        state.planVersion += 1;
+        const detail = `人工选择${point.label}，已写入${target.label}的执行参数（${point.id}）；解除缺参阻塞，等待后续模拟观测反馈。`;
+        collaboration.contributions.push({
+          actionId: action.actionId,
+          kind: "observation-input",
+          detail,
+          stepIds: [target.id],
+          logicalTime: state.logicalTime,
+          planVersion: state.planVersion,
+        });
+        invalidateRequests(
+          state,
+          [target.roadId],
+          [target.id],
+          "观测点执行参数已由人工补充，相关步骤上下文已变化。",
+          request.id,
+        );
+        return accept(
+          `${detail} 道路仍保留当前观测事实，人工答复不作为设备反馈。`,
           request.id,
         );
       } else if (option.effect === "pause") {
@@ -974,6 +1240,7 @@ export function getPresentation(state: LabState): LabPresentation {
     device,
     commands,
     logs,
+    collaboration,
   } = cloneJson(state);
   const pendingRequests = requests.filter(
     (request) => request.status === "pending",
@@ -998,6 +1265,7 @@ export function getPresentation(state: LabState): LabPresentation {
     uncheckedRoadIds: roads
       .filter((road) => road.status === "unchecked")
       .map((road) => road.id),
+    ...(collaboration ? { collaboration } : {}),
     rules: LAB_RULES,
   };
 }

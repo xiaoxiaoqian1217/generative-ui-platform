@@ -8,6 +8,7 @@ import {
   type LabAction,
   type LabState,
 } from "../src/features/intervention-lab/model.js";
+import { LAB_SCENARIOS } from "../src/features/intervention-lab/scenarios.js";
 
 const directory = resolve(
   process.argv[2] ?? "../../docs/validation/intervention-lab/evidence",
@@ -23,6 +24,7 @@ for (const filename of (await readdir(directory))
     inputActions?: LabAction[];
     state?: LabState;
     verificationDriver?: string;
+    scenarioId?: string;
   };
   if (exported.schemaVersion !== "intervention-lab-export/v1") continue;
   assert(
@@ -31,7 +33,11 @@ for (const filename of (await readdir(directory))
   );
   const replayed = exported.inputActions.reduce(
     dispatchLabAction,
-    createInitialState(exported.state.runId),
+    createInitialState(
+      exported.state.runId,
+      LAB_SCENARIOS.find((scenario) => scenario.id === exported.scenarioId)
+        ?.collaboration,
+    ),
   );
   assert.deepEqual(
     replayed,

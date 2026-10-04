@@ -1,0 +1,1403 @@
+{
+  "config": {
+    "argv": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/node_modules/@playwright/test/cli.js",
+      "test",
+      "intervention-lab.spec.ts",
+      "intervention-lab-branches.spec.ts",
+      "intervention-lab-collaboration.spec.ts",
+      "--workers=1",
+      "--reporter=json"
+    ],
+    "configFile": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/playwright.config.ts",
+    "rootDir": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 20000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": {
+      "command": "node tests/e2e/server.mjs",
+      "reuseExistingServer": false,
+      "timeout": 20000,
+      "url": "http://127.0.0.1:4173/workbench-health"
+    }
+  },
+  "suites": [
+    {
+      "title": "intervention-lab-branches.spec.ts",
+      "file": "intervention-lab-branches.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "navigation retry has an explicit simulated continuation and reaches complete",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1097,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:07:57.071Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-branches--dfff0-uation-and-reaches-complete-chromium/attachments/branch-raw-run-cef110e4212e1469d6d6022c9a777372a83a99f1.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-3ef816aabd33072dc054",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 121,
+          "column": 1
+        },
+        {
+          "title": "navigation end closes early and preserves unknown roads without further replay",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 557,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:07:58.245Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-branches--bf6b3-oads-without-further-replay-chromium/attachments/branch-raw-run-1a351bfc895fba3491b3d4aa857a7925fdc1c98e.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-8e80bf82c77ee22e688d",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 158,
+          "column": 1
+        },
+        {
+          "title": "rejecting the stale-case proposal preserves B and completes it through a declared branch",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1096,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:07:58.810Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-branches--e7cf7-t-through-a-declared-branch-chromium/attachments/branch-raw-run-0b78338facabf81c4204dd495efd6d201e261afa.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-ec8347707e34100e1a76",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 190,
+          "column": 1
+        },
+        {
+          "title": "approving deferral skips B execution and never generates a B observation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 774,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:07:59.914Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-branches--4d441-r-generates-a-B-observation-chromium/attachments/branch-raw-run-4e13707c973af1cf808de4e5deef44fe229586e5.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-66f2d1a7c00f6c6e2e16",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 227,
+          "column": 1
+        },
+        {
+          "title": "supplement requires actual fields before applying the related exclusion",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 863,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:00.696Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-branches--31357-lying-the-related-exclusion-chromium/attachments/branch-raw-run-0442b29202712025842b57e0b87295757b230360.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-f770a832502bd00c0b42",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 264,
+          "column": 1
+        },
+        {
+          "title": "a constraint on the running road is refused without cancelling its execution",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 966,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:01.567Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-branches--409c1-ut-cancelling-its-execution-chromium/attachments/branch-raw-run-7d2c5a22bc5b64cacb1f2747dd333c8e5e2e4496.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-2183d7f910bfc099ec2d",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 303,
+          "column": 1
+        },
+        {
+          "title": "starting a different case resets request, constraints, observations and the run binding",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 537,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:02.541Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "branch-raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-branches--dbe21-vations-and-the-run-binding-chromium/attachments/branch-raw-run-635f2c7649b60bc1d67b7e900dbeb3ed02c77cd5.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "06a0b278c810866bbc92-ec326d2e99dd83c2c828",
+          "file": "intervention-lab-branches.spec.ts",
+          "line": 329,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "intervention-lab-collaboration.spec.ts",
+      "file": "intervention-lab-collaboration.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Agent requests a point; empty answer is rejected and selected input affects only later simulated feedback",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2483,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:03.098Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "observation-request-pending",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-bdcbd-ly-later-simulated-feedback-chromium/attachments/observation-request-pending-003fdca0347e1b94aeb3a5847ac4c76d2e017900.png"
+                    },
+                    {
+                      "name": "observation-request-pending-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-bdcbd-ly-later-simulated-feedback-chromium/attachments/observation-request-pending-raw-b5064c818c03a3bcc030298f03fc4fa05a6c340a.json"
+                    },
+                    {
+                      "name": "observation-empty-response-rejected",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-bdcbd-ly-later-simulated-feedback-chromium/attachments/observation-empty-response-rejected-080523625f98c82708a37c59fa88beabe4006082.png"
+                    },
+                    {
+                      "name": "observation-empty-response-rejected-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-bdcbd-ly-later-simulated-feedback-chromium/attachments/observation-empty-response-rejected-raw-bc69ad970a8d49731bc347e66478871efe6112f0.json"
+                    },
+                    {
+                      "name": "observation-parameter-applied",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-bdcbd-ly-later-simulated-feedback-chromium/attachments/observation-parameter-applied-ca0f1b145af9bf664450bb7d07d61beae8e6f880.png"
+                    },
+                    {
+                      "name": "observation-parameter-applied-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-bdcbd-ly-later-simulated-feedback-chromium/attachments/observation-parameter-applied-raw-6d5825ef3b326ab69c27d601410856c9c7cc5457.json"
+                    },
+                    {
+                      "name": "observation-feedback-received",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-bdcbd-ly-later-simulated-feedback-chromium/attachments/observation-feedback-received-9a56b320950aa8ed80e842bc93eb4068d2b7b9f3.png"
+                    },
+                    {
+                      "name": "observation-feedback-received-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-bdcbd-ly-later-simulated-feedback-chromium/attachments/observation-feedback-received-raw-370a711b7c5d2d8467074e9f0bb74b91c4f077ce.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "71e977259880ab137ed3-1d8909f9a870920a6924",
+          "file": "intervention-lab-collaboration.spec.ts",
+          "line": 277,
+          "column": 1
+        },
+        {
+          "title": "human priority during A changes actual next execution to C and preserves all three observations",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2399,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:05.589Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "priority-before-adjustment",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-97b80-rves-all-three-observations-chromium/attachments/priority-before-adjustment-c4b53f56857dd545a7fdae3055775a830c48551f.png"
+                    },
+                    {
+                      "name": "priority-before-adjustment-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-97b80-rves-all-three-observations-chromium/attachments/priority-before-adjustment-raw-4bc37e401a85c5f824219e1024bb7a16b2f89e19.json"
+                    },
+                    {
+                      "name": "priority-adjustment-applied",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-97b80-rves-all-three-observations-chromium/attachments/priority-adjustment-applied-3a9cf0d82d32a21995d6a4e6a4f840e442fee23e.png"
+                    },
+                    {
+                      "name": "priority-adjustment-applied-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-97b80-rves-all-three-observations-chromium/attachments/priority-adjustment-applied-raw-9133a6d6ad0e7995215070cafa5bf1035c13aff1.json"
+                    },
+                    {
+                      "name": "priority-next-C-running",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-97b80-rves-all-three-observations-chromium/attachments/priority-next-C-running-6214a9e1d174f3c4b6bab5a5f8787b61b82924d6.png"
+                    },
+                    {
+                      "name": "priority-next-C-running-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-97b80-rves-all-three-observations-chromium/attachments/priority-next-C-running-raw-714a88b06a500f96d38fcb06e0731d1a538597c0.json"
+                    },
+                    {
+                      "name": "priority-completed",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-97b80-rves-all-three-observations-chromium/attachments/priority-completed-c0ced3f35c8614dbb65986cfd9336a6405266d72.png"
+                    },
+                    {
+                      "name": "priority-completed-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-97b80-rves-all-three-observations-chromium/attachments/priority-completed-raw-3d7e9ffbaf925373d8069d168f1880acedcdb351.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "71e977259880ab137ed3-fa23694cd914bb67cfbe",
+          "file": "intervention-lab-collaboration.spec.ts",
+          "line": 423,
+          "column": 1
+        },
+        {
+          "title": "without a human priority change the same scheduler executes A then B then C",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1019,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [
+                    {
+                      "buffer": ""
+                    },
+                    {
+                      "buffer": ""
+                    },
+                    {
+                      "buffer": ""
+                    },
+                    {
+                      "buffer": ""
+                    }
+                  ],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:07.994Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "priority-default-order-completed-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-collabora-1b902-er-executes-A-then-B-then-C-chromium/attachments/priority-default-order-completed-raw-93a7891b9871f603182b10eb0f3f61dbf520d76f.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "71e977259880ab137ed3-a735a8fb2aa25c909c76",
+          "file": "intervention-lab-collaboration.spec.ts",
+          "line": 535,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "intervention-lab.spec.ts",
+      "file": "intervention-lab.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "fixed: normal-detour closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 913,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:09.062Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-fixed-nor-3ca5a-es-through-visible-controls-chromium/attachments/raw-run-d13acdf49aa668abc41f38b9214a9f9bebb9966a.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-f1470f859383ab2fa390",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "fixed: navigation-failure closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 900,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:09.982Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-fixed-nav-022ba-es-through-visible-controls-chromium/attachments/raw-run-a296de5adfdb44509f6a0c9bb5039ea3e7d42efe.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-02b22e500f0a58854db0",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "fixed: constraint-stale closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 892,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:10.888Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-fixed-con-f5cd5-es-through-visible-controls-chromium/attachments/raw-run-9fd421e2c8c96de24c067c34b38fff6402504603.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-d69ff606b87087800776",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "fixed: confirmation-reject closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 982,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:11.785Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-fixed-con-7e4c4-es-through-visible-controls-chromium/attachments/raw-run-027a686d0f7cfc933fc742f4236bbb9a9073121b.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-0533fc4e6ddfadd5abcb",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "fixed: supplement-exclusion closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 958,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:12.774Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-fixed-sup-5d562-es-through-visible-controls-chromium/attachments/raw-run-665d18ec18fc9c7f3339770536812adc76d5c2f9.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-edef3998c03fa916e50b",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "fixed: link-command-ack closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 828,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:13.740Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-fixed-lin-e3898-es-through-visible-controls-chromium/attachments/raw-run-89d6791b4fdcb0da60b9837ab84ced57609121d5.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-f1573781dd98ef4ab5fe",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "fixed: observation-cooperation closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1023,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:14.577Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-fixed-obs-c681a-es-through-visible-controls-chromium/attachments/raw-run-8b0127acc19a1cd70b000a460222fe54ea9caabe.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-3d453b61c868f25053ea",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "fixed: priority-cooperation closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 927,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:15.608Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-fixed-pri-3abf3-es-through-visible-controls-chromium/attachments/raw-run-ea3a640c9b8024b4268eb7b440e42526b6c3fdcb.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-9174a473c9ebecb84d8f",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "dynamic: normal-detour closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 890,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:16.540Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-dynamic-n-637e3-es-through-visible-controls-chromium/attachments/raw-run-525f28a66ed1c3d1c816b59082d628a4b30db5b9.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-0c1c39a141fe5df1a754",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "dynamic: navigation-failure closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 946,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:17.437Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-dynamic-n-ec99a-es-through-visible-controls-chromium/attachments/raw-run-44cec8244af41b047bfef5429b42a32cafc85696.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-2228e9e2b7df311de0c4",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "dynamic: constraint-stale closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 876,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:18.390Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-dynamic-c-22ad2-es-through-visible-controls-chromium/attachments/raw-run-6d391f9468bf13adc3af2278ce41ed0d493b427d.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-045e51ff0ad6e00eacc3",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "dynamic: confirmation-reject closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 992,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:19.274Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-dynamic-c-f9151-es-through-visible-controls-chromium/attachments/raw-run-a795817b546f6d578f1356868e17ec22124397cf.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-eb044bc991171d74892e",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "dynamic: supplement-exclusion closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 824,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:20.272Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-dynamic-s-d11b1-es-through-visible-controls-chromium/attachments/raw-run-a2c72e446aeb6b315273760a9bef27bda73b7d43.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-90e8b90ea26b52894b9e",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "dynamic: link-command-ack closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 797,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:21.103Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-dynamic-l-b44e8-es-through-visible-controls-chromium/attachments/raw-run-0846c231d87bf708089a30980d346335c4e2e952.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-b7d067fc61a52fc646ac",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "dynamic: observation-cooperation closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 959,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:21.906Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-dynamic-o-03d26-es-through-visible-controls-chromium/attachments/raw-run-0df1449db3844b5947d6c9597e1df7b99c558a60.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-3a9935ee6885d98beed3",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "dynamic: priority-cooperation closes through visible controls",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 909,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:22.873Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-dynamic-p-0af8f-es-through-visible-controls-chromium/attachments/raw-run-068bdd9e55c8f2e451cafce602a6a3815cb33f22.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-c913cbaca14e3bb1f510",
+          "file": "intervention-lab.spec.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "title": "mode switch preserves state and actions while moving pending request",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 659,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:23.788Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-114ab101866430254520",
+          "file": "intervention-lab.spec.ts",
+          "line": 179,
+          "column": 1
+        },
+        {
+          "title": "active constraint invalidates old request without rewriting road facts",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 527,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:24.453Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-3ab90f2b647905aba7d4",
+          "file": "intervention-lab.spec.ts",
+          "line": 232,
+          "column": 1
+        },
+        {
+          "title": "lost link and sent command remain unknown until matching device ACK",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 610,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:24.986Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "raw-run",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/d51d3fbac11a/repo/apps/web-workbench/test-results/intervention-lab-lost-link-e12b3-n-until-matching-device-ACK-chromium/attachments/raw-run-a4c52e42222c33d7b002f5e41730d24b5e1f7814.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-948b7135ffc7294cbc0d",
+          "file": "intervention-lab.spec.ts",
+          "line": 259,
+          "column": 1
+        },
+        {
+          "title": "mobile layout has no horizontal overflow and pending controls remain usable",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 465,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:25.601Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-390261206ff7ba631397",
+          "file": "intervention-lab.spec.ts",
+          "line": 295,
+          "column": 1
+        },
+        {
+          "title": "lab makes no Agent API calls and existing routes still resolve",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 955,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T09:08:26.074Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "e07ba57af6b4189b69d0-79e53b92b918a4c7e6a0",
+          "file": "intervention-lab.spec.ts",
+          "line": 324,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-04T09:07:54.810Z",
+    "duration": 32287.925,
+    "expected": 31,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

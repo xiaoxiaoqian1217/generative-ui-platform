@@ -1,5 +1,7 @@
 # 验证记录
 
+最新双向协作实现、31项页面验证与体验方法见 [状态驱动任务面板与双向协作验证](collaboration-validation-report.md)。下文保留前两轮的历史结果及验证范围。
+
 日期：2026-10-03。基线：`dev_1.0`，提交 `623adb01b734468978a5a4c68c2bdc1add3b9d55`。验证对象为 `/intervention-lab` 的本地仿真，以及新增路由对现有 Workbench 的影响。
 
 ## 实际结论

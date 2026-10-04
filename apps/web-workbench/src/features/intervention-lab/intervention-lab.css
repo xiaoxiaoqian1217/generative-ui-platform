@@ -171,6 +171,39 @@
   border-radius: 50%;
   margin-right: 7px;
 }
+.mission-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  border: 1px solid #405849;
+  border-radius: 12px;
+  padding: 16px 19px;
+  margin: 0 0 20px;
+  background: #1b3025;
+}
+.mission-strip > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.mission-strip > div + div {
+  border-left: 1px solid #395242;
+  padding-left: 18px;
+}
+.panel-label {
+  color: #9bb2a4;
+  font-size: 10px;
+}
+.mission-strip strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.mission-strip small {
+  color: #adc3b5;
+  font-size: 10px;
+}
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(430px, 1fr);
@@ -349,6 +382,11 @@
 .constraint-card {
   order: 3;
 }
+.collaboration-card {
+  order: 4;
+  border-color: #486351;
+  background: #1b2e25;
+}
 .lab[data-mode="dynamic"] .intervention-card.needsAttention {
   order: -1;
 }
@@ -356,10 +394,41 @@
   border-color: #846c47;
   box-shadow: 0 8px 26px #00000015;
 }
+.lab[data-mode="dynamic"] .collaboration-card.hasContributions {
+  order: 1;
+}
+.lab[data-mode="dynamic"] .task-column:has(.collaboration-card.hasContributions) .intervention-card:not(.needsAttention) {
+  order: 2;
+}
 .goal {
   color: #c9d7ce;
   font-size: 12px;
   padding-bottom: 9px;
+}
+.next-step-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 12px;
+  padding: 9px 11px;
+  border-radius: 7px;
+  background: #20372b;
+  font-size: 11px;
+}
+.next-step-row > span {
+  color: #a4b8ab;
+}
+.next-step-row > strong {
+  font-weight: 600;
+  color: #c1e3ce;
+}
+.next-step-row > small {
+  grid-column: 1 / -1;
+  color: var(--lab-muted);
+  font-size: 10px;
+}
+.execution-trace {
+  font-size: 10px;
+  color: #b9d4c2;
 }
 .step-list {
   padding: 0;
@@ -481,6 +550,7 @@
   margin-top: 8px;
 }
 .request-fields label,
+.observation-input-form label,
 .constraint-card label,
 .inspection label {
   display: flex;
@@ -488,6 +558,28 @@
   gap: 5px;
   font-size: 11px;
   color: var(--lab-muted);
+}
+.observation-input-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.observation-input-form button {
+  align-self: start;
+  font-size: 12px;
+}
+.observation-input-form p {
+  margin: 0;
+}
+.observation-point circle {
+  stroke: #ecc887;
+  stroke-width: 0.45;
+  fill: #513f1b;
+}
+.observation-point text {
+  fill: #f0d69e;
+  font-size: 1.7px;
 }
 .device-row {
   display: flex;
@@ -527,6 +619,53 @@
 .constraint-card form > button {
   align-self: start;
   font-size: 12px;
+}
+.constraint-card .priority-form {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--lab-line);
+  margin-bottom: 14px;
+}
+.parameter-state {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  background: #16261e;
+  border-radius: 7px;
+  border: 1px solid #3c5243;
+}
+.parameter-state > span,
+.parameter-state > strong {
+  display: block;
+}
+.parameter-state > strong {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #d7bc87;
+}
+.parameter-state[data-status="provided"] > strong {
+  color: #b5d7c1;
+}
+.contribution {
+  border-top: 1px solid #3d5244;
+  padding-top: 11px;
+  margin-top: 12px;
+  font-size: 11px;
+}
+.contribution > strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: #c4e2cf;
+}
+.contribution p {
+  color: #b0c9b9;
+}
+.contribution small {
+  color: var(--lab-muted);
+  font-size: 10px;
+}
+.contribution-feedback {
+  margin: 7px 0 0;
+  color: #c5d8cc;
 }
 .constraint-list {
   font-size: 11px;
@@ -642,6 +781,17 @@
   }
 }
 @media (max-width: 800px) {
+  .mission-strip {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .mission-goal {
+    grid-column: 1 / -1;
+  }
+  .mission-strip > .mission-current {
+    border-left: 0;
+    padding-left: 0;
+  }
   .workspace {
     grid-template-columns: 1fr;
   }
@@ -701,6 +851,15 @@
   }
   .card-heading > span {
     max-width: 50%;
+  }
+  .mission-strip {
+    padding: 12px 13px;
+  }
+  .mission-strip > .mission-progress {
+    padding-left: 12px;
+  }
+  .next-step-row {
+    grid-template-columns: 1fr;
   }
   .command-row,
   .device-row {

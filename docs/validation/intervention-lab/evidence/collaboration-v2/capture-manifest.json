@@ -1,0 +1,2239 @@
+{
+  "schemaVersion": "intervention-lab-collaboration-capture/v2",
+  "generatedAt": "2026-10-04T09:08:09.048Z",
+  "codeCommitAtCapture": "d3505fe523e24bc5b2078ac9ae46877eb74503b4",
+  "appSourceSha256": [
+    {
+      "filename": "apps/web-workbench/src/features/intervention-lab/InterventionLabPage.vue",
+      "sha256": "a4566334c6a1b8f148fad2b9d1555087cbc6e249f1fa7b44dd3555882db7264d",
+      "matchesCodeCommit": false
+    },
+    {
+      "filename": "apps/web-workbench/src/features/intervention-lab/model.ts",
+      "sha256": "d8ba718b0adc9aba7f2288fac0801372e8fa12e4af9bf99708a23fa32ae4af62",
+      "matchesCodeCommit": false
+    },
+    {
+      "filename": "apps/web-workbench/src/features/intervention-lab/scenarios.ts",
+      "sha256": "ef9f4856e26fde7d78211f7f5cb849a3e27f76bd0a17c7f0219c708db8d9acf4",
+      "matchesCodeCommit": false
+    },
+    {
+      "filename": "apps/web-workbench/src/features/intervention-lab/intervention-lab.css",
+      "sha256": "14384e6e1bce75b7a8dc970ad62e5122f11cfe9250363cef41399e870329cdae",
+      "matchesCodeCommit": false
+    }
+  ],
+  "captureTestSha256": "aa70fe7415c8bc20fbbf99172ea5dea3629942342eab3459dd41b3f2121af29a",
+  "platform": "linux",
+  "availableChineseFonts": "/usr/local/share/fonts/patent/PaperSans-Regular.otf: Noto Sans CJK SC",
+  "completeCaptureSet": true,
+  "simulation": true,
+  "connectedToRealDevice": false,
+  "connectedToRealAgent": false,
+  "verificationDriver": "playwright-automated-visible-controls",
+  "humanPerformanceEvidence": false,
+  "outcomeInterpretation": "Functional state writeback and deterministic continuation only; no participant performance or real device/LLM capability measurement.",
+  "groups": [
+    {
+      "group": "observation-input",
+      "checkpointCount": 4,
+      "runIds": [
+        "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867"
+      ],
+      "singleRun": true
+    },
+    {
+      "group": "active-priority",
+      "checkpointCount": 4,
+      "runIds": [
+        "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36"
+      ],
+      "singleRun": true
+    },
+    {
+      "group": "default-priority",
+      "checkpointCount": 1,
+      "runIds": [
+        "lab:59356428-d02c-4353-b149-5dd693cc33ce"
+      ],
+      "singleRun": true
+    }
+  ],
+  "checkpoints": [
+    {
+      "name": "observation-request-pending",
+      "group": "observation-input",
+      "scenarioId": "observation-cooperation",
+      "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+      "eventCursor": 3,
+      "eventCount": 13,
+      "inputActionCount": 3,
+      "lastAction": {
+        "type": "request-observation-point",
+        "actionId": "ui-event-3",
+        "stepId": "s-a",
+        "requestId": "request:observation-a",
+        "provenance": "fixture-event"
+      },
+      "lastLog": {
+        "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+        "sequence": 3,
+        "logicalTime": 3,
+        "source": "application",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-3",
+        "actionType": "request-observation-point",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "模拟Agent已请求观测点参数；在人工答复前，本步骤不接受道路观测。",
+        "requestId": "request:observation-a"
+      },
+      "planVersion": 1,
+      "collaboration": {
+        "mode": "observation-input",
+        "stepOrder": [
+          "s-a",
+          "s-b",
+          "s-c"
+        ],
+        "executionOrder": [
+          "s-a"
+        ],
+        "contributions": [],
+        "observationInput": {
+          "stepId": "s-a",
+          "status": "requested",
+          "points": [
+            {
+              "id": "point-a-north",
+              "label": "A路北侧观测点（预设模拟位置）",
+              "position": {
+                "x": 18,
+                "y": 25
+              }
+            },
+            {
+              "id": "point-a-south",
+              "label": "A路南侧观测点（预设模拟位置）",
+              "position": {
+                "x": 18,
+                "y": 65
+              }
+            }
+          ],
+          "requestId": "request:observation-a"
+        }
+      },
+      "roads": [
+        {
+          "id": "r-a",
+          "name": "西侧主路 A",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 20
+            },
+            {
+              "x": 18,
+              "y": 72
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        },
+        {
+          "id": "r-b",
+          "name": "中央道路 B",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 47
+            },
+            {
+              "x": 76,
+              "y": 47
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        },
+        {
+          "id": "r-c",
+          "name": "东侧道路 C",
+          "polyline": [
+            {
+              "x": 76,
+              "y": 20
+            },
+            {
+              "x": 76,
+              "y": 78
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "label": "查验西侧主路",
+          "roadId": "r-a",
+          "status": "running",
+          "version": 2
+        },
+        {
+          "id": "s-b",
+          "label": "查验中央道路",
+          "roadId": "r-b",
+          "status": "pending",
+          "version": 1
+        },
+        {
+          "id": "s-c",
+          "label": "查验东侧道路",
+          "roadId": "r-c",
+          "status": "pending",
+          "version": 1
+        }
+      ],
+      "requests": [
+        {
+          "id": "request:observation-a",
+          "title": "请为A路查验选择观测点",
+          "reason": "模拟Agent缺少本步骤的观测点参数，尚不能产生道路观测；请人从预设模拟位置中选择。",
+          "basis": "协作fixture的明确参数依赖：选择写入执行参数，后续模拟观测反馈才形成道路事实。预设位置不代表真实现场安全或可达。",
+          "roadIds": [
+            "r-a"
+          ],
+          "stepIds": [
+            "s-a"
+          ],
+          "requiredInput": {
+            "kind": "option",
+            "options": [
+              {
+                "id": "point-a-north",
+                "label": "选择A路北侧观测点（预设模拟位置）",
+                "effect": "provide-observation-point"
+              },
+              {
+                "id": "point-a-south",
+                "label": "选择A路南侧观测点（预设模拟位置）",
+                "effect": "provide-observation-point"
+              }
+            ]
+          },
+          "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+          "version": 1,
+          "type": "choice",
+          "status": "pending",
+          "options": [
+            {
+              "id": "point-a-north",
+              "label": "选择A路北侧观测点（预设模拟位置）",
+              "effect": "provide-observation-point"
+            },
+            {
+              "id": "point-a-south",
+              "label": "选择A路南侧观测点（预设模拟位置）",
+              "effect": "provide-observation-point"
+            }
+          ],
+          "createdPlanVersion": 1,
+          "createdAt": 3,
+          "roadVersions": {
+            "r-a": 1
+          },
+          "stepVersions": {
+            "s-a": 2
+          }
+        }
+      ],
+      "verificationDriver": "playwright-automated-visible-controls",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T09:08:03.627Z",
+      "captureCompletedAt": "2026-10-04T09:08:03.798Z",
+      "captureOrder": "screenshot-before-raw-download; no application state mutation",
+      "noticeAtCapture": "模拟Agent已请求观测点参数；在人工答复前，本步骤不接受道路观测。",
+      "browserVersion": "154.0.8037.92",
+      "screenshot": {
+        "filename": "observation-request-pending.png",
+        "sha256": "342af7ed709f7cd17f3bb37780dbc0df717d96f0fd08ceb814ccc35c8d293861",
+        "scope": "unaltered complete lab element in fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 2392
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 2440
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 387.40625,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-continuous-panel",
+            "bounds": {
+              "x": 32,
+              "y": 328,
+              "width": 1416,
+              "height": 92.796875
+            },
+            "text": "这次要完成查清选定街区主要道路的通行情况，标出受阻和未查明路段。同一任务持续更新 · 等待处理Agent 当前在做查验西侧主路有 1 件事需要你参与当前取得的结果已完成 0/3 步已查明 0/3 条路 · 3 条未查明"
+          },
+          {
+            "testId": "lab-request-request:observation-a",
+            "bounds": {
+              "x": 796.796875,
+              "y": 490.296875,
+              "width": 632.203125,
+              "height": 314.640625
+            },
+            "text": "选择型请为A路查验选择观测点模拟Agent缺少本步骤的观测点参数，尚不能产生道路观测；请人从预设模拟位置中选择。关联道路西侧主路 A处理依据协作fixture的明确参数依赖：选择写入执行参数，后续模拟观测反馈才形成道路事实。预设位置不代表真实现场安全或可达。请求版本第 1 版 · 基于生成时的计划第 1 版定位关联道路 ↗提供这一步需要的观测点请选择预设观测点选择A路北侧观测点（预设模拟位置）选择A路南侧观测点（预设模拟位置）选择会写入当前步骤的执行参数。未选点时提交会被拒绝，任务仍等待你的补充。提交观测点，继续协作"
+          },
+          {
+            "testId": "lab-observation-input",
+            "bounds": {
+              "x": 796.796875,
+              "y": 1856.21875,
+              "width": 632.203125,
+              "height": 91.140625
+            },
+            "text": "查验西侧主路的观测点参数Agent 已请求你提供观测点Agent 负责继续执行和取得反馈；你负责选择本案例中预设的观测点。按钮答复本身不等于已完成观测。"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "observation-request-pending.json",
+        "sha256": "0e344a4d62292ffd42bcc0517edc898e941bde509c646b49c6c7d8c714798084"
+      },
+      "replay": {
+        "fullStateMatched": true,
+        "initialCollaborationMode": "observation-input",
+        "stateSha256": "10b9939a0087ab24362d788c7c09ff4bcfa424e035a4389df9734fd47030ca1f"
+      }
+    },
+    {
+      "name": "observation-empty-response-rejected",
+      "group": "observation-input",
+      "scenarioId": "observation-cooperation",
+      "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+      "eventCursor": 3,
+      "eventCount": 13,
+      "inputActionCount": 4,
+      "lastAction": {
+        "type": "respond",
+        "actionId": "ui-response-4",
+        "requestId": "request:observation-a",
+        "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+        "requestVersion": 1,
+        "optionId": "",
+        "provenance": "interactive"
+      },
+      "lastLog": {
+        "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+        "sequence": 4,
+        "logicalTime": 4,
+        "source": "operator",
+        "inputProvenance": "interactive",
+        "actionId": "ui-response-4",
+        "actionType": "respond",
+        "planVersion": 1,
+        "accepted": false,
+        "detail": "答复选项不属于该请求，已拒绝。",
+        "requestId": "request:observation-a"
+      },
+      "planVersion": 1,
+      "collaboration": {
+        "mode": "observation-input",
+        "stepOrder": [
+          "s-a",
+          "s-b",
+          "s-c"
+        ],
+        "executionOrder": [
+          "s-a"
+        ],
+        "contributions": [],
+        "observationInput": {
+          "stepId": "s-a",
+          "status": "requested",
+          "points": [
+            {
+              "id": "point-a-north",
+              "label": "A路北侧观测点（预设模拟位置）",
+              "position": {
+                "x": 18,
+                "y": 25
+              }
+            },
+            {
+              "id": "point-a-south",
+              "label": "A路南侧观测点（预设模拟位置）",
+              "position": {
+                "x": 18,
+                "y": 65
+              }
+            }
+          ],
+          "requestId": "request:observation-a"
+        }
+      },
+      "roads": [
+        {
+          "id": "r-a",
+          "name": "西侧主路 A",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 20
+            },
+            {
+              "x": 18,
+              "y": 72
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        },
+        {
+          "id": "r-b",
+          "name": "中央道路 B",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 47
+            },
+            {
+              "x": 76,
+              "y": 47
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        },
+        {
+          "id": "r-c",
+          "name": "东侧道路 C",
+          "polyline": [
+            {
+              "x": 76,
+              "y": 20
+            },
+            {
+              "x": 76,
+              "y": 78
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "label": "查验西侧主路",
+          "roadId": "r-a",
+          "status": "running",
+          "version": 2
+        },
+        {
+          "id": "s-b",
+          "label": "查验中央道路",
+          "roadId": "r-b",
+          "status": "pending",
+          "version": 1
+        },
+        {
+          "id": "s-c",
+          "label": "查验东侧道路",
+          "roadId": "r-c",
+          "status": "pending",
+          "version": 1
+        }
+      ],
+      "requests": [
+        {
+          "id": "request:observation-a",
+          "title": "请为A路查验选择观测点",
+          "reason": "模拟Agent缺少本步骤的观测点参数，尚不能产生道路观测；请人从预设模拟位置中选择。",
+          "basis": "协作fixture的明确参数依赖：选择写入执行参数，后续模拟观测反馈才形成道路事实。预设位置不代表真实现场安全或可达。",
+          "roadIds": [
+            "r-a"
+          ],
+          "stepIds": [
+            "s-a"
+          ],
+          "requiredInput": {
+            "kind": "option",
+            "options": [
+              {
+                "id": "point-a-north",
+                "label": "选择A路北侧观测点（预设模拟位置）",
+                "effect": "provide-observation-point"
+              },
+              {
+                "id": "point-a-south",
+                "label": "选择A路南侧观测点（预设模拟位置）",
+                "effect": "provide-observation-point"
+              }
+            ]
+          },
+          "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+          "version": 1,
+          "type": "choice",
+          "status": "pending",
+          "options": [
+            {
+              "id": "point-a-north",
+              "label": "选择A路北侧观测点（预设模拟位置）",
+              "effect": "provide-observation-point"
+            },
+            {
+              "id": "point-a-south",
+              "label": "选择A路南侧观测点（预设模拟位置）",
+              "effect": "provide-observation-point"
+            }
+          ],
+          "createdPlanVersion": 1,
+          "createdAt": 3,
+          "roadVersions": {
+            "r-a": 1
+          },
+          "stepVersions": {
+            "s-a": 2
+          }
+        }
+      ],
+      "verificationDriver": "playwright-automated-visible-controls",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T09:08:04.052Z",
+      "captureCompletedAt": "2026-10-04T09:08:04.248Z",
+      "captureOrder": "screenshot-before-raw-download; no application state mutation",
+      "noticeAtCapture": "答复选项不属于该请求，已拒绝。",
+      "browserVersion": "154.0.8037.92",
+      "screenshot": {
+        "filename": "observation-empty-response-rejected.png",
+        "sha256": "b0540af0cbcab27af99309e409b4fcd5edf366daba7f46fd9fc01f460a1c28d0",
+        "scope": "unaltered complete lab element in fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 2442
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 2490
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 387.40625,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-continuous-panel",
+            "bounds": {
+              "x": 32,
+              "y": 328,
+              "width": 1416,
+              "height": 92.796875
+            },
+            "text": "这次要完成查清选定街区主要道路的通行情况，标出受阻和未查明路段。同一任务持续更新 · 等待处理Agent 当前在做查验西侧主路有 1 件事需要你参与当前取得的结果已完成 0/3 步已查明 0/3 条路 · 3 条未查明"
+          },
+          {
+            "testId": "lab-request-request:observation-a",
+            "bounds": {
+              "x": 796.796875,
+              "y": 490.296875,
+              "width": 632.203125,
+              "height": 314.640625
+            },
+            "text": "选择型请为A路查验选择观测点模拟Agent缺少本步骤的观测点参数，尚不能产生道路观测；请人从预设模拟位置中选择。关联道路西侧主路 A处理依据协作fixture的明确参数依赖：选择写入执行参数，后续模拟观测反馈才形成道路事实。预设位置不代表真实现场安全或可达。请求版本第 1 版 · 基于生成时的计划第 1 版定位关联道路 ↗提供这一步需要的观测点请选择预设观测点选择A路北侧观测点（预设模拟位置）选择A路南侧观测点（预设模拟位置）选择会写入当前步骤的执行参数。未选点时提交会被拒绝，任务仍等待你的补充。提交观测点，继续协作"
+          },
+          {
+            "testId": "lab-observation-input",
+            "bounds": {
+              "x": 796.796875,
+              "y": 1856.21875,
+              "width": 632.203125,
+              "height": 91.140625
+            },
+            "text": "查验西侧主路的观测点参数Agent 已请求你提供观测点Agent 负责继续执行和取得反馈；你负责选择本案例中预设的观测点。按钮答复本身不等于已完成观测。"
+          },
+          {
+            "testId": "lab-notice",
+            "bounds": {
+              "x": 32,
+              "y": 2039.640625,
+              "width": 1416,
+              "height": 42
+            },
+            "text": "答复选项不属于该请求，已拒绝。"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "observation-empty-response-rejected.json",
+        "sha256": "86ce11da1949ec0b1b6c8618a6e0db8838791c1802a23ad6ffc3a676f6f59055"
+      },
+      "replay": {
+        "fullStateMatched": true,
+        "initialCollaborationMode": "observation-input",
+        "stateSha256": "bb5dcdd943ac983334dc8bc8d25cb7e28fe92807e94030e41c42237caed8701f"
+      }
+    },
+    {
+      "name": "observation-parameter-applied",
+      "group": "observation-input",
+      "scenarioId": "observation-cooperation",
+      "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+      "eventCursor": 3,
+      "eventCount": 13,
+      "inputActionCount": 5,
+      "lastAction": {
+        "type": "respond",
+        "actionId": "ui-response-5",
+        "requestId": "request:observation-a",
+        "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+        "requestVersion": 1,
+        "optionId": "point-a-north",
+        "provenance": "interactive"
+      },
+      "lastLog": {
+        "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+        "sequence": 5,
+        "logicalTime": 5,
+        "source": "operator",
+        "inputProvenance": "interactive",
+        "actionId": "ui-response-5",
+        "actionType": "respond",
+        "planVersion": 2,
+        "accepted": true,
+        "detail": "人工选择A路北侧观测点（预设模拟位置），已写入查验西侧主路的执行参数（point-a-north）；解除缺参阻塞，等待后续模拟观测反馈。 道路仍保留当前观测事实，人工答复不作为设备反馈。",
+        "requestId": "request:observation-a"
+      },
+      "planVersion": 2,
+      "collaboration": {
+        "mode": "observation-input",
+        "stepOrder": [
+          "s-a",
+          "s-b",
+          "s-c"
+        ],
+        "executionOrder": [
+          "s-a"
+        ],
+        "contributions": [
+          {
+            "actionId": "ui-response-5",
+            "kind": "observation-input",
+            "detail": "人工选择A路北侧观测点（预设模拟位置），已写入查验西侧主路的执行参数（point-a-north）；解除缺参阻塞，等待后续模拟观测反馈。",
+            "stepIds": [
+              "s-a"
+            ],
+            "logicalTime": 5,
+            "planVersion": 2
+          }
+        ],
+        "observationInput": {
+          "stepId": "s-a",
+          "status": "provided",
+          "points": [
+            {
+              "id": "point-a-north",
+              "label": "A路北侧观测点（预设模拟位置）",
+              "position": {
+                "x": 18,
+                "y": 25
+              }
+            },
+            {
+              "id": "point-a-south",
+              "label": "A路南侧观测点（预设模拟位置）",
+              "position": {
+                "x": 18,
+                "y": 65
+              }
+            }
+          ],
+          "requestId": "request:observation-a",
+          "selectedPointId": "point-a-north"
+        }
+      },
+      "roads": [
+        {
+          "id": "r-a",
+          "name": "西侧主路 A",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 20
+            },
+            {
+              "x": 18,
+              "y": 72
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        },
+        {
+          "id": "r-b",
+          "name": "中央道路 B",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 47
+            },
+            {
+              "x": 76,
+              "y": 47
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        },
+        {
+          "id": "r-c",
+          "name": "东侧道路 C",
+          "polyline": [
+            {
+              "x": 76,
+              "y": 20
+            },
+            {
+              "x": 76,
+              "y": 78
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "label": "查验西侧主路",
+          "roadId": "r-a",
+          "status": "running",
+          "version": 3
+        },
+        {
+          "id": "s-b",
+          "label": "查验中央道路",
+          "roadId": "r-b",
+          "status": "pending",
+          "version": 1
+        },
+        {
+          "id": "s-c",
+          "label": "查验东侧道路",
+          "roadId": "r-c",
+          "status": "pending",
+          "version": 1
+        }
+      ],
+      "requests": [
+        {
+          "id": "request:observation-a",
+          "title": "请为A路查验选择观测点",
+          "reason": "模拟Agent缺少本步骤的观测点参数，尚不能产生道路观测；请人从预设模拟位置中选择。",
+          "basis": "协作fixture的明确参数依赖：选择写入执行参数，后续模拟观测反馈才形成道路事实。预设位置不代表真实现场安全或可达。",
+          "roadIds": [
+            "r-a"
+          ],
+          "stepIds": [
+            "s-a"
+          ],
+          "requiredInput": {
+            "kind": "option",
+            "options": [
+              {
+                "id": "point-a-north",
+                "label": "选择A路北侧观测点（预设模拟位置）",
+                "effect": "provide-observation-point"
+              },
+              {
+                "id": "point-a-south",
+                "label": "选择A路南侧观测点（预设模拟位置）",
+                "effect": "provide-observation-point"
+              }
+            ]
+          },
+          "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+          "version": 1,
+          "type": "choice",
+          "status": "resolved",
+          "options": [
+            {
+              "id": "point-a-north",
+              "label": "选择A路北侧观测点（预设模拟位置）",
+              "effect": "provide-observation-point"
+            },
+            {
+              "id": "point-a-south",
+              "label": "选择A路南侧观测点（预设模拟位置）",
+              "effect": "provide-observation-point"
+            }
+          ],
+          "createdPlanVersion": 1,
+          "createdAt": 3,
+          "roadVersions": {
+            "r-a": 1
+          },
+          "stepVersions": {
+            "s-a": 2
+          },
+          "resolvedAt": 5,
+          "resolution": "选择A路北侧观测点（预设模拟位置）"
+        }
+      ],
+      "verificationDriver": "playwright-automated-visible-controls",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T09:08:04.525Z",
+      "captureCompletedAt": "2026-10-04T09:08:04.699Z",
+      "captureOrder": "screenshot-before-raw-download; no application state mutation",
+      "noticeAtCapture": "人工选择A路北侧观测点（预设模拟位置），已写入查验西侧主路的执行参数（point-a-north）；解除缺参阻塞，等待后续模拟观测反馈。 道路仍保留当前观测事实，人工答复不作为设备反馈。",
+      "browserVersion": "154.0.8037.92",
+      "screenshot": {
+        "filename": "observation-parameter-applied.png",
+        "sha256": "67e2cad4d938e84ce39af4494e3d98b663e11df4c94642f7d05b8aab52610ae2",
+        "scope": "unaltered complete lab element in fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 2466
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 2514
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 387.40625,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-continuous-panel",
+            "bounds": {
+              "x": 32,
+              "y": 328,
+              "width": 1416,
+              "height": 92.796875
+            },
+            "text": "这次要完成查清选定街区主要道路的通行情况，标出受阻和未查明路段。同一任务持续更新 · 执行中Agent 当前在做查验西侧主路执行反馈会更新当前步骤和道路证据当前取得的结果已完成 0/3 步已查明 0/3 条路 · 3 条未查明"
+          },
+          {
+            "testId": "lab-observation-input",
+            "bounds": {
+              "x": 796.796875,
+              "y": 858.796875,
+              "width": 632.203125,
+              "height": 91.140625
+            },
+            "text": "查验西侧主路的观测点参数A路北侧观测点（预设模拟位置）你的选择已写入这一步的执行参数。后续仿真观测反馈到达后，才会更新位置、道路证据和查明结果。"
+          },
+          {
+            "testId": "lab-contributions",
+            "bounds": {
+              "x": 796.796875,
+              "y": 961.9375,
+              "width": 632.203125,
+              "height": 117.5
+            },
+            "text": "你补充了执行信息人工选择A路北侧观测点（预设模拟位置），已写入查验西侧主路的执行参数（point-a-north）；解除缺参阻塞，等待后续模拟观测反馈。已应用到计划 v2 · 逻辑时刻 5后续步骤反馈：查验西侧主路：当前执行，道路仍未查明"
+          },
+          {
+            "testId": "lab-map-facts",
+            "bounds": {
+              "x": 33,
+              "y": 1041.296875,
+              "width": 721.796875,
+              "height": 82.5
+            },
+            "text": "西侧主路 A未查明尚无道路观测证据。导航失败不能直接写成道路不可通行。"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "observation-parameter-applied.json",
+        "sha256": "bf0dd4ca034a57aae21b9ff264cdd1bb8155df0b6320598e7358f75e7d3e1048"
+      },
+      "replay": {
+        "fullStateMatched": true,
+        "initialCollaborationMode": "observation-input",
+        "stateSha256": "18f5e6669a5e54f71882c19e4cdf1a7f1ca4e73656fd142d9b2194d491fd2b08"
+      }
+    },
+    {
+      "name": "observation-feedback-received",
+      "group": "observation-input",
+      "scenarioId": "observation-cooperation",
+      "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+      "eventCursor": 13,
+      "eventCount": 13,
+      "inputActionCount": 14,
+      "lastAction": {
+        "type": "finish-task",
+        "actionId": "ui-event-14",
+        "provenance": "fixture-event"
+      },
+      "lastLog": {
+        "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+        "sequence": 14,
+        "logicalTime": 14,
+        "source": "operator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-14",
+        "actionType": "finish-task",
+        "planVersion": 2,
+        "accepted": true,
+        "detail": "原始道路集合已全部观测，本次模拟执行结束。"
+      },
+      "planVersion": 2,
+      "collaboration": {
+        "mode": "observation-input",
+        "stepOrder": [
+          "s-a",
+          "s-b",
+          "s-c"
+        ],
+        "executionOrder": [
+          "s-a",
+          "s-b",
+          "s-c"
+        ],
+        "contributions": [
+          {
+            "actionId": "ui-response-5",
+            "kind": "observation-input",
+            "detail": "人工选择A路北侧观测点（预设模拟位置），已写入查验西侧主路的执行参数（point-a-north）；解除缺参阻塞，等待后续模拟观测反馈。",
+            "stepIds": [
+              "s-a"
+            ],
+            "logicalTime": 5,
+            "planVersion": 2
+          }
+        ],
+        "observationInput": {
+          "stepId": "s-a",
+          "status": "provided",
+          "points": [
+            {
+              "id": "point-a-north",
+              "label": "A路北侧观测点（预设模拟位置）",
+              "position": {
+                "x": 18,
+                "y": 25
+              }
+            },
+            {
+              "id": "point-a-south",
+              "label": "A路南侧观测点（预设模拟位置）",
+              "position": {
+                "x": 18,
+                "y": 65
+              }
+            }
+          ],
+          "requestId": "request:observation-a",
+          "selectedPointId": "point-a-north"
+        }
+      },
+      "roads": [
+        {
+          "id": "r-a",
+          "name": "西侧主路 A",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 20
+            },
+            {
+              "x": 18,
+              "y": 72
+            }
+          ],
+          "status": "observed",
+          "condition": "passable",
+          "version": 2,
+          "evidence": [
+            {
+              "source": "模拟 UGV 观测事件",
+              "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。 执行参数：观测点 point-a-north，模拟坐标 (18, 25)。",
+              "logicalTime": 6
+            }
+          ]
+        },
+        {
+          "id": "r-b",
+          "name": "中央道路 B",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 47
+            },
+            {
+              "x": 76,
+              "y": 47
+            }
+          ],
+          "status": "observed",
+          "condition": "passable",
+          "version": 2,
+          "evidence": [
+            {
+              "source": "模拟 UGV 观测事件",
+              "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+              "logicalTime": 9
+            }
+          ]
+        },
+        {
+          "id": "r-c",
+          "name": "东侧道路 C",
+          "polyline": [
+            {
+              "x": 76,
+              "y": 20
+            },
+            {
+              "x": 76,
+              "y": 78
+            }
+          ],
+          "status": "observed",
+          "condition": "passable",
+          "version": 2,
+          "evidence": [
+            {
+              "source": "模拟 UGV 观测事件",
+              "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+              "logicalTime": 12
+            }
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "label": "查验西侧主路",
+          "roadId": "r-a",
+          "status": "completed",
+          "version": 4
+        },
+        {
+          "id": "s-b",
+          "label": "查验中央道路",
+          "roadId": "r-b",
+          "status": "completed",
+          "version": 3
+        },
+        {
+          "id": "s-c",
+          "label": "查验东侧道路",
+          "roadId": "r-c",
+          "status": "completed",
+          "version": 3
+        }
+      ],
+      "requests": [
+        {
+          "id": "request:observation-a",
+          "title": "请为A路查验选择观测点",
+          "reason": "模拟Agent缺少本步骤的观测点参数，尚不能产生道路观测；请人从预设模拟位置中选择。",
+          "basis": "协作fixture的明确参数依赖：选择写入执行参数，后续模拟观测反馈才形成道路事实。预设位置不代表真实现场安全或可达。",
+          "roadIds": [
+            "r-a"
+          ],
+          "stepIds": [
+            "s-a"
+          ],
+          "requiredInput": {
+            "kind": "option",
+            "options": [
+              {
+                "id": "point-a-north",
+                "label": "选择A路北侧观测点（预设模拟位置）",
+                "effect": "provide-observation-point"
+              },
+              {
+                "id": "point-a-south",
+                "label": "选择A路南侧观测点（预设模拟位置）",
+                "effect": "provide-observation-point"
+              }
+            ]
+          },
+          "runId": "lab:1f1eda85-9f91-4e0b-a8f2-e05fa3b9b867",
+          "version": 1,
+          "type": "choice",
+          "status": "resolved",
+          "options": [
+            {
+              "id": "point-a-north",
+              "label": "选择A路北侧观测点（预设模拟位置）",
+              "effect": "provide-observation-point"
+            },
+            {
+              "id": "point-a-south",
+              "label": "选择A路南侧观测点（预设模拟位置）",
+              "effect": "provide-observation-point"
+            }
+          ],
+          "createdPlanVersion": 1,
+          "createdAt": 3,
+          "roadVersions": {
+            "r-a": 1
+          },
+          "stepVersions": {
+            "s-a": 2
+          },
+          "resolvedAt": 5,
+          "resolution": "选择A路北侧观测点（预设模拟位置）"
+        }
+      ],
+      "verificationDriver": "playwright-automated-visible-controls",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T09:08:05.340Z",
+      "captureCompletedAt": "2026-10-04T09:08:05.508Z",
+      "captureOrder": "screenshot-before-raw-download; no application state mutation",
+      "noticeAtCapture": "原始道路集合已全部观测，本次模拟执行结束。",
+      "browserVersion": "154.0.8037.92",
+      "screenshot": {
+        "filename": "observation-feedback-received.png",
+        "sha256": "e59392c599724ad0357b409f52bb1c12577145b44adb12192b3cd298b8a1b954",
+        "scope": "unaltered complete lab element in fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 2490
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 2538
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 387.40625,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-continuous-panel",
+            "bounds": {
+              "x": 32,
+              "y": 328,
+              "width": 1416,
+              "height": 92.796875
+            },
+            "text": "这次要完成查清选定街区主要道路的通行情况，标出受阻和未查明路段。同一任务持续更新 · 本次执行结束Agent 当前在做本次执行已结束执行反馈会更新当前步骤和道路证据当前取得的结果已完成 3/3 步已查明 3/3 条路 · 0 条未查明"
+          },
+          {
+            "testId": "lab-contributions",
+            "bounds": {
+              "x": 796.796875,
+              "y": 961.9375,
+              "width": 632.203125,
+              "height": 117.5
+            },
+            "text": "你补充了执行信息人工选择A路北侧观测点（预设模拟位置），已写入查验西侧主路的执行参数（point-a-north）；解除缺参阻塞，等待后续模拟观测反馈。已应用到计划 v2 · 逻辑时刻 5后续步骤反馈：查验西侧主路：已完成，模拟观测反馈已到达"
+          },
+          {
+            "testId": "lab-outcome",
+            "bounds": {
+              "x": 796.796875,
+              "y": 729.796875,
+              "width": 632.203125,
+              "height": 49.5
+            },
+            "text": "本次目标已完成（仿真）未查明 0/3 条 · 未观察的事实始终保留"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "observation-feedback-received.json",
+        "sha256": "3fbd33516810e39fcac3ef150c3654252d8398e601e8ea962feb712c5a6f76dc"
+      },
+      "replay": {
+        "fullStateMatched": true,
+        "initialCollaborationMode": "observation-input",
+        "stateSha256": "9d092a7fca07c06bed6d551c37110d81f2acfb9bba90237d8a69b7874753a3c4"
+      }
+    },
+    {
+      "name": "priority-before-adjustment",
+      "group": "active-priority",
+      "scenarioId": "priority-cooperation",
+      "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+      "eventCursor": 2,
+      "eventCount": 12,
+      "inputActionCount": 2,
+      "lastAction": {
+        "type": "start-next-step",
+        "actionId": "ui-event-2",
+        "provenance": "fixture-event"
+      },
+      "lastLog": {
+        "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+        "sequence": 2,
+        "logicalTime": 2,
+        "source": "simulator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-2",
+        "actionType": "start-next-step",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "模拟执行：查验西侧主路。"
+      },
+      "planVersion": 1,
+      "collaboration": {
+        "mode": "priority-order",
+        "stepOrder": [
+          "s-a",
+          "s-b",
+          "s-c"
+        ],
+        "executionOrder": [
+          "s-a"
+        ],
+        "contributions": []
+      },
+      "roads": [
+        {
+          "id": "r-a",
+          "name": "西侧主路 A",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 20
+            },
+            {
+              "x": 18,
+              "y": 72
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        },
+        {
+          "id": "r-b",
+          "name": "中央道路 B",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 47
+            },
+            {
+              "x": 76,
+              "y": 47
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        },
+        {
+          "id": "r-c",
+          "name": "东侧道路 C",
+          "polyline": [
+            {
+              "x": 76,
+              "y": 20
+            },
+            {
+              "x": 76,
+              "y": 78
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "label": "查验西侧主路",
+          "roadId": "r-a",
+          "status": "running",
+          "version": 2
+        },
+        {
+          "id": "s-b",
+          "label": "查验中央道路",
+          "roadId": "r-b",
+          "status": "pending",
+          "version": 1
+        },
+        {
+          "id": "s-c",
+          "label": "查验东侧道路",
+          "roadId": "r-c",
+          "status": "pending",
+          "version": 1
+        }
+      ],
+      "requests": [],
+      "verificationDriver": "playwright-automated-visible-controls",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T09:08:06.051Z",
+      "captureCompletedAt": "2026-10-04T09:08:06.212Z",
+      "captureOrder": "screenshot-before-raw-download; no application state mutation",
+      "noticeAtCapture": "模拟执行：查验西侧主路。",
+      "browserVersion": "154.0.8037.92",
+      "screenshot": {
+        "filename": "priority-before-adjustment.png",
+        "sha256": "8c5e19390477e4d4552f9127363848b924d04b8a47c770c11d72d3191c387b2a",
+        "scope": "unaltered complete lab element in fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 1944
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 1992
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 387.40625,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-continuous-panel",
+            "bounds": {
+              "x": 32,
+              "y": 328,
+              "width": 1416,
+              "height": 92.796875
+            },
+            "text": "这次要完成查清选定街区主要道路的通行情况，标出受阻和未查明路段。同一任务持续更新 · 执行中Agent 当前在做查验西侧主路执行反馈会更新当前步骤和道路证据当前取得的结果已完成 0/3 步已查明 0/3 条路 · 3 条未查明"
+          },
+          {
+            "testId": "lab-step-order",
+            "bounds": {
+              "x": 796.796875,
+              "y": 575.796875,
+              "width": 632.203125,
+              "height": 117
+            },
+            "text": "●查验西侧主路当前执行2查验中央道路尚未开始3查验东侧道路尚未开始"
+          },
+          {
+            "testId": "lab-priority-step",
+            "bounds": {
+              "x": 796.796875,
+              "y": 1122.4375,
+              "width": 632.203125,
+              "height": 33
+            },
+            "text": "查验中央道路查验东侧道路"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "priority-before-adjustment.json",
+        "sha256": "ba3042bcff5eca7cb87d4fff882956584fa29d58379f90f9b89f007c96ca9a99"
+      },
+      "replay": {
+        "fullStateMatched": true,
+        "initialCollaborationMode": "priority-order",
+        "stateSha256": "fd5ca15ef31e263db54df7a742757f33b57981e0134b0a8339043f7bb2691b9d"
+      }
+    },
+    {
+      "name": "priority-adjustment-applied",
+      "group": "active-priority",
+      "scenarioId": "priority-cooperation",
+      "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+      "eventCursor": 2,
+      "eventCount": 12,
+      "inputActionCount": 3,
+      "lastAction": {
+        "type": "prioritize-step",
+        "actionId": "ui-priority-3",
+        "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+        "planVersion": 1,
+        "stepId": "s-c",
+        "provenance": "interactive"
+      },
+      "lastLog": {
+        "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+        "sequence": 3,
+        "logicalTime": 3,
+        "source": "operator",
+        "inputProvenance": "interactive",
+        "actionId": "ui-priority-3",
+        "actionType": "prioritize-step",
+        "planVersion": 2,
+        "accepted": true,
+        "detail": "人工优先安排查验东侧道路：查验西侧主路 → 查验中央道路 → 查验东侧道路改为查验西侧主路 → 查验东侧道路 → 查验中央道路；当前步骤和已取得观测保持。后续模拟调度按新顺序取待执行步骤。"
+      },
+      "planVersion": 2,
+      "collaboration": {
+        "mode": "priority-order",
+        "stepOrder": [
+          "s-a",
+          "s-c",
+          "s-b"
+        ],
+        "executionOrder": [
+          "s-a"
+        ],
+        "contributions": [
+          {
+            "actionId": "ui-priority-3",
+            "kind": "priority-order",
+            "detail": "人工优先安排查验东侧道路：查验西侧主路 → 查验中央道路 → 查验东侧道路改为查验西侧主路 → 查验东侧道路 → 查验中央道路；当前步骤和已取得观测保持。后续模拟调度按新顺序取待执行步骤。",
+            "stepIds": [
+              "s-c"
+            ],
+            "logicalTime": 3,
+            "planVersion": 2
+          }
+        ]
+      },
+      "roads": [
+        {
+          "id": "r-a",
+          "name": "西侧主路 A",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 20
+            },
+            {
+              "x": 18,
+              "y": 72
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        },
+        {
+          "id": "r-b",
+          "name": "中央道路 B",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 47
+            },
+            {
+              "x": 76,
+              "y": 47
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        },
+        {
+          "id": "r-c",
+          "name": "东侧道路 C",
+          "polyline": [
+            {
+              "x": 76,
+              "y": 20
+            },
+            {
+              "x": 76,
+              "y": 78
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "label": "查验西侧主路",
+          "roadId": "r-a",
+          "status": "running",
+          "version": 2
+        },
+        {
+          "id": "s-b",
+          "label": "查验中央道路",
+          "roadId": "r-b",
+          "status": "pending",
+          "version": 1
+        },
+        {
+          "id": "s-c",
+          "label": "查验东侧道路",
+          "roadId": "r-c",
+          "status": "pending",
+          "version": 1
+        }
+      ],
+      "requests": [],
+      "verificationDriver": "playwright-automated-visible-controls",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T09:08:06.513Z",
+      "captureCompletedAt": "2026-10-04T09:08:06.687Z",
+      "captureOrder": "screenshot-before-raw-download; no application state mutation",
+      "noticeAtCapture": "人工优先安排查验东侧道路：查验西侧主路 → 查验中央道路 → 查验东侧道路改为查验西侧主路 → 查验东侧道路 → 查验中央道路；当前步骤和已取得观测保持。后续模拟调度按新顺序取待执行步骤。",
+      "browserVersion": "154.0.8037.92",
+      "screenshot": {
+        "filename": "priority-adjustment-applied.png",
+        "sha256": "d62aa66b652c52a46cf796b6c81d704d10328cca8aaffc4df4e73ab5cf99bc1d",
+        "scope": "unaltered complete lab element in fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 2156
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 2204
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 387.40625,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-continuous-panel",
+            "bounds": {
+              "x": 32,
+              "y": 328,
+              "width": 1416,
+              "height": 92.796875
+            },
+            "text": "这次要完成查清选定街区主要道路的通行情况，标出受阻和未查明路段。同一任务持续更新 · 执行中Agent 当前在做查验西侧主路执行反馈会更新当前步骤和道路证据当前取得的结果已完成 0/3 步已查明 0/3 条路 · 3 条未查明"
+          },
+          {
+            "testId": "lab-step-order",
+            "bounds": {
+              "x": 796.796875,
+              "y": 575.796875,
+              "width": 632.203125,
+              "height": 117
+            },
+            "text": "●查验西侧主路当前执行2查验东侧道路尚未开始3查验中央道路尚未开始"
+          },
+          {
+            "testId": "lab-next-scheduled-step",
+            "bounds": {
+              "x": 796.796875,
+              "y": 518.296875,
+              "width": 632.203125,
+              "height": 52.5
+            },
+            "text": "当前步骤之后查验东侧道路按下方实际顺序调度"
+          },
+          {
+            "testId": "lab-contributions",
+            "bounds": {
+              "x": 796.796875,
+              "y": 858.796875,
+              "width": 632.203125,
+              "height": 117.5
+            },
+            "text": "你调整了后续优先顺序人工优先安排查验东侧道路：查验西侧主路 → 查验中央道路 → 查验东侧道路改为查验西侧主路 → 查验东侧道路 → 查验中央道路；当前步骤和已取得观测保持。后续模拟调度按新顺序取待执行步骤。已应用到计划 v2 · 逻辑时刻 3后续步骤反馈：查验东侧道路：尚未开始，道路仍未查明"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "priority-adjustment-applied.json",
+        "sha256": "537920bf22ed211bb40953ac44f42d028f1911f1cf1102cd0588b636aff127f4"
+      },
+      "replay": {
+        "fullStateMatched": true,
+        "initialCollaborationMode": "priority-order",
+        "stateSha256": "72f29b8467de4b7637c14afe5afc46e5eab739abf82206ab382919fc6bd58dae"
+      }
+    },
+    {
+      "name": "priority-next-C-running",
+      "group": "active-priority",
+      "scenarioId": "priority-cooperation",
+      "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+      "eventCursor": 6,
+      "eventCount": 12,
+      "inputActionCount": 6,
+      "lastAction": {
+        "type": "start-next-step",
+        "actionId": "ui-event-6",
+        "provenance": "fixture-event"
+      },
+      "lastLog": {
+        "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+        "sequence": 6,
+        "logicalTime": 6,
+        "source": "simulator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-6",
+        "actionType": "start-next-step",
+        "planVersion": 2,
+        "accepted": true,
+        "detail": "模拟执行：查验东侧道路。"
+      },
+      "planVersion": 2,
+      "collaboration": {
+        "mode": "priority-order",
+        "stepOrder": [
+          "s-a",
+          "s-c",
+          "s-b"
+        ],
+        "executionOrder": [
+          "s-a",
+          "s-c"
+        ],
+        "contributions": [
+          {
+            "actionId": "ui-priority-3",
+            "kind": "priority-order",
+            "detail": "人工优先安排查验东侧道路：查验西侧主路 → 查验中央道路 → 查验东侧道路改为查验西侧主路 → 查验东侧道路 → 查验中央道路；当前步骤和已取得观测保持。后续模拟调度按新顺序取待执行步骤。",
+            "stepIds": [
+              "s-c"
+            ],
+            "logicalTime": 3,
+            "planVersion": 2
+          }
+        ]
+      },
+      "roads": [
+        {
+          "id": "r-a",
+          "name": "西侧主路 A",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 20
+            },
+            {
+              "x": 18,
+              "y": 72
+            }
+          ],
+          "status": "observed",
+          "condition": "passable",
+          "version": 2,
+          "evidence": [
+            {
+              "source": "模拟 UGV 观测事件",
+              "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+              "logicalTime": 4
+            }
+          ]
+        },
+        {
+          "id": "r-b",
+          "name": "中央道路 B",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 47
+            },
+            {
+              "x": 76,
+              "y": 47
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        },
+        {
+          "id": "r-c",
+          "name": "东侧道路 C",
+          "polyline": [
+            {
+              "x": 76,
+              "y": 20
+            },
+            {
+              "x": 76,
+              "y": 78
+            }
+          ],
+          "status": "unchecked",
+          "condition": "unknown",
+          "version": 1,
+          "evidence": []
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "label": "查验西侧主路",
+          "roadId": "r-a",
+          "status": "completed",
+          "version": 3
+        },
+        {
+          "id": "s-b",
+          "label": "查验中央道路",
+          "roadId": "r-b",
+          "status": "pending",
+          "version": 1
+        },
+        {
+          "id": "s-c",
+          "label": "查验东侧道路",
+          "roadId": "r-c",
+          "status": "running",
+          "version": 2
+        }
+      ],
+      "requests": [],
+      "verificationDriver": "playwright-automated-visible-controls",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T09:08:07.059Z",
+      "captureCompletedAt": "2026-10-04T09:08:07.223Z",
+      "captureOrder": "screenshot-before-raw-download; no application state mutation",
+      "noticeAtCapture": "模拟执行：查验东侧道路。",
+      "browserVersion": "154.0.8037.92",
+      "screenshot": {
+        "filename": "priority-next-C-running.png",
+        "sha256": "34d42f83f7e555bc86fa653fe4b810f70a63caea60174a3eecd58c8548e6e143",
+        "scope": "unaltered complete lab element in fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 2221
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 2269
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 387.40625,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-continuous-panel",
+            "bounds": {
+              "x": 32,
+              "y": 328,
+              "width": 1416,
+              "height": 92.796875
+            },
+            "text": "这次要完成查清选定街区主要道路的通行情况，标出受阻和未查明路段。同一任务持续更新 · 执行中Agent 当前在做查验东侧道路执行反馈会更新当前步骤和道路证据当前取得的结果已完成 1/3 步已查明 1/3 条路 · 2 条未查明"
+          },
+          {
+            "testId": "lab-step-order",
+            "bounds": {
+              "x": 796.796875,
+              "y": 575.796875,
+              "width": 632.203125,
+              "height": 117
+            },
+            "text": "✓查验西侧主路已完成●查验东侧道路当前执行3查验中央道路尚未开始"
+          },
+          {
+            "testId": "lab-step-s-c",
+            "bounds": {
+              "x": 796.796875,
+              "y": 614.796875,
+              "width": 632.203125,
+              "height": 39
+            },
+            "text": "●查验东侧道路当前执行"
+          },
+          {
+            "testId": "lab-contributions",
+            "bounds": {
+              "x": 796.796875,
+              "y": 858.796875,
+              "width": 632.203125,
+              "height": 117.5
+            },
+            "text": "你调整了后续优先顺序人工优先安排查验东侧道路：查验西侧主路 → 查验中央道路 → 查验东侧道路改为查验西侧主路 → 查验东侧道路 → 查验中央道路；当前步骤和已取得观测保持。后续模拟调度按新顺序取待执行步骤。已应用到计划 v2 · 逻辑时刻 3后续步骤反馈：查验东侧道路：当前执行，道路仍未查明"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "priority-next-C-running.json",
+        "sha256": "03cb65d7e2973fd0a8f39bebff024587a60d48b2326e9df37fcb2587dcad6461"
+      },
+      "replay": {
+        "fullStateMatched": true,
+        "initialCollaborationMode": "priority-order",
+        "stateSha256": "2d37bd237036afce4c2c1196e1dace357a87c49bf43b360180ff89088befd2a6"
+      }
+    },
+    {
+      "name": "priority-completed",
+      "group": "active-priority",
+      "scenarioId": "priority-cooperation",
+      "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+      "eventCursor": 12,
+      "eventCount": 12,
+      "inputActionCount": 12,
+      "lastAction": {
+        "type": "finish-task",
+        "actionId": "ui-event-12",
+        "provenance": "fixture-event"
+      },
+      "lastLog": {
+        "runId": "lab:bb00ca7b-fd56-4ddf-8648-7cb0f5bb8f36",
+        "sequence": 12,
+        "logicalTime": 12,
+        "source": "operator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-12",
+        "actionType": "finish-task",
+        "planVersion": 2,
+        "accepted": true,
+        "detail": "原始道路集合已全部观测，本次模拟执行结束。"
+      },
+      "planVersion": 2,
+      "collaboration": {
+        "mode": "priority-order",
+        "stepOrder": [
+          "s-a",
+          "s-c",
+          "s-b"
+        ],
+        "executionOrder": [
+          "s-a",
+          "s-c",
+          "s-b"
+        ],
+        "contributions": [
+          {
+            "actionId": "ui-priority-3",
+            "kind": "priority-order",
+            "detail": "人工优先安排查验东侧道路：查验西侧主路 → 查验中央道路 → 查验东侧道路改为查验西侧主路 → 查验东侧道路 → 查验中央道路；当前步骤和已取得观测保持。后续模拟调度按新顺序取待执行步骤。",
+            "stepIds": [
+              "s-c"
+            ],
+            "logicalTime": 3,
+            "planVersion": 2
+          }
+        ]
+      },
+      "roads": [
+        {
+          "id": "r-a",
+          "name": "西侧主路 A",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 20
+            },
+            {
+              "x": 18,
+              "y": 72
+            }
+          ],
+          "status": "observed",
+          "condition": "passable",
+          "version": 2,
+          "evidence": [
+            {
+              "source": "模拟 UGV 观测事件",
+              "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+              "logicalTime": 4
+            }
+          ]
+        },
+        {
+          "id": "r-b",
+          "name": "中央道路 B",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 47
+            },
+            {
+              "x": 76,
+              "y": 47
+            }
+          ],
+          "status": "observed",
+          "condition": "passable",
+          "version": 2,
+          "evidence": [
+            {
+              "source": "模拟 UGV 观测事件",
+              "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+              "logicalTime": 10
+            }
+          ]
+        },
+        {
+          "id": "r-c",
+          "name": "东侧道路 C",
+          "polyline": [
+            {
+              "x": 76,
+              "y": 20
+            },
+            {
+              "x": 76,
+              "y": 78
+            }
+          ],
+          "status": "observed",
+          "condition": "passable",
+          "version": 2,
+          "evidence": [
+            {
+              "source": "模拟 UGV 观测事件",
+              "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+              "logicalTime": 7
+            }
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "label": "查验西侧主路",
+          "roadId": "r-a",
+          "status": "completed",
+          "version": 3
+        },
+        {
+          "id": "s-b",
+          "label": "查验中央道路",
+          "roadId": "r-b",
+          "status": "completed",
+          "version": 3
+        },
+        {
+          "id": "s-c",
+          "label": "查验东侧道路",
+          "roadId": "r-c",
+          "status": "completed",
+          "version": 3
+        }
+      ],
+      "requests": [],
+      "verificationDriver": "playwright-automated-visible-controls",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T09:08:07.730Z",
+      "captureCompletedAt": "2026-10-04T09:08:07.904Z",
+      "captureOrder": "screenshot-before-raw-download; no application state mutation",
+      "noticeAtCapture": "原始道路集合已全部观测，本次模拟执行结束。",
+      "browserVersion": "154.0.8037.92",
+      "screenshot": {
+        "filename": "priority-completed.png",
+        "sha256": "1cb54e58ed4da73fd38e32b394849401700a05363f88763c5c36a2f1baba0242",
+        "scope": "unaltered complete lab element in fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 2245
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 2293
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 387.40625,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-continuous-panel",
+            "bounds": {
+              "x": 32,
+              "y": 328,
+              "width": 1416,
+              "height": 92.796875
+            },
+            "text": "这次要完成查清选定街区主要道路的通行情况，标出受阻和未查明路段。同一任务持续更新 · 本次执行结束Agent 当前在做本次执行已结束执行反馈会更新当前步骤和道路证据当前取得的结果已完成 3/3 步已查明 3/3 条路 · 0 条未查明"
+          },
+          {
+            "testId": "lab-step-order",
+            "bounds": {
+              "x": 796.796875,
+              "y": 575.796875,
+              "width": 632.203125,
+              "height": 117
+            },
+            "text": "✓查验西侧主路已完成✓查验东侧道路已完成✓查验中央道路已完成"
+          },
+          {
+            "testId": "lab-outcome",
+            "bounds": {
+              "x": 796.796875,
+              "y": 729.796875,
+              "width": 632.203125,
+              "height": 49.5
+            },
+            "text": "本次目标已完成（仿真）未查明 0/3 条 · 未观察的事实始终保留"
+          },
+          {
+            "testId": "lab-contributions",
+            "bounds": {
+              "x": 796.796875,
+              "y": 858.796875,
+              "width": 632.203125,
+              "height": 117.5
+            },
+            "text": "你调整了后续优先顺序人工优先安排查验东侧道路：查验西侧主路 → 查验中央道路 → 查验东侧道路改为查验西侧主路 → 查验东侧道路 → 查验中央道路；当前步骤和已取得观测保持。后续模拟调度按新顺序取待执行步骤。已应用到计划 v2 · 逻辑时刻 3后续步骤反馈：查验东侧道路：已完成，模拟观测反馈已到达"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "priority-completed.json",
+        "sha256": "585c967ad7297e149b2eb1df241ef5eefd6948895df270e848989fd063924a1f"
+      },
+      "replay": {
+        "fullStateMatched": true,
+        "initialCollaborationMode": "priority-order",
+        "stateSha256": "29fd606f9a7418211224154afaa15aa0665dfa07f224f4edb4d0b444fe43bb93"
+      }
+    },
+    {
+      "name": "priority-default-order-completed",
+      "group": "default-priority",
+      "scenarioId": "priority-cooperation",
+      "runId": "lab:59356428-d02c-4353-b149-5dd693cc33ce",
+      "eventCursor": 12,
+      "eventCount": 12,
+      "inputActionCount": 11,
+      "lastAction": {
+        "type": "finish-task",
+        "actionId": "ui-event-11",
+        "provenance": "fixture-event"
+      },
+      "lastLog": {
+        "runId": "lab:59356428-d02c-4353-b149-5dd693cc33ce",
+        "sequence": 11,
+        "logicalTime": 11,
+        "source": "operator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-11",
+        "actionType": "finish-task",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "原始道路集合已全部观测，本次模拟执行结束。"
+      },
+      "planVersion": 1,
+      "collaboration": {
+        "mode": "priority-order",
+        "stepOrder": [
+          "s-a",
+          "s-b",
+          "s-c"
+        ],
+        "executionOrder": [
+          "s-a",
+          "s-b",
+          "s-c"
+        ],
+        "contributions": []
+      },
+      "roads": [
+        {
+          "id": "r-a",
+          "name": "西侧主路 A",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 20
+            },
+            {
+              "x": 18,
+              "y": 72
+            }
+          ],
+          "status": "observed",
+          "condition": "passable",
+          "version": 2,
+          "evidence": [
+            {
+              "source": "模拟 UGV 观测事件",
+              "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+              "logicalTime": 3
+            }
+          ]
+        },
+        {
+          "id": "r-b",
+          "name": "中央道路 B",
+          "polyline": [
+            {
+              "x": 18,
+              "y": 47
+            },
+            {
+              "x": 76,
+              "y": 47
+            }
+          ],
+          "status": "observed",
+          "condition": "passable",
+          "version": 2,
+          "evidence": [
+            {
+              "source": "模拟 UGV 观测事件",
+              "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+              "logicalTime": 6
+            }
+          ]
+        },
+        {
+          "id": "r-c",
+          "name": "东侧道路 C",
+          "polyline": [
+            {
+              "x": 76,
+              "y": 20
+            },
+            {
+              "x": 76,
+              "y": 78
+            }
+          ],
+          "status": "observed",
+          "condition": "passable",
+          "version": 2,
+          "evidence": [
+            {
+              "source": "模拟 UGV 观测事件",
+              "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+              "logicalTime": 9
+            }
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "label": "查验西侧主路",
+          "roadId": "r-a",
+          "status": "completed",
+          "version": 3
+        },
+        {
+          "id": "s-b",
+          "label": "查验中央道路",
+          "roadId": "r-b",
+          "status": "completed",
+          "version": 3
+        },
+        {
+          "id": "s-c",
+          "label": "查验东侧道路",
+          "roadId": "r-c",
+          "status": "completed",
+          "version": 3
+        }
+      ],
+      "requests": [],
+      "verificationDriver": "playwright-automated-visible-controls",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T09:08:08.943Z",
+      "captureCompletedAt": "2026-10-04T09:08:08.947Z",
+      "captureOrder": "screenshot-before-raw-download; no application state mutation",
+      "noticeAtCapture": "原始道路集合已全部观测，本次模拟执行结束。",
+      "browserVersion": "154.0.8037.92",
+      "screenshot": null,
+      "rawExport": {
+        "filename": "priority-default-order-completed.json",
+        "sha256": "369ee7ffc1e9c77ab9649f485fe83fb23c57b4df53b4aa84e934d870cfbb79e1"
+      },
+      "replay": {
+        "fullStateMatched": true,
+        "initialCollaborationMode": "priority-order",
+        "stateSha256": "8ce20e9ebdd5a0cd4b98b9683df5f10441daa284db88995545f1f699849b813e"
+      }
+    }
+  ]
+}

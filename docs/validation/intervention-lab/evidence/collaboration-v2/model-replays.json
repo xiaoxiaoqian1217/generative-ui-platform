@@ -1,0 +1,3330 @@
+{
+  "schemaVersion": "intervention-lab-model-verification/v1",
+  "generatedAt": "2026-10-04T09:01:15.064Z",
+  "simulation": true,
+  "connectedToRealAgent": false,
+  "connectedToRealDevice": false,
+  "humanPerformanceEvidence": false,
+  "driver": "deterministic fixture-script; each case repeated twice",
+  "results": [
+    {
+      "scenarioId": "normal-detour",
+      "inputActions": [
+        {
+          "type": "start-task",
+          "actionId": "normal:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "normal:a:start",
+          "stepId": "s-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "local-detour",
+          "actionId": "normal:a:detour",
+          "stepId": "s-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-road",
+          "actionId": "normal:a:observe",
+          "roadId": "r-a",
+          "condition": "passable",
+          "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-step",
+          "actionId": "normal:a:done",
+          "stepId": "s-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "normal:b:start",
+          "stepId": "s-b",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-road",
+          "actionId": "normal:b:observe",
+          "roadId": "r-b",
+          "condition": "passable",
+          "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-step",
+          "actionId": "normal:b:done",
+          "stepId": "s-b",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "normal:c:start",
+          "stepId": "s-c",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-road",
+          "actionId": "normal:c:observe",
+          "roadId": "r-c",
+          "condition": "passable",
+          "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-step",
+          "actionId": "normal:c:done",
+          "stepId": "s-c",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "finish-task",
+          "actionId": "normal:finish",
+          "provenance": "fixture-script"
+        }
+      ],
+      "identicalReplaySha256": "ad227321d28d7a437b9e915a4bbc92df81d556e25ebafeff25fd5f069acf7f0e",
+      "state": {
+        "schemaVersion": "intervention-lab/v1",
+        "simulation": true,
+        "runId": "fixture-run",
+        "goal": "查清选定街区主要道路的通行情况，标出受阻和未查明路段。",
+        "phase": "ended",
+        "outcome": "complete",
+        "planVersion": 1,
+        "logicalTime": 12,
+        "roads": [
+          {
+            "id": "r-a",
+            "name": "西侧主路 A",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 20
+              },
+              {
+                "x": 18,
+                "y": 72
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+                "logicalTime": 4
+              }
+            ]
+          },
+          {
+            "id": "r-b",
+            "name": "中央道路 B",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 47
+              },
+              {
+                "x": 76,
+                "y": 47
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+                "logicalTime": 7
+              }
+            ]
+          },
+          {
+            "id": "r-c",
+            "name": "东侧道路 C",
+            "polyline": [
+              {
+                "x": 76,
+                "y": 20
+              },
+              {
+                "x": 76,
+                "y": 78
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+                "logicalTime": 10
+              }
+            ]
+          }
+        ],
+        "steps": [
+          {
+            "id": "s-a",
+            "label": "查验西侧主路",
+            "roadId": "r-a",
+            "status": "completed",
+            "version": 3
+          },
+          {
+            "id": "s-b",
+            "label": "查验中央道路",
+            "roadId": "r-b",
+            "status": "completed",
+            "version": 3
+          },
+          {
+            "id": "s-c",
+            "label": "查验东侧道路",
+            "roadId": "r-c",
+            "status": "completed",
+            "version": 3
+          }
+        ],
+        "requests": [],
+        "constraints": [],
+        "device": {
+          "id": "ugv-01",
+          "name": "模拟 UGV-01",
+          "link": "online",
+          "execution": "running",
+          "position": {
+            "x": 76,
+            "y": 78
+          },
+          "lastConfirmedAt": 11
+        },
+        "commands": [],
+        "logs": [
+          {
+            "runId": "fixture-run",
+            "sequence": 1,
+            "logicalTime": 1,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "normal:start",
+            "actionType": "start-task",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 2,
+            "logicalTime": 2,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "normal:a:start",
+            "actionType": "start-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟执行：查验西侧主路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 3,
+            "logicalTime": 3,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "normal:a:detour",
+            "actionType": "local-detour",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟局部绕行成功，目标和步骤不变，自主继续；不生成介入请求。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 4,
+            "logicalTime": 4,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "normal:a:observe",
+            "actionType": "observe-road",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "西侧主路 A获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 5,
+            "logicalTime": 5,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "normal:a:done",
+            "actionType": "complete-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "查验西侧主路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 6,
+            "logicalTime": 6,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "normal:b:start",
+            "actionType": "start-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟执行：查验中央道路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 7,
+            "logicalTime": 7,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "normal:b:observe",
+            "actionType": "observe-road",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "中央道路 B获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 8,
+            "logicalTime": 8,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "normal:b:done",
+            "actionType": "complete-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "查验中央道路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 9,
+            "logicalTime": 9,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "normal:c:start",
+            "actionType": "start-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟执行：查验东侧道路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 10,
+            "logicalTime": 10,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "normal:c:observe",
+            "actionType": "observe-road",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "东侧道路 C获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 11,
+            "logicalTime": 11,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "normal:c:done",
+            "actionType": "complete-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "查验东侧道路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 12,
+            "logicalTime": 12,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "normal:finish",
+            "actionType": "finish-task",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "原始道路集合已全部观测，本次模拟执行结束。"
+          }
+        ],
+        "processedActionIds": [
+          "normal:start",
+          "normal:a:start",
+          "normal:a:detour",
+          "normal:a:observe",
+          "normal:a:done",
+          "normal:b:start",
+          "normal:b:observe",
+          "normal:b:done",
+          "normal:c:start",
+          "normal:c:observe",
+          "normal:c:done",
+          "normal:finish"
+        ]
+      }
+    },
+    {
+      "scenarioId": "navigation-failure",
+      "inputActions": [
+        {
+          "type": "start-task",
+          "actionId": "failure:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "failure:b:start",
+          "stepId": "s-b",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "navigation-failed",
+          "actionId": "failure:b:failed",
+          "stepId": "s-b",
+          "reason": "模拟反馈：局部规划与恢复已耗尽，未能到达观测位置。原因不等同于已观察道路阻断。",
+          "recoveryExhausted": true,
+          "alternativeAvailable": false,
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "respond",
+          "runId": "fixture-run",
+          "actionId": "failure:reply",
+          "requestId": "failure:failure:b:failed",
+          "requestVersion": 1,
+          "optionId": "defer",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "failure:a:start",
+          "stepId": "s-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-road",
+          "actionId": "failure:a:observe",
+          "roadId": "r-a",
+          "condition": "passable",
+          "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-step",
+          "actionId": "failure:a:done",
+          "stepId": "s-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "failure:c:start",
+          "stepId": "s-c",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-road",
+          "actionId": "failure:c:observe",
+          "roadId": "r-c",
+          "condition": "passable",
+          "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-step",
+          "actionId": "failure:c:done",
+          "stepId": "s-c",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "finish-task",
+          "actionId": "failure:finish",
+          "provenance": "fixture-script"
+        }
+      ],
+      "identicalReplaySha256": "15166b04ca8e3eb0d3af79ae78d51a4d841a052d057a3e2e15a0ffd6caadd289",
+      "state": {
+        "schemaVersion": "intervention-lab/v1",
+        "simulation": true,
+        "runId": "fixture-run",
+        "goal": "查清选定街区主要道路的通行情况，标出受阻和未查明路段。",
+        "phase": "ended",
+        "outcome": "partial",
+        "planVersion": 2,
+        "logicalTime": 11,
+        "roads": [
+          {
+            "id": "r-a",
+            "name": "西侧主路 A",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 20
+              },
+              {
+                "x": 18,
+                "y": 72
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+                "logicalTime": 6
+              }
+            ]
+          },
+          {
+            "id": "r-b",
+            "name": "中央道路 B",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 47
+              },
+              {
+                "x": 76,
+                "y": 47
+              }
+            ],
+            "status": "unchecked",
+            "condition": "unknown",
+            "version": 1,
+            "evidence": []
+          },
+          {
+            "id": "r-c",
+            "name": "东侧道路 C",
+            "polyline": [
+              {
+                "x": 76,
+                "y": 20
+              },
+              {
+                "x": 76,
+                "y": 78
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+                "logicalTime": 9
+              }
+            ]
+          }
+        ],
+        "steps": [
+          {
+            "id": "s-a",
+            "label": "查验西侧主路",
+            "roadId": "r-a",
+            "status": "completed",
+            "version": 3
+          },
+          {
+            "id": "s-b",
+            "label": "查验中央道路",
+            "roadId": "r-b",
+            "status": "deferred",
+            "version": 4,
+            "failureReason": "模拟反馈：局部规划与恢复已耗尽，未能到达观测位置。原因不等同于已观察道路阻断。"
+          },
+          {
+            "id": "s-c",
+            "label": "查验东侧道路",
+            "roadId": "r-c",
+            "status": "completed",
+            "version": 3
+          }
+        ],
+        "requests": [
+          {
+            "id": "failure:failure:b:failed",
+            "title": "查验中央道路待处理",
+            "reason": "模拟反馈：局部规划与恢复已耗尽，未能到达观测位置。原因不等同于已观察道路阻断。",
+            "basis": "R2：模拟导航已用尽恢复，fixture声明没有可执行替代分支；本实验约定请操作员选择后续处理。",
+            "roadIds": [
+              "r-b"
+            ],
+            "stepIds": [
+              "s-b"
+            ],
+            "requiredInput": {
+              "kind": "option",
+              "options": [
+                {
+                  "id": "defer",
+                  "label": "保留未查明，继续其他路段",
+                  "effect": "continue-others"
+                },
+                {
+                  "id": "retry",
+                  "label": "重新尝试本步骤",
+                  "effect": "retry-step"
+                },
+                {
+                  "id": "end",
+                  "label": "结束本次任务",
+                  "effect": "end-task"
+                }
+              ]
+            },
+            "runId": "fixture-run",
+            "version": 1,
+            "type": "choice",
+            "status": "resolved",
+            "options": [
+              {
+                "id": "defer",
+                "label": "保留未查明，继续其他路段",
+                "effect": "continue-others"
+              },
+              {
+                "id": "retry",
+                "label": "重新尝试本步骤",
+                "effect": "retry-step"
+              },
+              {
+                "id": "end",
+                "label": "结束本次任务",
+                "effect": "end-task"
+              }
+            ],
+            "createdPlanVersion": 1,
+            "createdAt": 3,
+            "roadVersions": {
+              "r-b": 1
+            },
+            "stepVersions": {
+              "s-b": 3
+            },
+            "resolvedAt": 4,
+            "resolution": "保留未查明，继续其他路段"
+          }
+        ],
+        "constraints": [],
+        "device": {
+          "id": "ugv-01",
+          "name": "模拟 UGV-01",
+          "link": "online",
+          "execution": "running",
+          "position": {
+            "x": 76,
+            "y": 78
+          },
+          "lastConfirmedAt": 10
+        },
+        "commands": [],
+        "logs": [
+          {
+            "runId": "fixture-run",
+            "sequence": 1,
+            "logicalTime": 1,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "failure:start",
+            "actionType": "start-task",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 2,
+            "logicalTime": 2,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "failure:b:start",
+            "actionType": "start-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟执行：查验中央道路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 3,
+            "logicalTime": 3,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "failure:b:failed",
+            "actionType": "navigation-failed",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "执行失败并产生明确选择请求；道路仍为未查明，不能推定已经阻断。",
+            "requestId": "failure:failure:b:failed"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 4,
+            "logicalTime": 4,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "failure:reply",
+            "actionType": "respond",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "已接收人工答复：保留未查明，继续其他路段。道路事实不由答复自动改写。",
+            "requestId": "failure:failure:b:failed"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 5,
+            "logicalTime": 5,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "failure:a:start",
+            "actionType": "start-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "模拟执行：查验西侧主路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 6,
+            "logicalTime": 6,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "failure:a:observe",
+            "actionType": "observe-road",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "西侧主路 A获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 7,
+            "logicalTime": 7,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "failure:a:done",
+            "actionType": "complete-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "查验西侧主路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 8,
+            "logicalTime": 8,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "failure:c:start",
+            "actionType": "start-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "模拟执行：查验东侧道路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 9,
+            "logicalTime": 9,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "failure:c:observe",
+            "actionType": "observe-road",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "东侧道路 C获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 10,
+            "logicalTime": 10,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "failure:c:done",
+            "actionType": "complete-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "查验东侧道路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 11,
+            "logicalTime": 11,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "failure:finish",
+            "actionType": "finish-task",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "本次模拟执行结束，原始道路集合仍有未查明路段，保留部分完成状态。"
+          }
+        ],
+        "processedActionIds": [
+          "failure:start",
+          "failure:b:start",
+          "failure:b:failed",
+          "failure:reply",
+          "failure:a:start",
+          "failure:a:observe",
+          "failure:a:done",
+          "failure:c:start",
+          "failure:c:observe",
+          "failure:c:done",
+          "failure:finish"
+        ]
+      }
+    },
+    {
+      "scenarioId": "constraint-stale",
+      "inputActions": [
+        {
+          "type": "start-task",
+          "actionId": "stale:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "stale:a:start",
+          "stepId": "s-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-road",
+          "actionId": "stale:a:observe",
+          "roadId": "r-a",
+          "condition": "passable",
+          "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-step",
+          "actionId": "stale:a:done",
+          "stepId": "s-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "open-request",
+          "actionId": "stale:open",
+          "requestId": "request:stale-b",
+          "title": "是否批准本次暂不查验B",
+          "reason": "模拟调度提出暂缓B的计划变更，尚未执行。",
+          "basis": "fixture应用约定：这个明确提出的计划变更先由操作员批准或拒绝；不声称自动推断风险。",
+          "roadIds": [
+            "r-b"
+          ],
+          "stepIds": [
+            "s-b"
+          ],
+          "requiredInput": {
+            "kind": "approval"
+          },
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "add-constraint",
+          "actionId": "stale:constraint",
+          "text": "本次不查验中央道路B，将未查明部分单独记录。",
+          "roadIds": [
+            "r-b"
+          ],
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "respond",
+          "runId": "fixture-run",
+          "actionId": "stale:late-reply",
+          "requestId": "request:stale-b",
+          "requestVersion": 1,
+          "optionId": "approve",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "stale:c:start",
+          "stepId": "s-c",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-road",
+          "actionId": "stale:c:observe",
+          "roadId": "r-c",
+          "condition": "passable",
+          "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-step",
+          "actionId": "stale:c:done",
+          "stepId": "s-c",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "finish-task",
+          "actionId": "stale:finish",
+          "provenance": "fixture-script"
+        }
+      ],
+      "identicalReplaySha256": "31e593e69618c71cb1537132639adc004b67f1fc24cbacae1aaa809a9b91cd21",
+      "state": {
+        "schemaVersion": "intervention-lab/v1",
+        "simulation": true,
+        "runId": "fixture-run",
+        "goal": "查清选定街区主要道路的通行情况，标出受阻和未查明路段。",
+        "phase": "ended",
+        "outcome": "partial",
+        "planVersion": 2,
+        "logicalTime": 11,
+        "roads": [
+          {
+            "id": "r-a",
+            "name": "西侧主路 A",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 20
+              },
+              {
+                "x": 18,
+                "y": 72
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+                "logicalTime": 3
+              }
+            ]
+          },
+          {
+            "id": "r-b",
+            "name": "中央道路 B",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 47
+              },
+              {
+                "x": 76,
+                "y": 47
+              }
+            ],
+            "status": "unchecked",
+            "condition": "unknown",
+            "version": 1,
+            "evidence": []
+          },
+          {
+            "id": "r-c",
+            "name": "东侧道路 C",
+            "polyline": [
+              {
+                "x": 76,
+                "y": 20
+              },
+              {
+                "x": 76,
+                "y": 78
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+                "logicalTime": 9
+              }
+            ]
+          }
+        ],
+        "steps": [
+          {
+            "id": "s-a",
+            "label": "查验西侧主路",
+            "roadId": "r-a",
+            "status": "completed",
+            "version": 3
+          },
+          {
+            "id": "s-b",
+            "label": "查验中央道路",
+            "roadId": "r-b",
+            "status": "cancelled",
+            "version": 2
+          },
+          {
+            "id": "s-c",
+            "label": "查验东侧道路",
+            "roadId": "r-c",
+            "status": "completed",
+            "version": 3
+          }
+        ],
+        "requests": [
+          {
+            "id": "request:stale-b",
+            "title": "是否批准本次暂不查验B",
+            "reason": "模拟调度提出暂缓B的计划变更，尚未执行。",
+            "basis": "fixture应用约定：这个明确提出的计划变更先由操作员批准或拒绝；不声称自动推断风险。",
+            "roadIds": [
+              "r-b"
+            ],
+            "stepIds": [
+              "s-b"
+            ],
+            "requiredInput": {
+              "kind": "approval"
+            },
+            "runId": "fixture-run",
+            "version": 1,
+            "type": "confirm",
+            "status": "obsolete",
+            "options": [
+              {
+                "id": "approve",
+                "label": "批准待提出的调整",
+                "effect": "accept-change"
+              },
+              {
+                "id": "reject",
+                "label": "拒绝调整",
+                "effect": "reject-change"
+              }
+            ],
+            "createdPlanVersion": 1,
+            "createdAt": 5,
+            "roadVersions": {
+              "r-b": 1
+            },
+            "stepVersions": {
+              "s-b": 1
+            },
+            "resolution": "人工新增约束改变了本请求关联范围，请求已失效。",
+            "resolvedAt": 6
+          }
+        ],
+        "constraints": [
+          {
+            "id": "constraint:stale:constraint",
+            "text": "本次不查验中央道路B，将未查明部分单独记录。",
+            "roadIds": [
+              "r-b"
+            ],
+            "createdAt": 6
+          }
+        ],
+        "device": {
+          "id": "ugv-01",
+          "name": "模拟 UGV-01",
+          "link": "online",
+          "execution": "running",
+          "position": {
+            "x": 76,
+            "y": 78
+          },
+          "lastConfirmedAt": 10
+        },
+        "commands": [],
+        "logs": [
+          {
+            "runId": "fixture-run",
+            "sequence": 1,
+            "logicalTime": 1,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "stale:start",
+            "actionType": "start-task",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 2,
+            "logicalTime": 2,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "stale:a:start",
+            "actionType": "start-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟执行：查验西侧主路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 3,
+            "logicalTime": 3,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "stale:a:observe",
+            "actionType": "observe-road",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "西侧主路 A获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 4,
+            "logicalTime": 4,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "stale:a:done",
+            "actionType": "complete-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "查验西侧主路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 5,
+            "logicalTime": 5,
+            "source": "application",
+            "inputProvenance": "fixture-script",
+            "actionId": "stale:open",
+            "actionType": "open-request",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "依据显式所需输入形成confirm请求，不依赖LLM风险判断。",
+            "requestId": "request:stale-b"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 6,
+            "logicalTime": 6,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "stale:constraint",
+            "actionType": "add-constraint",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "已接收操作员主动修改，仅更新关联后续步骤；已有结果和未查明事实保留。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 7,
+            "logicalTime": 7,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "stale:late-reply",
+            "actionType": "respond",
+            "planVersion": 2,
+            "accepted": false,
+            "detail": "原请求已过期，答复不会覆盖新计划。",
+            "requestId": "request:stale-b"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 8,
+            "logicalTime": 8,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "stale:c:start",
+            "actionType": "start-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "模拟执行：查验东侧道路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 9,
+            "logicalTime": 9,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "stale:c:observe",
+            "actionType": "observe-road",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "东侧道路 C获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 10,
+            "logicalTime": 10,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "stale:c:done",
+            "actionType": "complete-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "查验东侧道路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 11,
+            "logicalTime": 11,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "stale:finish",
+            "actionType": "finish-task",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "本次模拟执行结束，原始道路集合仍有未查明路段，保留部分完成状态。"
+          }
+        ],
+        "processedActionIds": [
+          "stale:start",
+          "stale:a:start",
+          "stale:a:observe",
+          "stale:a:done",
+          "stale:open",
+          "stale:constraint",
+          "stale:late-reply",
+          "stale:c:start",
+          "stale:c:observe",
+          "stale:c:done",
+          "stale:finish"
+        ]
+      }
+    },
+    {
+      "scenarioId": "confirmation-reject",
+      "inputActions": [
+        {
+          "type": "start-task",
+          "actionId": "reject:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "open-request",
+          "actionId": "reject:open",
+          "requestId": "request:reject-b",
+          "title": "是否批准暂缓B查验",
+          "reason": "模拟应用提出暂缓B，尚未更改计划。",
+          "basis": "fixture应用处理约定：此提出的调整需要一个审批答复。",
+          "roadIds": [
+            "r-b"
+          ],
+          "stepIds": [
+            "s-b"
+          ],
+          "requiredInput": {
+            "kind": "approval"
+          },
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "respond",
+          "runId": "fixture-run",
+          "actionId": "reject:reply",
+          "requestId": "request:reject-b",
+          "requestVersion": 1,
+          "optionId": "reject",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "reject:a:start",
+          "stepId": "s-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-road",
+          "actionId": "reject:a:observe",
+          "roadId": "r-a",
+          "condition": "passable",
+          "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-step",
+          "actionId": "reject:a:done",
+          "stepId": "s-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "reject:b:start",
+          "stepId": "s-b",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-road",
+          "actionId": "reject:b:observe",
+          "roadId": "r-b",
+          "condition": "passable",
+          "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-step",
+          "actionId": "reject:b:done",
+          "stepId": "s-b",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "reject:c:start",
+          "stepId": "s-c",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-road",
+          "actionId": "reject:c:observe",
+          "roadId": "r-c",
+          "condition": "passable",
+          "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-step",
+          "actionId": "reject:c:done",
+          "stepId": "s-c",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "finish-task",
+          "actionId": "reject:finish",
+          "provenance": "fixture-script"
+        }
+      ],
+      "identicalReplaySha256": "d0c4d15ae2e631ea183f76f632c54c48271d9c9d28bb256e95e74b1d8632d447",
+      "state": {
+        "schemaVersion": "intervention-lab/v1",
+        "simulation": true,
+        "runId": "fixture-run",
+        "goal": "查清选定街区主要道路的通行情况，标出受阻和未查明路段。",
+        "phase": "ended",
+        "outcome": "complete",
+        "planVersion": 1,
+        "logicalTime": 13,
+        "roads": [
+          {
+            "id": "r-a",
+            "name": "西侧主路 A",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 20
+              },
+              {
+                "x": 18,
+                "y": 72
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+                "logicalTime": 5
+              }
+            ]
+          },
+          {
+            "id": "r-b",
+            "name": "中央道路 B",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 47
+              },
+              {
+                "x": 76,
+                "y": 47
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+                "logicalTime": 8
+              }
+            ]
+          },
+          {
+            "id": "r-c",
+            "name": "东侧道路 C",
+            "polyline": [
+              {
+                "x": 76,
+                "y": 20
+              },
+              {
+                "x": 76,
+                "y": 78
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+                "logicalTime": 11
+              }
+            ]
+          }
+        ],
+        "steps": [
+          {
+            "id": "s-a",
+            "label": "查验西侧主路",
+            "roadId": "r-a",
+            "status": "completed",
+            "version": 3
+          },
+          {
+            "id": "s-b",
+            "label": "查验中央道路",
+            "roadId": "r-b",
+            "status": "completed",
+            "version": 3
+          },
+          {
+            "id": "s-c",
+            "label": "查验东侧道路",
+            "roadId": "r-c",
+            "status": "completed",
+            "version": 3
+          }
+        ],
+        "requests": [
+          {
+            "id": "request:reject-b",
+            "title": "是否批准暂缓B查验",
+            "reason": "模拟应用提出暂缓B，尚未更改计划。",
+            "basis": "fixture应用处理约定：此提出的调整需要一个审批答复。",
+            "roadIds": [
+              "r-b"
+            ],
+            "stepIds": [
+              "s-b"
+            ],
+            "requiredInput": {
+              "kind": "approval"
+            },
+            "runId": "fixture-run",
+            "version": 1,
+            "type": "confirm",
+            "status": "resolved",
+            "options": [
+              {
+                "id": "approve",
+                "label": "批准待提出的调整",
+                "effect": "accept-change"
+              },
+              {
+                "id": "reject",
+                "label": "拒绝调整",
+                "effect": "reject-change"
+              }
+            ],
+            "createdPlanVersion": 1,
+            "createdAt": 2,
+            "roadVersions": {
+              "r-b": 1
+            },
+            "stepVersions": {
+              "s-b": 1
+            },
+            "resolvedAt": 3,
+            "resolution": "拒绝调整"
+          }
+        ],
+        "constraints": [],
+        "device": {
+          "id": "ugv-01",
+          "name": "模拟 UGV-01",
+          "link": "online",
+          "execution": "running",
+          "position": {
+            "x": 76,
+            "y": 78
+          },
+          "lastConfirmedAt": 12
+        },
+        "commands": [],
+        "logs": [
+          {
+            "runId": "fixture-run",
+            "sequence": 1,
+            "logicalTime": 1,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:start",
+            "actionType": "start-task",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 2,
+            "logicalTime": 2,
+            "source": "application",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:open",
+            "actionType": "open-request",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "依据显式所需输入形成confirm请求，不依赖LLM风险判断。",
+            "requestId": "request:reject-b"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 3,
+            "logicalTime": 3,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:reply",
+            "actionType": "respond",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "已接收人工答复：拒绝调整。道路事实不由答复自动改写。",
+            "requestId": "request:reject-b"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 4,
+            "logicalTime": 4,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:a:start",
+            "actionType": "start-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟执行：查验西侧主路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 5,
+            "logicalTime": 5,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:a:observe",
+            "actionType": "observe-road",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "西侧主路 A获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 6,
+            "logicalTime": 6,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:a:done",
+            "actionType": "complete-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "查验西侧主路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 7,
+            "logicalTime": 7,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:b:start",
+            "actionType": "start-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟执行：查验中央道路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 8,
+            "logicalTime": 8,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:b:observe",
+            "actionType": "observe-road",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "中央道路 B获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 9,
+            "logicalTime": 9,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:b:done",
+            "actionType": "complete-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "查验中央道路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 10,
+            "logicalTime": 10,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:c:start",
+            "actionType": "start-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟执行：查验东侧道路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 11,
+            "logicalTime": 11,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:c:observe",
+            "actionType": "observe-road",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "东侧道路 C获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 12,
+            "logicalTime": 12,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:c:done",
+            "actionType": "complete-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "查验东侧道路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 13,
+            "logicalTime": 13,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "reject:finish",
+            "actionType": "finish-task",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "原始道路集合已全部观测，本次模拟执行结束。"
+          }
+        ],
+        "processedActionIds": [
+          "reject:start",
+          "reject:open",
+          "reject:reply",
+          "reject:a:start",
+          "reject:a:observe",
+          "reject:a:done",
+          "reject:b:start",
+          "reject:b:observe",
+          "reject:b:done",
+          "reject:c:start",
+          "reject:c:observe",
+          "reject:c:done",
+          "reject:finish"
+        ]
+      }
+    },
+    {
+      "scenarioId": "supplement-exclusion",
+      "inputActions": [
+        {
+          "type": "start-task",
+          "actionId": "supplement:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "open-request",
+          "actionId": "supplement:open",
+          "requestId": "request:supplement-c",
+          "title": "补充本次不查验C的要求",
+          "reason": "本fixture明确请求一条关联C的排除要求；提交前不改变任务。这是案例输入设定，不是系统推测用户曾经提出过该要求。",
+          "basis": "fixture明确所需输入是排除要求文本；提交后仅取消关联C的后续步骤。",
+          "roadIds": [
+            "r-c"
+          ],
+          "stepIds": [
+            "s-c"
+          ],
+          "requiredInput": {
+            "kind": "fields",
+            "fields": [
+              {
+                "key": "exclusion",
+                "label": "本次不查验该道路的具体要求",
+                "required": true
+              }
+            ]
+          },
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "respond",
+          "runId": "fixture-run",
+          "actionId": "supplement:reply",
+          "requestId": "request:supplement-c",
+          "requestVersion": 1,
+          "optionId": "submit",
+          "values": {
+            "exclusion": "本次不查验东侧道路C；A、B完成后列出C未查明。"
+          },
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "supplement:a:start",
+          "stepId": "s-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-road",
+          "actionId": "supplement:a:observe",
+          "roadId": "r-a",
+          "condition": "passable",
+          "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-step",
+          "actionId": "supplement:a:done",
+          "stepId": "s-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "supplement:b:start",
+          "stepId": "s-b",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-road",
+          "actionId": "supplement:b:observe",
+          "roadId": "r-b",
+          "condition": "passable",
+          "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-step",
+          "actionId": "supplement:b:done",
+          "stepId": "s-b",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "finish-task",
+          "actionId": "supplement:finish",
+          "provenance": "fixture-script"
+        }
+      ],
+      "identicalReplaySha256": "9a809fadac361d240b8f422077c142759d906eeb1d2ec5167f2137fd701662c0",
+      "state": {
+        "schemaVersion": "intervention-lab/v1",
+        "simulation": true,
+        "runId": "fixture-run",
+        "goal": "查清选定街区主要道路的通行情况，标出受阻和未查明路段。",
+        "phase": "ended",
+        "outcome": "partial",
+        "planVersion": 2,
+        "logicalTime": 10,
+        "roads": [
+          {
+            "id": "r-a",
+            "name": "西侧主路 A",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 20
+              },
+              {
+                "x": 18,
+                "y": 72
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+                "logicalTime": 5
+              }
+            ]
+          },
+          {
+            "id": "r-b",
+            "name": "中央道路 B",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 47
+              },
+              {
+                "x": 76,
+                "y": 47
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。",
+                "logicalTime": 8
+              }
+            ]
+          },
+          {
+            "id": "r-c",
+            "name": "东侧道路 C",
+            "polyline": [
+              {
+                "x": 76,
+                "y": 20
+              },
+              {
+                "x": 76,
+                "y": 78
+              }
+            ],
+            "status": "unchecked",
+            "condition": "unknown",
+            "version": 1,
+            "evidence": []
+          }
+        ],
+        "steps": [
+          {
+            "id": "s-a",
+            "label": "查验西侧主路",
+            "roadId": "r-a",
+            "status": "completed",
+            "version": 3
+          },
+          {
+            "id": "s-b",
+            "label": "查验中央道路",
+            "roadId": "r-b",
+            "status": "completed",
+            "version": 3
+          },
+          {
+            "id": "s-c",
+            "label": "查验东侧道路",
+            "roadId": "r-c",
+            "status": "cancelled",
+            "version": 2
+          }
+        ],
+        "requests": [
+          {
+            "id": "request:supplement-c",
+            "title": "补充本次不查验C的要求",
+            "reason": "本fixture明确请求一条关联C的排除要求；提交前不改变任务。这是案例输入设定，不是系统推测用户曾经提出过该要求。",
+            "basis": "fixture明确所需输入是排除要求文本；提交后仅取消关联C的后续步骤。",
+            "roadIds": [
+              "r-c"
+            ],
+            "stepIds": [
+              "s-c"
+            ],
+            "requiredInput": {
+              "kind": "fields",
+              "fields": [
+                {
+                  "key": "exclusion",
+                  "label": "本次不查验该道路的具体要求",
+                  "required": true
+                }
+              ]
+            },
+            "runId": "fixture-run",
+            "version": 1,
+            "type": "supplement",
+            "status": "resolved",
+            "options": [
+              {
+                "id": "submit",
+                "label": "提交补充要求",
+                "effect": "add-constraint"
+              }
+            ],
+            "createdPlanVersion": 1,
+            "createdAt": 2,
+            "roadVersions": {
+              "r-c": 1
+            },
+            "stepVersions": {
+              "s-c": 1
+            },
+            "resolvedAt": 3,
+            "resolution": "exclusion: 本次不查验东侧道路C；A、B完成后列出C未查明。"
+          }
+        ],
+        "constraints": [
+          {
+            "id": "constraint:supplement:reply",
+            "text": "本次不查验东侧道路C；A、B完成后列出C未查明。",
+            "roadIds": [
+              "r-c"
+            ],
+            "createdAt": 3
+          }
+        ],
+        "device": {
+          "id": "ugv-01",
+          "name": "模拟 UGV-01",
+          "link": "online",
+          "execution": "running",
+          "position": {
+            "x": 76,
+            "y": 47
+          },
+          "lastConfirmedAt": 9
+        },
+        "commands": [],
+        "logs": [
+          {
+            "runId": "fixture-run",
+            "sequence": 1,
+            "logicalTime": 1,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "supplement:start",
+            "actionType": "start-task",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 2,
+            "logicalTime": 2,
+            "source": "application",
+            "inputProvenance": "fixture-script",
+            "actionId": "supplement:open",
+            "actionType": "open-request",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "依据显式所需输入形成supplement请求，不依赖LLM风险判断。",
+            "requestId": "request:supplement-c"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 3,
+            "logicalTime": 3,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "supplement:reply",
+            "actionType": "respond",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "已接收人工答复：exclusion: 本次不查验东侧道路C；A、B完成后列出C未查明。。道路事实不由答复自动改写。",
+            "requestId": "request:supplement-c"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 4,
+            "logicalTime": 4,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "supplement:a:start",
+            "actionType": "start-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "模拟执行：查验西侧主路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 5,
+            "logicalTime": 5,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "supplement:a:observe",
+            "actionType": "observe-road",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "西侧主路 A获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 6,
+            "logicalTime": 6,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "supplement:a:done",
+            "actionType": "complete-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "查验西侧主路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 7,
+            "logicalTime": 7,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "supplement:b:start",
+            "actionType": "start-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "模拟执行：查验中央道路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 8,
+            "logicalTime": 8,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "supplement:b:observe",
+            "actionType": "observe-road",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "中央道路 B获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 9,
+            "logicalTime": 9,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "supplement:b:done",
+            "actionType": "complete-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "查验中央道路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 10,
+            "logicalTime": 10,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "supplement:finish",
+            "actionType": "finish-task",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "本次模拟执行结束，原始道路集合仍有未查明路段，保留部分完成状态。"
+          }
+        ],
+        "processedActionIds": [
+          "supplement:start",
+          "supplement:open",
+          "supplement:reply",
+          "supplement:a:start",
+          "supplement:a:observe",
+          "supplement:a:done",
+          "supplement:b:start",
+          "supplement:b:observe",
+          "supplement:b:done",
+          "supplement:finish"
+        ]
+      }
+    },
+    {
+      "scenarioId": "link-command-ack",
+      "inputActions": [
+        {
+          "type": "start-task",
+          "actionId": "link:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-step",
+          "actionId": "link:a:start",
+          "stepId": "s-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "link-lost",
+          "actionId": "link:lost",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "open-request",
+          "actionId": "link:open",
+          "requestId": "request:link-control",
+          "title": "链路失联：操作员任务控制",
+          "reason": "设备当前执行状态未知，最后位置只代表最后确认状态。",
+          "basis": "fixture应用约定：失联时展示显式暂停或结束控制，由人决定；设备失联自主策略不在本原型实现范围。",
+          "roadIds": [
+            "r-a"
+          ],
+          "stepIds": [
+            "s-a"
+          ],
+          "requiredInput": {
+            "kind": "command",
+            "commands": [
+              {
+                "id": "pause",
+                "label": "请求暂停（等待设备回执）",
+                "effect": "pause"
+              },
+              {
+                "id": "end",
+                "label": "结束本次任务",
+                "effect": "end-task"
+              }
+            ]
+          },
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "respond",
+          "runId": "fixture-run",
+          "actionId": "link:reply",
+          "requestId": "request:link-control",
+          "requestVersion": 1,
+          "optionId": "pause",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "link-restored",
+          "actionId": "link:restored",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "device-ack",
+          "actionId": "link:ack",
+          "commandId": "pause:link:reply",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "open-request",
+          "actionId": "link:end-open",
+          "requestId": "request:link-end",
+          "title": "结束本次模拟任务",
+          "reason": "模拟设备暂停已确认，本fixture随后请求结束。",
+          "basis": "fixture明确操作输入为结束命令。",
+          "roadIds": [
+            "r-a"
+          ],
+          "stepIds": [
+            "s-a"
+          ],
+          "requiredInput": {
+            "kind": "command",
+            "commands": [
+              {
+                "id": "end",
+                "label": "结束并保留未查明事实",
+                "effect": "end-task"
+              }
+            ]
+          },
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "respond",
+          "runId": "fixture-run",
+          "actionId": "link:end-reply",
+          "requestId": "request:link-end",
+          "requestVersion": 1,
+          "optionId": "end",
+          "provenance": "fixture-script"
+        }
+      ],
+      "identicalReplaySha256": "e3a32716228d28b8dc374e052e053a35c31fb105d68b7faabbb046c74eb31945",
+      "state": {
+        "schemaVersion": "intervention-lab/v1",
+        "simulation": true,
+        "runId": "fixture-run",
+        "goal": "查清选定街区主要道路的通行情况，标出受阻和未查明路段。",
+        "phase": "ended",
+        "outcome": "partial",
+        "planVersion": 1,
+        "logicalTime": 9,
+        "roads": [
+          {
+            "id": "r-a",
+            "name": "西侧主路 A",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 20
+              },
+              {
+                "x": 18,
+                "y": 72
+              }
+            ],
+            "status": "unchecked",
+            "condition": "unknown",
+            "version": 1,
+            "evidence": []
+          },
+          {
+            "id": "r-b",
+            "name": "中央道路 B",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 47
+              },
+              {
+                "x": 76,
+                "y": 47
+              }
+            ],
+            "status": "unchecked",
+            "condition": "unknown",
+            "version": 1,
+            "evidence": []
+          },
+          {
+            "id": "r-c",
+            "name": "东侧道路 C",
+            "polyline": [
+              {
+                "x": 76,
+                "y": 20
+              },
+              {
+                "x": 76,
+                "y": 78
+              }
+            ],
+            "status": "unchecked",
+            "condition": "unknown",
+            "version": 1,
+            "evidence": []
+          }
+        ],
+        "steps": [
+          {
+            "id": "s-a",
+            "label": "查验西侧主路",
+            "roadId": "r-a",
+            "status": "cancelled",
+            "version": 3
+          },
+          {
+            "id": "s-b",
+            "label": "查验中央道路",
+            "roadId": "r-b",
+            "status": "cancelled",
+            "version": 2
+          },
+          {
+            "id": "s-c",
+            "label": "查验东侧道路",
+            "roadId": "r-c",
+            "status": "cancelled",
+            "version": 2
+          }
+        ],
+        "requests": [
+          {
+            "id": "request:link-control",
+            "title": "链路失联：操作员任务控制",
+            "reason": "设备当前执行状态未知，最后位置只代表最后确认状态。",
+            "basis": "fixture应用约定：失联时展示显式暂停或结束控制，由人决定；设备失联自主策略不在本原型实现范围。",
+            "roadIds": [
+              "r-a"
+            ],
+            "stepIds": [
+              "s-a"
+            ],
+            "requiredInput": {
+              "kind": "command",
+              "commands": [
+                {
+                  "id": "pause",
+                  "label": "请求暂停（等待设备回执）",
+                  "effect": "pause"
+                },
+                {
+                  "id": "end",
+                  "label": "结束本次任务",
+                  "effect": "end-task"
+                }
+              ]
+            },
+            "runId": "fixture-run",
+            "version": 1,
+            "type": "control",
+            "status": "resolved",
+            "options": [
+              {
+                "id": "pause",
+                "label": "请求暂停（等待设备回执）",
+                "effect": "pause"
+              },
+              {
+                "id": "end",
+                "label": "结束本次任务",
+                "effect": "end-task"
+              }
+            ],
+            "createdPlanVersion": 1,
+            "createdAt": 4,
+            "roadVersions": {
+              "r-a": 1
+            },
+            "stepVersions": {
+              "s-a": 2
+            },
+            "resolvedAt": 5,
+            "resolution": "请求暂停（等待设备回执）"
+          },
+          {
+            "id": "request:link-end",
+            "title": "结束本次模拟任务",
+            "reason": "模拟设备暂停已确认，本fixture随后请求结束。",
+            "basis": "fixture明确操作输入为结束命令。",
+            "roadIds": [
+              "r-a"
+            ],
+            "stepIds": [
+              "s-a"
+            ],
+            "requiredInput": {
+              "kind": "command",
+              "commands": [
+                {
+                  "id": "end",
+                  "label": "结束并保留未查明事实",
+                  "effect": "end-task"
+                }
+              ]
+            },
+            "runId": "fixture-run",
+            "version": 1,
+            "type": "control",
+            "status": "resolved",
+            "options": [
+              {
+                "id": "end",
+                "label": "结束并保留未查明事实",
+                "effect": "end-task"
+              }
+            ],
+            "createdPlanVersion": 1,
+            "createdAt": 8,
+            "roadVersions": {
+              "r-a": 1
+            },
+            "stepVersions": {
+              "s-a": 2
+            },
+            "resolvedAt": 9,
+            "resolution": "结束并保留未查明事实"
+          }
+        ],
+        "constraints": [],
+        "device": {
+          "id": "ugv-01",
+          "name": "模拟 UGV-01",
+          "link": "online",
+          "execution": "paused",
+          "position": {
+            "x": 18,
+            "y": 20
+          },
+          "lastConfirmedAt": 7
+        },
+        "commands": [
+          {
+            "id": "pause:link:reply",
+            "kind": "pause",
+            "status": "acknowledged",
+            "createdAt": 5,
+            "acknowledgedAt": 7
+          }
+        ],
+        "logs": [
+          {
+            "runId": "fixture-run",
+            "sequence": 1,
+            "logicalTime": 1,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "link:start",
+            "actionType": "start-task",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 2,
+            "logicalTime": 2,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "link:a:start",
+            "actionType": "start-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟执行：查验西侧主路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 3,
+            "logicalTime": 3,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "link:lost",
+            "actionType": "link-lost",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟链路失联：位置和执行状态仅代表最后确认，不推定设备已经停止。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 4,
+            "logicalTime": 4,
+            "source": "application",
+            "inputProvenance": "fixture-script",
+            "actionId": "link:open",
+            "actionType": "open-request",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "依据显式所需输入形成control请求，不依赖LLM风险判断。",
+            "requestId": "request:link-control"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 5,
+            "logicalTime": 5,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "link:reply",
+            "actionType": "respond",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "已接收人工答复：请求暂停（等待设备回执）。暂停指令待设备确认。",
+            "requestId": "request:link-control"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 6,
+            "logicalTime": 6,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "link:restored",
+            "actionType": "link-restored",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟链路恢复，已排队指令变为已发送；设备执行状态仍等待回执。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 7,
+            "logicalTime": 7,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "link:ack",
+            "actionType": "device-ack",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "已收到模拟设备暂停回执，当前才显示设备已暂停。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 8,
+            "logicalTime": 8,
+            "source": "application",
+            "inputProvenance": "fixture-script",
+            "actionId": "link:end-open",
+            "actionType": "open-request",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "依据显式所需输入形成control请求，不依赖LLM风险判断。",
+            "requestId": "request:link-end"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 9,
+            "logicalTime": 9,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "link:end-reply",
+            "actionType": "respond",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "已接收人工答复：结束并保留未查明事实。道路事实不由答复自动改写。",
+            "requestId": "request:link-end"
+          }
+        ],
+        "processedActionIds": [
+          "link:start",
+          "link:a:start",
+          "link:lost",
+          "link:open",
+          "link:reply",
+          "link:restored",
+          "link:ack",
+          "link:end-open",
+          "link:end-reply"
+        ]
+      }
+    },
+    {
+      "scenarioId": "observation-cooperation",
+      "inputActions": [
+        {
+          "type": "start-task",
+          "actionId": "observation:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-next-step",
+          "actionId": "observation:1:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "request-observation-point",
+          "actionId": "observation:request",
+          "stepId": "s-a",
+          "requestId": "request:observation-a",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "respond",
+          "runId": "fixture-run",
+          "actionId": "observation:reply",
+          "requestId": "request:observation-a",
+          "requestVersion": 1,
+          "optionId": "point-a-north",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-current-road",
+          "actionId": "observation:1:observe",
+          "condition": "passable",
+          "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-current-step",
+          "actionId": "observation:1:done",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-next-step",
+          "actionId": "observation:2:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-current-road",
+          "actionId": "observation:2:observe",
+          "condition": "passable",
+          "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-current-step",
+          "actionId": "observation:2:done",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-next-step",
+          "actionId": "observation:3:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-current-road",
+          "actionId": "observation:3:observe",
+          "condition": "passable",
+          "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-current-step",
+          "actionId": "observation:3:done",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "finish-task",
+          "actionId": "observation:finish",
+          "provenance": "fixture-script"
+        }
+      ],
+      "identicalReplaySha256": "42310714e73c33bfa3494e6ffe32c79abe82ac571bf2fa4b47d3cc894158fe80",
+      "state": {
+        "schemaVersion": "intervention-lab/v1",
+        "simulation": true,
+        "runId": "fixture-run",
+        "goal": "查清选定街区主要道路的通行情况，标出受阻和未查明路段。",
+        "phase": "ended",
+        "outcome": "complete",
+        "planVersion": 2,
+        "logicalTime": 13,
+        "roads": [
+          {
+            "id": "r-a",
+            "name": "西侧主路 A",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 20
+              },
+              {
+                "x": 18,
+                "y": 72
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。 执行参数：观测点 point-a-north，模拟坐标 (18, 25)。",
+                "logicalTime": 5
+              }
+            ]
+          },
+          {
+            "id": "r-b",
+            "name": "中央道路 B",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 47
+              },
+              {
+                "x": 76,
+                "y": 47
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+                "logicalTime": 8
+              }
+            ]
+          },
+          {
+            "id": "r-c",
+            "name": "东侧道路 C",
+            "polyline": [
+              {
+                "x": 76,
+                "y": 20
+              },
+              {
+                "x": 76,
+                "y": 78
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+                "logicalTime": 11
+              }
+            ]
+          }
+        ],
+        "steps": [
+          {
+            "id": "s-a",
+            "label": "查验西侧主路",
+            "roadId": "r-a",
+            "status": "completed",
+            "version": 4
+          },
+          {
+            "id": "s-b",
+            "label": "查验中央道路",
+            "roadId": "r-b",
+            "status": "completed",
+            "version": 3
+          },
+          {
+            "id": "s-c",
+            "label": "查验东侧道路",
+            "roadId": "r-c",
+            "status": "completed",
+            "version": 3
+          }
+        ],
+        "requests": [
+          {
+            "id": "request:observation-a",
+            "title": "请为A路查验选择观测点",
+            "reason": "模拟Agent缺少本步骤的观测点参数，尚不能产生道路观测；请人从预设模拟位置中选择。",
+            "basis": "协作fixture的明确参数依赖：选择写入执行参数，后续模拟观测反馈才形成道路事实。预设位置不代表真实现场安全或可达。",
+            "roadIds": [
+              "r-a"
+            ],
+            "stepIds": [
+              "s-a"
+            ],
+            "requiredInput": {
+              "kind": "option",
+              "options": [
+                {
+                  "id": "point-a-north",
+                  "label": "选择A路北侧观测点（预设模拟位置）",
+                  "effect": "provide-observation-point"
+                },
+                {
+                  "id": "point-a-south",
+                  "label": "选择A路南侧观测点（预设模拟位置）",
+                  "effect": "provide-observation-point"
+                }
+              ]
+            },
+            "runId": "fixture-run",
+            "version": 1,
+            "type": "choice",
+            "status": "resolved",
+            "options": [
+              {
+                "id": "point-a-north",
+                "label": "选择A路北侧观测点（预设模拟位置）",
+                "effect": "provide-observation-point"
+              },
+              {
+                "id": "point-a-south",
+                "label": "选择A路南侧观测点（预设模拟位置）",
+                "effect": "provide-observation-point"
+              }
+            ],
+            "createdPlanVersion": 1,
+            "createdAt": 3,
+            "roadVersions": {
+              "r-a": 1
+            },
+            "stepVersions": {
+              "s-a": 2
+            },
+            "resolvedAt": 4,
+            "resolution": "选择A路北侧观测点（预设模拟位置）"
+          }
+        ],
+        "constraints": [],
+        "device": {
+          "id": "ugv-01",
+          "name": "模拟 UGV-01",
+          "link": "online",
+          "execution": "running",
+          "position": {
+            "x": 76,
+            "y": 78
+          },
+          "lastConfirmedAt": 12
+        },
+        "commands": [],
+        "logs": [
+          {
+            "runId": "fixture-run",
+            "sequence": 1,
+            "logicalTime": 1,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:start",
+            "actionType": "start-task",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 2,
+            "logicalTime": 2,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:1:start",
+            "actionType": "start-next-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟执行：查验西侧主路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 3,
+            "logicalTime": 3,
+            "source": "application",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:request",
+            "actionType": "request-observation-point",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟Agent已请求观测点参数；在人工答复前，本步骤不接受道路观测。",
+            "requestId": "request:observation-a"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 4,
+            "logicalTime": 4,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:reply",
+            "actionType": "respond",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "人工选择A路北侧观测点（预设模拟位置），已写入查验西侧主路的执行参数（point-a-north）；解除缺参阻塞，等待后续模拟观测反馈。 道路仍保留当前观测事实，人工答复不作为设备反馈。",
+            "requestId": "request:observation-a"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 5,
+            "logicalTime": 5,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:1:observe",
+            "actionType": "observe-current-road",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "西侧主路 A获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 6,
+            "logicalTime": 6,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:1:done",
+            "actionType": "complete-current-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "查验西侧主路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 7,
+            "logicalTime": 7,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:2:start",
+            "actionType": "start-next-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "模拟执行：查验中央道路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 8,
+            "logicalTime": 8,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:2:observe",
+            "actionType": "observe-current-road",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "中央道路 B获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 9,
+            "logicalTime": 9,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:2:done",
+            "actionType": "complete-current-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "查验中央道路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 10,
+            "logicalTime": 10,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:3:start",
+            "actionType": "start-next-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "模拟执行：查验东侧道路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 11,
+            "logicalTime": 11,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:3:observe",
+            "actionType": "observe-current-road",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "东侧道路 C获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 12,
+            "logicalTime": 12,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:3:done",
+            "actionType": "complete-current-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "查验东侧道路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 13,
+            "logicalTime": 13,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "observation:finish",
+            "actionType": "finish-task",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "原始道路集合已全部观测，本次模拟执行结束。"
+          }
+        ],
+        "processedActionIds": [
+          "observation:start",
+          "observation:1:start",
+          "observation:request",
+          "observation:reply",
+          "observation:1:observe",
+          "observation:1:done",
+          "observation:2:start",
+          "observation:2:observe",
+          "observation:2:done",
+          "observation:3:start",
+          "observation:3:observe",
+          "observation:3:done",
+          "observation:finish"
+        ],
+        "collaboration": {
+          "mode": "observation-input",
+          "stepOrder": [
+            "s-a",
+            "s-b",
+            "s-c"
+          ],
+          "executionOrder": [
+            "s-a",
+            "s-b",
+            "s-c"
+          ],
+          "contributions": [
+            {
+              "actionId": "observation:reply",
+              "kind": "observation-input",
+              "detail": "人工选择A路北侧观测点（预设模拟位置），已写入查验西侧主路的执行参数（point-a-north）；解除缺参阻塞，等待后续模拟观测反馈。",
+              "stepIds": [
+                "s-a"
+              ],
+              "logicalTime": 4,
+              "planVersion": 2
+            }
+          ],
+          "observationInput": {
+            "stepId": "s-a",
+            "status": "provided",
+            "points": [
+              {
+                "id": "point-a-north",
+                "label": "A路北侧观测点（预设模拟位置）",
+                "position": {
+                  "x": 18,
+                  "y": 25
+                }
+              },
+              {
+                "id": "point-a-south",
+                "label": "A路南侧观测点（预设模拟位置）",
+                "position": {
+                  "x": 18,
+                  "y": 65
+                }
+              }
+            ],
+            "requestId": "request:observation-a",
+            "selectedPointId": "point-a-north"
+          }
+        }
+      }
+    },
+    {
+      "scenarioId": "priority-cooperation",
+      "inputActions": [
+        {
+          "type": "start-task",
+          "actionId": "priority:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-next-step",
+          "actionId": "priority:1:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "prioritize-step",
+          "actionId": "priority:promote-c",
+          "runId": "fixture-run",
+          "planVersion": 1,
+          "stepId": "s-c",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-current-road",
+          "actionId": "priority:1:observe",
+          "condition": "passable",
+          "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-current-step",
+          "actionId": "priority:1:done",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-next-step",
+          "actionId": "priority:2:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-current-road",
+          "actionId": "priority:2:observe",
+          "condition": "passable",
+          "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-current-step",
+          "actionId": "priority:2:done",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "start-next-step",
+          "actionId": "priority:3:start",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "observe-current-road",
+          "actionId": "priority:3:observe",
+          "condition": "passable",
+          "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "complete-current-step",
+          "actionId": "priority:3:done",
+          "provenance": "fixture-script"
+        },
+        {
+          "type": "finish-task",
+          "actionId": "priority:finish",
+          "provenance": "fixture-script"
+        }
+      ],
+      "identicalReplaySha256": "f9fc082dae1b998f7cab10623e38adf7ee3e3fa92f973f6236d6a8a935cb25b4",
+      "state": {
+        "schemaVersion": "intervention-lab/v1",
+        "simulation": true,
+        "runId": "fixture-run",
+        "goal": "查清选定街区主要道路的通行情况，标出受阻和未查明路段。",
+        "phase": "ended",
+        "outcome": "complete",
+        "planVersion": 2,
+        "logicalTime": 12,
+        "roads": [
+          {
+            "id": "r-a",
+            "name": "西侧主路 A",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 20
+              },
+              {
+                "x": 18,
+                "y": 72
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+                "logicalTime": 4
+              }
+            ]
+          },
+          {
+            "id": "r-b",
+            "name": "中央道路 B",
+            "polyline": [
+              {
+                "x": 18,
+                "y": 47
+              },
+              {
+                "x": 76,
+                "y": 47
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+                "logicalTime": 10
+              }
+            ]
+          },
+          {
+            "id": "r-c",
+            "name": "东侧道路 C",
+            "polyline": [
+              {
+                "x": 76,
+                "y": 20
+              },
+              {
+                "x": 76,
+                "y": 78
+              }
+            ],
+            "status": "observed",
+            "condition": "passable",
+            "version": 2,
+            "evidence": [
+              {
+                "source": "模拟 UGV 观测事件",
+                "detail": "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+                "logicalTime": 7
+              }
+            ]
+          }
+        ],
+        "steps": [
+          {
+            "id": "s-a",
+            "label": "查验西侧主路",
+            "roadId": "r-a",
+            "status": "completed",
+            "version": 3
+          },
+          {
+            "id": "s-b",
+            "label": "查验中央道路",
+            "roadId": "r-b",
+            "status": "completed",
+            "version": 3
+          },
+          {
+            "id": "s-c",
+            "label": "查验东侧道路",
+            "roadId": "r-c",
+            "status": "completed",
+            "version": 3
+          }
+        ],
+        "requests": [],
+        "constraints": [],
+        "device": {
+          "id": "ugv-01",
+          "name": "模拟 UGV-01",
+          "link": "online",
+          "execution": "running",
+          "position": {
+            "x": 76,
+            "y": 47
+          },
+          "lastConfirmedAt": 11
+        },
+        "commands": [],
+        "logs": [
+          {
+            "runId": "fixture-run",
+            "sequence": 1,
+            "logicalTime": 1,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "priority:start",
+            "actionType": "start-task",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 2,
+            "logicalTime": 2,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "priority:1:start",
+            "actionType": "start-next-step",
+            "planVersion": 1,
+            "accepted": true,
+            "detail": "模拟执行：查验西侧主路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 3,
+            "logicalTime": 3,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "priority:promote-c",
+            "actionType": "prioritize-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "人工优先安排查验东侧道路：查验西侧主路 → 查验中央道路 → 查验东侧道路改为查验西侧主路 → 查验东侧道路 → 查验中央道路；当前步骤和已取得观测保持。后续模拟调度按新顺序取待执行步骤。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 4,
+            "logicalTime": 4,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "priority:1:observe",
+            "actionType": "observe-current-road",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "西侧主路 A获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 5,
+            "logicalTime": 5,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "priority:1:done",
+            "actionType": "complete-current-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "查验西侧主路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 6,
+            "logicalTime": 6,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "priority:2:start",
+            "actionType": "start-next-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "模拟执行：查验东侧道路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 7,
+            "logicalTime": 7,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "priority:2:observe",
+            "actionType": "observe-current-road",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "东侧道路 C获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 8,
+            "logicalTime": 8,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "priority:2:done",
+            "actionType": "complete-current-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "查验东侧道路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 9,
+            "logicalTime": 9,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "priority:3:start",
+            "actionType": "start-next-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "模拟执行：查验中央道路。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 10,
+            "logicalTime": 10,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "priority:3:observe",
+            "actionType": "observe-current-road",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "中央道路 B获得模拟观测：该模拟UGV可通过。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 11,
+            "logicalTime": 11,
+            "source": "simulator",
+            "inputProvenance": "fixture-script",
+            "actionId": "priority:3:done",
+            "actionType": "complete-current-step",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "查验中央道路完成；已有道路观测保持可追溯。"
+          },
+          {
+            "runId": "fixture-run",
+            "sequence": 12,
+            "logicalTime": 12,
+            "source": "operator",
+            "inputProvenance": "fixture-script",
+            "actionId": "priority:finish",
+            "actionType": "finish-task",
+            "planVersion": 2,
+            "accepted": true,
+            "detail": "原始道路集合已全部观测，本次模拟执行结束。"
+          }
+        ],
+        "processedActionIds": [
+          "priority:start",
+          "priority:1:start",
+          "priority:promote-c",
+          "priority:1:observe",
+          "priority:1:done",
+          "priority:2:start",
+          "priority:2:observe",
+          "priority:2:done",
+          "priority:3:start",
+          "priority:3:observe",
+          "priority:3:done",
+          "priority:finish"
+        ],
+        "collaboration": {
+          "mode": "priority-order",
+          "stepOrder": [
+            "s-a",
+            "s-c",
+            "s-b"
+          ],
+          "executionOrder": [
+            "s-a",
+            "s-c",
+            "s-b"
+          ],
+          "contributions": [
+            {
+              "actionId": "priority:promote-c",
+              "kind": "priority-order",
+              "detail": "人工优先安排查验东侧道路：查验西侧主路 → 查验中央道路 → 查验东侧道路改为查验西侧主路 → 查验东侧道路 → 查验中央道路；当前步骤和已取得观测保持。后续模拟调度按新顺序取待执行步骤。",
+              "stepIds": [
+                "s-c"
+              ],
+              "logicalTime": 3,
+              "planVersion": 2
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

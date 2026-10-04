@@ -1,4 +1,5 @@
 import {
+  type CollaborationMode,
   createInitialState,
   dispatchLabAction,
   type LabAction,
@@ -16,6 +17,7 @@ export interface LabScenario {
   title: string;
   description: string;
   steps: ScenarioStep[];
+  collaboration?: CollaborationMode;
 }
 
 const start = (prefix: string): ScenarioStep => ({
@@ -55,6 +57,31 @@ const finish = (prefix: string): ScenarioStep => ({
   label: "操作员核查并结束本次模拟任务",
   action: { type: "finish-task", actionId: `${prefix}:finish` },
 });
+
+/** Reads the actual scheduler/current step at dispatch time, never a fixed road sequence. */
+const inspectNext = (prefix: string, index: number): ScenarioStep[] => [
+  {
+    label: "模拟调度开始当前优先的待执行步骤",
+    action: { type: "start-next-step", actionId: `${prefix}:${index}:start` },
+  },
+  {
+    label: "注入当前执行道路的模拟观测反馈",
+    action: {
+      type: "observe-current-road",
+      actionId: `${prefix}:${index}:observe`,
+      condition: "passable",
+      detail:
+        "协作fixture反馈：该模拟UGV所需通道在本步骤中被观察为可通过；不代表真实现场或其他车型。",
+    },
+  },
+  {
+    label: "注入当前查验步骤的模拟完成反馈",
+    action: {
+      type: "complete-current-step",
+      actionId: `${prefix}:${index}:done`,
+    },
+  },
+];
 
 export const LAB_SCENARIOS: LabScenario[] = [
   {
@@ -357,6 +384,68 @@ export const LAB_SCENARIOS: LabScenario[] = [
       },
     ],
   },
+  {
+    id: "observation-cooperation",
+    title: "协作：Agent请求人补充观测点",
+    description:
+      "A路步骤缺少观测点参数时，模拟Agent主动请求人选择预设位置。答复写入执行参数后仍需模拟观测反馈，才记录道路结果并继续任务。",
+    collaboration: "observation-input",
+    steps: [
+      start("observation"),
+      inspectNext("observation", 1)[0]!,
+      {
+        label: "模拟Agent发现缺少观测点，主动请求人补充",
+        action: {
+          type: "request-observation-point",
+          actionId: "observation:request",
+          stepId: "s-a",
+          requestId: "request:observation-a",
+        },
+      },
+      {
+        label: "脚本人工选择北侧观测点（交互模式等待您选择）",
+        scriptedOperator: true,
+        action: {
+          type: "respond",
+          runId: "fixture-run",
+          actionId: "observation:reply",
+          requestId: "request:observation-a",
+          requestVersion: 1,
+          optionId: "point-a-north",
+        },
+      },
+      ...inspectNext("observation", 1).slice(1),
+      ...inspectNext("observation", 2),
+      ...inspectNext("observation", 3),
+      finish("observation"),
+    ],
+  },
+  {
+    id: "priority-cooperation",
+    title: "协作：人主动调整后续查验优先级",
+    description:
+      "A路执行时，人可以把尚未开始的C路安排到B路之前。后续模拟调度读取新顺序，实际按A、C、B执行；不调整时仍按A、B、C执行。",
+    collaboration: "priority-order",
+    steps: [
+      start("priority"),
+      inspectNext("priority", 1)[0]!,
+      {
+        label: "脚本人工优先安排C（交互模式可主动修改或保留原顺序）",
+        scriptedOperator: true,
+        action: {
+          type: "prioritize-step",
+          actionId: "priority:promote-c",
+          runId: "fixture-run",
+          planVersion: 1,
+          stepId: "s-c",
+        },
+      },
+      ...inspectNext("priority", 1).slice(1),
+      ...inspectNext("priority", 2),
+      ...inspectNext("priority", 3),
+      finish("priority"),
+    ],
+  },
 ];
 
 /** Deterministic scripted replay. A script reply is NOT human-performance evidence. */
@@ -370,7 +459,7 @@ export function replayScenario(
         ...step.action,
         provenance: "fixture-script",
       }),
-    createInitialState(),
+    createInitialState("fixture-run", scenario.collaboration),
   );
 }
 export function runScenario(scenario: LabScenario): LabState {

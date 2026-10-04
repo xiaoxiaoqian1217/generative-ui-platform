@@ -1,0 +1,295 @@
+turbo 2.5.5
+
+• Packages in scope: @generative-ui/a2ui-catalog, @generative-ui/ag-ui-adapter, @generative-ui/ag-ui-mock, @generative-ui/copilot-runtime, @generative-ui/map-validation-agent, @generative-ui/shared-types, @generative-ui/web-workbench
+• Running build in 7 packages
+• Remote caching disabled
+@generative-ui/a2ui-catalog:build: cache hit, replaying logs 4d09847df5c7a814
+@generative-ui/a2ui-catalog:build: 
+@generative-ui/a2ui-catalog:build: > @generative-ui/a2ui-catalog@0.1.0 build /workspace/scratch/d51d3fbac11a/repo/packages/a2ui-catalog
+@generative-ui/a2ui-catalog:build: > tsup src/index.ts --format esm --dts --clean --out-dir dist
+@generative-ui/a2ui-catalog:build: 
+@generative-ui/a2ui-catalog:build: CLI Building entry: src/index.ts
+@generative-ui/a2ui-catalog:build: CLI Using tsconfig: tsconfig.json
+@generative-ui/a2ui-catalog:build: CLI tsup v8.5.0
+@generative-ui/a2ui-catalog:build: CLI Target: es2022
+@generative-ui/a2ui-catalog:build: CLI Cleaning output folder
+@generative-ui/a2ui-catalog:build: ESM Build start
+@generative-ui/a2ui-catalog:build: ESM dist/index.js 2.48 KB
+@generative-ui/a2ui-catalog:build: ESM ⚡️ Build success in 21ms
+@generative-ui/a2ui-catalog:build: DTS Build start
+@generative-ui/a2ui-catalog:build: DTS ⚡️ Build success in 1420ms
+@generative-ui/a2ui-catalog:build: DTS dist/index.d.ts 25.01 KB
+@generative-ui/map-validation-agent:build: cache hit, replaying logs 8f2af52cb27975f7
+@generative-ui/map-validation-agent:build: 
+@generative-ui/map-validation-agent:build: > @generative-ui/map-validation-agent@0.1.0 build /workspace/scratch/d51d3fbac11a/repo/apps/map-validation-agent
+@generative-ui/map-validation-agent:build: > tsup src/agent.ts src/model.ts src/prompt.ts src/scenario-loader.ts --format esm --dts --clean --out-dir dist
+@generative-ui/map-validation-agent:build: 
+@generative-ui/map-validation-agent:build: CLI Building entry: src/agent.ts, src/model.ts, src/prompt.ts, src/scenario-loader.ts
+@generative-ui/map-validation-agent:build: CLI Using tsconfig: tsconfig.json
+@generative-ui/map-validation-agent:build: CLI tsup v8.5.0
+@generative-ui/map-validation-agent:build: CLI Target: es2022
+@generative-ui/map-validation-agent:build: CLI Cleaning output folder
+@generative-ui/map-validation-agent:build: ESM Build start
+@generative-ui/map-validation-agent:build: ESM dist/agent.js           2.45 KB
+@generative-ui/map-validation-agent:build: ESM dist/prompt.js          185.00 B
+@generative-ui/map-validation-agent:build: ESM dist/chunk-WIVBS42R.js  1.80 KB
+@generative-ui/map-validation-agent:build: ESM dist/chunk-526DUOPH.js  2.86 KB
+@generative-ui/map-validation-agent:build: ESM dist/scenario-loader.js 229.00 B
+@generative-ui/map-validation-agent:build: ESM dist/model.js           223.00 B
+@generative-ui/map-validation-agent:build: ESM dist/chunk-SV2KD576.js  1.27 KB
+@generative-ui/map-validation-agent:build: ESM ⚡️ Build success in 20ms
+@generative-ui/map-validation-agent:build: DTS Build start
+@generative-ui/map-validation-agent:build: DTS ⚡️ Build success in 3081ms
+@generative-ui/map-validation-agent:build: DTS dist/agent.d.ts           33.94 KB
+@generative-ui/map-validation-agent:build: DTS dist/model.d.ts           1.04 KB
+@generative-ui/map-validation-agent:build: DTS dist/prompt.d.ts          315.00 B
+@generative-ui/map-validation-agent:build: DTS dist/scenario-loader.d.ts 11.74 KB
+@generative-ui/ag-ui-adapter:build: cache hit, replaying logs 373dffc763c3d4ef
+@generative-ui/ag-ui-adapter:build: 
+@generative-ui/ag-ui-adapter:build: > @generative-ui/ag-ui-adapter@0.1.0 build /workspace/scratch/d51d3fbac11a/repo/packages/ag-ui-adapter
+@generative-ui/ag-ui-adapter:build: > tsup src/index.ts --format esm --dts --clean --out-dir dist
+@generative-ui/ag-ui-adapter:build: 
+@generative-ui/ag-ui-adapter:build: CLI Building entry: src/index.ts
+@generative-ui/ag-ui-adapter:build: CLI Using tsconfig: tsconfig.json
+@generative-ui/ag-ui-adapter:build: CLI tsup v8.5.0
+@generative-ui/ag-ui-adapter:build: CLI Target: es2022
+@generative-ui/ag-ui-adapter:build: CLI Cleaning output folder
+@generative-ui/ag-ui-adapter:build: ESM Build start
+@generative-ui/ag-ui-adapter:build: ESM dist/index.js 3.03 KB
+@generative-ui/ag-ui-adapter:build: ESM ⚡️ Build success in 18ms
+@generative-ui/ag-ui-adapter:build: DTS Build start
+@generative-ui/ag-ui-adapter:build: DTS ⚡️ Build success in 2054ms
+@generative-ui/ag-ui-adapter:build: DTS dist/index.d.ts 402.10 KB
+@generative-ui/shared-types:build: cache hit, replaying logs ab01a42d968bc866
+@generative-ui/shared-types:build: 
+@generative-ui/shared-types:build: > @generative-ui/shared-types@0.1.0 build /workspace/scratch/d51d3fbac11a/repo/packages/shared-types
+@generative-ui/shared-types:build: > tsup src/index.ts --format esm --dts --clean --out-dir dist
+@generative-ui/shared-types:build: 
+@generative-ui/shared-types:build: CLI Building entry: src/index.ts
+@generative-ui/shared-types:build: CLI Using tsconfig: tsconfig.json
+@generative-ui/shared-types:build: CLI tsup v8.5.0
+@generative-ui/shared-types:build: CLI Target: es2022
+@generative-ui/shared-types:build: CLI Cleaning output folder
+@generative-ui/shared-types:build: ESM Build start
+@generative-ui/shared-types:build: ESM dist/index.js 2.60 KB
+@generative-ui/shared-types:build: ESM ⚡️ Build success in 15ms
+@generative-ui/shared-types:build: DTS Build start
+@generative-ui/shared-types:build: DTS ⚡️ Build success in 1209ms
+@generative-ui/shared-types:build: DTS dist/index.d.ts 3.41 KB
+@generative-ui/copilot-runtime:build: cache hit, replaying logs e5860620224f1c00
+@generative-ui/copilot-runtime:build: 
+@generative-ui/copilot-runtime:build: > @generative-ui/copilot-runtime@0.1.0 build /workspace/scratch/d51d3fbac11a/repo/apps/copilot-runtime
+@generative-ui/copilot-runtime:build: > tsup src/index.ts src/server.ts --format esm --dts --clean --out-dir dist
+@generative-ui/copilot-runtime:build: 
+@generative-ui/copilot-runtime:build: CLI Building entry: src/index.ts, src/server.ts
+@generative-ui/copilot-runtime:build: CLI Using tsconfig: tsconfig.json
+@generative-ui/copilot-runtime:build: CLI tsup v8.5.0
+@generative-ui/copilot-runtime:build: CLI Target: es2022
+@generative-ui/copilot-runtime:build: CLI Cleaning output folder
+@generative-ui/copilot-runtime:build: ESM Build start
+@generative-ui/copilot-runtime:build: ESM dist/index.js          1.39 KB
+@generative-ui/copilot-runtime:build: ESM dist/chunk-S6WKAFCM.js 42.32 KB
+@generative-ui/copilot-runtime:build: ESM dist/server.js         1.58 KB
+@generative-ui/copilot-runtime:build: ESM ⚡️ Build success in 34ms
+@generative-ui/copilot-runtime:build: DTS Build start
+@generative-ui/copilot-runtime:build: DTS ⚡️ Build success in 3669ms
+@generative-ui/copilot-runtime:build: DTS dist/server.d.ts 13.00 B
+@generative-ui/copilot-runtime:build: DTS dist/index.d.ts  11.13 KB
+@generative-ui/ag-ui-mock:build: cache hit, replaying logs 037ad55688d590bb
+@generative-ui/ag-ui-mock:build: 
+@generative-ui/ag-ui-mock:build: > @generative-ui/ag-ui-mock@0.1.0 build /workspace/scratch/d51d3fbac11a/repo/packages/ag-ui-mock
+@generative-ui/ag-ui-mock:build: > tsup src/index.ts src/cli.ts --format esm --dts --clean --out-dir dist
+@generative-ui/ag-ui-mock:build: 
+@generative-ui/ag-ui-mock:build: CLI Building entry: src/cli.ts, src/index.ts
+@generative-ui/ag-ui-mock:build: CLI Using tsconfig: tsconfig.json
+@generative-ui/ag-ui-mock:build: CLI tsup v8.5.0
+@generative-ui/ag-ui-mock:build: CLI Target: es2022
+@generative-ui/ag-ui-mock:build: CLI Cleaning output folder
+@generative-ui/ag-ui-mock:build: ESM Build start
+@generative-ui/ag-ui-mock:build: ESM dist/cli.js            1.36 KB
+@generative-ui/ag-ui-mock:build: ESM dist/index.js          97.00 B
+@generative-ui/ag-ui-mock:build: ESM dist/chunk-UROVHELV.js 32.99 KB
+@generative-ui/ag-ui-mock:build: ESM ⚡️ Build success in 33ms
+@generative-ui/ag-ui-mock:build: DTS Build start
+@generative-ui/ag-ui-mock:build: DTS ⚡️ Build success in 1752ms
+@generative-ui/ag-ui-mock:build: DTS dist/cli.d.ts   20.00 B
+@generative-ui/ag-ui-mock:build: DTS dist/index.d.ts 417.00 B
+@generative-ui/web-workbench:build: cache miss, executing 4f227b95706c82cb
+@generative-ui/web-workbench:build: 
+@generative-ui/web-workbench:build: > @generative-ui/web-workbench@0.1.0 build /workspace/scratch/d51d3fbac11a/repo/apps/web-workbench
+@generative-ui/web-workbench:build: > vite build
+@generative-ui/web-workbench:build: 
+@generative-ui/web-workbench:build: vite v7.3.6 building client environment for production...
+@generative-ui/web-workbench:build: transforming...
+@generative-ui/web-workbench:build: [plugin vite:resolve] Module "stream" has been externalized for browser compatibility, imported by "/workspace/scratch/d51d3fbac11a/repo/node_modules/.pnpm/node-fetch@2.7.0/node_modules/node-fetch/lib/index.mjs". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+@generative-ui/web-workbench:build: [plugin vite:resolve] Module "http" has been externalized for browser compatibility, imported by "/workspace/scratch/d51d3fbac11a/repo/node_modules/.pnpm/node-fetch@2.7.0/node_modules/node-fetch/lib/index.mjs". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+@generative-ui/web-workbench:build: [plugin vite:resolve] Module "url" has been externalized for browser compatibility, imported by "/workspace/scratch/d51d3fbac11a/repo/node_modules/.pnpm/node-fetch@2.7.0/node_modules/node-fetch/lib/index.mjs". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+@generative-ui/web-workbench:build: [plugin vite:resolve] Module "https" has been externalized for browser compatibility, imported by "/workspace/scratch/d51d3fbac11a/repo/node_modules/.pnpm/node-fetch@2.7.0/node_modules/node-fetch/lib/index.mjs". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+@generative-ui/web-workbench:build: [plugin vite:resolve] Module "zlib" has been externalized for browser compatibility, imported by "/workspace/scratch/d51d3fbac11a/repo/node_modules/.pnpm/node-fetch@2.7.0/node_modules/node-fetch/lib/index.mjs". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+@generative-ui/web-workbench:build: ✓ 7091 modules transformed.
+@generative-ui/web-workbench:build: rendering chunks...
+@generative-ui/web-workbench:build: computing gzip size...
+@generative-ui/web-workbench:build: dist/index.html                                                                              0.57 kB │ gzip:   0.38 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Size3-Regular-CTq5MqoE.woff                                                4.42 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Size4-Regular-Dl5lxZxV.woff2                                               4.93 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Size2-Regular-Dy4dx90m.woff2                                               5.21 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Size1-Regular-mCD8mA8B.woff2                                               5.47 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Size4-Regular-BF-4gkZK.woff                                                5.98 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Size2-Regular-oD1tc_U0.woff                                                6.19 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Size1-Regular-C195tn64.woff                                                6.50 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Caligraphic-Regular-Di6jR-x-.woff2                                         6.91 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Caligraphic-Bold-Dq_IR9rO.woff2                                            6.91 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Size3-Regular-DgpXs0kz.ttf                                                 7.59 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Caligraphic-Regular-CTRA-rTL.woff                                          7.66 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Caligraphic-Bold-BEiXGLvX.woff                                             7.72 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Script-Regular-D3wIWfF6.woff2                                              9.64 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_SansSerif-Regular-DDBCnlJ7.woff2                                          10.34 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Size4-Regular-DWFBv043.ttf                                                10.36 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Script-Regular-D5yQViql.woff                                              10.59 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Fraktur-Regular-CTYiF6lA.woff2                                            11.32 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Fraktur-Bold-CL6g_b3V.woff2                                               11.35 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Size2-Regular-B7gKUWhC.ttf                                                11.51 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_SansSerif-Italic-C3H0VqGB.woff2                                           12.03 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_SansSerif-Bold-D1sUS0GD.woff2                                             12.22 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Size1-Regular-Dbsnue_I.ttf                                                12.23 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_SansSerif-Regular-CS6fqUqJ.woff                                           12.32 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Caligraphic-Regular-wX97UBjC.ttf                                          12.34 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Caligraphic-Bold-ATXxdsX0.ttf                                             12.37 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Fraktur-Regular-Dxdc4cR9.woff                                             13.21 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Fraktur-Bold-BsDP51OF.woff                                                13.30 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Typewriter-Regular-CO6r4hn1.woff2                                         13.57 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_SansSerif-Italic-DN2j7dab.woff                                            14.11 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_SansSerif-Bold-DbIhKOiC.woff                                              14.41 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Typewriter-Regular-C0xS9mPB.woff                                          16.03 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Math-BoldItalic-CZnvNsCZ.woff2                                            16.40 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Math-Italic-t53AETM-.woff2                                                16.44 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Script-Regular-C5JkGWo-.ttf                                               16.65 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Main-BoldItalic-DxDJ3AOS.woff2                                            16.78 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Main-Italic-NWA7e6Wa.woff2                                                16.99 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Math-BoldItalic-iY-2wyZ7.woff                                             18.67 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Math-Italic-DA0__PXp.woff                                                 18.75 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Main-BoldItalic-SpSLRI95.woff                                             19.41 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_SansSerif-Regular-BNo7hRIc.ttf                                            19.44 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Fraktur-Regular-CB_wures.ttf                                              19.57 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Fraktur-Bold-BdnERNNW.ttf                                                 19.58 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Main-Italic-BMLOBm91.woff                                                 19.68 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_SansSerif-Italic-YYjJ1zSn.ttf                                             22.36 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_SansSerif-Bold-CFMepnvq.ttf                                               24.50 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Main-Bold-Cx986IdX.woff2                                                  25.32 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Main-Regular-B22Nviop.woff2                                               26.27 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Typewriter-Regular-D3Ib7_Hf.ttf                                           27.56 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_AMS-Regular-BQhdFMY1.woff2                                                28.08 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Main-Bold-Jm3AIy58.woff                                                   29.91 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Main-Regular-Dr94JaBh.woff                                                30.77 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Math-BoldItalic-B3XSjfu4.ttf                                              31.20 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Math-Italic-flOr_0UB.ttf                                                  31.31 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Main-BoldItalic-DzxPMmG6.ttf                                              32.97 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_AMS-Regular-DMm9YOAa.woff                                                 33.52 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Main-Italic-3WenGoN9.ttf                                                  33.58 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Main-Bold-waoOVXN0.ttf                                                    51.34 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_Main-Regular-ypZvNtVU.ttf                                                 53.58 kB
+@generative-ui/web-workbench:build: dist/assets/KaTeX_AMS-Regular-DRggAlZN.ttf                                                  63.63 kB
+@generative-ui/web-workbench:build: dist/assets/ScenarioLabPage-DTYsw-Im.css                                                    12.36 kB │ gzip:   2.72 kB
+@generative-ui/web-workbench:build: dist/assets/MapAgentTracePrototype-CUb_9uDr.css                                             13.38 kB │ gzip:   2.88 kB
+@generative-ui/web-workbench:build: dist/assets/InterventionLabPage-BRzgroNW.css                                                15.47 kB │ gzip:   3.62 kB
+@generative-ui/web-workbench:build: dist/assets/ScenarioLabPrototype-BLS7oQPr.css                                               22.06 kB │ gzip:   4.30 kB
+@generative-ui/web-workbench:build: dist/assets/katex-BYZTj3zW.css                                                              29.29 kB │ gzip:   8.05 kB
+@generative-ui/web-workbench:build: dist/assets/index-BgVoUaRF.css                                                             119.07 kB │ gzip:  17.99 kB
+@generative-ui/web-workbench:build: dist/assets/channel-DL3uq-kb.js                                                              0.16 kB │ gzip:   0.16 kB │ map:     0.57 kB
+@generative-ui/web-workbench:build: dist/assets/init-Gi6I4Gst.js                                                                 0.19 kB │ gzip:   0.17 kB │ map:     1.08 kB
+@generative-ui/web-workbench:build: dist/assets/chunk-2Q5K7J3B-CPg5JtRy.js                                                       0.25 kB │ gzip:   0.21 kB │ map:     0.88 kB
+@generative-ui/web-workbench:build: dist/assets/chunk-JWPE2WC7-DCTV2T0c.js                                                       0.28 kB │ gzip:   0.22 kB │ map:     0.89 kB
+@generative-ui/web-workbench:build: dist/assets/chunk-XXDRQBXY-DLf4uwOV.js                                                       0.29 kB │ gzip:   0.26 kB │ map:     1.11 kB
+@generative-ui/web-workbench:build: dist/assets/chunk-5VM5RSS4-C6qQvOID.js                                                       0.42 kB │ gzip:   0.32 kB │ map:     0.86 kB
+@generative-ui/web-workbench:build: dist/assets/chunk-VR4S4FIN-BC1fnX1F.js                                                       0.56 kB │ gzip:   0.41 kB │ map:     2.38 kB
+@generative-ui/web-workbench:build: dist/assets/stateDiagram-v2-6OUMAXLB-BmzfsbFo.js                                             0.58 kB │ gzip:   0.40 kB │ map:     1.67 kB
+@generative-ui/web-workbench:build: dist/assets/classDiagram-OUVF2IWQ-BebmgQCf.js                                                0.61 kB │ gzip:   0.41 kB │ map:     1.68 kB
+@generative-ui/web-workbench:build: dist/assets/classDiagram-v2-EOCWNBFH-BebmgQCf.js                                             0.62 kB │ gzip:   0.42 kB │ map:     1.69 kB
+@generative-ui/web-workbench:build: dist/assets/swimlanesDiagram-G3AALYLV-DoLyMkyv.js                                            0.70 kB │ gzip:   0.47 kB │ map:     1.71 kB
+@generative-ui/web-workbench:build: dist/assets/infoDiagram-FWYZ7A6U-BfoIUUak.js                                                 0.73 kB │ gzip:   0.50 kB │ map:     2.35 kB
+@generative-ui/web-workbench:build: dist/assets/sizeCapture-X5ZJPWSS-B4lNBJmN.js                                                 1.08 kB │ gzip:   0.63 kB │ map:     3.37 kB
+@generative-ui/web-workbench:build: dist/assets/ordinal-Cboi1Yqb.js                                                              1.23 kB │ gzip:   0.61 kB │ map:     5.16 kB
+@generative-ui/web-workbench:build: dist/assets/railroadDiagram-RFXS5EU6-BolrEgDH.js                                             1.75 kB │ gzip:   0.85 kB │ map:     5.17 kB
+@generative-ui/web-workbench:build: dist/assets/chunk-32BRIVSS-C_zCxBMS.js                                                       1.94 kB │ gzip:   0.88 kB │ map:     6.97 kB
+@generative-ui/web-workbench:build: dist/assets/abnfDiagram-VRR7QNED-yt0itx8A.js                                                 1.95 kB │ gzip:   0.99 kB │ map:     6.42 kB
+@generative-ui/web-workbench:build: dist/assets/pegDiagram-2B236MQR-5wiNRnk1.js                                                  2.10 kB │ gzip:   1.02 kB │ map:     6.73 kB
+@generative-ui/web-workbench:build: dist/assets/ebnfDiagram-CCIWWBDH-DU-i3U1S.js                                                 2.15 kB │ gzip:   0.97 kB │ map:     6.85 kB
+@generative-ui/web-workbench:build: dist/assets/diff-D97Zzqfu.js                                                                 2.61 kB │ gzip:   0.73 kB │ map:     3.89 kB
+@generative-ui/web-workbench:build: dist/assets/json-Cp-IABpG.js                                                                 2.87 kB │ gzip:   0.81 kB │ map:     4.35 kB
+@generative-ui/web-workbench:build: dist/assets/arc-DgWKAJ5E.js                                                                  3.47 kB │ gzip:   1.51 kB │ map:    16.99 kB
+@generative-ui/web-workbench:build: dist/assets/diagram-NH7WQ7WH-CMpIYSOG.js                                                     4.35 kB │ gzip:   1.93 kB │ map:    13.70 kB
+@generative-ui/web-workbench:build: dist/assets/defaultLocale-DX6XiGOO.js                                                        4.74 kB │ gzip:   2.22 kB │ map:    22.53 kB
+@generative-ui/web-workbench:build: dist/assets/map-DxJ2ADlA.js                                                                  5.11 kB │ gzip:   2.11 kB │ map:    39.16 kB
+@generative-ui/web-workbench:build: dist/assets/linear-bnmQRYa8.js                                                               5.71 kB │ gzip:   2.35 kB │ map:    28.06 kB
+@generative-ui/web-workbench:build: dist/assets/diagram-WEI45ONY-BOwpJh1u.js                                                     6.07 kB │ gzip:   2.65 kB │ map:    21.45 kB
+@generative-ui/web-workbench:build: dist/assets/pieDiagram-ENE6RG2P-D1NpggnQ.js                                                  6.44 kB │ gzip:   2.72 kB │ map:    23.82 kB
+@generative-ui/web-workbench:build: dist/assets/chunk-RYQCIY6F-CxZM-O9j.js                                                       7.13 kB │ gzip:   2.77 kB │ map:    33.19 kB
+@generative-ui/web-workbench:build: dist/assets/diagram-OA4YK3LP-CoBxt-rC.js                                                     8.47 kB │ gzip:   3.81 kB │ map:    30.07 kB
+@generative-ui/web-workbench:build: dist/assets/dagre-VKFMJZFB-DQqCh1LW.js                                                       8.71 kB │ gzip:   3.41 kB │ map:    33.26 kB
+@generative-ui/web-workbench:build: dist/assets/cynefinDiagram-TSTJHNR4-BfC6uHtT.js                                             10.24 kB │ gzip:   3.73 kB │ map:    34.73 kB
+@generative-ui/web-workbench:build: dist/assets/MapAgentTracePrototype-Bca7qM8n.js                                              10.50 kB │ gzip:   4.13 kB │ map:    41.62 kB
+@generative-ui/web-workbench:build: dist/assets/yaml-Buea-lGh.js                                                                10.55 kB │ gzip:   2.30 kB │ map:    14.93 kB
+@generative-ui/web-workbench:build: dist/assets/stateDiagram-2N3HPSRC-DMJtARxy.js                                               10.57 kB │ gzip:   3.76 kB │ map:    36.04 kB
+@generative-ui/web-workbench:build: dist/assets/diagram-FQU43EPY-CM5sKjEA.js                                                    10.86 kB │ gzip:   4.23 kB │ map:    38.74 kB
+@generative-ui/web-workbench:build: dist/assets/websandbox-Qk03gPLe.js                                                          12.33 kB │ gzip:   3.65 kB │ map:    33.53 kB
+@generative-ui/web-workbench:build: dist/assets/rust-B1yitclQ.js                                                                15.11 kB │ gzip:   2.75 kB │ map:    21.49 kB
+@generative-ui/web-workbench:build: dist/assets/chunk-MOJQB5TN-CrtueCAr.js                                                      15.79 kB │ gzip:   4.46 kB │ map:    52.47 kB
+@generative-ui/web-workbench:build: dist/assets/diagram-G47NLZAW-CuVWNZxE.js                                                    16.10 kB │ gzip:   5.80 kB │ map:    62.45 kB
+@generative-ui/web-workbench:build: dist/assets/ishikawaDiagram-FXEZZL3T-BuNQHsod.js                                            17.62 kB │ gzip:   6.75 kB │ map:    63.33 kB
+@generative-ui/web-workbench:build: dist/assets/kanban-definition-HUTT4EX6-ChzcbzFy.js                                          20.45 kB │ gzip:   7.32 kB │ map:    68.38 kB
+@generative-ui/web-workbench:build: dist/assets/ScenarioLabPage-C_SJqxvK.js                                                     21.65 kB │ gzip:   7.62 kB │ map:    69.14 kB
+@generative-ui/web-workbench:build: dist/assets/mindmap-definition-LN4V7U3C-BUKk7rS3.js                                         22.72 kB │ gzip:   7.67 kB │ map:    73.16 kB
+@generative-ui/web-workbench:build: dist/assets/sankeyDiagram-HTMAVEWB-eYVLDOX0.js                                              23.35 kB │ gzip:   8.66 kB │ map:    88.95 kB
+@generative-ui/web-workbench:build: dist/assets/journeyDiagram-5HDEW3XC-DlOQI9n2.js                                             23.72 kB │ gzip:   8.45 kB │ map:    80.71 kB
+@generative-ui/web-workbench:build: dist/assets/graph-DOmOIIwC.js                                                               23.97 kB │ gzip:   8.36 kB │ map:   207.33 kB
+@generative-ui/web-workbench:build: dist/assets/vue-DVfSmUF7.js                                                                 25.26 kB │ gzip:   3.20 kB │ map:    38.01 kB
+@generative-ui/web-workbench:build: dist/assets/wardleyDiagram-EHGQE667-KlJOZfyA.js                                             25.65 kB │ gzip:   6.89 kB │ map:    81.68 kB
+@generative-ui/web-workbench:build: dist/assets/erDiagram-Q63AITRT-Czfggi3u.js                                                  27.24 kB │ gzip:   9.52 kB │ map:    91.37 kB
+@generative-ui/web-workbench:build: dist/assets/gitGraphDiagram-IHSO6WYX-Bc4yg9hn.js                                            29.57 kB │ gzip:   8.80 kB │ map:   119.39 kB
+@generative-ui/web-workbench:build: dist/assets/timeline-definition-FHXFAJF6-BuUEaOln.js                                        30.99 kB │ gzip:  10.27 kB │ map:   108.08 kB
+@generative-ui/web-workbench:build: dist/assets/layout-D-LzfAck.js                                                              31.04 kB │ gzip:  11.22 kB │ map:   205.96 kB
+@generative-ui/web-workbench:build: dist/assets/requirementDiagram-TGXJPOKE-Bm4APXa-.js                                         31.15 kB │ gzip:   9.84 kB │ map:    99.23 kB
+@generative-ui/web-workbench:build: dist/assets/quadrantDiagram-ABIIQ3AL-B_KjDjx1.js                                            34.16 kB │ gzip:  10.08 kB │ map:   111.26 kB
+@generative-ui/web-workbench:build: dist/assets/chunk-EX3LRPZG-BDi0l7Ic.js                                                      38.17 kB │ gzip:  12.59 kB │ map:   126.96 kB
+@generative-ui/web-workbench:build: dist/assets/ScenarioLabPrototype-CbObnk9a.js                                                39.29 kB │ gzip:  11.78 kB │ map:   115.42 kB
+@generative-ui/web-workbench:build: dist/assets/bash-BELqPA7S.js                                                                41.73 kB │ gzip:   6.21 kB │ map:    56.55 kB
+@generative-ui/web-workbench:build: dist/assets/xychartDiagram-FW5EYKEG-DQXGeMV6.js                                             42.08 kB │ gzip:  12.16 kB │ map:   139.00 kB
+@generative-ui/web-workbench:build: dist/assets/vennDiagram-L72KCM5P-CgAyfR8l.js                                                42.11 kB │ gzip:  15.80 kB │ map:   188.82 kB
+@generative-ui/web-workbench:build: dist/assets/go-CxLEBnE3.js                                                                  46.85 kB │ gzip:   5.22 kB │ map:    66.61 kB
+@generative-ui/web-workbench:build: dist/assets/css-DPfMkruS.js                                                                 49.06 kB │ gzip:  11.89 kB │ map:    60.65 kB
+@generative-ui/web-workbench:build: dist/assets/chunk-V7JOEXUC-BvCU357k.js                                                      49.23 kB │ gzip:  15.79 kB │ map:   152.99 kB
+@generative-ui/web-workbench:build: dist/assets/html-GMplVEZG.js                                                                57.29 kB │ gzip:  11.72 kB │ map:    73.01 kB
+@generative-ui/web-workbench:build: dist/assets/markdown-Cvjx9yec.js                                                            59.38 kB │ gzip:   5.68 kB │ map:    82.36 kB
+@generative-ui/web-workbench:build: dist/assets/flowDiagram-23GEKE2U-ChfqMG8J.js                                                60.78 kB │ gzip:  19.57 kB │ map:   190.79 kB
+@generative-ui/web-workbench:build: dist/assets/InterventionLabPage-BT5kOtIW.js                                                 62.27 kB │ gzip:  20.53 kB │ map:   152.96 kB
+@generative-ui/web-workbench:build: dist/assets/ganttDiagram-NO4QXBWP-BhCeRcTf.js                                               69.84 kB │ gzip:  23.66 kB │ map:   249.91 kB
+@generative-ui/web-workbench:build: dist/assets/python-B6aJPvgy.js                                                              70.00 kB │ gzip:   9.17 kB │ map:    95.27 kB
+@generative-ui/web-workbench:build: dist/assets/c4Diagram-LMCZKHZV-CxLfJHsN.js                                                  70.09 kB │ gzip:  19.73 kB │ map:   203.89 kB
+@generative-ui/web-workbench:build: dist/assets/blockDiagram-677ZJIJ3-CksCqQJO.js                                               73.88 kB │ gzip:  21.36 kB │ map:   259.00 kB
+@generative-ui/web-workbench:build: dist/assets/cose-bilkent-JH36ORCC-B0PNfPe_.js                                               81.85 kB │ gzip:  22.58 kB │ map:   305.62 kB
+@generative-ui/web-workbench:build: dist/assets/sequenceDiagram-DBY2YBRQ-B1vL2QF0.js                                           117.12 kB │ gzip:  31.24 kB │ map:   351.70 kB
+@generative-ui/web-workbench:build: dist/assets/swimlanes-5IMT3BWC-CIQvU7CM.js                                                 119.05 kB │ gzip:  43.75 kB │ map:   555.55 kB
+@generative-ui/web-workbench:build: dist/assets/architectureDiagram-ZJ3FMSHR-CEIA8SmS.js                                       151.52 kB │ gzip:  43.10 kB │ map:   600.48 kB
+@generative-ui/web-workbench:build: dist/assets/index-D31wjQnm.js                                                              163.50 kB │ gzip:  54.50 kB │ map:   912.04 kB
+@generative-ui/web-workbench:build: dist/assets/javascript-wDzz0qaB.js                                                         174.88 kB │ gzip:  16.56 kB │ map:   236.09 kB
+@generative-ui/web-workbench:build: dist/assets/tsx-COt5Ahok.js                                                                175.58 kB │ gzip:  16.55 kB │ map:   236.76 kB
+@generative-ui/web-workbench:build: dist/assets/jsx-g9-lgVsj.js                                                                177.83 kB │ gzip:  16.64 kB │ map:   239.01 kB
+@generative-ui/web-workbench:build: dist/assets/typescript-BPQ3VLAy.js                                                         181.13 kB │ gzip:  16.08 kB │ map:   244.43 kB
+@generative-ui/web-workbench:build: dist/assets/ConversationPage-1iAuTtfg.js                                                   182.54 kB │ gzip:  70.92 kB │ map:   696.30 kB
+@generative-ui/web-workbench:build: dist/assets/cytoscape.esm-D3_iZ_3b.js                                                      442.98 kB │ gzip: 141.97 kB │ map: 1,869.69 kB
+@generative-ui/web-workbench:build: dist/assets/mermaid.core-CE7lavUk.js                                                       583.19 kB │ gzip: 137.33 kB │ map: 1,934.58 kB
+@generative-ui/web-workbench:build: dist/assets/index-DawQkEod.js                                                              673.08 kB │ gzip: 158.08 kB │ map: 1,996.44 kB
+@generative-ui/web-workbench:build: dist/assets/cynefin-VYW2F7L2-DhdPUPpD.js                                                   687.94 kB │ gzip: 154.18 kB │ map: 2,177.96 kB
+@generative-ui/web-workbench:build: dist/assets/MapWorkspace.vue_vue_type_script_setup_true_lang-D_2hZ0PE.js                   969.20 kB │ gzip: 254.52 kB │ map: 2,191.17 kB
+@generative-ui/web-workbench:build: dist/assets/ActivityMessagePresentation.vue_vue_type_script_setup_true_lang-C2AOuJPb.js  1,249.57 kB │ gzip: 360.68 kB │ map: 5,083.20 kB
+@generative-ui/web-workbench:build: 
+@generative-ui/web-workbench:build: (!) Some chunks are larger than 500 kB after minification. Consider:
+@generative-ui/web-workbench:build: - Using dynamic import() to code-split the application
+@generative-ui/web-workbench:build: - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+@generative-ui/web-workbench:build: - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+@generative-ui/web-workbench:build: ✓ built in 18.28s
+
+ Tasks:    7 successful, 7 total
+Cached:    6 cached, 7 total
+  Time:    19.204s 
+

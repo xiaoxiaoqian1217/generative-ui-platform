@@ -1,0 +1,115 @@
+turbo 2.5.5
+
+• Packages in scope: @generative-ui/a2ui-catalog, @generative-ui/ag-ui-adapter, @generative-ui/ag-ui-mock, @generative-ui/copilot-runtime, @generative-ui/map-validation-agent, @generative-ui/shared-types, @generative-ui/web-workbench
+• Running typecheck in 7 packages
+• Remote caching disabled
+@generative-ui/a2ui-catalog:build: cache hit, replaying logs 4d09847df5c7a814
+@generative-ui/a2ui-catalog:build: 
+@generative-ui/a2ui-catalog:build: > @generative-ui/a2ui-catalog@0.1.0 build /workspace/scratch/d51d3fbac11a/repo/packages/a2ui-catalog
+@generative-ui/a2ui-catalog:build: > tsup src/index.ts --format esm --dts --clean --out-dir dist
+@generative-ui/a2ui-catalog:build: 
+@generative-ui/a2ui-catalog:build: CLI Building entry: src/index.ts
+@generative-ui/a2ui-catalog:build: CLI Using tsconfig: tsconfig.json
+@generative-ui/a2ui-catalog:build: CLI tsup v8.5.0
+@generative-ui/a2ui-catalog:build: CLI Target: es2022
+@generative-ui/a2ui-catalog:build: CLI Cleaning output folder
+@generative-ui/a2ui-catalog:build: ESM Build start
+@generative-ui/a2ui-catalog:build: ESM dist/index.js 2.48 KB
+@generative-ui/a2ui-catalog:build: ESM ⚡️ Build success in 21ms
+@generative-ui/a2ui-catalog:build: DTS Build start
+@generative-ui/a2ui-catalog:build: DTS ⚡️ Build success in 1420ms
+@generative-ui/a2ui-catalog:build: DTS dist/index.d.ts 25.01 KB
+@generative-ui/shared-types:build: cache hit, replaying logs ab01a42d968bc866
+@generative-ui/shared-types:build: 
+@generative-ui/shared-types:build: > @generative-ui/shared-types@0.1.0 build /workspace/scratch/d51d3fbac11a/repo/packages/shared-types
+@generative-ui/shared-types:build: > tsup src/index.ts --format esm --dts --clean --out-dir dist
+@generative-ui/shared-types:build: 
+@generative-ui/shared-types:build: CLI Building entry: src/index.ts
+@generative-ui/shared-types:build: CLI Using tsconfig: tsconfig.json
+@generative-ui/shared-types:build: CLI tsup v8.5.0
+@generative-ui/shared-types:build: CLI Target: es2022
+@generative-ui/shared-types:build: CLI Cleaning output folder
+@generative-ui/shared-types:build: ESM Build start
+@generative-ui/shared-types:build: ESM dist/index.js 2.60 KB
+@generative-ui/shared-types:build: ESM ⚡️ Build success in 15ms
+@generative-ui/shared-types:build: DTS Build start
+@generative-ui/shared-types:build: DTS ⚡️ Build success in 1209ms
+@generative-ui/shared-types:build: DTS dist/index.d.ts 3.41 KB
+@generative-ui/shared-types:typecheck: cache hit, replaying logs b2ee2bc565a5f502
+@generative-ui/a2ui-catalog:typecheck: cache hit, replaying logs 4a51896fcba830ac
+@generative-ui/shared-types:typecheck: 
+@generative-ui/shared-types:typecheck: > @generative-ui/shared-types@0.1.0 typecheck /workspace/scratch/d51d3fbac11a/repo/packages/shared-types
+@generative-ui/shared-types:typecheck: > tsc --noEmit
+@generative-ui/shared-types:typecheck: 
+@generative-ui/a2ui-catalog:typecheck: 
+@generative-ui/a2ui-catalog:typecheck: > @generative-ui/a2ui-catalog@0.1.0 typecheck /workspace/scratch/d51d3fbac11a/repo/packages/a2ui-catalog
+@generative-ui/a2ui-catalog:typecheck: > tsc --noEmit
+@generative-ui/a2ui-catalog:typecheck: 
+@generative-ui/ag-ui-adapter:typecheck: cache hit, replaying logs 8d7ee85726e70f23
+@generative-ui/ag-ui-adapter:typecheck: 
+@generative-ui/ag-ui-adapter:typecheck: > @generative-ui/ag-ui-adapter@0.1.0 typecheck /workspace/scratch/d51d3fbac11a/repo/packages/ag-ui-adapter
+@generative-ui/ag-ui-adapter:typecheck: > tsc --noEmit
+@generative-ui/ag-ui-adapter:typecheck: 
+@generative-ui/map-validation-agent:typecheck: cache hit, replaying logs 1b50c62917e115cd
+@generative-ui/map-validation-agent:typecheck: 
+@generative-ui/map-validation-agent:typecheck: > @generative-ui/map-validation-agent@0.1.0 typecheck /workspace/scratch/d51d3fbac11a/repo/apps/map-validation-agent
+@generative-ui/map-validation-agent:typecheck: > tsc --noEmit
+@generative-ui/map-validation-agent:typecheck: 
+@generative-ui/ag-ui-mock:build: cache hit, replaying logs 037ad55688d590bb
+@generative-ui/ag-ui-mock:build: 
+@generative-ui/ag-ui-mock:build: > @generative-ui/ag-ui-mock@0.1.0 build /workspace/scratch/d51d3fbac11a/repo/packages/ag-ui-mock
+@generative-ui/ag-ui-mock:build: > tsup src/index.ts src/cli.ts --format esm --dts --clean --out-dir dist
+@generative-ui/ag-ui-mock:build: 
+@generative-ui/ag-ui-mock:build: CLI Building entry: src/cli.ts, src/index.ts
+@generative-ui/ag-ui-mock:build: CLI Using tsconfig: tsconfig.json
+@generative-ui/ag-ui-mock:build: CLI tsup v8.5.0
+@generative-ui/ag-ui-mock:build: CLI Target: es2022
+@generative-ui/ag-ui-mock:build: CLI Cleaning output folder
+@generative-ui/ag-ui-mock:build: ESM Build start
+@generative-ui/ag-ui-mock:build: ESM dist/cli.js            1.36 KB
+@generative-ui/ag-ui-mock:build: ESM dist/index.js          97.00 B
+@generative-ui/ag-ui-mock:build: ESM dist/chunk-UROVHELV.js 32.99 KB
+@generative-ui/ag-ui-mock:build: ESM ⚡️ Build success in 33ms
+@generative-ui/ag-ui-mock:build: DTS Build start
+@generative-ui/ag-ui-mock:build: DTS ⚡️ Build success in 1752ms
+@generative-ui/ag-ui-mock:build: DTS dist/cli.d.ts   20.00 B
+@generative-ui/ag-ui-mock:build: DTS dist/index.d.ts 417.00 B
+@generative-ui/copilot-runtime:build: cache hit, replaying logs e5860620224f1c00
+@generative-ui/copilot-runtime:build: 
+@generative-ui/copilot-runtime:build: > @generative-ui/copilot-runtime@0.1.0 build /workspace/scratch/d51d3fbac11a/repo/apps/copilot-runtime
+@generative-ui/copilot-runtime:build: > tsup src/index.ts src/server.ts --format esm --dts --clean --out-dir dist
+@generative-ui/copilot-runtime:build: 
+@generative-ui/copilot-runtime:build: CLI Building entry: src/index.ts, src/server.ts
+@generative-ui/copilot-runtime:build: CLI Using tsconfig: tsconfig.json
+@generative-ui/copilot-runtime:build: CLI tsup v8.5.0
+@generative-ui/copilot-runtime:build: CLI Target: es2022
+@generative-ui/copilot-runtime:build: CLI Cleaning output folder
+@generative-ui/copilot-runtime:build: ESM Build start
+@generative-ui/copilot-runtime:build: ESM dist/index.js          1.39 KB
+@generative-ui/copilot-runtime:build: ESM dist/chunk-S6WKAFCM.js 42.32 KB
+@generative-ui/copilot-runtime:build: ESM dist/server.js         1.58 KB
+@generative-ui/copilot-runtime:build: ESM ⚡️ Build success in 34ms
+@generative-ui/copilot-runtime:build: DTS Build start
+@generative-ui/copilot-runtime:build: DTS ⚡️ Build success in 3669ms
+@generative-ui/copilot-runtime:build: DTS dist/server.d.ts 13.00 B
+@generative-ui/copilot-runtime:build: DTS dist/index.d.ts  11.13 KB
+@generative-ui/copilot-runtime:typecheck: cache hit, replaying logs 9f5f4ac86e2efbaa
+@generative-ui/copilot-runtime:typecheck: 
+@generative-ui/copilot-runtime:typecheck: > @generative-ui/copilot-runtime@0.1.0 typecheck /workspace/scratch/d51d3fbac11a/repo/apps/copilot-runtime
+@generative-ui/copilot-runtime:typecheck: > tsc --noEmit
+@generative-ui/copilot-runtime:typecheck: 
+@generative-ui/ag-ui-mock:typecheck: cache hit, replaying logs 8633f4eb47621418
+@generative-ui/ag-ui-mock:typecheck: 
+@generative-ui/ag-ui-mock:typecheck: > @generative-ui/ag-ui-mock@0.1.0 typecheck /workspace/scratch/d51d3fbac11a/repo/packages/ag-ui-mock
+@generative-ui/ag-ui-mock:typecheck: > tsc --noEmit
+@generative-ui/ag-ui-mock:typecheck: 
+@generative-ui/web-workbench:typecheck: cache miss, executing 595930cf2eec4615
+@generative-ui/web-workbench:typecheck: 
+@generative-ui/web-workbench:typecheck: > @generative-ui/web-workbench@0.1.0 typecheck /workspace/scratch/d51d3fbac11a/repo/apps/web-workbench
+@generative-ui/web-workbench:typecheck: > vue-tsc --noEmit
+@generative-ui/web-workbench:typecheck: 
+
+ Tasks:    11 successful, 11 total
+Cached:    10 cached, 11 total
+  Time:    5.653s 
+
