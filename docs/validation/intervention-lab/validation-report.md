@@ -48,10 +48,38 @@ WORKBENCH_CHROMIUM_PATH=/workspace/scratch/8449a05e434b/tools/stable/chrome-head
 
 固定和动态模式在同一个浏览器状态下切换，完整状态及操作选项保持相同，并断言请求区域的呈现位置变化。手机布局断言无水平溢出且操作可用。截图核查发现并修复了旧全局 `.device-card` 样式碰撞，新页面采用独立类名。
 
-已逐图核查 [dynamic-choice.png](evidence/dynamic-choice.png)、[mobile-choice.png](evidence/mobile-choice.png) 及 [command-awaiting-ack.png](evidence/command-awaiting-ack.png)。截图为实际浏览器画面；外层页面有内部滚动容器，图像仅记录当前可见区域，不能解释为所有内容的完整长截图。
+初版已逐图核查 [dynamic-choice.png](evidence/dynamic-choice.png)、[mobile-choice.png](evidence/mobile-choice.png) 及 [command-awaiting-ack.png](evidence/command-awaiting-ack.png)。截图为实际浏览器画面；外层页面有内部滚动容器，图像仅记录当前可见区域，不能解释为所有内容的完整长截图。
 
 ## 数据与边界
 
 浏览器导出标为 `playwright-automated-clicks`，DOM导出标为 `vue-test-utils-jsdom-dom-clicks`；均有 `humanPerformanceEvidence: false`。DOM测试仅替代下载传输，业务状态和JSON序列化实际执行。39份原始动作按各自runId重放，逐一比对包括日志在内的完整状态。
 
 观测、导航恢复及设备回执仍是模拟输入。测试不证明真实UGV/UAV的感知、导航、失联处置或执行能力，也不证明真实战场效能、交互效率改善或专利新颖性。尚未进行真人对照、真实设备试验或完整专利查新。说明书中的技术效果按这些限度描述。
+
+## 2026-10-04增量：说明书补图证据（UTC）
+
+本次仅新增采集用例、证据来源校验脚本及验证材料，没有修改应用业务源文件。采集时应用源文件与提交 `e400e2dbfb857f7900782d7ce21301a7d4adc8c5` 完全一致；源文件SHA256及采集脚本SHA256保存在 [capture-manifest.json](evidence/patent-figures/capture-manifest.json)。初版的199项单元、24项新路由及68/69项全量回归结果作为历史记录保留，本次没有重报全量通过。
+
+| 增量检查 | 实际结果 | 原始依据 |
+| --- | --- | --- |
+| 说明书图4/5/6的浏览器采集 | 3/3通过，七个检查点 | [browser-capture-results.json](evidence/patent-figures/browser-capture-results.json) |
+| 新原始导出逐动作重放 | 7/7完整状态及日志相同 | [export-replay-results.json](evidence/patent-figures/export-replay-results.json) |
+| PNG/原始JSON/清单/代码来源与分组绑定校验 | 7/7通过 | [capture-verification-results.json](evidence/patent-figures/capture-verification-results.json) |
+
+新增两份TypeScript文件的单独类型检查及格式检查通过；增量lint为0个错误、7个非空断言警告。修改后的仓库Markdown检查为94个文件、0个错误。
+
+七张截图是大尺寸真实视口中的完整实验页面元素，不是拼接画面。逐图检查确认仿真标识、中文、关联地图、任务步骤、旧请求处理状态和暂停命令/设备卡可读。初次采集发现环境中文字体缺失，安装Noto Sans SC并启动新浏览器重新采集；最终目录只保留重捕后与清单一致的七组PNG/JSON。
+
+图5的三个时点绑定同一runId及 `request:stale-b`，请求版本一直为v1；主动修改使计划及关联步骤版本改变，并使旧请求失效。旧答复拒绝后，计划、步骤、道路和约束保持修改后的值。图6的三个时点绑定同一runId及 `pause:ui-response-5`，分别显示排队/离线/执行未知、已发送/在线/执行未知、设备已确认/在线/已暂停；恢复链路没有直接更新执行为暂停。
+
+初版 [command-awaiting-ack.png](evidence/command-awaiting-ack.png) 未拍到设备及命令卡，不能独立作为“发送仍未确认”的视觉证据。本次使用 [figure-6-command-sent-awaiting-ack.png](evidence/patent-figures/figure-6-command-sent-awaiting-ack.png) 及对应原始JSON和清单补齐。旧39份导出及重放结果保持不变，新7份保存在独立子目录。
+
+本次浏览器及重放命令分别在 `apps/web-workbench` 和仓库根目录执行；浏览器环境与前述相同：
+
+```sh
+WORKBENCH_CHROMIUM_PATH=/workspace/scratch/8449a05e434b/tools/stable/chrome-headless-shell-linux64/chrome-headless-shell WORKBENCH_CHROMIUM_NO_ZYGOTE=1 INTERVENTION_LAB_PATENT_EVIDENCE_DIR=/workspace/scratch/8449a05e434b/repo/docs/validation/intervention-lab/evidence/patent-figures PLAYWRIGHT_JSON_OUTPUT_NAME=/workspace/scratch/8449a05e434b/repo/docs/validation/intervention-lab/evidence/patent-figures/browser-capture-results.json CI=1 ./node_modules/.bin/playwright test intervention-lab-patent-evidence.spec.ts --workers=1 --reporter=line,json
+node --import tsx apps/web-workbench/scripts/verify-intervention-exports.ts docs/validation/intervention-lab/evidence/patent-figures
+node --import tsx apps/web-workbench/scripts/verify-intervention-captures.ts docs/validation/intervention-lab/evidence/patent-figures
+```
+
+新原始JSON是页面实际下载字节，自动操作来源和 `humanPerformanceEvidence: false` 在采集清单中关联声明，未为了添加驱动标识改写原始下载。截图先于导出，导出仅更新通知及交互记录；截图前后的模型状态相同。清单保留截图时的通知，不能将导出后的通知误标为截图中的文字。更详细的对应关系和Windows复测示例见 [截图证据说明](evidence/patent-figures/README.md)。

@@ -1,0 +1,1598 @@
+{
+  "schemaVersion": "intervention-lab-patent-capture/v1",
+  "generatedAt": "2026-10-04T02:20:38.647Z",
+  "codeCommitAtCapture": "e400e2dbfb857f7900782d7ce21301a7d4adc8c5",
+  "appSourceSha256": [
+    {
+      "filename": "apps/web-workbench/src/features/intervention-lab/InterventionLabPage.vue",
+      "sha256": "27921e70b77e4e26502853d48ea3f61cedcd50223105bdbaf5c76826958faefe",
+      "matchesCodeCommit": true
+    },
+    {
+      "filename": "apps/web-workbench/src/features/intervention-lab/model.ts",
+      "sha256": "7bfdb0e8ab396c8ef5c0ef0e66ec23c8949463d4e611d41af9c70f6cba0a52ba",
+      "matchesCodeCommit": true
+    },
+    {
+      "filename": "apps/web-workbench/src/features/intervention-lab/scenarios.ts",
+      "sha256": "a78a5ddaa3ea5dd011d265a82e209e0a1bc5ddf4f755a67ceef6f88c28813a83",
+      "matchesCodeCommit": true
+    },
+    {
+      "filename": "apps/web-workbench/src/features/intervention-lab/intervention-lab.css",
+      "sha256": "7a7a713be808419ba3afeaf6bf1ea34dc03e4ca0d7c7253ebaabc91b2825823e",
+      "matchesCodeCommit": true
+    }
+  ],
+  "platform": "linux",
+  "availableChineseFonts": "/root/.local/share/fonts/patent-cn/PaperSans.ttf: Noto Sans SC",
+  "completeCaptureSet": true,
+  "captureTestSha256": "76255a6108ce627b32d5d6cfb24cc70ccb1124fc76ef5e9b999b67636240635b",
+  "simulation": true,
+  "connectedToRealDevice": false,
+  "connectedToRealAgent": false,
+  "verificationDriver": "playwright-automated-clicks",
+  "humanPerformanceEvidence": false,
+  "note": "All screenshots show real locally simulated UI states. Schematic figures derived from these may omit styling, but must not add implementation facts. Screenshot capture precedes the raw export; export updates only the notice and telemetry.",
+  "groups": [
+    {
+      "figure": 4,
+      "checkpointCount": 1,
+      "runIds": [
+        "lab:4bf0df02-18fc-4b17-904c-d25451cd7385"
+      ],
+      "singleRun": true
+    },
+    {
+      "figure": 5,
+      "checkpointCount": 3,
+      "runIds": [
+        "lab:d0666994-14b4-4fd8-ba68-b432b1ff6445"
+      ],
+      "singleRun": true
+    },
+    {
+      "figure": 6,
+      "checkpointCount": 3,
+      "runIds": [
+        "lab:1c27fdd1-c647-4231-a8ea-4a33885055af"
+      ],
+      "singleRun": true
+    }
+  ],
+  "checkpoints": [
+    {
+      "name": "figure-4-choice-pending",
+      "figure": 4,
+      "scenarioId": "navigation-failure",
+      "runId": "lab:4bf0df02-18fc-4b17-904c-d25451cd7385",
+      "displayMode": "dynamic",
+      "eventCursor": 3,
+      "eventCount": 11,
+      "inputActionCount": 3,
+      "lastAction": {
+        "type": "navigation-failed",
+        "actionId": "ui-event-3",
+        "stepId": "s-b",
+        "reason": "模拟反馈：局部规划与恢复已耗尽，未能到达观测位置。原因不等同于已观察道路阻断。",
+        "recoveryExhausted": true,
+        "alternativeAvailable": false,
+        "provenance": "fixture-event"
+      },
+      "lastLog": {
+        "runId": "lab:4bf0df02-18fc-4b17-904c-d25451cd7385",
+        "sequence": 3,
+        "logicalTime": 3,
+        "source": "simulator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-3",
+        "actionType": "navigation-failed",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "执行失败并产生明确选择请求；道路仍为未查明，不能推定已经阻断。",
+        "requestId": "failure:ui-event-3"
+      },
+      "planVersion": 1,
+      "roads": [
+        {
+          "id": "r-a",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        },
+        {
+          "id": "r-b",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        },
+        {
+          "id": "r-c",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "roadId": "r-a",
+          "version": 1,
+          "status": "pending"
+        },
+        {
+          "id": "s-b",
+          "roadId": "r-b",
+          "version": 3,
+          "status": "failed"
+        },
+        {
+          "id": "s-c",
+          "roadId": "r-c",
+          "version": 1,
+          "status": "pending"
+        }
+      ],
+      "requests": [
+        {
+          "id": "failure:ui-event-3",
+          "title": "查验中央道路待处理",
+          "reason": "模拟反馈：局部规划与恢复已耗尽，未能到达观测位置。原因不等同于已观察道路阻断。",
+          "basis": "R2：模拟导航已用尽恢复，fixture声明没有可执行替代分支；本实验约定请操作员选择后续处理。",
+          "roadIds": [
+            "r-b"
+          ],
+          "stepIds": [
+            "s-b"
+          ],
+          "requiredInput": {
+            "kind": "option",
+            "options": [
+              {
+                "id": "defer",
+                "label": "保留未查明，继续其他路段",
+                "effect": "continue-others"
+              },
+              {
+                "id": "retry",
+                "label": "重新尝试本步骤",
+                "effect": "retry-step"
+              },
+              {
+                "id": "end",
+                "label": "结束本次任务",
+                "effect": "end-task"
+              }
+            ]
+          },
+          "runId": "lab:4bf0df02-18fc-4b17-904c-d25451cd7385",
+          "version": 1,
+          "type": "choice",
+          "status": "pending",
+          "options": [
+            {
+              "id": "defer",
+              "label": "保留未查明，继续其他路段",
+              "effect": "continue-others"
+            },
+            {
+              "id": "retry",
+              "label": "重新尝试本步骤",
+              "effect": "retry-step"
+            },
+            {
+              "id": "end",
+              "label": "结束本次任务",
+              "effect": "end-task"
+            }
+          ],
+          "createdPlanVersion": 1,
+          "createdAt": 3,
+          "roadVersions": {
+            "r-b": 1
+          },
+          "stepVersions": {
+            "s-b": 3
+          }
+        }
+      ],
+      "constraints": [],
+      "device": {
+        "id": "ugv-01",
+        "name": "模拟 UGV-01",
+        "link": "online",
+        "execution": "running",
+        "position": {
+          "x": 18,
+          "y": 47
+        },
+        "lastConfirmedAt": 2
+      },
+      "commands": [],
+      "verificationDriver": "playwright-automated-clicks",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T02:20:34.339Z",
+      "captureCompletedAt": "2026-10-04T02:20:34.520Z",
+      "rawExportDownloadedAt": "2026-10-04T02:20:34.604Z",
+      "captureOrder": "screenshot-before-download; export changes notice and telemetry only",
+      "noticeAtCapture": "执行失败并产生明确选择请求；道路仍为未查明，不能推定已经阻断。",
+      "browserVersion": "154.0.8037.92",
+      "route": "/intervention-lab",
+      "screenshot": {
+        "filename": "figure-4-choice-pending.png",
+        "sha256": "2f9a38c77a88568948e742a98b26425921393e1806021dedc7c4d35e59b3e808",
+        "scope": "unaltered lab element, fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 1826
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 1874
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 342,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-map",
+            "bounds": {
+              "x": 33,
+              "y": 378.5,
+              "width": 721.796875,
+              "height": 550
+            },
+            "text": "示意街区ABCUGVN ↑"
+          },
+          {
+            "testId": "lab-map-facts",
+            "bounds": {
+              "x": 33,
+              "y": 928.5,
+              "width": 721.796875,
+              "height": 107.5
+            },
+            "text": "中央道路 B未查明尚无道路观测证据。导航失败不能直接写成道路不可通行。执行反馈：模拟反馈：局部规划与恢复已耗尽，未能到达观测位置。原因不等同于已观察道路阻断。"
+          },
+          {
+            "testId": "lab-task-state",
+            "bounds": {
+              "x": 777.796875,
+              "y": 616,
+              "width": 670.203125,
+              "height": 276
+            },
+            "text": "任务与执行步骤计划 v1查清选定街区主要道路的通行情况，标出受阻和未查明路段。·查验西侧主路尚未开始·查验中央道路执行失败·查验东侧道路尚未开始结果持续更新中未查明 3/3 条 · 未观察的事实始终保留"
+          },
+          {
+            "testId": "lab-request-failure:ui-event-3",
+            "bounds": {
+              "x": 796.796875,
+              "y": 377.5,
+              "width": 632.203125,
+              "height": 207.5
+            },
+            "text": "选择型查验中央道路待处理模拟反馈：局部规划与恢复已耗尽，未能到达观测位置。原因不等同于已观察道路阻断。关联道路中央道路 B处理依据R2：模拟导航已用尽恢复，fixture声明没有可执行替代分支；本实验约定请操作员选择后续处理。请求版本failure:ui-event-3 · v1 · 生成时计划 v1定位关联道路 ↗保留未查明，继续其他路段重新尝试本步骤结束本次任务"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "figure-4-choice-pending.json",
+        "sha256": "3a980ea2b6e736b8febfa5a2b6cb938a14f4c9533bb2587966c26af26c6c9732"
+      }
+    },
+    {
+      "name": "figure-5-before-constraint",
+      "figure": 5,
+      "scenarioId": "constraint-stale",
+      "runId": "lab:d0666994-14b4-4fd8-ba68-b432b1ff6445",
+      "displayMode": "dynamic",
+      "eventCursor": 5,
+      "eventCount": 11,
+      "inputActionCount": 5,
+      "lastAction": {
+        "type": "open-request",
+        "actionId": "ui-event-5",
+        "requestId": "request:stale-b",
+        "title": "是否批准本次暂不查验B",
+        "reason": "模拟调度提出暂缓B的计划变更，尚未执行。",
+        "basis": "fixture应用约定：这个明确提出的计划变更先由操作员批准或拒绝；不声称自动推断风险。",
+        "roadIds": [
+          "r-b"
+        ],
+        "stepIds": [
+          "s-b"
+        ],
+        "requiredInput": {
+          "kind": "approval"
+        },
+        "provenance": "fixture-event"
+      },
+      "lastLog": {
+        "runId": "lab:d0666994-14b4-4fd8-ba68-b432b1ff6445",
+        "sequence": 5,
+        "logicalTime": 5,
+        "source": "application",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-5",
+        "actionType": "open-request",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "依据显式所需输入形成confirm请求，不依赖LLM风险判断。",
+        "requestId": "request:stale-b"
+      },
+      "planVersion": 1,
+      "roads": [
+        {
+          "id": "r-a",
+          "version": 2,
+          "status": "observed",
+          "condition": "passable"
+        },
+        {
+          "id": "r-b",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        },
+        {
+          "id": "r-c",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "roadId": "r-a",
+          "version": 3,
+          "status": "completed"
+        },
+        {
+          "id": "s-b",
+          "roadId": "r-b",
+          "version": 1,
+          "status": "pending"
+        },
+        {
+          "id": "s-c",
+          "roadId": "r-c",
+          "version": 1,
+          "status": "pending"
+        }
+      ],
+      "requests": [
+        {
+          "id": "request:stale-b",
+          "title": "是否批准本次暂不查验B",
+          "reason": "模拟调度提出暂缓B的计划变更，尚未执行。",
+          "basis": "fixture应用约定：这个明确提出的计划变更先由操作员批准或拒绝；不声称自动推断风险。",
+          "roadIds": [
+            "r-b"
+          ],
+          "stepIds": [
+            "s-b"
+          ],
+          "requiredInput": {
+            "kind": "approval"
+          },
+          "runId": "lab:d0666994-14b4-4fd8-ba68-b432b1ff6445",
+          "version": 1,
+          "type": "confirm",
+          "status": "pending",
+          "options": [
+            {
+              "id": "approve",
+              "label": "批准待提出的调整",
+              "effect": "accept-change"
+            },
+            {
+              "id": "reject",
+              "label": "拒绝调整",
+              "effect": "reject-change"
+            }
+          ],
+          "createdPlanVersion": 1,
+          "createdAt": 5,
+          "roadVersions": {
+            "r-b": 1
+          },
+          "stepVersions": {
+            "s-b": 1
+          }
+        }
+      ],
+      "constraints": [],
+      "device": {
+        "id": "ugv-01",
+        "name": "模拟 UGV-01",
+        "link": "online",
+        "execution": "running",
+        "position": {
+          "x": 18,
+          "y": 72
+        },
+        "lastConfirmedAt": 4
+      },
+      "commands": [],
+      "verificationDriver": "playwright-automated-clicks",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T02:20:35.394Z",
+      "captureCompletedAt": "2026-10-04T02:20:35.553Z",
+      "rawExportDownloadedAt": "2026-10-04T02:20:35.668Z",
+      "captureOrder": "screenshot-before-download; export changes notice and telemetry only",
+      "noticeAtCapture": "依据显式所需输入形成confirm请求，不依赖LLM风险判断。",
+      "browserVersion": "154.0.8037.92",
+      "route": "/intervention-lab",
+      "screenshot": {
+        "filename": "figure-5-before-constraint.png",
+        "sha256": "e3d38a28016e9cfc48d5d365d97c42fd9e77ae11e4badc9cba681606749b638e",
+        "scope": "unaltered lab element, fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 1826
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 1874
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 342,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-task-state",
+            "bounds": {
+              "x": 777.796875,
+              "y": 616,
+              "width": 670.203125,
+              "height": 276
+            },
+            "text": "任务与执行步骤计划 v1查清选定街区主要道路的通行情况，标出受阻和未查明路段。✓查验西侧主路已完成·查验中央道路尚未开始·查验东侧道路尚未开始结果持续更新中未查明 2/3 条 · 未观察的事实始终保留"
+          },
+          {
+            "testId": "lab-active-constraint",
+            "bounds": {
+              "x": 777.796875,
+              "y": 1047.5,
+              "width": 670.203125,
+              "height": 275.140625
+            },
+            "text": "主动调整任务始终可见本次不检查的路段西侧主路 A中央道路 B东侧道路 C补充说明（记录用途）仅直接修改尚未执行的关联步骤；执行中步骤需先确认暂停。说明文字不作为任意自然语言指令。已取得的观测结果保留。应用路段约束"
+          },
+          {
+            "testId": "lab-request-request:stale-b",
+            "bounds": {
+              "x": 796.796875,
+              "y": 377.5,
+              "width": 632.203125,
+              "height": 207.5
+            },
+            "text": "确认型是否批准本次暂不查验B模拟调度提出暂缓B的计划变更，尚未执行。关联道路中央道路 B处理依据fixture应用约定：这个明确提出的计划变更先由操作员批准或拒绝；不声称自动推断风险。请求版本request:stale-b · v1 · 生成时计划 v1定位关联道路 ↗批准待提出的调整拒绝调整"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "figure-5-before-constraint.json",
+        "sha256": "ab811b857b6f1aae5e3735075f868f5efd7c852fcba2818f283e02607358af3c"
+      }
+    },
+    {
+      "name": "figure-5-after-constraint",
+      "figure": 5,
+      "scenarioId": "constraint-stale",
+      "runId": "lab:d0666994-14b4-4fd8-ba68-b432b1ff6445",
+      "displayMode": "dynamic",
+      "eventCursor": 5,
+      "eventCount": 11,
+      "inputActionCount": 6,
+      "lastAction": {
+        "type": "add-constraint",
+        "actionId": "ui-constraint-6",
+        "text": "本次不检查中央道路 B",
+        "roadIds": [
+          "r-b"
+        ],
+        "provenance": "interactive"
+      },
+      "lastLog": {
+        "runId": "lab:d0666994-14b4-4fd8-ba68-b432b1ff6445",
+        "sequence": 6,
+        "logicalTime": 6,
+        "source": "operator",
+        "inputProvenance": "interactive",
+        "actionId": "ui-constraint-6",
+        "actionType": "add-constraint",
+        "planVersion": 2,
+        "accepted": true,
+        "detail": "已接收操作员主动修改，仅更新关联后续步骤；已有结果和未查明事实保留。"
+      },
+      "planVersion": 2,
+      "roads": [
+        {
+          "id": "r-a",
+          "version": 2,
+          "status": "observed",
+          "condition": "passable"
+        },
+        {
+          "id": "r-b",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        },
+        {
+          "id": "r-c",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "roadId": "r-a",
+          "version": 3,
+          "status": "completed"
+        },
+        {
+          "id": "s-b",
+          "roadId": "r-b",
+          "version": 2,
+          "status": "cancelled"
+        },
+        {
+          "id": "s-c",
+          "roadId": "r-c",
+          "version": 1,
+          "status": "pending"
+        }
+      ],
+      "requests": [
+        {
+          "id": "request:stale-b",
+          "title": "是否批准本次暂不查验B",
+          "reason": "模拟调度提出暂缓B的计划变更，尚未执行。",
+          "basis": "fixture应用约定：这个明确提出的计划变更先由操作员批准或拒绝；不声称自动推断风险。",
+          "roadIds": [
+            "r-b"
+          ],
+          "stepIds": [
+            "s-b"
+          ],
+          "requiredInput": {
+            "kind": "approval"
+          },
+          "runId": "lab:d0666994-14b4-4fd8-ba68-b432b1ff6445",
+          "version": 1,
+          "type": "confirm",
+          "status": "obsolete",
+          "options": [
+            {
+              "id": "approve",
+              "label": "批准待提出的调整",
+              "effect": "accept-change"
+            },
+            {
+              "id": "reject",
+              "label": "拒绝调整",
+              "effect": "reject-change"
+            }
+          ],
+          "createdPlanVersion": 1,
+          "createdAt": 5,
+          "roadVersions": {
+            "r-b": 1
+          },
+          "stepVersions": {
+            "s-b": 1
+          },
+          "resolution": "人工新增约束改变了本请求关联范围，请求已失效。",
+          "resolvedAt": 6
+        }
+      ],
+      "constraints": [
+        {
+          "id": "constraint:ui-constraint-6",
+          "text": "本次不检查中央道路 B",
+          "roadIds": [
+            "r-b"
+          ],
+          "createdAt": 6
+        }
+      ],
+      "device": {
+        "id": "ugv-01",
+        "name": "模拟 UGV-01",
+        "link": "online",
+        "execution": "running",
+        "position": {
+          "x": 18,
+          "y": 72
+        },
+        "lastConfirmedAt": 4
+      },
+      "commands": [],
+      "verificationDriver": "playwright-automated-clicks",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T02:20:35.964Z",
+      "captureCompletedAt": "2026-10-04T02:20:36.126Z",
+      "rawExportDownloadedAt": "2026-10-04T02:20:36.206Z",
+      "captureOrder": "screenshot-before-download; export changes notice and telemetry only",
+      "noticeAtCapture": "已接收操作员主动修改，仅更新关联后续步骤；已有结果和未查明事实保留。",
+      "browserVersion": "154.0.8037.92",
+      "route": "/intervention-lab",
+      "screenshot": {
+        "filename": "figure-5-after-constraint.png",
+        "sha256": "2ded90e09c28e65490fd4e97f785d09ecc7eb6fb613fdd49cc0b7e6a9300cc3c",
+        "scope": "unaltered lab element, fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 1850
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 1898
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 342,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-task-state",
+            "bounds": {
+              "x": 777.796875,
+              "y": 328,
+              "width": 670.203125,
+              "height": 276
+            },
+            "text": "任务与执行步骤计划 v2查清选定街区主要道路的通行情况，标出受阻和未查明路段。✓查验西侧主路已完成·查验中央道路本次不检查·查验东侧道路尚未开始结果持续更新中未查明 2/3 条 · 未观察的事实始终保留"
+          },
+          {
+            "testId": "lab-active-constraint",
+            "bounds": {
+              "x": 777.796875,
+              "y": 859.140625,
+              "width": 670.203125,
+              "height": 302.640625
+            },
+            "text": "主动调整任务始终可见本次不检查的路段西侧主路 A中央道路 B东侧道路 C补充说明（记录用途）仅直接修改尚未执行的关联步骤；执行中步骤需先确认暂停。说明文字不作为任意自然语言指令。已取得的观测结果保留。应用路段约束本次不检查中央道路 B"
+          },
+          {
+            "testId": "lab-history-request:stale-b",
+            "bounds": {
+              "x": 51,
+              "y": 1288.28125,
+              "width": 659,
+              "height": 87
+            },
+            "text": "是否批准本次暂不查验B已失效 · v1人工新增约束改变了本请求关联范围，请求已失效。注入旧答复，检查是否被拒绝"
+          },
+          {
+            "testId": "lab-notice",
+            "bounds": {
+              "x": 32,
+              "y": 1179.78125,
+              "width": 1416,
+              "height": 42
+            },
+            "text": "已接收操作员主动修改，仅更新关联后续步骤；已有结果和未查明事实保留。"
+          },
+          {
+            "testId": "lab-logs",
+            "bounds": {
+              "x": 770,
+              "y": 1286.28125,
+              "width": 659,
+              "height": 230
+            },
+            "text": "6 · add-constraint接受 · 已接收操作员主动修改，仅更新关联后续步骤；已有结果和未查明事实保留。5 · open-request接受 · 依据显式所需输入形成confirm请求，不依赖LLM风险判断。4 · complete-step接受 · 查验西侧主路完成；已有道路观测保持可追溯。3 · observe-road接受 · 西侧主路 A获得模拟观测：该模拟UGV可通过。2 · start-step接受 · 模拟执行：查验西侧主路。1 · start-task接受 · 已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "figure-5-after-constraint.json",
+        "sha256": "06f353ce3e7914a8ac8f478de593ca099edefb8a2435ced9402aa9fb2b60a5aa"
+      }
+    },
+    {
+      "name": "figure-5-old-response-rejected",
+      "figure": 5,
+      "scenarioId": "constraint-stale",
+      "runId": "lab:d0666994-14b4-4fd8-ba68-b432b1ff6445",
+      "displayMode": "dynamic",
+      "eventCursor": 5,
+      "eventCount": 11,
+      "inputActionCount": 7,
+      "lastAction": {
+        "type": "respond",
+        "actionId": "ui-old-response-7",
+        "requestId": "request:stale-b",
+        "runId": "lab:d0666994-14b4-4fd8-ba68-b432b1ff6445",
+        "requestVersion": 1,
+        "optionId": "approve",
+        "provenance": "interactive"
+      },
+      "lastLog": {
+        "runId": "lab:d0666994-14b4-4fd8-ba68-b432b1ff6445",
+        "sequence": 7,
+        "logicalTime": 7,
+        "source": "operator",
+        "inputProvenance": "interactive",
+        "actionId": "ui-old-response-7",
+        "actionType": "respond",
+        "planVersion": 2,
+        "accepted": false,
+        "detail": "原请求已过期，答复不会覆盖新计划。",
+        "requestId": "request:stale-b"
+      },
+      "planVersion": 2,
+      "roads": [
+        {
+          "id": "r-a",
+          "version": 2,
+          "status": "observed",
+          "condition": "passable"
+        },
+        {
+          "id": "r-b",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        },
+        {
+          "id": "r-c",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "roadId": "r-a",
+          "version": 3,
+          "status": "completed"
+        },
+        {
+          "id": "s-b",
+          "roadId": "r-b",
+          "version": 2,
+          "status": "cancelled"
+        },
+        {
+          "id": "s-c",
+          "roadId": "r-c",
+          "version": 1,
+          "status": "pending"
+        }
+      ],
+      "requests": [
+        {
+          "id": "request:stale-b",
+          "title": "是否批准本次暂不查验B",
+          "reason": "模拟调度提出暂缓B的计划变更，尚未执行。",
+          "basis": "fixture应用约定：这个明确提出的计划变更先由操作员批准或拒绝；不声称自动推断风险。",
+          "roadIds": [
+            "r-b"
+          ],
+          "stepIds": [
+            "s-b"
+          ],
+          "requiredInput": {
+            "kind": "approval"
+          },
+          "runId": "lab:d0666994-14b4-4fd8-ba68-b432b1ff6445",
+          "version": 1,
+          "type": "confirm",
+          "status": "obsolete",
+          "options": [
+            {
+              "id": "approve",
+              "label": "批准待提出的调整",
+              "effect": "accept-change"
+            },
+            {
+              "id": "reject",
+              "label": "拒绝调整",
+              "effect": "reject-change"
+            }
+          ],
+          "createdPlanVersion": 1,
+          "createdAt": 5,
+          "roadVersions": {
+            "r-b": 1
+          },
+          "stepVersions": {
+            "s-b": 1
+          },
+          "resolution": "人工新增约束改变了本请求关联范围，请求已失效。",
+          "resolvedAt": 6
+        }
+      ],
+      "constraints": [
+        {
+          "id": "constraint:ui-constraint-6",
+          "text": "本次不检查中央道路 B",
+          "roadIds": [
+            "r-b"
+          ],
+          "createdAt": 6
+        }
+      ],
+      "device": {
+        "id": "ugv-01",
+        "name": "模拟 UGV-01",
+        "link": "online",
+        "execution": "running",
+        "position": {
+          "x": 18,
+          "y": 72
+        },
+        "lastConfirmedAt": 4
+      },
+      "commands": [],
+      "verificationDriver": "playwright-automated-clicks",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T02:20:36.441Z",
+      "captureCompletedAt": "2026-10-04T02:20:36.593Z",
+      "rawExportDownloadedAt": "2026-10-04T02:20:36.653Z",
+      "captureOrder": "screenshot-before-download; export changes notice and telemetry only",
+      "noticeAtCapture": "原请求已过期，答复不会覆盖新计划。",
+      "browserVersion": "154.0.8037.92",
+      "route": "/intervention-lab",
+      "screenshot": {
+        "filename": "figure-5-old-response-rejected.png",
+        "sha256": "50de20733377be09b988995f2e639eeb8741a8dd63107ad65f473378037c5dc5",
+        "scope": "unaltered lab element, fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 1874
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 1922
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 342,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-task-state",
+            "bounds": {
+              "x": 777.796875,
+              "y": 328,
+              "width": 670.203125,
+              "height": 276
+            },
+            "text": "任务与执行步骤计划 v2查清选定街区主要道路的通行情况，标出受阻和未查明路段。✓查验西侧主路已完成·查验中央道路本次不检查·查验东侧道路尚未开始结果持续更新中未查明 2/3 条 · 未观察的事实始终保留"
+          },
+          {
+            "testId": "lab-history-request:stale-b",
+            "bounds": {
+              "x": 51,
+              "y": 1288.28125,
+              "width": 659,
+              "height": 87
+            },
+            "text": "是否批准本次暂不查验B已失效 · v1人工新增约束改变了本请求关联范围，请求已失效。注入旧答复，检查是否被拒绝"
+          },
+          {
+            "testId": "lab-notice",
+            "bounds": {
+              "x": 32,
+              "y": 1179.78125,
+              "width": 1416,
+              "height": 42
+            },
+            "text": "原请求已过期，答复不会覆盖新计划。"
+          },
+          {
+            "testId": "lab-logs",
+            "bounds": {
+              "x": 770,
+              "y": 1286.28125,
+              "width": 659,
+              "height": 230
+            },
+            "text": "7 · respond拒绝 · 原请求已过期，答复不会覆盖新计划。6 · add-constraint接受 · 已接收操作员主动修改，仅更新关联后续步骤；已有结果和未查明事实保留。5 · open-request接受 · 依据显式所需输入形成confirm请求，不依赖LLM风险判断。4 · complete-step接受 · 查验西侧主路完成；已有道路观测保持可追溯。3 · observe-road接受 · 西侧主路 A获得模拟观测：该模拟UGV可通过。2 · start-step接受 · 模拟执行：查验西侧主路。1 · start-task接受 · 已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "figure-5-old-response-rejected.json",
+        "sha256": "ec721d60b977fa99260a517e5c6e34b412d95fad894d09b69921f9a3d091edbd"
+      }
+    },
+    {
+      "name": "figure-6-command-queued",
+      "figure": 6,
+      "scenarioId": "link-command-ack",
+      "runId": "lab:1c27fdd1-c647-4231-a8ea-4a33885055af",
+      "displayMode": "dynamic",
+      "eventCursor": 4,
+      "eventCount": 9,
+      "inputActionCount": 5,
+      "lastAction": {
+        "type": "respond",
+        "actionId": "ui-response-5",
+        "requestId": "request:link-control",
+        "runId": "lab:1c27fdd1-c647-4231-a8ea-4a33885055af",
+        "requestVersion": 1,
+        "optionId": "pause",
+        "provenance": "interactive"
+      },
+      "lastLog": {
+        "runId": "lab:1c27fdd1-c647-4231-a8ea-4a33885055af",
+        "sequence": 5,
+        "logicalTime": 5,
+        "source": "operator",
+        "inputProvenance": "interactive",
+        "actionId": "ui-response-5",
+        "actionType": "respond",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "已接收人工答复：请求暂停（等待设备回执）。暂停指令待设备确认。",
+        "requestId": "request:link-control"
+      },
+      "planVersion": 1,
+      "roads": [
+        {
+          "id": "r-a",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        },
+        {
+          "id": "r-b",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        },
+        {
+          "id": "r-c",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "roadId": "r-a",
+          "version": 2,
+          "status": "running"
+        },
+        {
+          "id": "s-b",
+          "roadId": "r-b",
+          "version": 1,
+          "status": "pending"
+        },
+        {
+          "id": "s-c",
+          "roadId": "r-c",
+          "version": 1,
+          "status": "pending"
+        }
+      ],
+      "requests": [
+        {
+          "id": "request:link-control",
+          "title": "链路失联：操作员任务控制",
+          "reason": "设备当前执行状态未知，最后位置只代表最后确认状态。",
+          "basis": "fixture应用约定：失联时展示显式暂停或结束控制，由人决定；设备失联自主策略不在本原型实现范围。",
+          "roadIds": [
+            "r-a"
+          ],
+          "stepIds": [
+            "s-a"
+          ],
+          "requiredInput": {
+            "kind": "command",
+            "commands": [
+              {
+                "id": "pause",
+                "label": "请求暂停（等待设备回执）",
+                "effect": "pause"
+              },
+              {
+                "id": "end",
+                "label": "结束本次任务",
+                "effect": "end-task"
+              }
+            ]
+          },
+          "runId": "lab:1c27fdd1-c647-4231-a8ea-4a33885055af",
+          "version": 1,
+          "type": "control",
+          "status": "resolved",
+          "options": [
+            {
+              "id": "pause",
+              "label": "请求暂停（等待设备回执）",
+              "effect": "pause"
+            },
+            {
+              "id": "end",
+              "label": "结束本次任务",
+              "effect": "end-task"
+            }
+          ],
+          "createdPlanVersion": 1,
+          "createdAt": 4,
+          "roadVersions": {
+            "r-a": 1
+          },
+          "stepVersions": {
+            "s-a": 2
+          },
+          "resolvedAt": 5,
+          "resolution": "请求暂停（等待设备回执）"
+        }
+      ],
+      "constraints": [],
+      "device": {
+        "id": "ugv-01",
+        "name": "模拟 UGV-01",
+        "link": "offline",
+        "execution": "unknown",
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "lastConfirmedAt": 2
+      },
+      "commands": [
+        {
+          "id": "pause:ui-response-5",
+          "kind": "pause",
+          "status": "queued",
+          "createdAt": 5
+        }
+      ],
+      "verificationDriver": "playwright-automated-clicks",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T02:20:37.430Z",
+      "captureCompletedAt": "2026-10-04T02:20:37.596Z",
+      "rawExportDownloadedAt": "2026-10-04T02:20:37.683Z",
+      "captureOrder": "screenshot-before-download; export changes notice and telemetry only",
+      "noticeAtCapture": "已接收人工答复：请求暂停（等待设备回执）。暂停指令待设备确认。",
+      "browserVersion": "154.0.8037.92",
+      "route": "/intervention-lab",
+      "screenshot": {
+        "filename": "figure-6-command-queued.png",
+        "sha256": "ad8103a3e6c7c3e3c9633418c50c332b37b611dbcbc5b3ba402256f220dbbb9f",
+        "scope": "unaltered lab element, fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 1826
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 1874
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 342,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-device-state",
+            "bounds": {
+              "x": 777.796875,
+              "y": 717.640625,
+              "width": 670.203125,
+              "height": 193.640625
+            },
+            "text": "模拟 UGV-01链路失联设备执行反馈当前执行状态未知保留最后有效位置。链路中断不能直接推定设备已停下。Ⅱ 请求暂停设备pause:ui-response-5已登记 · 尚未发送"
+          },
+          {
+            "testId": "lab-command-pause:ui-response-5",
+            "bounds": {
+              "x": 796.796875,
+              "y": 870.28125,
+              "width": 632.203125,
+              "height": 24
+            },
+            "text": "pause:ui-response-5已登记 · 尚未发送"
+          },
+          {
+            "testId": "lab-map-position",
+            "bounds": {
+              "x": 562.71875,
+              "y": 393.5,
+              "width": 177.078125,
+              "height": 27
+            },
+            "text": "最后确认位置 · 最后确认逻辑时刻 2"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "figure-6-command-queued.json",
+        "sha256": "7ab04117118caee19e8557d7dd5eaea86ca84d675ed89c83f547bd0fa3d05059"
+      }
+    },
+    {
+      "name": "figure-6-command-sent-awaiting-ack",
+      "figure": 6,
+      "scenarioId": "link-command-ack",
+      "runId": "lab:1c27fdd1-c647-4231-a8ea-4a33885055af",
+      "displayMode": "dynamic",
+      "eventCursor": 6,
+      "eventCount": 9,
+      "inputActionCount": 6,
+      "lastAction": {
+        "type": "link-restored",
+        "actionId": "ui-event-6",
+        "provenance": "fixture-event"
+      },
+      "lastLog": {
+        "runId": "lab:1c27fdd1-c647-4231-a8ea-4a33885055af",
+        "sequence": 6,
+        "logicalTime": 6,
+        "source": "simulator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-6",
+        "actionType": "link-restored",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "模拟链路恢复，已排队指令变为已发送；设备执行状态仍等待回执。"
+      },
+      "planVersion": 1,
+      "roads": [
+        {
+          "id": "r-a",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        },
+        {
+          "id": "r-b",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        },
+        {
+          "id": "r-c",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "roadId": "r-a",
+          "version": 2,
+          "status": "running"
+        },
+        {
+          "id": "s-b",
+          "roadId": "r-b",
+          "version": 1,
+          "status": "pending"
+        },
+        {
+          "id": "s-c",
+          "roadId": "r-c",
+          "version": 1,
+          "status": "pending"
+        }
+      ],
+      "requests": [
+        {
+          "id": "request:link-control",
+          "title": "链路失联：操作员任务控制",
+          "reason": "设备当前执行状态未知，最后位置只代表最后确认状态。",
+          "basis": "fixture应用约定：失联时展示显式暂停或结束控制，由人决定；设备失联自主策略不在本原型实现范围。",
+          "roadIds": [
+            "r-a"
+          ],
+          "stepIds": [
+            "s-a"
+          ],
+          "requiredInput": {
+            "kind": "command",
+            "commands": [
+              {
+                "id": "pause",
+                "label": "请求暂停（等待设备回执）",
+                "effect": "pause"
+              },
+              {
+                "id": "end",
+                "label": "结束本次任务",
+                "effect": "end-task"
+              }
+            ]
+          },
+          "runId": "lab:1c27fdd1-c647-4231-a8ea-4a33885055af",
+          "version": 1,
+          "type": "control",
+          "status": "resolved",
+          "options": [
+            {
+              "id": "pause",
+              "label": "请求暂停（等待设备回执）",
+              "effect": "pause"
+            },
+            {
+              "id": "end",
+              "label": "结束本次任务",
+              "effect": "end-task"
+            }
+          ],
+          "createdPlanVersion": 1,
+          "createdAt": 4,
+          "roadVersions": {
+            "r-a": 1
+          },
+          "stepVersions": {
+            "s-a": 2
+          },
+          "resolvedAt": 5,
+          "resolution": "请求暂停（等待设备回执）"
+        }
+      ],
+      "constraints": [],
+      "device": {
+        "id": "ugv-01",
+        "name": "模拟 UGV-01",
+        "link": "online",
+        "execution": "unknown",
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "lastConfirmedAt": 2
+      },
+      "commands": [
+        {
+          "id": "pause:ui-response-5",
+          "kind": "pause",
+          "status": "sent",
+          "createdAt": 5
+        }
+      ],
+      "verificationDriver": "playwright-automated-clicks",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T02:20:37.919Z",
+      "captureCompletedAt": "2026-10-04T02:20:38.088Z",
+      "rawExportDownloadedAt": "2026-10-04T02:20:38.152Z",
+      "captureOrder": "screenshot-before-download; export changes notice and telemetry only",
+      "noticeAtCapture": "模拟链路恢复，已排队指令变为已发送；设备执行状态仍等待回执。",
+      "browserVersion": "154.0.8037.92",
+      "route": "/intervention-lab",
+      "screenshot": {
+        "filename": "figure-6-command-sent-awaiting-ack.png",
+        "sha256": "ad684ca14f2ababaec34a11bb555be066848167a6525deb719f228f5fdbb586b",
+        "scope": "unaltered lab element, fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 1850
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 1898
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 342,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-device-state",
+            "bounds": {
+              "x": 777.796875,
+              "y": 717.640625,
+              "width": 670.203125,
+              "height": 161.5
+            },
+            "text": "模拟 UGV-01模拟链路正常设备执行反馈当前执行状态未知Ⅱ 请求暂停设备pause:ui-response-5已发送 · 等待设备确认"
+          },
+          {
+            "testId": "lab-command-pause:ui-response-5",
+            "bounds": {
+              "x": 796.796875,
+              "y": 838.140625,
+              "width": 632.203125,
+              "height": 24
+            },
+            "text": "pause:ui-response-5已发送 · 等待设备确认"
+          },
+          {
+            "testId": "lab-map-position",
+            "bounds": {
+              "x": 562.71875,
+              "y": 393.5,
+              "width": 177.078125,
+              "height": 27
+            },
+            "text": "最后确认位置 · 最后确认逻辑时刻 2"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "figure-6-command-sent-awaiting-ack.json",
+        "sha256": "b47684bfb1c75bf7fedf1c00c1dc7b0dd6db8612a9433677b1a298a175a6f02d"
+      }
+    },
+    {
+      "name": "figure-6-command-acknowledged",
+      "figure": 6,
+      "scenarioId": "link-command-ack",
+      "runId": "lab:1c27fdd1-c647-4231-a8ea-4a33885055af",
+      "displayMode": "dynamic",
+      "eventCursor": 7,
+      "eventCount": 9,
+      "inputActionCount": 7,
+      "lastAction": {
+        "type": "device-ack",
+        "actionId": "ui-event-7",
+        "commandId": "pause:ui-response-5",
+        "provenance": "fixture-event"
+      },
+      "lastLog": {
+        "runId": "lab:1c27fdd1-c647-4231-a8ea-4a33885055af",
+        "sequence": 7,
+        "logicalTime": 7,
+        "source": "simulator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-7",
+        "actionType": "device-ack",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "已收到模拟设备暂停回执，当前才显示设备已暂停。"
+      },
+      "planVersion": 1,
+      "roads": [
+        {
+          "id": "r-a",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        },
+        {
+          "id": "r-b",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        },
+        {
+          "id": "r-c",
+          "version": 1,
+          "status": "unchecked",
+          "condition": "unknown"
+        }
+      ],
+      "steps": [
+        {
+          "id": "s-a",
+          "roadId": "r-a",
+          "version": 2,
+          "status": "running"
+        },
+        {
+          "id": "s-b",
+          "roadId": "r-b",
+          "version": 1,
+          "status": "pending"
+        },
+        {
+          "id": "s-c",
+          "roadId": "r-c",
+          "version": 1,
+          "status": "pending"
+        }
+      ],
+      "requests": [
+        {
+          "id": "request:link-control",
+          "title": "链路失联：操作员任务控制",
+          "reason": "设备当前执行状态未知，最后位置只代表最后确认状态。",
+          "basis": "fixture应用约定：失联时展示显式暂停或结束控制，由人决定；设备失联自主策略不在本原型实现范围。",
+          "roadIds": [
+            "r-a"
+          ],
+          "stepIds": [
+            "s-a"
+          ],
+          "requiredInput": {
+            "kind": "command",
+            "commands": [
+              {
+                "id": "pause",
+                "label": "请求暂停（等待设备回执）",
+                "effect": "pause"
+              },
+              {
+                "id": "end",
+                "label": "结束本次任务",
+                "effect": "end-task"
+              }
+            ]
+          },
+          "runId": "lab:1c27fdd1-c647-4231-a8ea-4a33885055af",
+          "version": 1,
+          "type": "control",
+          "status": "resolved",
+          "options": [
+            {
+              "id": "pause",
+              "label": "请求暂停（等待设备回执）",
+              "effect": "pause"
+            },
+            {
+              "id": "end",
+              "label": "结束本次任务",
+              "effect": "end-task"
+            }
+          ],
+          "createdPlanVersion": 1,
+          "createdAt": 4,
+          "roadVersions": {
+            "r-a": 1
+          },
+          "stepVersions": {
+            "s-a": 2
+          },
+          "resolvedAt": 5,
+          "resolution": "请求暂停（等待设备回执）"
+        }
+      ],
+      "constraints": [],
+      "device": {
+        "id": "ugv-01",
+        "name": "模拟 UGV-01",
+        "link": "online",
+        "execution": "paused",
+        "position": {
+          "x": 18,
+          "y": 20
+        },
+        "lastConfirmedAt": 7
+      },
+      "commands": [
+        {
+          "id": "pause:ui-response-5",
+          "kind": "pause",
+          "status": "acknowledged",
+          "createdAt": 5,
+          "acknowledgedAt": 7
+        }
+      ],
+      "verificationDriver": "playwright-automated-clicks",
+      "humanPerformanceEvidence": false,
+      "captureStartedAt": "2026-10-04T02:20:38.357Z",
+      "captureCompletedAt": "2026-10-04T02:20:38.520Z",
+      "rawExportDownloadedAt": "2026-10-04T02:20:38.602Z",
+      "captureOrder": "screenshot-before-download; export changes notice and telemetry only",
+      "noticeAtCapture": "已收到模拟设备暂停回执，当前才显示设备已暂停。",
+      "browserVersion": "154.0.8037.92",
+      "route": "/intervention-lab",
+      "screenshot": {
+        "filename": "figure-6-command-acknowledged.png",
+        "sha256": "4112aaa3ead3c8f8a81b87c3e403adf9a710b7f4ce5a1b8cfc7d4720e619c3c3",
+        "scope": "unaltered lab element, fitted real viewport",
+        "bounds": {
+          "x": 0,
+          "y": 48,
+          "width": 1480,
+          "height": 1874
+        },
+        "viewport": {
+          "width": 1480,
+          "height": 1922
+        },
+        "deviceScaleFactor": 1,
+        "requiredVisibleRegions": [
+          {
+            "testId": "lab-simulation-label",
+            "bounds": {
+              "x": 32,
+              "y": 141,
+              "width": 342,
+              "height": 18
+            },
+            "text": "确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面"
+          },
+          {
+            "testId": "lab-device-state",
+            "bounds": {
+              "x": 777.796875,
+              "y": 717.640625,
+              "width": 670.203125,
+              "height": 161.5
+            },
+            "text": "模拟 UGV-01模拟链路正常设备执行反馈设备已确认暂停Ⅱ 请求暂停设备pause:ui-response-5设备已确认"
+          },
+          {
+            "testId": "lab-command-pause:ui-response-5",
+            "bounds": {
+              "x": 796.796875,
+              "y": 838.140625,
+              "width": 632.203125,
+              "height": 24
+            },
+            "text": "pause:ui-response-5设备已确认"
+          },
+          {
+            "testId": "lab-map-position",
+            "bounds": {
+              "x": 582.71875,
+              "y": 393.5,
+              "width": 157.078125,
+              "height": 27
+            },
+            "text": "模拟位置 · 最后确认逻辑时刻 7"
+          }
+        ]
+      },
+      "rawExport": {
+        "filename": "figure-6-command-acknowledged.json",
+        "sha256": "f46e07fa5ea94e0159f3492df57cebfa1d1c6705343aed6526dccea48df11d20"
+      }
+    }
+  ]
+}

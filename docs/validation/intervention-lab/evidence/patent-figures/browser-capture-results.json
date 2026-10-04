@@ -1,0 +1,277 @@
+{
+  "config": {
+    "argv": [
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/node_modules/@playwright/test/cli.js",
+      "test",
+      "intervention-lab-patent-evidence.spec.ts",
+      "--workers=1",
+      "--reporter=line,json"
+    ],
+    "configFile": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/playwright.config.ts",
+    "rootDir": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 20000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": {
+      "command": "node tests/e2e/server.mjs",
+      "reuseExistingServer": false,
+      "timeout": 20000,
+      "url": "http://127.0.0.1:4173/workbench-health"
+    }
+  },
+  "suites": [
+    {
+      "title": "intervention-lab-patent-evidence.spec.ts",
+      "file": "intervention-lab-patent-evidence.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "patent figure 4: navigation failure keeps road unknown and exposes its linked choice and step",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1049,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T02:20:33.465Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "figure-4-choice-pending",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-a0c68--its-linked-choice-and-step-chromium/attachments/figure-4-choice-pending-03312b8767f2f07e6864d32bb7aea4a96fc6bb44.png"
+                    },
+                    {
+                      "name": "figure-4-choice-pending-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-a0c68--its-linked-choice-and-step-chromium/attachments/figure-4-choice-pending-raw-2a9d2ce851f0f73f11730fea6822b4ca5cd89a39.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1bb12316907c5e5e0137-d6f83619484be3290f24",
+          "file": "intervention-lab-patent-evidence.spec.ts",
+          "line": 250,
+          "column": 1
+        },
+        {
+          "title": "patent figure 5: active constraint obsoletes the same request and rejects its old response",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2032,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-04T02:20:34.630Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "figure-5-before-constraint",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-40d88-nd-rejects-its-old-response-chromium/attachments/figure-5-before-constraint-aa2025fba4c60a557ecc3d067c2dd842539d1bfe.png"
+                    },
+                    {
+                      "name": "figure-5-before-constraint-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-40d88-nd-rejects-its-old-response-chromium/attachments/figure-5-before-constraint-raw-c6c604f6902758112736885d89a844af07e6d928.json"
+                    },
+                    {
+                      "name": "figure-5-after-constraint",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-40d88-nd-rejects-its-old-response-chromium/attachments/figure-5-after-constraint-c193770c58721b387ca6855b6660cfe2c070d6fe.png"
+                    },
+                    {
+                      "name": "figure-5-after-constraint-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-40d88-nd-rejects-its-old-response-chromium/attachments/figure-5-after-constraint-raw-c81386c992f28fe42d9b0701fc8c9aeec3c73f6a.json"
+                    },
+                    {
+                      "name": "figure-5-old-response-rejected",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-40d88-nd-rejects-its-old-response-chromium/attachments/figure-5-old-response-rejected-841614c965f892b4a250ce0ca8da4449e38fc2f1.png"
+                    },
+                    {
+                      "name": "figure-5-old-response-rejected-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-40d88-nd-rejects-its-old-response-chromium/attachments/figure-5-old-response-rejected-raw-b2d27aad929adb61464d08adadd01da517b69d1f.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1bb12316907c5e5e0137-98fe98d8b3fc57038e97",
+          "file": "intervention-lab-patent-evidence.spec.ts",
+          "line": 273,
+          "column": 1
+        },
+        {
+          "title": "patent figure 6: one pause command passes queued and sent before matching ACK confirms pause",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 20000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1943,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [
+                    {
+                      "buffer": ""
+                    },
+                    {
+                      "buffer": ""
+                    },
+                    {
+                      "buffer": ""
+                    },
+                    {
+                      "buffer": ""
+                    }
+                  ],
+                  "retry": 0,
+                  "startTime": "2026-10-04T02:20:36.670Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "figure-6-command-queued",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-7820f-matching-ACK-confirms-pause-chromium/attachments/figure-6-command-queued-7e75661f1a7502cd3e14905c2884e5ec494cae68.png"
+                    },
+                    {
+                      "name": "figure-6-command-queued-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-7820f-matching-ACK-confirms-pause-chromium/attachments/figure-6-command-queued-raw-9d97174ac35f30c63677e74e52e726911e93b886.json"
+                    },
+                    {
+                      "name": "figure-6-command-sent-awaiting-ack",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-7820f-matching-ACK-confirms-pause-chromium/attachments/figure-6-command-sent-awaiting-ack-b94ff48f03e13f3300f3109f2ea85cafa1ccefe9.png"
+                    },
+                    {
+                      "name": "figure-6-command-sent-awaiting-ack-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-7820f-matching-ACK-confirms-pause-chromium/attachments/figure-6-command-sent-awaiting-ack-raw-f9e9c8b5b252b4c97add59ae072c1d15e1251f27.json"
+                    },
+                    {
+                      "name": "figure-6-command-acknowledged",
+                      "contentType": "image/png",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-7820f-matching-ACK-confirms-pause-chromium/attachments/figure-6-command-acknowledged-6a49be49adba483e7f305196d75ef596576cb090.png"
+                    },
+                    {
+                      "name": "figure-6-command-acknowledged-raw",
+                      "contentType": "application/json",
+                      "path": "/workspace/scratch/8449a05e434b/repo/apps/web-workbench/test-results/intervention-lab-patent-ev-7820f-matching-ACK-confirms-pause-chromium/attachments/figure-6-command-acknowledged-raw-d46385771ec048a97ca7f15ef46ace625e1c5414.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "1bb12316907c5e5e0137-3af40889ac917e46ec0f",
+          "file": "intervention-lab-patent-evidence.spec.ts",
+          "line": 332,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-04T02:20:29.857Z",
+    "duration": 8859.876,
+    "expected": 3,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

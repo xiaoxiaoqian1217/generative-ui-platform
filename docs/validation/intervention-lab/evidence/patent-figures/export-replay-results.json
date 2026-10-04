@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "intervention-lab-export-replay/v1",
+  "generatedAt": "2026-10-04T02:20:42.376Z",
+  "simulation": true,
+  "humanPerformanceEvidence": false,
+  "allMatched": true,
+  "results": [
+    {
+      "filename": "figure-4-choice-pending.json",
+      "actionCount": 3,
+      "identicalStateSha256": "eb6eac295c11a8417533a2fdc07cd61730af16b5c7d188aa408534bc06826b9a"
+    },
+    {
+      "filename": "figure-5-after-constraint.json",
+      "actionCount": 6,
+      "identicalStateSha256": "97d19b8773c4adf07523d200b61f5697f85cf576686391ba1cfd0bcf8b3e5b61"
+    },
+    {
+      "filename": "figure-5-before-constraint.json",
+      "actionCount": 5,
+      "identicalStateSha256": "25da001ff5d4fa8adc95e4eb4d456105f5326f51a762d4d0a5c31eb607cf3a03"
+    },
+    {
+      "filename": "figure-5-old-response-rejected.json",
+      "actionCount": 7,
+      "identicalStateSha256": "730c7d26b6c47413e8064b5f553e51b0396c0092d9629e4650d47c62e137fe6f"
+    },
+    {
+      "filename": "figure-6-command-acknowledged.json",
+      "actionCount": 7,
+      "identicalStateSha256": "2213eb0e9e2ffd342024935a393d1ca559a9b41f9bdb671f1e131119a1fae440"
+    },
+    {
+      "filename": "figure-6-command-queued.json",
+      "actionCount": 5,
+      "identicalStateSha256": "cc6bedd3d9be79801839a9e7ad6a673dae4792d3515dcd813255d849fd1a24bc"
+    },
+    {
+      "filename": "figure-6-command-sent-awaiting-ack.json",
+      "actionCount": 6,
+      "identicalStateSha256": "933b41eac6b5ee58ed27d5e4d0be13c225fbfbd28d47d96015c6782cd0af7783"
+    }
+  ]
+}

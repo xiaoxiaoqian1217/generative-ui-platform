@@ -1,0 +1,385 @@
+{
+  "schemaVersion": "intervention-lab-export/v1",
+  "experiment": "deterministic-simulation",
+  "connectedToRealDevice": false,
+  "connectedToRealAgent": false,
+  "scenarioId": "navigation-failure",
+  "displayMode": "dynamic",
+  "eventCursor": 3,
+  "eventCount": 11,
+  "originalFixtureEventCount": 11,
+  "executionQueue": [
+    {
+      "label": "操作员启动模拟任务",
+      "action": {
+        "type": "start-task",
+        "actionId": "failure:start"
+      }
+    },
+    {
+      "label": "模拟开始中央道路查验",
+      "action": {
+        "type": "start-step",
+        "actionId": "failure:b:start",
+        "stepId": "s-b"
+      }
+    },
+    {
+      "label": "注入导航最终失败（不等于道路阻断）",
+      "action": {
+        "type": "navigation-failed",
+        "actionId": "failure:b:failed",
+        "stepId": "s-b",
+        "reason": "模拟反馈：局部规划与恢复已耗尽，未能到达观测位置。原因不等同于已观察道路阻断。",
+        "recoveryExhausted": true,
+        "alternativeAvailable": false
+      }
+    },
+    {
+      "label": "脚本人工答复：保留B未查明并继续（交互模式由您选择）",
+      "scriptedOperator": true,
+      "action": {
+        "type": "respond",
+        "runId": "fixture-run",
+        "actionId": "failure:reply",
+        "requestId": "failure:failure:b:failed",
+        "requestVersion": 1,
+        "optionId": "defer"
+      }
+    },
+    {
+      "label": "模拟开始道路 A 查验",
+      "action": {
+        "type": "start-step",
+        "actionId": "failure:a:start",
+        "stepId": "s-a"
+      }
+    },
+    {
+      "label": "注入道路 A 观测",
+      "action": {
+        "type": "observe-road",
+        "actionId": "failure:a:observe",
+        "roadId": "r-a",
+        "condition": "passable",
+        "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。"
+      }
+    },
+    {
+      "label": "模拟道路 A 查验完成",
+      "action": {
+        "type": "complete-step",
+        "actionId": "failure:a:done",
+        "stepId": "s-a"
+      }
+    },
+    {
+      "label": "模拟开始道路 C 查验",
+      "action": {
+        "type": "start-step",
+        "actionId": "failure:c:start",
+        "stepId": "s-c"
+      }
+    },
+    {
+      "label": "注入道路 C 观测",
+      "action": {
+        "type": "observe-road",
+        "actionId": "failure:c:observe",
+        "roadId": "r-c",
+        "condition": "passable",
+        "detail": "fixture观测：该模拟UGV所需通道已观察为可通过；不代表其他车型可通行。"
+      }
+    },
+    {
+      "label": "模拟道路 C 查验完成",
+      "action": {
+        "type": "complete-step",
+        "actionId": "failure:c:done",
+        "stepId": "s-c"
+      }
+    },
+    {
+      "label": "操作员核查并结束本次模拟任务",
+      "action": {
+        "type": "finish-task",
+        "actionId": "failure:finish"
+      }
+    }
+  ],
+  "state": {
+    "schemaVersion": "intervention-lab/v1",
+    "simulation": true,
+    "runId": "lab:4bf0df02-18fc-4b17-904c-d25451cd7385",
+    "goal": "查清选定街区主要道路的通行情况，标出受阻和未查明路段。",
+    "phase": "waiting",
+    "outcome": "in-progress",
+    "planVersion": 1,
+    "logicalTime": 3,
+    "roads": [
+      {
+        "id": "r-a",
+        "name": "西侧主路 A",
+        "polyline": [
+          {
+            "x": 18,
+            "y": 20
+          },
+          {
+            "x": 18,
+            "y": 72
+          }
+        ],
+        "status": "unchecked",
+        "condition": "unknown",
+        "version": 1,
+        "evidence": []
+      },
+      {
+        "id": "r-b",
+        "name": "中央道路 B",
+        "polyline": [
+          {
+            "x": 18,
+            "y": 47
+          },
+          {
+            "x": 76,
+            "y": 47
+          }
+        ],
+        "status": "unchecked",
+        "condition": "unknown",
+        "version": 1,
+        "evidence": []
+      },
+      {
+        "id": "r-c",
+        "name": "东侧道路 C",
+        "polyline": [
+          {
+            "x": 76,
+            "y": 20
+          },
+          {
+            "x": 76,
+            "y": 78
+          }
+        ],
+        "status": "unchecked",
+        "condition": "unknown",
+        "version": 1,
+        "evidence": []
+      }
+    ],
+    "steps": [
+      {
+        "id": "s-a",
+        "label": "查验西侧主路",
+        "roadId": "r-a",
+        "status": "pending",
+        "version": 1
+      },
+      {
+        "id": "s-b",
+        "label": "查验中央道路",
+        "roadId": "r-b",
+        "status": "failed",
+        "version": 3,
+        "failureReason": "模拟反馈：局部规划与恢复已耗尽，未能到达观测位置。原因不等同于已观察道路阻断。"
+      },
+      {
+        "id": "s-c",
+        "label": "查验东侧道路",
+        "roadId": "r-c",
+        "status": "pending",
+        "version": 1
+      }
+    ],
+    "requests": [
+      {
+        "id": "failure:ui-event-3",
+        "title": "查验中央道路待处理",
+        "reason": "模拟反馈：局部规划与恢复已耗尽，未能到达观测位置。原因不等同于已观察道路阻断。",
+        "basis": "R2：模拟导航已用尽恢复，fixture声明没有可执行替代分支；本实验约定请操作员选择后续处理。",
+        "roadIds": [
+          "r-b"
+        ],
+        "stepIds": [
+          "s-b"
+        ],
+        "requiredInput": {
+          "kind": "option",
+          "options": [
+            {
+              "id": "defer",
+              "label": "保留未查明，继续其他路段",
+              "effect": "continue-others"
+            },
+            {
+              "id": "retry",
+              "label": "重新尝试本步骤",
+              "effect": "retry-step"
+            },
+            {
+              "id": "end",
+              "label": "结束本次任务",
+              "effect": "end-task"
+            }
+          ]
+        },
+        "runId": "lab:4bf0df02-18fc-4b17-904c-d25451cd7385",
+        "version": 1,
+        "type": "choice",
+        "status": "pending",
+        "options": [
+          {
+            "id": "defer",
+            "label": "保留未查明，继续其他路段",
+            "effect": "continue-others"
+          },
+          {
+            "id": "retry",
+            "label": "重新尝试本步骤",
+            "effect": "retry-step"
+          },
+          {
+            "id": "end",
+            "label": "结束本次任务",
+            "effect": "end-task"
+          }
+        ],
+        "createdPlanVersion": 1,
+        "createdAt": 3,
+        "roadVersions": {
+          "r-b": 1
+        },
+        "stepVersions": {
+          "s-b": 3
+        }
+      }
+    ],
+    "constraints": [],
+    "device": {
+      "id": "ugv-01",
+      "name": "模拟 UGV-01",
+      "link": "online",
+      "execution": "running",
+      "position": {
+        "x": 18,
+        "y": 47
+      },
+      "lastConfirmedAt": 2
+    },
+    "commands": [],
+    "logs": [
+      {
+        "runId": "lab:4bf0df02-18fc-4b17-904c-d25451cd7385",
+        "sequence": 1,
+        "logicalTime": 1,
+        "source": "operator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-1",
+        "actionType": "start-task",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "已接受任务目标，执行步骤属于本实验计划，不是用户输入的硬性必检要求。"
+      },
+      {
+        "runId": "lab:4bf0df02-18fc-4b17-904c-d25451cd7385",
+        "sequence": 2,
+        "logicalTime": 2,
+        "source": "simulator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-2",
+        "actionType": "start-step",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "模拟执行：查验中央道路。"
+      },
+      {
+        "runId": "lab:4bf0df02-18fc-4b17-904c-d25451cd7385",
+        "sequence": 3,
+        "logicalTime": 3,
+        "source": "simulator",
+        "inputProvenance": "fixture-event",
+        "actionId": "ui-event-3",
+        "actionType": "navigation-failed",
+        "planVersion": 1,
+        "accepted": true,
+        "detail": "执行失败并产生明确选择请求；道路仍为未查明，不能推定已经阻断。",
+        "requestId": "failure:ui-event-3"
+      }
+    ],
+    "processedActionIds": [
+      "ui-event-1",
+      "ui-event-2",
+      "ui-event-3"
+    ]
+  },
+  "inputActions": [
+    {
+      "type": "start-task",
+      "actionId": "ui-event-1",
+      "provenance": "fixture-event"
+    },
+    {
+      "type": "start-step",
+      "actionId": "ui-event-2",
+      "stepId": "s-b",
+      "provenance": "fixture-event"
+    },
+    {
+      "type": "navigation-failed",
+      "actionId": "ui-event-3",
+      "stepId": "s-b",
+      "reason": "模拟反馈：局部规划与恢复已耗尽，未能到达观测位置。原因不等同于已观察道路阻断。",
+      "recoveryExhausted": true,
+      "alternativeAvailable": false,
+      "provenance": "fixture-event"
+    }
+  ],
+  "interactionTelemetry": [
+    {
+      "sequence": 1,
+      "at": "2026-10-04T02:20:33.925Z",
+      "elapsedMs": 0,
+      "mode": "dynamic",
+      "kind": "start",
+      "detail": "navigation-failure"
+    },
+    {
+      "sequence": 2,
+      "at": "2026-10-04T02:20:33.926Z",
+      "elapsedMs": 1,
+      "mode": "dynamic",
+      "kind": "fixture-event",
+      "detail": "start-task: accepted"
+    },
+    {
+      "sequence": 3,
+      "at": "2026-10-04T02:20:33.973Z",
+      "elapsedMs": 48,
+      "mode": "dynamic",
+      "kind": "fixture-event",
+      "detail": "start-step: accepted"
+    },
+    {
+      "sequence": 4,
+      "at": "2026-10-04T02:20:34.056Z",
+      "elapsedMs": 131,
+      "mode": "dynamic",
+      "kind": "fixture-event",
+      "detail": "navigation-failed: accepted"
+    },
+    {
+      "sequence": 5,
+      "at": "2026-10-04T02:20:34.572Z",
+      "elapsedMs": 647,
+      "mode": "dynamic",
+      "kind": "export",
+      "detail": "state + raw actions + application log + interaction telemetry"
+    }
+  ],
+  "measurementNote": "交互耗时为本浏览器的实际操作记录。没有参与者对照实验，不能据此主张效率改善。"
+}
