@@ -44,6 +44,7 @@ async function stateOf(page: Page): Promise<LabState> {
 async function begin(page: Page, scenarioId: string): Promise<void> {
   await page.setViewportSize({ width: 1480, height: 1850 });
   await page.goto("/intervention-lab");
+  await page.getByTestId("lab-transport-select").selectOption("local");
   await page.evaluate(() => document.fonts.ready);
   await expect(page.getByTestId("lab-simulation-label")).toContainText(
     "未连接真实设备或 LLM",

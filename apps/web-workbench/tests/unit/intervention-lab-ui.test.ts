@@ -96,6 +96,7 @@ async function begin(
 ): Promise<LabWrapper> {
   const wrapper = mount(InterventionLabPage, { attachTo: document.body });
   mounted.push(wrapper);
+  await wrapper.get(byId("lab-transport-select")).setValue("local");
   expect(wrapper.get(byId("lab-simulation-label")).text()).toContain(
     "未连接真实设备",
   );

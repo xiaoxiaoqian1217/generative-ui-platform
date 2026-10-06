@@ -13,6 +13,7 @@
     "dev:copilot-runtime": "pnpm --filter @generative-ui/copilot-runtime dev",
     "dev:map-validation-agent": "pnpm --filter @generative-ui/map-validation-agent dev",
     "dev:web-workbench": "pnpm --filter @generative-ui/web-workbench dev",
+    "dev:intervention-agent": "pnpm --filter @generative-ui/web-workbench dev:intervention-agent",
     "build": "turbo run build",
     "build:web-workbench": "pnpm --filter @generative-ui/web-workbench build",
     "typecheck": "turbo run typecheck",

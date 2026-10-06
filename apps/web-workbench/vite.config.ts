@@ -12,6 +12,10 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      "/api/intervention-agent": {
+        changeOrigin: true,
+        target: "http://127.0.0.1:4802",
+      },
       "/api/dev/scenario-lab": {
         changeOrigin: true,
         target: "http://127.0.0.1:4801",

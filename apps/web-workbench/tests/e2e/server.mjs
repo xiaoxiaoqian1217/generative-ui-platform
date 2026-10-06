@@ -1,11 +1,12 @@
 import { readFile, stat } from "node:fs/promises";
-import { createServer } from "node:http";
+import { createServer, request as httpRequest } from "node:http";
 import { extname, isAbsolute, join, relative, resolve } from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { HttpAgent } from "@ag-ui/client";
 import { createAguiMockServer } from "@generative-ui/ag-ui-mock";
 import { createRuntimeHandler } from "@generative-ui/copilot-runtime";
+import { createInterventionAgentServer } from "../../dist-intervention-agent/index.js";
 import { createMockUpstreamProxy } from "./mock-upstream-proxy.mjs";
 import { createSacsProfileFixture } from "./sacs-profile-fixture.mjs";
 import { draftScenarioFixture } from "./scenario-fixture-drafter-fake.mjs";
@@ -20,6 +21,10 @@ const sacsPrincipalId = "e2e-workbench-user";
 const sacsServiceKey = "e2e-sacs-service-key-with-at-least-32-characters";
 const mock = createAguiMockServer({ host, port: 0 });
 await mock.start();
+const interventionAgent = createInterventionAgentServer({ host, port: 0 });
+await interventionAgent.start();
+let interventionAgentAvailable = true;
+const interventionStreams = new Set();
 const mockProxy = await createMockUpstreamProxy({
   host,
   port: 0,
@@ -88,6 +93,33 @@ async function serveRuntime(request, response, url) {
   else response.end();
 }
 
+function serveInterventionAgent(request, response) {
+  if (!interventionAgentAvailable) {
+    json(response, 503, { error: "intervention_agent_unavailable" });
+    return;
+  }
+  const upstream = httpRequest(
+    new URL(request.url, interventionAgent.url),
+    { method: request.method, headers: request.headers },
+    (incoming) => {
+      response.writeHead(incoming.statusCode ?? 502, incoming.headers);
+      incoming.pipe(response);
+      incoming.on("error", () => response.destroy());
+    },
+  );
+  interventionStreams.add(upstream);
+  response.on("close", () => {
+    interventionStreams.delete(upstream);
+    upstream.destroy();
+  });
+  upstream.on("error", () => {
+    if (!response.headersSent)
+      json(response, 502, { error: "agent_unreachable" });
+    else response.destroy();
+  });
+  request.pipe(upstream);
+}
+
 async function serveStatic(request, response) {
   const requestUrl = new URL(request.url ?? "/", `http://${host}:${port}`);
   const relativePath =
@@ -120,6 +152,27 @@ const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", `http://${host}:${port}`);
   if (request.method === "GET" && url.pathname === "/workbench-health") {
     response.writeHead(204).end();
+    return;
+  }
+  if (
+    request.method === "POST" &&
+    url.pathname === "/__control__/intervention-agent-down"
+  ) {
+    interventionAgentAvailable = false;
+    for (const stream of interventionStreams) stream.destroy();
+    response.writeHead(204).end();
+    return;
+  }
+  if (
+    request.method === "POST" &&
+    url.pathname === "/__control__/intervention-agent-up"
+  ) {
+    interventionAgentAvailable = true;
+    response.writeHead(204).end();
+    return;
+  }
+  if (url.pathname.startsWith("/api/intervention-agent/")) {
+    serveInterventionAgent(request, response);
     return;
   }
   if (request.method === "GET" && url.pathname === "/__control__/sacs") {
@@ -194,10 +247,14 @@ server.listen(port, host, () => {
 });
 
 function shutdown() {
+  for (const stream of interventionStreams) stream.destroy();
   server.close(() => {
-    void Promise.all([mock.stop(), mockProxy.stop(), sacs.stop()]).finally(() =>
-      process.exit(0),
-    );
+    void Promise.all([
+      mock.stop(),
+      mockProxy.stop(),
+      sacs.stop(),
+      interventionAgent.stop(),
+    ]).finally(() => process.exit(0));
   });
 }
 

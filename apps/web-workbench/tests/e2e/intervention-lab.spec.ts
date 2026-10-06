@@ -39,6 +39,7 @@ function facts(state: LabState) {
 
 async function begin(page: Page, scenarioId: string, mode = "dynamic") {
   await page.goto("/intervention-lab");
+  await page.getByTestId("lab-transport-select").selectOption("local");
   await expect(page.getByTestId("lab-simulation-label")).toContainText(
     "未连接真实设备",
   );

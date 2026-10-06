@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "dev:intervention-agent": "node --import tsx scripts/intervention-agent.ts",
+    "build:intervention-agent": "tsup src/features/intervention-lab/server/index.ts --format esm --dts --clean --out-dir dist-intervention-agent",
     "build": "vite build",
-    "build:e2e": "vite build --mode test",
+    "build:e2e": "pnpm build:intervention-agent && vite build --mode test",
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
@@ -14,6 +16,7 @@
   },
   "dependencies": {
     "@a2ui/web_core": "0.9.0",
+    "@ag-ui/client": "0.0.57",
     "@ag-ui/core": "0.0.57",
     "@copilotkit/core": "1.64.1",
     "@copilotkit/vue": "1.64.1",
@@ -25,7 +28,6 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
-    "@ag-ui/client": "0.0.57",
     "@playwright/test": "1.62.1",
     "@types/markdown-it": "14.1.2",
     "@types/ws": "8.18.1",

@@ -9,6 +9,13 @@ import {
   type LabRoad,
 } from "./model.js";
 import { LAB_SCENARIOS, type ScenarioStep } from "./scenarios.js";
+import {
+  createInterventionAgentClient,
+  type AgentClientStatus,
+  type AgentProtocolRecord,
+  type InterventionAgentEnvelope,
+  type LabTransport,
+} from "./client.js";
 
 type DisplayMode = "fixed" | "dynamic";
 type InteractionRecord = {
@@ -24,6 +31,12 @@ const defaultScenario =
   LAB_SCENARIOS.find((scenario) => scenario.id === "observation-cooperation") ??
   LAB_SCENARIOS[0]!;
 const mode = ref<DisplayMode>("dynamic");
+const transport = ref<LabTransport>("agent");
+const manualMode = ref(true);
+const runningManualMode = ref(true);
+const agentStatus = ref<AgentClientStatus>({ connection: "idle", busy: false, streamActive: false, threadId: "", runId: "" });
+const serverEnvelope = ref<InterventionAgentEnvelope>();
+const protocolEvents = ref<AgentProtocolRecord[]>([]);
 const scenarioId = ref(defaultScenario.id);
 const runningScenarioId = ref(scenarioId.value);
 const state = ref(createInitialState("fixture-run", defaultScenario.collaboration));
@@ -45,6 +58,33 @@ const replaying = ref(false);
 let replayTimer: number | undefined;
 let actionSequence = 0;
 let startedAt = performance.now();
+
+const agentClient = createInterventionAgentClient({
+  onEnvelope(envelope) {
+    if (transport.value !== "agent") return;
+    serverEnvelope.value = envelope;
+    state.value = envelope.task;
+    inputActions.value = envelope.inputActions;
+    cursor.value = envelope.cursor;
+    runningScenarioId.value = envelope.scenarioId;
+    notice.value = envelope.task.logs.at(-1)?.detail ?? "已收到服务端确认的任务状态。";
+    exportPreview.value = "";
+  },
+  onStatus(status) { agentStatus.value = status; },
+  onEvent(event) { protocolEvents.value.push(event); },
+  onNotice(detail) { notice.value = detail; },
+});
+
+const availableScenarios = computed(() => transport.value === "agent"
+  ? LAB_SCENARIOS.filter((scenario) => scenario.collaboration)
+  : LAB_SCENARIOS);
+const networkBusy = computed(() => transport.value === "agent" && agentStatus.value.busy);
+const canNetworkCommand = computed(() => !!serverEnvelope.value && pending.value.length === 0 && agentStatus.value.connection === "connected" && agentStatus.value.streamActive && !agentStatus.value.busy);
+const canRespond = computed(() => started.value && (transport.value === "local" || (agentStatus.value.connection === "interrupted" && !agentStatus.value.streamActive && !agentStatus.value.busy && !!agentStatus.value.interruptId)));
+const connectionLabels = {
+  idle: "尚未连接", connecting: "正在连接 Agent", connected: "已连接薄 Agent",
+  interrupted: "Agent 等待你的答复", finished: "服务端任务已结束", disconnected: "连接已中断，保留最后确认状态",
+} as const;
 
 const selectedScenario = computed(
   () => LAB_SCENARIOS.find((item) => item.id === scenarioId.value)!,
@@ -82,13 +122,14 @@ const selectedRoad = computed(
 );
 const nextStep = computed(() => executionQueue.value[cursor.value]);
 const waitingForOperator = computed(
-  () => nextStep.value?.scriptedOperator === true && pending.value.length > 0,
+  () => transport.value === "agent" ? pending.value.length > 0 : nextStep.value?.scriptedOperator === true && pending.value.length > 0,
 );
 const stateJson = computed(() => JSON.stringify(state.value, null, 2));
 const fixtureJson = computed(() =>
   JSON.stringify(executionQueue.value, null, 2),
 );
 const nextEventLabel = computed(() => {
+  if (transport.value === "agent") return runningManualMode.value ? "由服务端执行下一步，页面仅接收状态" : "Agent 服务端自动推进，页面仅接收状态";
   if (nextStep.value?.scriptedOperator && pending.value.length === 0)
     return "保留你的实际选择，继续下一个仿真事件";
   return !runningScenario.value.collaboration &&
@@ -158,6 +199,7 @@ function uid(prefix: string): string {
 }
 
 function apply(action: LabAction, source: string): void {
+  if (transport.value !== "local") return;
   const attributed: LabAction = {
     ...action,
     provenance: source === "fixture-event" ? "fixture-event" : "interactive",
@@ -182,12 +224,11 @@ function stopReplay(): void {
 function start(): void {
   stopReplay();
   runningScenarioId.value = scenarioId.value;
-  state.value = createInitialState(
-    `lab:${crypto.randomUUID()}`,
-    runningScenario.value.collaboration,
+  if (transport.value === "local") state.value = createInitialState(
+    `lab:${crypto.randomUUID()}`, runningScenario.value.collaboration,
   );
   cursor.value = 0;
-  executionQueue.value = [...runningScenario.value.steps];
+  executionQueue.value = transport.value === "local" ? [...runningScenario.value.steps] : [];
   branchNotice.value = "";
   started.value = true;
   inputActions.value = [];
@@ -201,7 +242,40 @@ function start(): void {
   startedAt = performance.now();
   notice.value = "已开始本地实验。通过下一事件推进仿真；人工事项由你操作。";
   record("start", runningScenarioId.value);
-  advance();
+  if (transport.value === "agent") {
+    runningManualMode.value = manualMode.value;
+    serverEnvelope.value = undefined;
+    protocolEvents.value = [];
+    notice.value = "正在连接薄 Agent。任务执行和人工答复由服务端处理，页面不会代为注入观测。";
+    void agentClient.start(runningScenarioId.value, runningManualMode.value);
+  } else advance();
+}
+
+function changeTransport(): void {
+  stopReplay();
+  agentClient.close();
+  started.value = false;
+  if (!availableScenarios.value.some((scenario) => scenario.id === scenarioId.value))
+    scenarioId.value = defaultScenario.id;
+  runningScenarioId.value = scenarioId.value;
+  state.value = createInitialState("fixture-run", selectedScenario.value.collaboration);
+  cursor.value = 0;
+  executionQueue.value = transport.value === "local" ? [...selectedScenario.value.steps] : [];
+  serverEnvelope.value = undefined;
+  protocolEvents.value = [];
+  inputActions.value = [];
+  fieldValues.value = {};
+  observationPointValues.value = {};
+  branchNotice.value = "";
+  exportPreview.value = "";
+  notice.value = transport.value === "agent"
+    ? "已选择薄 Agent / AG-UI 网络验证。点击开始后连接服务端。"
+    : "已选择显式本地回放。页面在本机执行确定性案例，不连接 Agent 服务。";
+}
+
+function reconnect(): void {
+  record("reconnect", "restore server snapshot, then continue if active without interrupt");
+  void agentClient.reconnect();
 }
 
 function skipScriptedOperatorSteps(): void {
@@ -280,6 +354,12 @@ function insertRemainingFixtureChecks(): void {
 }
 
 function advance(): void {
+  if (transport.value === "agent") {
+    if (!canNetworkCommand.value || !runningManualMode.value || pending.value.length > 0) return;
+    record("agent-command", "advance");
+    void agentClient.command({ type: "advance", actionId: uid("advance") });
+    return;
+  }
   if (!started.value || state.value.phase === "ended") {
     stopReplay();
     return;
@@ -329,6 +409,7 @@ function advance(): void {
 }
 
 function toggleReplay(): void {
+  if (transport.value === "agent") return;
   if (replaying.value) {
     stopReplay();
     record("stop-replay", "operator");
@@ -346,8 +427,7 @@ function toggleReplay(): void {
 
 function respond(request: LabRequest, optionId: string): void {
   stopReplay();
-  apply(
-    {
+  const action: Extract<LabAction, { type: "respond" }> = {
       type: "respond",
       actionId: uid("response"),
       requestId: request.id,
@@ -357,9 +437,14 @@ function respond(request: LabRequest, optionId: string): void {
       ...(request.requiredInput.kind === "fields"
         ? { values: fieldValues.value[request.id] ?? {} }
         : {}),
-    },
-    "operator-response",
-  );
+    };
+  if (transport.value === "agent") {
+    if (!canRespond.value) return;
+    record("agent-resume", request.id);
+    agentClient.respond(action);
+    return;
+  }
+  apply(action, "operator-response");
   if (state.value.phase === "ended") {
     executionQueue.value = executionQueue.value.slice(0, cursor.value);
     record(
@@ -383,6 +468,7 @@ function isObservationRequest(request: LabRequest): boolean {
 }
 
 function addConstraint(): void {
+  if (transport.value !== "local") return;
   stopReplay();
   const road = state.value.roads.find(
     (item) => item.id === constraintRoadId.value,
@@ -400,6 +486,7 @@ function addConstraint(): void {
 }
 
 function pauseCommand(): void {
+  if (transport.value !== "local") return;
   stopReplay();
   apply(
     {
@@ -413,16 +500,17 @@ function pauseCommand(): void {
 
 function prioritizeStep(): void {
   stopReplay();
-  apply(
-    {
+  const action: LabAction = {
       type: "prioritize-step",
       actionId: uid("priority"),
       runId: state.value.runId,
       planVersion: state.value.planVersion,
       stepId: priorityStepId.value,
-    },
-    "operator-priority",
-  );
+    };
+  if (transport.value === "agent") {
+    record("agent-command", "prioritize-step");
+    void agentClient.command(action);
+  } else apply(action, "operator-priority");
 }
 
 function stepName(id: string): string {
@@ -440,6 +528,7 @@ function contributionFeedback(stepIds: string[]): string {
 }
 
 function rejectOldResponse(request: LabRequest): void {
+  if (transport.value !== "local") return;
   apply(
     {
       type: "respond",
@@ -492,7 +581,7 @@ function exportRun(): void {
     "export",
     "state + raw actions + application log + interaction telemetry",
   );
-  const document = {
+  const localDocument = {
     schemaVersion: "intervention-lab-export/v1",
     experiment: "deterministic-simulation",
     connectedToRealDevice: false,
@@ -509,6 +598,27 @@ function exportRun(): void {
     measurementNote:
       "交互耗时为本浏览器的实际操作记录。没有参与者对照实验，不能据此主张效率改善。",
   };
+  const document = transport.value === "local" ? localDocument : {
+    schemaVersion: "intervention-lab-agent-export/v1",
+    experiment: "thin-agent-ag-ui-network-validation",
+    transport: "agent",
+    connectedToThinAgent: serverEnvelope.value !== undefined,
+    agUiTransport: "http-sse",
+    connectedToRealLLM: false,
+    connectedToRealDevice: false,
+    scenarioId: runningScenarioId.value,
+    displayMode: mode.value,
+    manualMode: runningManualMode.value,
+    eventCursor: cursor.value,
+    serverRevision: serverEnvelope.value?.revision ?? null,
+    serverEnvelope: serverEnvelope.value ?? null,
+    protocolSession: agentStatus.value,
+    protocolEvents: protocolEvents.value,
+    state: state.value,
+    inputActions: inputActions.value,
+    interactionTelemetry: telemetry.value,
+    measurementNote: "网络事件和任务状态来自独立薄 Agent 服务。任务决策与道路观测仍为确定性模拟，没有真实 LLM、设备或人员效果评测。",
+  };
   exportPreview.value = JSON.stringify(document, null, 2);
   const url = URL.createObjectURL(
     new Blob([exportPreview.value], { type: "application/json" }),
@@ -521,7 +631,7 @@ function exportRun(): void {
   notice.value = "已导出原始动作、处理日志、完整状态和交互记录，可对照复测。";
 }
 
-onUnmounted(stopReplay);
+onUnmounted(() => { stopReplay(); agentClient.close(); });
 </script>
 
 <template>
@@ -530,29 +640,35 @@ onUnmounted(stopReplay);
       <div>
         <p class="eyebrow">COLLABORATIVE TASK PANEL · 专利交互验证</p>
         <h1>道路探查 · 人与 Agent 一起完成任务</h1>
-        <p class="scope-note" data-testid="lab-simulation-label">确定性仿真 / 未连接真实设备或 LLM · 虚构街区 · 实验页面</p>
+        <p class="scope-note" data-testid="lab-simulation-label">{{ transport === 'agent' ? '薄 Agent + AG-UI 网络验证 / 确定性任务逻辑与模拟UGV / 未连接真实设备或 LLM' : '确定性仿真 / 显式本地回放 / 未连接真实设备或 LLM' }} · 虚构街区</p>
       </div>
       <button type="button" class="subtle" data-testid="lab-export" @click="exportRun">↓ 导出原始记录</button>
     </header>
 
     <section class="experiment-controls" aria-label="实验设置">
+      <label class="transport-select">执行来源<select v-model="transport" data-testid="lab-transport-select" :disabled="networkBusy" @change="changeTransport"><option value="agent">薄 Agent · AG-UI 网络</option><option value="local">本地确定性回放</option></select></label>
       <label class="scenario-select">验证案例
         <select v-model="scenarioId" data-testid="lab-scenario-select" @change="notice = '所选案例已改变，点击开始或重新开始后才切换运行；当前状态继续保留。'">
-          <option v-for="scenario in LAB_SCENARIOS" :key="scenario.id" :value="scenario.id">{{ scenario.title }}</option>
+          <option v-for="scenario in availableScenarios" :key="scenario.id" :value="scenario.id">{{ scenario.title }}</option>
         </select>
       </label>
-      <button type="button" class="primary" data-testid="lab-start" @click="start">{{ started ? '重新开始所选案例' : '开始案例' }}</button>
-      <button type="button" class="subtle" data-testid="lab-next" :data-action-type="nextStep?.action.type ?? 'none'" :data-scripted-operator="nextStep?.scriptedOperator === true" :data-cursor="cursor" :disabled="!started || state.phase === 'ended' || nextStep === undefined || waitingForOperator" @click="advance">下一仿真事件 →</button>
-      <button type="button" class="subtle" data-testid="lab-autoplay" :disabled="started && (state.phase === 'ended' || nextStep === undefined || waitingForOperator)" @click="toggleReplay">{{ replaying ? '停止回放' : '自动回放' }}</button>
+      <button type="button" class="primary" data-testid="lab-start" :disabled="networkBusy" @click="start">{{ started ? '重新开始所选案例' : '开始案例' }}</button>
+      <button type="button" class="subtle" data-testid="lab-next" :data-action-type="transport === 'agent' ? 'advance' : nextStep?.action.type ?? 'none'" :data-scripted-operator="transport === 'local' && nextStep?.scriptedOperator === true" :data-cursor="cursor" :disabled="!started || state.phase === 'ended' || waitingForOperator || (transport === 'agent' ? !runningManualMode || !canNetworkCommand : nextStep === undefined)" @click="advance">{{ transport === 'agent' ? '让 Agent 执行下一步 →' : '下一仿真事件 →' }}</button>
+      <button v-if="transport === 'local'" type="button" class="subtle" data-testid="lab-autoplay" :disabled="started && (state.phase === 'ended' || nextStep === undefined || waitingForOperator)" @click="toggleReplay">{{ replaying ? '停止回放' : '自动回放' }}</button>
+      <label v-else class="manual-mode"><input v-model="manualMode" type="checkbox" data-testid="lab-manual-mode" :disabled="networkBusy" />手动推进，逐步核对<small>新任务开始时生效</small></label>
       <div class="mode-switch" aria-label="信息组织方式">
         <button type="button" :aria-pressed="mode === 'fixed'" data-testid="lab-mode-fixed" @click="switchMode('fixed')">固定组织</button>
         <button type="button" :aria-pressed="mode === 'dynamic'" data-testid="lab-mode-dynamic" @click="switchMode('dynamic')">动态组织</button>
       </div>
     </section>
     <p class="case-description" data-testid="lab-case-description">{{ selectedScenario.description }}</p>
+    <div v-if="transport === 'agent'" class="connection-line" data-testid="lab-connection-state" :data-state="agentStatus.connection" :data-busy="agentStatus.busy" :data-stream-active="agentStatus.streamActive" :data-revision="serverEnvelope?.revision ?? 0" :data-thread-id="agentStatus.threadId" :data-run-id="agentStatus.runId">
+      <span>{{ connectionLabels[agentStatus.connection] }}<small v-if="serverEnvelope"> · 已确认状态第 {{ serverEnvelope.revision }} 次更新</small></span>
+      <button type="button" class="subtle" data-testid="lab-reconnect" :disabled="!serverEnvelope || networkBusy || agentStatus.streamActive" @click="reconnect">恢复连接并核对任务</button>
+    </div>
     <div class="run-line">
       <span><i class="dot" /> {{ phaseLabels[state.phase] }} <span class="muted">· 计划 v{{ state.planVersion }}</span></span>
-      <span data-testid="lab-cursor">事件 {{ cursor }}/{{ executionQueue.length }} <span class="muted">· {{ state.phase === 'ended' ? '本次已结束，不再注入后续事件' : waitingForOperator ? '等待人工处理，脚本答复不自动执行' : nextEventLabel }}</span></span>
+      <span data-testid="lab-cursor">{{ transport === 'agent' ? `服务端执行游标 ${cursor}` : `事件 ${cursor}/${executionQueue.length}` }} <span class="muted">· {{ state.phase === 'ended' ? '本次已结束' : waitingForOperator ? '等待你处理协作请求' : nextEventLabel }}</span></span>
     </div>
     <p v-if="started && scenarioId !== runningScenarioId" class="case-description">当前运行仍是「{{ runningScenario.title }}」；开始所选案例会重置这次实验。</p>
     <p v-if="branchNotice" class="branch-note" data-testid="lab-branch-note">{{ branchNotice }}</p>
@@ -589,7 +705,7 @@ onUnmounted(stopReplay);
             <text class="north" x="93" y="8">N ↑</text>
           </svg>
           <div class="map-key"><span><i class="key-unknown" />未查明</span><span><i class="key-observed" />观测可通行</span><span><i class="key-blocked" />观测受阻</span></div>
-          <div class="map-time" data-testid="lab-map-position">{{ state.device.link === 'offline' || state.device.execution === 'unknown' ? '最后确认位置' : '模拟位置' }} · 最后确认逻辑时刻 {{ state.device.lastConfirmedAt }}</div>
+          <div class="map-time" data-testid="lab-map-position">{{ agentStatus.connection === 'disconnected' && transport === 'agent' || state.device.link === 'offline' || state.device.execution === 'unknown' ? '最后确认位置' : '模拟位置' }} · 最后确认逻辑时刻 {{ state.device.lastConfirmedAt }}</div>
         </div>
         <div class="map-facts" data-testid="lab-map-facts">
           <div class="card-heading"><strong>{{ selectedRoad.name }}</strong><span :class="{ amber: selectedRoad.status === 'unchecked' }">{{ roadLabel(selectedRoad) }}</span></div>
@@ -622,11 +738,11 @@ onUnmounted(stopReplay);
               <label v-for="field in request.requiredInput.fields" :key="field.key">{{ field.label }}{{ field.required ? '（必填）' : '' }}<input :value="fieldValues[request.id]?.[field.key] ?? ''" :data-testid="`lab-field-${request.id}-${field.key}`" @input="updateField(request.id, field.key, ($event.target as HTMLInputElement).value)" /></label>
             </div>
             <form v-if="isObservationRequest(request)" class="observation-input-form" data-testid="lab-observation-point-form" @submit.prevent="respond(request, observationPointValues[request.id] ?? '')">
-              <label>提供这一步需要的观测点<select :value="observationPointValues[request.id] ?? ''" data-testid="lab-observation-point" @change="observationPointValues[request.id] = ($event.target as HTMLSelectElement).value"><option value="">请选择预设观测点</option><option v-for="option in request.options" :key="option.id" :value="option.id">{{ option.label }}</option></select></label>
+              <label>提供这一步需要的观测点<select :value="observationPointValues[request.id] ?? ''" data-testid="lab-observation-point" :disabled="!canRespond" @change="observationPointValues[request.id] = ($event.target as HTMLSelectElement).value"><option value="">请选择预设观测点</option><option v-for="option in request.options" :key="option.id" :value="option.id">{{ option.label }}</option></select></label>
               <p class="empty-note">选择会写入当前步骤的执行参数。未选点时提交会被拒绝，任务仍等待你的补充。</p>
-              <button type="submit" class="primary" data-testid="lab-submit-observation">提交观测点，继续协作</button>
+              <button type="submit" class="primary" data-testid="lab-submit-observation" :disabled="!canRespond">提交观测点，继续协作</button>
             </form>
-            <div v-else class="request-actions"><button v-for="option in request.options" :key="option.id" type="button" :data-testid="`lab-response-${request.id}-${option.id}`" :class="option.id === 'reject' || option.effect === 'end-task' ? 'subtle' : 'primary'" @click="respond(request, option.id)">{{ option.label }}</button></div>
+            <div v-else class="request-actions"><button v-for="option in request.options" :key="option.id" type="button" :data-testid="`lab-response-${request.id}-${option.id}`" :disabled="!canRespond" :class="option.id === 'reject' || option.effect === 'end-task' ? 'subtle' : 'primary'" @click="respond(request, option.id)">{{ option.label }}</button></div>
           </article>
         </section>
 
@@ -634,23 +750,25 @@ onUnmounted(stopReplay);
           <div class="card-heading"><strong>{{ state.device.name }}</strong><span :class="{ amber: state.device.link === 'offline' }">{{ state.device.link === 'offline' ? '链路失联' : '模拟链路正常' }}</span></div>
           <div class="device-row"><span>设备执行反馈</span><strong>{{ state.device.execution === 'unknown' ? '当前执行状态未知' : state.device.execution === 'paused' ? '设备已确认暂停' : state.phase === 'ready' ? '仿真尚未开始' : '执行中（仿真）' }}</strong></div>
           <p v-if="state.device.link === 'offline'" class="empty-note amber">保留最后有效位置。链路中断不能直接推定设备已停下。</p>
-          <button type="button" class="subtle" data-testid="lab-pause" :disabled="!started || state.phase === 'ended' || state.device.execution === 'paused' || state.commands.some((command) => command.status !== 'acknowledged')" @click="pauseCommand">Ⅱ 请求暂停设备</button>
+          <p v-if="transport === 'agent'" class="empty-note">本次网络验证只连接任务 Agent，UGV 反馈为模拟。设备暂停控制仅在本地旧案例中验证。</p>
+          <button type="button" class="subtle" data-testid="lab-pause" :disabled="transport === 'agent' || !started || state.phase === 'ended' || state.device.execution === 'paused' || state.commands.some((command) => command.status !== 'acknowledged')" @click="pauseCommand">Ⅱ 请求暂停设备</button>
           <div v-for="command in state.commands" :key="command.id" class="command-row" :data-testid="`lab-command-${command.id}`" :data-status="command.status"><code>{{ command.id }}</code><span>{{ commandLabels[command.status] }}</span></div>
         </section>
 
         <section class="task-card constraint-card" data-testid="lab-active-constraint">
           <div class="card-heading"><strong>主动调整任务</strong><span>始终可见</span></div>
           <form v-if="collaboration" class="priority-form" @submit.prevent="prioritizeStep" data-testid="lab-active-priority">
-            <label>当前步骤完成后，优先做哪一步<select v-model="priorityStepId" data-testid="lab-priority-step" :disabled="upcomingSteps.length === 0"><option v-if="upcomingSteps.length === 0" value="">没有待执行步骤</option><option v-for="step in upcomingSteps" :key="step.id" :value="step.id">{{ step.label }}</option></select></label>
+            <label>当前步骤完成后，优先做哪一步<select v-model="priorityStepId" data-testid="lab-priority-step" :disabled="upcomingSteps.length === 0 || networkBusy"><option v-if="upcomingSteps.length === 0" value="">没有待执行步骤</option><option v-for="step in upcomingSteps" :key="step.id" :value="step.id">{{ step.label }}</option></select></label>
             <p v-if="started && priorityStepId === nextScheduledStep?.id" class="empty-note">当前计划已把这一步排在待执行首位。</p>
             <p class="empty-note">你可以在 Agent 执行时调整后续安排。只改变尚未开始步骤的顺序，当前步骤继续执行；下一次调度会读取修改后的顺序。</p>
-            <button type="submit" class="primary" data-testid="lab-prioritize" :disabled="!started || state.phase === 'ended' || priorityStepId === nextScheduledStep?.id || !upcomingSteps.some((step) => step.id === priorityStepId)">应用优先顺序</button>
+            <button type="submit" class="primary" data-testid="lab-prioritize" :disabled="!started || state.phase === 'ended' || (transport === 'agent' && !canNetworkCommand) || priorityStepId === nextScheduledStep?.id || !upcomingSteps.some((step) => step.id === priorityStepId)">应用优先顺序</button>
           </form>
           <form @submit.prevent="addConstraint">
-            <label>本次不检查的路段<select v-model="constraintRoadId" data-testid="lab-constraint-road"><option v-for="road in state.roads" :key="road.id" :value="road.id">{{ road.name }}</option></select></label>
-            <label>补充说明（记录用途）<input v-model="constraintNote" data-testid="lab-constraint-note" maxlength="300" placeholder="例如：该段本次暂缓，保留未查明结果" /></label>
+            <p v-if="transport === 'agent'" class="empty-note">当前网络模式支持补充观测点和调整优先顺序。路段排除保留在本地旧案例中，当前不能提交。</p>
+            <label>本次不检查的路段<select v-model="constraintRoadId" data-testid="lab-constraint-road" :disabled="transport === 'agent'"><option v-for="road in state.roads" :key="road.id" :value="road.id">{{ road.name }}</option></select></label>
+            <label>补充说明（记录用途）<input v-model="constraintNote" data-testid="lab-constraint-note" :disabled="transport === 'agent'" maxlength="300" placeholder="例如：该段本次暂缓，保留未查明结果" /></label>
             <p class="empty-note">仅直接修改尚未执行的关联步骤；执行中步骤需先确认暂停。说明文字不作为任意自然语言指令。已取得的观测结果保留。</p>
-            <button type="submit" class="primary" data-testid="lab-add-constraint" :disabled="!started || state.phase === 'ended'">应用路段约束</button>
+            <button type="submit" class="primary" data-testid="lab-add-constraint" :disabled="transport === 'agent' || !started || state.phase === 'ended'">应用路段约束</button>
           </form>
           <ul v-if="state.constraints.length" class="constraint-list"><li v-for="constraint in state.constraints" :key="constraint.id">{{ constraint.text }}</li></ul>
         </section>
@@ -682,7 +800,7 @@ onUnmounted(stopReplay);
       <section class="task-card history-card">
         <div class="card-heading"><strong>处理记录与旧请求核查</strong><span>不隐藏失效事项</span></div>
         <p v-if="state.requests.length === 0" class="empty-note">尚无人工请求。</p>
-        <article v-for="request in state.requests" :key="request.id" class="history-request" :data-testid="`lab-history-${request.id}`" :data-status="request.status"><div><strong>{{ request.title }}</strong><span :class="{ amber: request.status === 'pending' }">{{ requestLabels[request.status] }} · v{{ request.version }}</span></div><p>{{ request.resolution || request.reason }}</p><button v-if="request.status !== 'pending'" type="button" class="text-button" :data-testid="`lab-stale-${request.id}`" @click="rejectOldResponse(request)">注入旧答复，检查是否被拒绝</button></article>
+        <article v-for="request in state.requests" :key="request.id" class="history-request" :data-testid="`lab-history-${request.id}`" :data-status="request.status"><div><strong>{{ request.title }}</strong><span :class="{ amber: request.status === 'pending' }">{{ requestLabels[request.status] }} · v{{ request.version }}</span></div><p>{{ request.resolution || request.reason }}</p><button v-if="request.status !== 'pending' && transport === 'local'" type="button" class="text-button" :data-testid="`lab-stale-${request.id}`" @click="rejectOldResponse(request)">注入旧答复，检查是否被拒绝</button></article>
       </section>
       <section class="task-card logs-card">
         <div class="card-heading"><strong>原始处理日志</strong><span>逻辑时间 / 非设备实测</span></div>
@@ -692,11 +810,12 @@ onUnmounted(stopReplay);
 
     <details class="inspection">
       <summary>实验规则与完整状态 · 可审计</summary>
-      <p>以下为本实验的明确处理约定，不是军事规范、真实战例或已验证的通用风险判据。页面不调用 Nav2、真实设备、真实 LLM 或真实 AG-UI 服务。</p>
+      <p>{{ transport === 'agent' ? '网络模式使用独立薄 Agent 服务和真实 AG-UI HTTP/SSE 传输；状态由服务端确认后驱动面板，人工答复通过协议中断恢复继续同一业务任务。任务逻辑和道路反馈仍为确定性模拟。' : '本地回放在浏览器执行确定性案例，不连接 Agent 服务。' }} 不调用 Nav2、真实设备或真实 LLM。</p>
       <ul><li v-for="rule in presentation.rules" :key="rule.id"><strong>{{ rule.id }}</strong> {{ rule.rule }} <small>依据：{{ rule.basis }}</small></li></ul>
       <p>两种布局共享同一状态、数据和操作。浏览器交互记录可以支持复测；尚未进行真人对照试验，不能据此声称更快、更安全或更好用。</p>
       <label>当前完整状态<textarea readonly rows="12" :value="stateJson" data-testid="lab-state-json" spellcheck="false" /></label>
-      <label>当前执行事件队列（含明确标注的分支 fixture）<textarea readonly rows="12" :value="fixtureJson" data-testid="lab-fixture-json" spellcheck="false" /></label>
+      <label v-if="transport === 'local'">当前执行事件队列（含明确标注的分支 fixture）<textarea readonly rows="12" :value="fixtureJson" data-testid="lab-fixture-json" spellcheck="false" /></label>
+      <label v-else>收到的 AG-UI 协议事件<textarea readonly rows="12" :value="JSON.stringify(protocolEvents, null, 2)" data-testid="lab-protocol-json" spellcheck="false" /></label>
       <label v-if="exportPreview">最近导出内容<textarea readonly rows="12" :value="exportPreview" data-testid="lab-export-json" spellcheck="false" /></label>
     </details>
   </div>

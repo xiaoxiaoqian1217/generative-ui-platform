@@ -33,6 +33,7 @@ async function queueOf(page: Page): Promise<ScenarioStep[]> {
 
 async function begin(page: Page, scenarioId: string): Promise<void> {
   await page.goto("/intervention-lab");
+  await page.getByTestId("lab-transport-select").selectOption("local");
   await expect(page.getByTestId("lab-simulation-label")).toContainText(
     "确定性仿真",
   );

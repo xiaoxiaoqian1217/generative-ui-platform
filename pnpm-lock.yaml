@@ -160,6 +160,9 @@ importers:
       '@a2ui/web_core':
         specifier: 0.9.0
         version: 0.9.0
+      '@ag-ui/client':
+        specifier: 0.0.57
+        version: 0.0.57
       '@ag-ui/core':
         specifier: 0.0.57
         version: 0.0.57
@@ -188,9 +191,6 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
     devDependencies:
-      '@ag-ui/client':
-        specifier: 0.0.57
-        version: 0.0.57
       '@generative-ui/ag-ui-mock':
         specifier: workspace:*
         version: link:../../packages/ag-ui-mock
